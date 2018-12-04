@@ -24,7 +24,6 @@
 
 #include "../BlacklistDst.h"
 #include "../BlacklistSrc.h"
-#include "../Ports.h"
 #include "../Stats.h"
 
 using namespace io::swagger::server::model;
@@ -57,35 +56,12 @@ public:
   virtual void setLoglevel(const DdosmitigatorLoglevelEnum &value) = 0;
 
   /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  virtual std::shared_ptr<Ports> getPorts(const std::string &name) = 0;
-  virtual std::vector<std::shared_ptr<Ports>> getPortsList() = 0;
-  virtual void addPorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void addPortsList(const std::vector<PortsJsonObject> &conf) = 0;
-  virtual void replacePorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void delPorts(const std::string &name) = 0;
-  virtual void delPortsList() = 0;
-
-  /// <summary>
   ///
   /// </summary>
   virtual std::shared_ptr<Stats> getStats() = 0;
   virtual void addStats(const StatsJsonObject &value) = 0;
   virtual void replaceStats(const StatsJsonObject &conf) = 0;
   virtual void delStats() = 0;
-
-  /// <summary>
-  /// Port where the traffic is received
-  /// </summary>
-  virtual std::string getActivePort() = 0;
-  virtual void setActivePort(const std::string &value) = 0;
-
-  /// <summary>
-  /// If set, this will be the port used to redirect traffic (instead of PASS it to STACK)
-  /// </summary>
-  virtual std::string getRedirectPort() = 0;
-  virtual void setRedirectPort(const std::string &value) = 0;
 
   /// <summary>
   /// Blacklisted source IP addresses

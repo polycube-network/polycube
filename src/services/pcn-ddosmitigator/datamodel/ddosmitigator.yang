@@ -14,7 +14,7 @@ module ddosmitigator {
   polycube-base:service-name "ddosmitigator";
   polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "polycube-standard-base:standard-base-yang-module";
+  uses "polycube-transparent-base:transparent-base-yang-module";
 
   container stats {
     description "Statistics on dropped packets";
@@ -31,16 +31,6 @@ module ddosmitigator {
       config false;
       description "Total Dropped Packets";
     }
-  }
-
-  leaf active-port {
-    type string;
-    description "Port where the traffic is received";
-  }
-
-  leaf redirect-port {
-    type string;
-    description "If set, this will be the port used to redirect traffic (instead of PASS it to STACK)";
   }
 
   list blacklist-src {

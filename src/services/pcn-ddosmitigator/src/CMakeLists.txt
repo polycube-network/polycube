@@ -18,7 +18,6 @@ add_library(pcn-ddosmitigator SHARED
   BlacklistDst.cpp
   BlacklistSrc.cpp
   Ddosmitigator.cpp
-  Ports.cpp
   Stats.cpp
   Ddosmitigator-lib.cpp)
 

@@ -16,13 +16,12 @@
 
 #pragma once
 
-
 #include "../interface/TransparenthelloworldInterface.h"
 
-#include "polycube/services/transparent_cube.h"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
 #include "polycube/services/fifo_map.hpp"
+#include "polycube/services/port.h"
+#include "polycube/services/transparent_cube.h"
+#include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
 
@@ -30,7 +29,8 @@ using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 using polycube::service::ProgramType;
 
-class Transparenthelloworld : public polycube::service::TransparentCube, public TransparenthelloworldInterface {
+class Transparenthelloworld : public polycube::service::TransparentCube,
+                              public TransparenthelloworldInterface {
  public:
   Transparenthelloworld(const std::string name,
                         const TransparenthelloworldJsonObject &conf,
@@ -60,7 +60,8 @@ class Transparenthelloworld : public polycube::service::TransparentCube, public 
   CubeType getType() override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE)
   /// </summary>
   TransparenthelloworldLoglevelEnum getLoglevel() override;
   void setLoglevel(const TransparenthelloworldLoglevelEnum &value) override;
@@ -69,11 +70,13 @@ class Transparenthelloworld : public polycube::service::TransparentCube, public 
   /// Action performed on ingress packets
   /// </summary>
   TransparenthelloworldIngressActionEnum getIngressAction() override;
-  void setIngressAction(const TransparenthelloworldIngressActionEnum &value) override;
+  void setIngressAction(
+      const TransparenthelloworldIngressActionEnum &value) override;
 
   /// <summary>
   /// Action performed on egress packets
   /// </summary>
   TransparenthelloworldEgressActionEnum getEgressAction() override;
-  void setEgressAction(const TransparenthelloworldEgressActionEnum &value) override;
+  void setEgressAction(
+      const TransparenthelloworldEgressActionEnum &value) override;
 };

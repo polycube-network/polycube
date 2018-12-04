@@ -20,25 +20,25 @@
 
 std::string Ddosmitigator::getName(){
   // This method retrieves the name value.
-  return Cube::get_name();
+  return get_name();
 }
 
 
 std::string Ddosmitigator::getUuid(){
   // This method retrieves the uuid value.
-  return Cube::get_uuid().str();
+  return get_uuid().str();
 }
 
 
 CubeType Ddosmitigator::getType(){
   // This method retrieves the type value.
-  return Cube::get_type();
+  return get_type();
 }
 
 
 DdosmitigatorLoglevelEnum Ddosmitigator::getLoglevel(){
   // This method retrieves the loglevel value.
-    switch(Cube::get_log_level()){
+    switch(get_log_level()){
       case polycube::LogLevel::TRACE:
         return DdosmitigatorLoglevelEnum::TRACE;
       case polycube::LogLevel::DEBUG:
@@ -60,61 +60,27 @@ void Ddosmitigator::setLoglevel(const DdosmitigatorLoglevelEnum &value){
   // This method sets the loglevel value.
     switch(value){
       case DdosmitigatorLoglevelEnum::TRACE:
-        Cube::set_log_level(polycube::LogLevel::TRACE);
+        set_log_level(polycube::LogLevel::TRACE);
         break;
       case DdosmitigatorLoglevelEnum::DEBUG:
-        Cube::set_log_level(polycube::LogLevel::DEBUG);
+        set_log_level(polycube::LogLevel::DEBUG);
         break;
       case DdosmitigatorLoglevelEnum::INFO:
-        Cube::set_log_level(polycube::LogLevel::INFO);
+        set_log_level(polycube::LogLevel::INFO);
         break;
       case DdosmitigatorLoglevelEnum::WARN:
-        Cube::set_log_level(polycube::LogLevel::WARN);
+        set_log_level(polycube::LogLevel::WARN);
         break;
       case DdosmitigatorLoglevelEnum::ERR:
-        Cube::set_log_level(polycube::LogLevel::ERR);
+        set_log_level(polycube::LogLevel::ERR);
         break;
       case DdosmitigatorLoglevelEnum::CRITICAL:
-        Cube::set_log_level(polycube::LogLevel::CRITICAL);
+        set_log_level(polycube::LogLevel::CRITICAL);
         break;
       case DdosmitigatorLoglevelEnum::OFF:
-        Cube::set_log_level(polycube::LogLevel::OFF);
+        set_log_level(polycube::LogLevel::OFF);
         break;
     }
-}
-
-std::shared_ptr<Ports> Ddosmitigator::getPorts(const std::string &name){
-  return Ports::getEntry(*this, name);
-}
-
-std::vector<std::shared_ptr<Ports>> Ddosmitigator::getPortsList(){
-  return Ports::get(*this);
-}
-
-void Ddosmitigator::addPorts(const std::string &name, const PortsJsonObject &conf){
-  Ports::create(*this, name, conf);
-}
-
-void Ddosmitigator::addPortsList(const std::vector<PortsJsonObject> &conf){
-  for(auto &i : conf){
-    std::string name_ = i.getName();
-    Ports::create(*this, name_,  i);
-  }
-}
-
-void Ddosmitigator::replacePorts(const std::string &name, const PortsJsonObject &conf){
-  Ports::removeEntry(*this, name);
-  std::string name_ = conf.getName();
-  Ports::create(*this, name_, conf);
-
-}
-
-void Ddosmitigator::delPorts(const std::string &name){
-  Ports::removeEntry(*this, name);
-}
-
-void Ddosmitigator::delPortsList(){
-  Ports::remove(*this);
 }
 
 std::shared_ptr<Stats> Ddosmitigator::getStats(){

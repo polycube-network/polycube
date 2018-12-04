@@ -34,13 +34,7 @@ DdosmitigatorJsonObject::DdosmitigatorJsonObject() {
   m_loglevel = DdosmitigatorLoglevelEnum::INFO;
   m_loglevelIsSet = false;
 
-  m_portsIsSet = false;
-
   m_statsIsSet = false;
-
-  m_activePortIsSet = false;
-
-  m_redirectPortIsSet = false;
 
   m_blacklistSrcIsSet = false;
 
@@ -89,25 +83,8 @@ nlohmann::json DdosmitigatorJsonObject::toJson() const {
     val["loglevel"] = DdosmitigatorLoglevelEnum_to_string(m_loglevel);
   }
 
-  {
-    nlohmann::json jsonArray;
-    for (auto& item : m_ports) {
-      jsonArray.push_back(JsonObjectBase::toJson(item));
-    }
-
-    if (jsonArray.size() > 0) {
-      val["ports"] = jsonArray;
-    }
-  }
   if (m_statsIsSet) {
     val["stats"] = JsonObjectBase::toJson(m_stats);
-  }
-  if (m_activePortIsSet) {
-    val["active-port"] = m_activePort;
-  }
-
-  if (m_redirectPortIsSet) {
-    val["redirect-port"] = m_redirectPort;
   }
 
   {
@@ -160,15 +137,6 @@ void DdosmitigatorJsonObject::fromJson(nlohmann::json& val) {
     setLoglevel(string_to_DdosmitigatorLoglevelEnum(val.at("loglevel")));
   }
 
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
 
   if (val.find("stats") != val.end()) {
 
@@ -178,14 +146,6 @@ void DdosmitigatorJsonObject::fromJson(nlohmann::json& val) {
       newItem.fromJson(val["stats"]);
       setStats(newItem);
     }
-  }
-
-  if (val.find("active-port") != val.end()) {
-    setActivePort(val.at("active-port"));
-  }
-
-  if (val.find("redirect-port") != val.end()) {
-    setRedirectPort(val.at("redirect-port"));
   }
 
   m_blacklistSrc.clear();
@@ -239,11 +199,6 @@ nlohmann::json DdosmitigatorJsonObject::helpElements() {
   val["loglevel"]["simpletype"] = "string";
   val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
   val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "leaf"; // Suppose that type is leaf
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
   val["stats"]["name"] = "stats";
   val["stats"]["type"] = "leaf"; // Suppose that type is leaf
   val["stats"]["description"] = R"POLYCUBE()POLYCUBE";
@@ -294,10 +249,6 @@ nlohmann::json DdosmitigatorJsonObject::helpWritableLeafs() {
 nlohmann::json DdosmitigatorJsonObject::helpComplexElements() {
   nlohmann::json val = nlohmann::json::object();
 
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
   val["stats"]["name"] = "stats";
   val["stats"]["type"] = "complex";
   val["stats"]["description"] = R"POLYCUBE()POLYCUBE";
@@ -472,24 +423,6 @@ DdosmitigatorLoglevelEnum DdosmitigatorJsonObject::string_to_DdosmitigatorLoglev
         return polycube::LogLevel::OFF;
     }
   }
-const std::vector<PortsJsonObject>& DdosmitigatorJsonObject::getPorts() const{
-  return m_ports;
-}
-
-void DdosmitigatorJsonObject::addPorts(PortsJsonObject value) {
-  m_ports.push_back(value);
-}
-
-
-bool DdosmitigatorJsonObject::portsIsSet() const {
-  return m_portsIsSet;
-}
-
-void DdosmitigatorJsonObject::unsetPorts() {
-  m_portsIsSet = false;
-}
-
-
 
 StatsJsonObject DdosmitigatorJsonObject::getStats() const {
   return m_stats;
@@ -507,46 +440,6 @@ bool DdosmitigatorJsonObject::statsIsSet() const {
 void DdosmitigatorJsonObject::unsetStats() {
   m_statsIsSet = false;
 }
-
-
-
-std::string DdosmitigatorJsonObject::getActivePort() const {
-  return m_activePort;
-}
-
-void DdosmitigatorJsonObject::setActivePort(std::string value) {
-  m_activePort = value;
-  m_activePortIsSet = true;
-}
-
-bool DdosmitigatorJsonObject::activePortIsSet() const {
-  return m_activePortIsSet;
-}
-
-void DdosmitigatorJsonObject::unsetActivePort() {
-  m_activePortIsSet = false;
-}
-
-
-
-std::string DdosmitigatorJsonObject::getRedirectPort() const {
-  return m_redirectPort;
-}
-
-void DdosmitigatorJsonObject::setRedirectPort(std::string value) {
-  m_redirectPort = value;
-  m_redirectPortIsSet = true;
-}
-
-bool DdosmitigatorJsonObject::redirectPortIsSet() const {
-  return m_redirectPortIsSet;
-}
-
-void DdosmitigatorJsonObject::unsetRedirectPort() {
-  m_redirectPortIsSet = false;
-}
-
-
 
 const std::vector<BlacklistSrcJsonObject>& DdosmitigatorJsonObject::getBlacklistSrc() const{
   return m_blacklistSrc;

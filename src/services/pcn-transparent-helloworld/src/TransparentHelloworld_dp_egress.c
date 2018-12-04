@@ -22,9 +22,9 @@ enum {
 };
 
 enum {
-  DROP,     // drop packet
-  PASS,     // let packet go
-  SLOWPATH, // send packet to slowpath
+  DROP,      // drop packet
+  PASS,      // let packet go
+  SLOWPATH,  // send packet to slowpath
 };
 
 BPF_ARRAY(action_map, uint8_t, 1);
@@ -38,8 +38,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
- // what action should be performed in the packet?
-  switch(*action) {
+  // what action should be performed in the packet?
+  switch (*action) {
   case DROP:
     pcn_log(ctx, LOG_DEBUG, "Egress: dropping packet");
     return RX_DROP;

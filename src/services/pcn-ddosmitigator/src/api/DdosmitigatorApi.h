@@ -29,7 +29,6 @@
 #include "BlacklistDstJsonObject.h"
 #include "BlacklistSrcJsonObject.h"
 #include "DdosmitigatorJsonObject.h"
-#include "PortsJsonObject.h"
 #include "StatsJsonObject.h"
 #include <vector>
 
@@ -57,16 +56,11 @@ class  DdosmitigatorApi : public ManagementInterface {
   void create_ddosmitigator_blacklist_src_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_ddosmitigator_blacklist_src_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_ddosmitigator_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_ddosmitigator_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_ddosmitigator_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_ddosmitigator_blacklist_dst_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_ddosmitigator_blacklist_dst_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_ddosmitigator_blacklist_src_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_ddosmitigator_blacklist_src_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_ddosmitigator_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_ddosmitigator_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_ddosmitigator_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_active_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_blacklist_dst_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_blacklist_dst_drop_pkts_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_blacklist_dst_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -76,12 +70,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   void read_ddosmitigator_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_redirect_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_stats_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_stats_pkts_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_stats_pps_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -92,9 +80,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   void replace_ddosmitigator_blacklist_src_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_ddosmitigator_blacklist_src_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_ddosmitigator_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_ddosmitigator_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_ddosmitigator_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_ddosmitigator_active_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_ddosmitigator_blacklist_dst_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_ddosmitigator_blacklist_dst_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_ddosmitigator_blacklist_src_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -102,10 +87,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   void update_ddosmitigator_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_ddosmitigator_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_ddosmitigator_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_ddosmitigator_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_ddosmitigator_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_ddosmitigator_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_ddosmitigator_redirect_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
 
   void read_ddosmitigator_blacklist_dst_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_blacklist_dst_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -113,8 +94,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   void read_ddosmitigator_blacklist_src_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_ddosmitigator_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_ddosmitigator_stats_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
 
 
@@ -168,25 +147,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   /// <param name="value">ddosmitigatorbody object</param>
   virtual void create_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value) = 0;
   /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
   /// Delete blacklist-dst by ID
   /// </summary>
   /// <remarks>
@@ -228,31 +188,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   /// </remarks>
   /// <param name="name">ID of name</param>
   virtual void delete_ddosmitigator_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_ddosmitigator_ports_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read active-port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: active-port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_ddosmitigator_active_port_by_id(const std::string &name) = 0;
   /// <summary>
   /// Read blacklist-dst by ID
   /// </summary>
@@ -331,59 +266,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   /// </remarks>
   /// <param name="name">ID of name</param>
   virtual DdosmitigatorLoglevelEnum read_ddosmitigator_loglevel_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_ddosmitigator_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_ddosmitigator_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_ddosmitigator_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read redirect-port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: redirect-port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_ddosmitigator_redirect_port_by_id(const std::string &name) = 0;
   /// <summary>
   /// Read stats by ID
   /// </summary>
@@ -472,34 +354,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   /// <param name="value">ddosmitigatorbody object</param>
   virtual void replace_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value) = 0;
   /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update active-port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: active-port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Port where the traffic is received</param>
-  virtual void update_ddosmitigator_active_port_by_id(const std::string &name, const std::string &value) = 0;
-  /// <summary>
   /// Update blacklist-dst by ID
   /// </summary>
   /// <remarks>
@@ -563,44 +417,6 @@ class  DdosmitigatorApi : public ManagementInterface {
   /// <param name="name">ID of name</param>
   /// <param name="value">Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)</param>
   virtual void update_ddosmitigator_loglevel_by_id(const std::string &name, const DdosmitigatorLoglevelEnum &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update redirect-port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: redirect-port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">If set, this will be the port used to redirect traffic (instead of PASS it to STACK)</param>
-  virtual void update_ddosmitigator_redirect_port_by_id(const std::string &name, const std::string &value) = 0;
 };
 
 }

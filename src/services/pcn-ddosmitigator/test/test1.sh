@@ -4,15 +4,30 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function cleanup {
   set +e
+  polycubectl detach d1 veth1
   polycubectl ddosmitigator del d1
-  delete_veth 2
+  sudo ip link del veth1
+  sudo ip netns del ns1
 }
 trap cleanup EXIT
 
 set -e
 set -x
 
-create_veth 2
+#                      ns1
+#                  +-----------+
+# veth1 <----------|-> veth1_  |
+#   ^              +-----------+
+#   |
+#  ddos
+
+sudo ip netns add ns1
+sudo ip link add veth1_ type veth peer name veth1
+sudo ip link set veth1_ netns ns1
+sudo ip netns exec ns1 ip link set dev veth1_ up
+sudo ip link set dev veth1 up
+sudo ip netns exec ns1 ifconfig veth1_ 10.0.0.1/24
+sudo ifconfig veth1 10.0.0.2/24
 
 TYPE="TC"
 
@@ -23,16 +38,10 @@ fi
 # use ddosmitigator in REDIRECT mode and forward traffic between interfaces
 
 polycubectl ddosmitigator add d1 type=$TYPE
+polycubectl attach d1 veth1
 
 #optional debug option, if disabled increase prerformance
 polycubectl ddosmitigator d1 set loglevel=INFO
-
-polycubectl ddosmitigator d1 ports add port1
-polycubectl connect d1:port1 veth1
-polycubectl ddosmitigator d1 ports add port2
-polycubectl connect d1:port2 veth2
-
-polycubectl ddosmitigator d1 set redirect-port="port2"
 
 echo "Show statistics before ping and blacklists"
 polycubectl ddosmitigator d1 stats show
