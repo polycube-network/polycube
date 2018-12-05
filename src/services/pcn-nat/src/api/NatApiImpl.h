@@ -29,7 +29,6 @@
 #include "../Nat.h"
 
 #include "NattingTableJsonObject.h"
-#include "PortsJsonObject.h"
 #include "RuleJsonObject.h"
 #include "RuleDnatJsonObject.h"
 #include "RuleDnatAppendInputJsonObject.h"
@@ -64,8 +63,6 @@ public:
   void create_nat_by_id(const std::string &name, const NatJsonObject &value);
   void create_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableJsonObject &value);
   void create_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value);
-  void create_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void create_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void create_nat_rule_by_id(const std::string &name, const RuleJsonObject &value);
   RuleDnatAppendOutputJsonObject create_nat_rule_dnat_append_by_id(const std::string &name, const RuleDnatAppendInputJsonObject &value);
   void create_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &value);
@@ -85,8 +82,6 @@ public:
   void delete_nat_by_id(const std::string &name);
   void delete_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
   void delete_nat_natting_table_list_by_id(const std::string &name);
-  void delete_nat_ports_by_id(const std::string &name, const std::string &portsName);
-  void delete_nat_ports_list_by_id(const std::string &name);
   void delete_nat_rule_by_id(const std::string &name);
   void delete_nat_rule_dnat_by_id(const std::string &name);
   void delete_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id);
@@ -108,14 +103,6 @@ public:
   std::vector<NattingTableJsonObject> read_nat_natting_table_list_by_id(const std::string &name);
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_natting_table_list_by_id_get_list(const std::string &name);
   NattingTableOriginatingRuleEnum read_nat_natting_table_originating_rule_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
-  PortsJsonObject read_nat_ports_by_id(const std::string &name, const std::string &portsName);
-  std::string read_nat_ports_ip_by_id(const std::string &name, const std::string &portsName);
-  std::vector<PortsJsonObject> read_nat_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_ports_list_by_id_get_list(const std::string &name);
-  std::string read_nat_ports_peer_by_id(const std::string &name, const std::string &portsName);
-  PortsStatusEnum read_nat_ports_status_by_id(const std::string &name, const std::string &portsName);
-  PortsTypeEnum read_nat_ports_type_by_id(const std::string &name, const std::string &portsName);
-  std::string read_nat_ports_uuid_by_id(const std::string &name, const std::string &portsName);
   RuleJsonObject read_nat_rule_by_id(const std::string &name);
   RuleDnatJsonObject read_nat_rule_dnat_by_id(const std::string &name);
   RuleDnatEntryJsonObject read_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id);
@@ -145,8 +132,6 @@ public:
   void replace_nat_by_id(const std::string &name, const NatJsonObject &value);
   void replace_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableJsonObject &value);
   void replace_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value);
-  void replace_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void replace_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void replace_nat_rule_by_id(const std::string &name, const RuleJsonObject &value);
   void replace_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &value);
   void replace_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id, const RuleDnatEntryJsonObject &value);
@@ -166,10 +151,6 @@ public:
   void update_nat_natting_table_external_port_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const uint16_t &value);
   void update_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value);
   void update_nat_natting_table_originating_rule_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableOriginatingRuleEnum &value);
-  void update_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void update_nat_ports_ip_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-  void update_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_nat_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
   void update_nat_rule_by_id(const std::string &name, const RuleJsonObject &value);
   void update_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &value);
   void update_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id, const RuleDnatEntryJsonObject &value);

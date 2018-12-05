@@ -4,7 +4,7 @@ module nat {
     prefix "nat";
 
     import polycube-base { prefix "polycube-base"; }
-    import polycube-standard-base { prefix "polycube-standard-base"; }
+    import polycube-transparent-base { prefix "polycube-transparent-base"; }
 
     import ietf-inet-types { prefix "inet"; }
 
@@ -16,25 +16,7 @@ module nat {
     polycube-base:service-name "nat";
     polycube-base:service-min-kernel-version "4.14.0";
 
-    uses "polycube-standard-base:standard-base-yang-module" {
-        augment ports {
-            leaf type {
-                type enumeration {
-                    enum EXTERNAL { description "External interface of the NAT"; }
-                    enum INTERNAL { description "Internal interface of the NAT"; }
-                }
-                mandatory true;
-                config false;
-                description "Type of the NAT interface (e.g., EXTERNAL or INTERNAL)";
-            }
-
-            leaf ip {
-                type inet:ipv4-address;
-                description "IP address of the port. If the port is EXTERNAL this is the external ip address.";
-                polycube-base:cli-example "9.45.21.4";
-            }
-        }
-    }
+    uses "polycube-transparent-base:transparent-base-yang-module";
 
     grouping snat-rule {
         leaf internal-net {

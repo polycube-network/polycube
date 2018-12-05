@@ -43,8 +43,6 @@ void NatApi::setup_routes() {
   Routes::Post(router, base + ":name/", Routes::bind(&NatApi::create_nat_by_id_handler, this));
   Routes::Post(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::create_nat_natting_table_by_id_handler, this));
   Routes::Post(router, base + ":name/natting-table/", Routes::bind(&NatApi::create_nat_natting_table_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::create_nat_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&NatApi::create_nat_ports_list_by_id_handler, this));
   Routes::Post(router, base + ":name/rule/", Routes::bind(&NatApi::create_nat_rule_by_id_handler, this));
   Routes::Post(router, base + ":name/rule/dnat/append/", Routes::bind(&NatApi::create_nat_rule_dnat_append_by_id_handler, this));
   Routes::Post(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::create_nat_rule_dnat_by_id_handler, this));
@@ -64,8 +62,6 @@ void NatApi::setup_routes() {
   Routes::Delete(router, base + ":name/", Routes::bind(&NatApi::delete_nat_by_id_handler, this));
   Routes::Delete(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::delete_nat_natting_table_by_id_handler, this));
   Routes::Delete(router, base + ":name/natting-table/", Routes::bind(&NatApi::delete_nat_natting_table_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::delete_nat_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&NatApi::delete_nat_ports_list_by_id_handler, this));
   Routes::Delete(router, base + ":name/rule/", Routes::bind(&NatApi::delete_nat_rule_by_id_handler, this));
   Routes::Delete(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::delete_nat_rule_dnat_by_id_handler, this));
   Routes::Delete(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::delete_nat_rule_dnat_entry_by_id_handler, this));
@@ -85,13 +81,6 @@ void NatApi::setup_routes() {
   Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-port/", Routes::bind(&NatApi::read_nat_natting_table_external_port_by_id_handler, this));
   Routes::Get(router, base + ":name/natting-table/", Routes::bind(&NatApi::read_nat_natting_table_list_by_id_handler, this));
   Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/originating-rule/", Routes::bind(&NatApi::read_nat_natting_table_originating_rule_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::read_nat_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/ip/", Routes::bind(&NatApi::read_nat_ports_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&NatApi::read_nat_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&NatApi::read_nat_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&NatApi::read_nat_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/type/", Routes::bind(&NatApi::read_nat_ports_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&NatApi::read_nat_ports_uuid_by_id_handler, this));
   Routes::Get(router, base + ":name/rule/", Routes::bind(&NatApi::read_nat_rule_by_id_handler, this));
   Routes::Get(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::read_nat_rule_dnat_by_id_handler, this));
   Routes::Get(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_by_id_handler, this));
@@ -118,8 +107,6 @@ void NatApi::setup_routes() {
   Routes::Put(router, base + ":name/", Routes::bind(&NatApi::replace_nat_by_id_handler, this));
   Routes::Put(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::replace_nat_natting_table_by_id_handler, this));
   Routes::Put(router, base + ":name/natting-table/", Routes::bind(&NatApi::replace_nat_natting_table_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::replace_nat_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&NatApi::replace_nat_ports_list_by_id_handler, this));
   Routes::Put(router, base + ":name/rule/", Routes::bind(&NatApi::replace_nat_rule_by_id_handler, this));
   Routes::Put(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::replace_nat_rule_dnat_by_id_handler, this));
   Routes::Put(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::replace_nat_rule_dnat_entry_by_id_handler, this));
@@ -139,10 +126,6 @@ void NatApi::setup_routes() {
   Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-port/", Routes::bind(&NatApi::update_nat_natting_table_external_port_by_id_handler, this));
   Routes::Patch(router, base + ":name/natting-table/", Routes::bind(&NatApi::update_nat_natting_table_list_by_id_handler, this));
   Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/originating-rule/", Routes::bind(&NatApi::update_nat_natting_table_originating_rule_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::update_nat_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/ip/", Routes::bind(&NatApi::update_nat_ports_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&NatApi::update_nat_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&NatApi::update_nat_ports_peer_by_id_handler, this));
   Routes::Patch(router, base + ":name/rule/", Routes::bind(&NatApi::update_nat_rule_by_id_handler, this));
   Routes::Patch(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::update_nat_rule_dnat_by_id_handler, this));
   Routes::Patch(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::update_nat_rule_dnat_entry_by_id_handler, this));
@@ -169,8 +152,6 @@ void NatApi::setup_routes() {
   Routes::Options(router, base + "", Routes::bind(&NatApi::read_nat_list_by_id_help, this));
   Routes::Options(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::read_nat_natting_table_by_id_help, this));
   Routes::Options(router, base + ":name/natting-table/", Routes::bind(&NatApi::read_nat_natting_table_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&NatApi::read_nat_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&NatApi::read_nat_ports_list_by_id_help, this));
   Routes::Options(router, base + ":name/rule/", Routes::bind(&NatApi::read_nat_rule_by_id_help, this));
   Routes::Options(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::read_nat_rule_dnat_by_id_help, this));
   Routes::Options(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_by_id_help, this));
@@ -264,55 +245,6 @@ void NatApi::create_nat_natting_table_list_by_id_handler(
       value.push_back(a);
     }
     create_nat_natting_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_nat_ports_list_by_id(name, value);
     response.send(polycube::service::Http::Code::Created);
   } catch(const std::exception &e) {
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
@@ -733,37 +665,6 @@ void NatApi::delete_nat_natting_table_list_by_id_handler(
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
 }
-void NatApi::delete_nat_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-    delete_nat_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
 void NatApi::delete_nat_rule_by_id_handler(
   const polycube::service::Rest::Request &request,
   polycube::service::HttpHandleResponse &response) {
@@ -1100,147 +1001,6 @@ void NatApi::read_nat_natting_table_originating_rule_by_id_handler(
     auto x = read_nat_natting_table_originating_rule_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
     nlohmann::json response_body;
     response_body = NattingTableJsonObject::NattingTableOriginatingRuleEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_ip_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_list_by_id(name);
-    nlohmann::json response_body;
-    for (auto &i : x) {
-      response_body += i.toJson();
-    }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_peer_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_status_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_type_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = PortsJsonObject::PortsTypeEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_ports_uuid_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x;
     response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
 
   } catch(const std::exception &e) {
@@ -1781,55 +1541,6 @@ void NatApi::replace_nat_natting_table_list_by_id_handler(
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
 }
-void NatApi::replace_nat_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::replace_nat_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_nat_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
 void NatApi::replace_nat_rule_by_id_handler(
   const polycube::service::Rest::Request &request,
   polycube::service::HttpHandleResponse &response) {
@@ -2269,95 +1980,6 @@ void NatApi::update_nat_natting_table_originating_rule_by_id_handler(
     nlohmann::json request_body = nlohmann::json::parse(request.body());
     value_ = NattingTableJsonObject::string_to_NattingTableOriginatingRuleEnum(request_body);
     update_nat_natting_table_originating_rule_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_nat_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_ports_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_ports_ip_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_nat_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_ports_peer_by_id(name, portsName, value);
     response.send(polycube::service::Http::Code::Ok);
   } catch(const std::exception &e) {
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
@@ -2970,88 +2592,6 @@ void NatApi::read_nat_natting_table_list_by_id_help(
     val["commands"] = {"add", "del", "show"};
     val["params"] = NattingTableJsonObject::helpKeys();
     val["elements"] = read_nat_natting_table_list_by_id_get_list(name);
-  break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
-  }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
-}
-
-void NatApi::read_nat_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  using polycube::service::HelpType;
-  nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
-  }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
-}
-
-void NatApi::read_nat_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
-  nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_nat_ports_list_by_id_get_list(name);
-  break;
-
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_nat_ports_list_by_id_get_list(name);
-  break;
-
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_nat_ports_list_by_id_get_list(name);
   break;
 
   case HelpType::NO_HELP:

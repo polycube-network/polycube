@@ -16,7 +16,6 @@ add_library(pcn-nat SHARED
   ${API_SOURCES}
   ${SRC_SOURCES}
   NattingTable.cpp
-  Ports.cpp
   Rule.cpp
   RuleDnat.cpp
   RuleDnatEntry.cpp
@@ -30,6 +29,9 @@ add_library(pcn-nat SHARED
 
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-nat Nat_dp.c nat_code)
+load_file_as_variable(pcn-nat Nat_dp_common.c nat_code_common)
+load_file_as_variable(pcn-nat Nat_dp_ingress.c nat_code_ingress)
+load_file_as_variable(pcn-nat Nat_dp_egress.c nat_code_egress)
 
 target_link_libraries(pcn-nat
   polycube

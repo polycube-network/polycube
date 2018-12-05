@@ -2,7 +2,6 @@ NAT
 ===
 
 This service implements a NAT, network address translation working at layer 3. In particular, the service can remap source and destination IP addresses and source and destination ports in IP datagram packet headers while they are transit across a traffic routing device.
-This is a transparent NAT, so it requires to be used with a router.
 
 Features
 --------
@@ -18,23 +17,40 @@ Limitations
 - Unsupported IPv6
 - Unsupported ARP: the ARP messages will be forwarded without processing them
 - Incremental external port choice, starting from 1024 each time 65535 is reached
-- The IP address of the EXTERNAL port must be the same as the IP address of the router port connected to the nat
 
 How to use
 ----------
 
+The nat is a transparent service, it can be attached to a cube port or to a netdev.
+The nat is intended to be used with a router, it could not work when attached to different services.
+
+Attached to a router
+^^^^^^^^^^^^^^^^^^^^
+
+When a nat instance is attached to a router the external IP is automatically configured.
+
 ::
 
-    #create nat
+    # create nat
     polycubectl nat add nat1
 
-    #add ports
-    polycubectl nat1 ports add to_router type=INTERNAL
-    polycubectl nat1 ports add to_internet type=EXTERNAL ip=external_ip
+    # attach to a router port (it should exists)
+    polycubectl attach nat1 r1:port1
 
-    #connect ports
-    polycubectl connect nat1:to_router router1:to_nat
-    polycubectl connect nat1:to_internet veth1
+
+Attached to a netdev
+^^^^^^^^^^^^^^^^^^^^
+
+::
+
+    # create nat
+    polycubectl nat add nat1
+
+    # attach to a router port (it should alraedy exist)
+    polycubectl attach nat1 eth0
+
+    # configure external IP manually
+    # TODO: there is not an API for it!
 
 
 Rules
@@ -61,7 +77,7 @@ Masquerade
 
 Masquerade can be either enabled or disabled.
 
-When enabled, the source IP address of the packet is set to the IP of the EXTERNAL port of the NAT, and a new source port is assigned.
+When enabled, the source IP address of the packet is set to the external IP of the NAT, and a new source port is assigned.
 
 To enable masquerade:
 

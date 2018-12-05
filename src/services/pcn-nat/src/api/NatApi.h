@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "NattingTableJsonObject.h"
-#include "PortsJsonObject.h"
 #include "RuleJsonObject.h"
 #include "RuleDnatJsonObject.h"
 #include "RuleDnatAppendInputJsonObject.h"
@@ -69,8 +68,6 @@ class  NatApi : public ManagementInterface {
   void create_nat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_nat_natting_table_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_nat_natting_table_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_nat_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_nat_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_nat_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_nat_rule_dnat_append_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void create_nat_rule_dnat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -90,8 +87,6 @@ class  NatApi : public ManagementInterface {
   void delete_nat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_nat_natting_table_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_nat_natting_table_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_nat_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_nat_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_nat_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_nat_rule_dnat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void delete_nat_rule_dnat_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -111,13 +106,6 @@ class  NatApi : public ManagementInterface {
   void read_nat_natting_table_external_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_natting_table_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_natting_table_originating_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_dnat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_dnat_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -144,8 +132,6 @@ class  NatApi : public ManagementInterface {
   void replace_nat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_nat_natting_table_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_nat_natting_table_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_nat_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_nat_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_nat_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_nat_rule_dnat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void replace_nat_rule_dnat_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -165,10 +151,6 @@ class  NatApi : public ManagementInterface {
   void update_nat_natting_table_external_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_nat_natting_table_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_nat_natting_table_originating_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_nat_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_nat_ports_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_nat_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_nat_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_nat_rule_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_nat_rule_dnat_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void update_nat_rule_dnat_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -195,8 +177,6 @@ class  NatApi : public ManagementInterface {
   void read_nat_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_natting_table_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_natting_table_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_nat_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_dnat_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
   void read_nat_rule_dnat_entry_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
@@ -249,25 +229,6 @@ class  NatApi : public ManagementInterface {
   /// <param name="name">ID of name</param>
   /// <param name="value">natting-tablebody object</param>
   virtual void create_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
   /// <summary>
   /// Create rule by ID
   /// </summary>
@@ -442,23 +403,6 @@ class  NatApi : public ManagementInterface {
   /// </remarks>
   /// <param name="name">ID of name</param>
   virtual void delete_nat_natting_table_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_nat_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_nat_ports_list_by_id(const std::string &name) = 0;
   /// <summary>
   /// Delete rule by ID
   /// </summary>
@@ -635,69 +579,6 @@ class  NatApi : public ManagementInterface {
   /// <param name="internalDport">ID of internal-dport</param>
   /// <param name="proto">ID of proto</param>
   virtual NattingTableOriginatingRuleEnum read_nat_natting_table_originating_rule_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_nat_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_nat_ports_ip_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_nat_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_nat_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_nat_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsTypeEnum read_nat_ports_type_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_nat_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
   /// <summary>
   /// Read rule by ID
   /// </summary>
@@ -930,25 +811,6 @@ class  NatApi : public ManagementInterface {
   /// <param name="value">natting-tablebody object</param>
   virtual void replace_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value) = 0;
   /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
   /// Replace rule by ID
   /// </summary>
   /// <remarks>
@@ -1141,45 +1003,6 @@ class  NatApi : public ManagementInterface {
   /// <param name="proto">ID of proto</param>
   /// <param name="value">The set of rules that created this mapping</param>
   virtual void update_nat_natting_table_originating_rule_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableOriginatingRuleEnum &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_nat_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">IP address of the port. If the port is EXTERNAL this is the external ip address.</param>
-  virtual void update_nat_ports_ip_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_nat_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_nat_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
   /// <summary>
   /// Update rule by ID
   /// </summary>
