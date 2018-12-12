@@ -3,11 +3,6 @@
 	url = https://github.com/polycube-network/bcc.git
 	ignore = untracked
 	branch = polycube
-[submodule "src/libs/iptables"]
-	path = src/components/iptables/iptables
-	url = https://github.com/polycube-network/iptables
-	ignore = untracked
-	branch = polycube
 [submodule "src/components/iptables/iptables"]
 	path = src/components/iptables/iptables
 	url = https://github.com/polycube-network/iptables.git
