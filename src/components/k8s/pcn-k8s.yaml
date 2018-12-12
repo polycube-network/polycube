@@ -1,0 +1,223 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: polycube-config
+  namespace: kube-system
+data:
+  # TODO: certificate and key?
+  etcd_url: "http://127.0.0.1:30901"
+
+  # Mtu to be configured in the pods.
+  # If the all nodes are running on the same datacender, 1500 can be used
+  # otherwise 1450 has to be used due to the tunneling overhead
+  mtu: "1450"
+
+  # ServiceClusterIP range, should be the same as "service-cluster-ip-range"
+  # passed to the api server
+  # TODO: can this value be retrieved from the api server?
+  serviceClusterIPRange: "10.96.0.0/12"
+
+  # Range used for node port services, if shoudl modify it if you specified
+  # the "--service-node-port-range" flag. Defailt is "30000-32767"
+  # TODO: can this value be retrieved from the api server?
+  serviceNodePortRange: "30000-32767"
+
+  # range used to perform SNAT on the pods when contacting services.
+  # choose any range that does not create conflict in your nodes.
+  # This range MUST have the same size of the "pod-network-cidr".
+  vPodsRange: "10.10.0.0/16"
+
+  # range used for the VTEPs on the overlay network. Choose any
+  # non conflicting /16 range.
+  # This is a temporary workaroud and should be fixed in the near future.
+  vtepsRange: "10.18.0.0/16"
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: polycube
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: polycube
+        kubernetes.io/cluster-service: "true"
+      annotations:
+        # Mark polycube as critical, gets priority
+        # https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: >-
+          [{"key":"dedicated","operator":"Equal","value":"master","effect":"NoSchedule"}]
+    spec:
+      #serviceAccountName: polycube
+      containers:
+      - name: polycubed
+        image: polycubenetwork/k8s-pod-network:latest
+        imagePullPolicy: Always
+        command: ["polycubed",
+          "--loglevel=DEBUG",
+          "--addr=0.0.0.0",
+          "--logfile=/host/var/log/pcn_k8s"]
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - "/cni-install.sh"
+          preStop:
+            exec:
+              command:
+                - "/cni-uninstall.sh"
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POLYCUBE_MTU
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: mtu
+          - name: POLYCUBE_VPODS_RANGE
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: vPodsRange
+        volumeMounts:
+          - name: lib-modules
+            mountPath: /lib/modules
+          - name: usr-src
+            mountPath: /usr/src
+          - name: cni-path
+            mountPath: /host/opt/cni/bin
+          - name: etc-cni-netd
+            mountPath: /host/etc/cni/net.d
+          - name: var-log
+            mountPath: /host/var/log
+          - name: kubeconfig
+            mountPath: /var/lib/pcn_k8s/
+        securityContext:
+          privileged: true
+        ports:
+          - name: polycubed
+            containerPort: 9000
+        terminationMessagePolicy: FallbackToLogsOnError
+      - name: polycube-k8s
+        image: polycubenetwork/k8s-pod-network:latest
+        imagePullPolicy: Always
+        command: ["/pcn_k8s"]
+        lifecycle:
+          preStop:
+            exec:
+              command:
+                - "/cleanup.sh"
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POLYCUBE_MTU
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: mtu
+          - name: POLYCUBE_VPODS_RANGE
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: vPodsRange
+          - name: POLYCUBE_VTEPS_RANGE
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: vtepsRange
+          - name: POLYCUBE_ETCD_URL
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: etcd_url
+          - name: POLYCUBE_SERVICE_CLUSTERIP_RANGE
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: serviceClusterIPRange
+          - name: POLYCUBE_SERVICE_NODEPORT_RANGE
+            valueFrom:
+              configMapKeyRef:
+                name: polycube-config
+                key: serviceNodePortRange
+        volumeMounts:
+          - name: netns
+            mountPath: /host/var/run/netns
+          - name: proc
+            mountPath: /host/proc/
+          - name: kubeconfig
+            mountPath: /var/lib/pcn_k8s/
+        securityContext:
+          privileged: true
+        terminationMessagePolicy: FallbackToLogsOnError
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /polycube/v1/k8switch0/
+            port: 9000
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 20
+      hostNetwork: true
+      #restartPolicy: Never
+      volumes:
+        - name: lib-modules
+          hostPath:
+            path: /lib/modules
+        - name: usr-src
+          hostPath:
+            path: /usr/src
+        - name: cni-path
+          hostPath:
+            path: /opt/cni/bin
+        - name: etc-cni-netd
+          hostPath:
+            path: /etc/cni/net.d
+        - name: var-log
+          hostPath:
+            path: /var/log
+        - name: netns
+          hostPath:
+            path: /var/run/netns
+        - name: proc
+          hostPath:
+            path: /proc/
+        - name: kubeconfig
+          configMap:
+            name: kube-proxy
+            #namespace: kube-public
+      imagePullSecrets:
+      - name: mvbdockersecret
+      tolerations:
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+      - key: CriticalAddonsOnly
+        operator: "Exists"
+---
+# give access to api to polycube
+# TODO: this access should be more granular
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: polycube-rbac
+subjects:
+  - kind: ServiceAccount
+    # Reference to upper's `metadata.name`
+    name: default
+    # Reference to upper's `metadata.namespace`
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

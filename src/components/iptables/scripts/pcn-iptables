@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Use this script without sudo
+
+# print polycubectl translated command
+DEBUG=false
+
+# set -x
+set +x
+
+IPTABLES=/usr/local/share/polycube/pcn-iptables/sbin/iptables
+
+OUTPUT="$(sudo $IPTABLES "$@")"
+
+if $DEBUG ; then
+    echo "$OUTPUT"
+fi
+
+found=false
+
+while read -r line; do
+    if [[ $line == *"polycubectl"* ]]; then
+        eval $line
+        found=true
+    fi
+    break
+done <<< "$OUTPUT"
+
+if ! $found ; then
+    if ! $DEBUG ; then
+        echo "$OUTPUT"
+    fi
+fi

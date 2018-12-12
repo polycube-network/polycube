@@ -1,0 +1,267 @@
+module firewall {
+  yang-version 1.1;
+  namespace "http://polycube.network/firewall";
+  prefix "firewall";
+
+  import polycube-base { prefix "basemodel"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube Firewall service";
+
+  basemodel:service-description "Firewall Service";
+  basemodel:service-version "2.0";
+  basemodel:service-name "firewall";
+  basemodel:service-min-kernel-version "4.14.0";
+
+  uses "basemodel:base-yang-module";
+
+  extension cli-example {
+    argument "value";
+    description "A sample value used by the CLI generator";
+  }
+
+  typedef action {
+    type enumeration {
+      enum DROP;
+      enum LOG;
+      enum FORWARD;
+    }
+    default DROP;
+  }
+
+  typedef conntrackstatus {
+    type enumeration {
+      enum NEW;
+      enum ESTABLISHED;
+      enum RELATED;
+      enum INVALID;
+    }
+  }
+
+
+  grouping rule-fields {
+    leaf src {
+      type string;
+      description "Source IP Address.";
+      config false;
+      firewall:cli-example "10.0.0.1/24";
+    }
+
+    leaf dst {
+      type string;
+      description "Destination IP Address.";
+      config false;
+      firewall:cli-example "10.0.0.2/24";
+    }
+
+    leaf l4proto {
+      type string;
+      config false;
+      description "Level 4 Protocol.";
+    }
+
+    leaf sport {
+      type uint16;
+      config false;
+      description "Source L4 Port";
+    }
+
+    leaf dport {
+      type uint16;
+      config false;
+      description "Destination L4 Port";
+    }
+
+    leaf tcpflags {
+      type string;
+      config false;
+      description "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.";
+      firewall:cli-example "!FIN,SYN,!RST,!ACK";
+    }
+
+    leaf conntrack {
+      type conntrackstatus;
+      config false;
+      description "Connection status (NEW, ESTABLISHED, RELATED, INVALID)";
+    }
+
+
+    leaf action {
+      type action;
+      config false;
+      description "Action if the rule matches. Default is DROP.";
+      firewall:cli-example "DROP, FORWARD, LOG";
+    }
+
+    leaf description {
+      type string;
+      config false;
+      description "Description of the rule.";
+      firewall:cli-example "This rule blocks incoming SSH connections.";
+    }
+  }
+
+  leaf ingress-port {
+    type string;
+    description "Name for the ingress port, from which arrives traffic processed by INGRESS chain (by default it's the first port of the cube)";
+  }
+
+  leaf egress-port {
+    type string;
+    description "Name for the egress port, from which arrives traffic processed by EGRESS chain (by default it's the second port of the cube)";
+  }
+
+  leaf conntrack {
+    type enumeration {
+      enum ON;
+      enum OFF;
+    }
+    description "Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.";
+  }
+
+  leaf accept-established {
+    type enumeration {
+      enum ON;
+      enum OFF;
+    }
+    description "If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.";
+  }
+
+  leaf interactive {
+    type boolean;
+    description "Interactive mode applies new rules immediately; if 'false', the command 'apply-rules' has to be used to apply all the rules at once. Default is TRUE.";
+        default true;
+  }
+
+  list session-table {
+    key "src dst l4proto sport dport";
+    config false;
+    leaf src {
+      type string;
+      config false;
+      description "Source IP";
+    }
+
+    leaf dst {
+      type string;
+      config false;
+      description "Destination IP";
+    }
+
+    leaf l4proto {
+      type string;
+      config false;
+      description "Level 4 Protocol.";
+    }
+
+
+    leaf sport {
+      type uint16;
+      description "Source Port";
+      config false;
+    }
+
+    leaf dport {
+      type uint16;
+      description "Destination";
+      config false;
+    }
+
+    leaf state {
+      type string;
+      config false;
+      description "Connection state.";
+    }
+
+    leaf eta {
+      type uint32;
+      config false;
+      description "Last packet matching the connection";
+    }
+  }
+
+  list chain {
+    key name;
+
+    leaf name {
+      type enumeration {
+        enum INGRESS;
+        enum EGRESS;
+        enum INVALID;
+      }
+      description "Chain in which the rule will be inserted. Default: INGRESS.";
+      firewall:cli-example "INGRESS, EGRESS.";
+    }
+
+    leaf default {
+      type action;
+      description "Default action if no rule matches in the ingress chain. Default is DROP.";
+      firewall:cli-example "DROP, FORWARD, LOG";
+    }
+
+    list stats {
+      key "id";
+      config false;
+      leaf id {
+        type uint32;
+        config false;
+        description "Rule Identifier";
+      }
+
+      leaf pkts {
+        type uint64;
+        description "Number of packets matching the rule";
+        config false;
+      }
+
+      leaf bytes {
+        type uint64;
+        description "Number of bytes matching the rule";
+        config false;
+      }
+
+      uses "firewall:rule-fields";
+    }
+
+    list rule {
+      key "id";
+      leaf id {
+        type uint32;
+        description "Rule Identifier";
+      }
+
+      uses "firewall:rule-fields";
+    }
+
+    action append {
+      input {
+        uses "firewall:rule-fields";
+      }
+      output {
+        leaf id {
+          type uint32;
+        }
+      }
+    }
+
+    action reset-counters {
+      description "Reset the counters to 0 for the chain.";
+      output {
+        leaf result {
+          type boolean;
+          description "True if the operation is successful";
+        }
+      }
+    }
+
+    action apply-rules {
+      description "Applies the rules when in batch mode (interactive==false)";
+      output {
+        leaf result {
+          type boolean;
+          description "True if the operation is successful";
+        }
+      }
+    }
+  }
+}

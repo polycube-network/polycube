@@ -1,0 +1,42 @@
+module simpleforwarder {
+  yang-version 1.1;
+  namespace "http://polycube.network/simpleforwarder";
+  prefix "simpleforwarder";
+
+  import polycube-base { prefix "basemodel"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube Simple Forwarder service";
+
+  basemodel:service-description "Simple Forwarder Base Service";
+  basemodel:service-version "2.0";
+  basemodel:service-name "simpleforwarder";
+  basemodel:service-min-kernel-version "4.14.0";
+
+  uses "basemodel:base-yang-module";
+
+  list actions {
+    key "inport";
+    description "Entry of the Actions table";
+    leaf inport {
+      type string;
+      mandatory true;
+      description "Ingress port";
+    }
+
+    leaf action {
+      type enumeration {
+        enum DROP;
+        enum SLOWPATH;
+        enum FORWARD;
+      }
+      mandatory true;
+      description "Action associated to the current table entry (i.e., DROP, SLOWPATH, or FORWARD; default: DROP)";
+    }
+
+    leaf outport {
+      type string;
+      description "Output port (used only when action is FORWARD)";
+    }
+  }
+}

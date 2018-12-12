@@ -1,0 +1,214 @@
+module bridge {
+  yang-version 1.1;
+  namespace "http://polycube.network/bridge";
+  prefix "bridge";
+
+  import polycube-base { prefix "basemodel"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube Bridge service";
+
+  basemodel:service-description "Bridge Service";
+  basemodel:service-version "2.0";
+  basemodel:service-name "bridge";
+  basemodel:service-min-kernel-version "4.14.0";
+
+  extension cli-example {
+    argument "value";
+    description "A sample value used by the CLI generator";
+  }
+
+  leaf aging-time {
+    type uint32;
+    units seconds;
+    default 300;
+    description "Aging time of the filtering database";
+    bridge:cli-example "300";
+  }
+
+  uses "basemodel:base-yang-module" {
+    augment ports {
+      leaf address {
+        type string;
+        description "MAC address of the port";
+        bridge:cli-example "C5:13:2D:36:27:9B";
+      }
+
+      leaf mode {
+        type enumeration {
+          enum access;
+          enum trunk;
+        }
+        default access;
+        description "Type of bridge interface: access/trunk";
+        bridge:cli-example "access";
+      }
+
+      container access {
+        description "vlan associated to a port in access mode";
+        leaf vlanid {
+          type uint32;
+          default 1;
+          description "VLAN associated with this interface";
+          bridge:cli-example "1";
+        }
+      }
+
+      container trunk {
+        list allowed {
+        description "Allowed vlans";
+          key "vlanid";
+          leaf vlanid {
+            type uint32;
+            description "Allowed vlan";
+            bridge:cli-example "1";
+          }
+        }
+
+        leaf native-vlan {
+          type uint32;
+          default 1;
+          description "VLAN that is not tagged in this trunk port";
+          bridge:cli-example "1";
+        }
+      }
+
+      list stp {
+        key "vlan";
+        description "Per-vlan Spanning Tree Protocol Port Configuration";
+        leaf vlan {
+          type uint32;
+          mandatory true;
+          description "VLAN identifier for this entry";
+          bridge:cli-example "1";
+        }
+
+        leaf state {
+          type enumeration {
+            enum disabled;
+            enum blocking;
+            enum listening;
+            enum learning;
+            enum forwarding;
+          }
+          description "STP port state";
+          config false;
+        }
+
+        leaf path-cost {
+          type uint32;
+          default 4;
+          description "STP cost associated with this interface";
+          bridge:cli-example "19";
+        }
+
+        leaf port-priority {
+          type uint32;
+          default 128;
+          description "Port priority of this interface";
+          bridge:cli-example "128";
+        }
+      }
+    }
+  }
+
+  container filtering-database {
+    list entry {
+      key "vlan address";
+      description "Entry associated with the filtering database";
+
+      leaf vlan {
+        type uint32;
+        mandatory true;
+        description "VLAN identifier";
+        bridge:cli-example "1";
+      }
+
+      leaf address {
+        type string;
+        mandatory true;
+        description "Address of the filtering database entry";
+        bridge:cli-example "C5:13:2D:36:27:9B";
+      }
+
+      leaf type {
+        type enumeration {
+          enum static;
+          enum dynamic;
+        }
+        default static;
+        description "Type of filtering entry";
+        bridge:cli-example "static | dynamic";
+      }
+
+      leaf port {
+        type string;
+        mandatory true;
+        description "Output port name";
+        bridge:cli-example "port2";
+      }
+
+      leaf age {
+        type uint32;
+        units seconds;
+        description "Age of the current filtering database entry";
+        config false;
+      }
+    }
+  }
+
+  leaf stp-enabled {
+    type boolean;
+    default false;
+    description "Enable/Disable the STP protocol of the bridge";
+    bridge:cli-example "false";
+  }
+
+  list stp {
+    key "vlan";
+    description "Per-vlan Spanning Tree Protocol Configuration";
+    leaf vlan {
+      type uint32;
+      mandatory true;
+      description "VLAN identifier for this entry";
+      bridge:cli-example "1";
+    }
+
+    leaf address {
+      type string;
+      description "Main MAC address used by the STP";
+      bridge:cli-example "C5:13:2D:36:27:9B";
+    }
+
+    leaf priority {
+      type uint32;
+      default 32768;
+      description "Bridge priority for STP";
+      bridge:cli-example "32768";
+    }
+
+    leaf forward-delay {
+      type uint32;
+      units seconds;
+      default 10;
+      description "Delay used by STP bridges for port state transition";
+      bridge:cli-example "10";
+    }
+
+    leaf hello-time {
+      type uint32;
+      units seconds;
+      default 2;
+      description "Interval between transmissions of BPDU messages";
+      bridge:cli-example "2";
+    }
+
+    leaf max-message-age {
+      type uint32;
+      units seconds;
+      default 20;
+      description "Maximum age of a BPDU";
+      bridge:cli-example "20";
+    }
+  }
+}

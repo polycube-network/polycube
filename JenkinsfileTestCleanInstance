@@ -1,0 +1,224 @@
+#!/bin/groovy
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+def getGitAuthor() {
+    def commit = sh(returnStdout: true, script: 'git rev-parse HEAD')
+    def author = sh(returnStdout: true, script: "git --no-pager show -s --format='%an' ${commit}").trim()
+    return author
+}
+
+def getLastCommitMessage() {
+    def message = sh(returnStdout: true, script: 'git log -1 --pretty=%B').trim()
+    return message
+}
+
+
+def notifySlack(String buildStatus = 'STARTED', attachments = null) {
+  // build status of null means SUCCESS
+  buildStatus =  buildStatus ?: 'SUCCESS'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})"
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'GREY'
+    colorCode = '#D4DADF'
+  } else if (buildStatus == 'SUCCESS') {
+    color = 'GREEN'
+    colorCode = "good"
+  } else if (buildStatus == 'UNSTABLE') {
+    color = 'YELLOW'
+    colorCode = "warning"
+  } else {
+    color = 'RED'
+    colorCode = "danger"
+  }
+
+  if (attachments != null) {
+    // Send notifications
+    slackSend (color: colorCode, message: summary, channel: 'jenkins', attachments: attachments.toString())
+  } else {
+    slackSend (color: colorCode, message: summary)
+  }
+}
+
+String getBuildStatus(String buildStatus = 'STARTED') {
+  // build status of null means SUCCESS
+  buildStatus =  buildStatus ?: 'SUCCESS'
+
+  def status = buildStatus
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    status = 'STARTED'
+  } else if (buildStatus == 'SUCCESS') {
+    status = 'SUCCESS'
+  } else if (buildStatus == 'UNSTABLE') {
+    status = 'UNSTABLE'
+  } else {
+    status = 'FAILED'
+  }
+
+  return status
+}
+
+String getBuildColor(String buildStatus = 'STARTED') {
+  // build status of null means SUCCESS
+  buildStatus =  buildStatus ?: 'SUCCESS'
+
+  def color = "danger"
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    status = '#D4DADF'
+  } else if (buildStatus == 'SUCCESS') {
+    status = 'good'
+  } else if (buildStatus == 'UNSTABLE') {
+    status = 'warning'
+  } else {
+    status = 'danger'
+  }
+
+  return status
+}
+
+
+def getTestSummary() {
+    def props = readJSON file: 'tests/result.json'
+    tests_summary = ""
+
+    if (props != null) {
+        int total = String.valueOf(props.total)
+        int passed = String.valueOf(props.passed)
+        int failed = total - passed
+
+        tests_summary = "Passed: " + (passed)
+        tests_summary = tests_summary + (", Failed: " + (failed))
+        tests_summary = tests_summary + (", Total: " + total)
+    } else {
+        tests_summary = "No tests found"
+    }
+
+    return tests_summary
+}
+
+def getFailedTestsString(String failedTestsFile) {
+	def version = readFile "tests/${failedTestsFile}"
+
+	def failedTestsString = "```"
+
+	failedTestsString = failedTestsString + version + "```"
+
+	return failedTestsString
+}
+
+pipeline {
+    agent none
+        stages {
+        stage('Testing Clean Instance') {
+            agent {
+                label "testing"
+            }
+            steps {
+                echo 'Start building polycube on testing machine'
+                sh 'export INSTALL_CLEAN_POLYCUBE=true && ./scripts/install.sh'
+
+                echo 'Start testing polycube services'
+                sh 'cd tests/ && ./run-tests.sh'
+            }
+            post {
+                always {
+                    script {
+                        def props = readJSON file: 'tests/result.json'
+                        def testsSuccededParameter = new StringParameterValue("NUM_TESTS_SUCCEDED", props.passed)
+                        def testsTotalParameter = new StringParameterValue("TOT_TESTS", props.total)
+                        def testsStageParameter = new StringParameterValue("TEST_STAGE_NAME", "TESTING_CLEAN_INSTANCE")
+                        currentBuild.getRawBuild().actions.add(new ParametersAction(testsSuccededParameter))
+                        currentBuild.getRawBuild().actions.add(new ParametersAction(testsTotalParameter))
+                        currentBuild.getRawBuild().actions.add(new ParametersAction(testsStageParameter))
+
+                        int total = String.valueOf(props.total)
+                        int passed = String.valueOf(props.passed)
+                        int failed = total - passed
+
+                        if(failed > 0) {
+                            def attachments = getSlackAttachment(currentBuild, new String("Testing Clean Instance"))
+
+                            def final_string = attachments.toString()
+                            echo "${final_string}"
+
+                            notifySlack(currentBuild.result, attachments)
+                        }
+
+                        sh 'rm -rf ${WORKSPACE}/*'
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getSlackAttachment(currentBuild, stageName, String failedTestsString = null) {
+  JSONArray attachments = new JSONArray();
+  JSONObject attachment = new JSONObject();
+  JSONArray fields = new JSONArray();
+  JSONArray mrkdwn_in = new JSONArray();
+  JSONObject branch_json = new JSONObject();
+  JSONObject stage_json = new JSONObject();
+  JSONObject tests_result_json = new JSONObject();
+  JSONObject last_commit_json = new JSONObject();
+  JSONObject failed_tests_json = new JSONObject();
+
+  attachment.put('pretext', new String("Build status: *${getBuildStatus(currentBuild.result)}*"));
+  attachment.put('color', getBuildColor(currentBuild.result));
+  attachment.put('author_name', getGitAuthor());
+  attachment.put('title', new String("${env.JOB_NAME}, build #${env.BUILD_NUMBER}"));
+  attachment.put('title_link', env.BUILD_URL);
+
+  mrkdwn_in.add("fields");
+  mrkdwn_in.add("pretext");
+  mrkdwn_in.add("text");
+  attachment.put('mrkdwn_in', mrkdwn_in);
+
+  stage_json.put('title', "Stage");
+  stage_json.put('value', stageName)
+  stage_json.put('short', true)
+
+  branch_json.put('title', "Branch");
+  branch_json.put('value', env.GIT_BRANCH)
+  branch_json.put('short', true)
+
+  tests_result_json.put('title', "Test Results");
+  tests_result_json.put('value', getTestSummary())
+  tests_result_json.put('short', true)
+
+  last_commit_json.put('title', "Last Commit");
+  last_commit_json.put('value', getLastCommitMessage());
+  last_commit_json.put('short', true);
+
+  fields.add(stage_json);
+  fields.add(branch_json);
+  fields.add(tests_result_json);
+  fields.add(last_commit_json);
+  attachment.put('fields', fields);
+
+  failed_tests_json.put('title', "Failed Tests");
+  failed_tests_json.put('color', getBuildColor(currentBuild.result));
+  failed_tests_json.put('text', getFailedTestsString(failedTestsString));
+  failed_tests_json.put('mrkdwn_in', mrkdwn_in);
+
+  failed_tests_json.put('footer', "Jenkins Polycube API");
+  failed_tests_json.put('footer_icon', "https://jenkins.io/images/logos/jenkins/jenkins.png");
+  failed_tests_json.put('ts', (int)(new Date().getTime()/1000));
+
+  attachments.add(attachment);
+  attachments.add(failed_tests_json);
+
+  return attachments
+}

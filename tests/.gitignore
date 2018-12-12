@@ -1,0 +1,4 @@
+test_log*
+test_results*
+tmp
+result.json

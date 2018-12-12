@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: polycube-etcd
+  namespace: kube-system
+spec:
+  clusterIP: 10.96.0.100
+  ports:
+  - name: etcd
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
+    nodePort: 30901
+  selector:
+    polycube-app: etcd
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: polycube-etcd
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        polycube-app: etcd
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      hostNetwork: true
+      securityContext:
+        seLinuxOptions:
+          type: spc_t
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: polycube-etcd
+        image: gcr.io/google_containers/etcd-amd64:3.0.17
+        command:
+        - etcd
+        - "--listen-client-urls=http://0.0.0.0:9001"
+        - "--listen-peer-urls=http://127.0.0.1:9002"
+        - "--advertise-client-urls=http://10.96.0.100:9001"
+        - "--data-dir=/var/etcd/data"
+        volumeMounts:
+        - name: etcd-data
+          mountPath: "/var/etcd/data"
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 9001
+            host: 127.0.0.1
+          initialDelaySeconds: 15
+          timeoutSeconds: 15
+      volumes:
+      - name: etcd-data
+        hostPath:
+          path: "/var/lib/polycube/etcd-db"

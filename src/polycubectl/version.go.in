@@ -1,0 +1,6 @@
+// This file is generated automatically, don't touch it!
+package main
+
+const (
+    Version = "${VERSION}"
+)

@@ -1,0 +1,1 @@
+install(DIRECTORY spdlog DESTINATION include/polycube)

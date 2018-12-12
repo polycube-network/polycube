@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: myechoserver
+  labels:
+    app: myechoserver
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 31333
+  clusterIP: 10.96.23.23
+  selector:
+    app: myechoserver
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: myechoserver
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myechoserver
+    spec:
+      containers:
+      - name: echoserver
+        image: mauriciovasquezbernal/echoserver2
+        ports:
+        - containerPort: 8080

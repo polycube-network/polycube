@@ -1,0 +1,93 @@
+module pbforwarder {
+  yang-version 1.1;
+  namespace "http://polycube.network/pbforwarder";
+  prefix "pbforwarder";
+
+  import polycube-base { prefix "basemodel"; }
+  import ietf-inet-types { prefix "inet"; }
+  import ietf-yang-types { prefix "yang"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube Policy-Based Forwarder service";
+
+  basemodel:service-description "Policy-Based Forwarder Service";
+  basemodel:service-version "2.0";
+  basemodel:service-name "pbforwarder";
+  basemodel:service-min-kernel-version "4.14.0";
+
+  uses "basemodel:base-yang-module";
+
+  list rules {
+    key "id";
+    description "Rule that contains all possible matches and the action for a packet";
+
+    leaf id {
+      type uint32;
+      description "Rule Identifier";
+    }
+
+    leaf vlan {
+      type uint32;
+      description "VLAN Identifier";
+    }
+
+    leaf src_mac {
+      type yang:mac-address;
+      description "Source MAC Address in the form AA:BB:CC:DD:EE:FF";
+    }
+
+    leaf dst_mac {
+      type yang:mac-address;
+      description "Destination MAC Address in the form AA:BB:CC:DD:EE:FF";
+    }
+
+    leaf src_ip {
+      type inet:ipv4-address;
+      description "Source IP Address in the form AA.BB.CC.DD";
+    }
+
+    leaf dst_ip {
+      type inet:ipv4-address;
+      description "Destination IP Address in the form AA.BB.CC.DD";
+    }
+
+    leaf l4_proto {
+      type enumeration {
+        enum UDP;
+        enum TCP;
+      }
+      default TCP;
+      description "Level 4 Protocol (i.e. UDP, TCP; default: TCP)";
+    }
+
+    leaf src_port {
+      type uint16;
+      description "Source L4 Port";
+    }
+
+    leaf dst_port {
+      type uint16;
+      description "Destination L4 Port";
+    }
+
+    leaf in_port {
+      type string;
+      description "Ingress port";
+    }
+
+    leaf out_port {
+      type string;
+      description "Output port (used only when action is FORWARD)";
+    }
+
+    leaf action {
+      type enumeration {
+        enum DROP;
+        enum SLOWPATH;
+        enum FORWARD;
+      }
+      default DROP;
+      description "Action associated to the rule(i.e., DROP, SLOWPATH, or FORWARD; default: DROP)";
+    }
+  }
+}

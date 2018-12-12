@@ -1,0 +1,6 @@
+build/*
+*.kdev4
+*.kdevelop
+*.swagger-codegen
+swagger-codegen*
+.vscode/*
