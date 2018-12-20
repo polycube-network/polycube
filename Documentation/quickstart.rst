@@ -15,14 +15,6 @@ Docker
 
 Docker is the easiest and fastest way to try ``polycube`` if you are a new user because it only requires to have a recent kernel version. See :ref:`updating-linux-kernel`.
 
-**Internal Note**: Docker images are in a private repo, to login do:
-
-::
-
-    sudo docker login -u netgrouppolito
-    Password: notaverystrongpass#
-
-
 Pull Polycube Docker image
 
 ::
