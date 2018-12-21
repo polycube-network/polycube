@@ -27,6 +27,25 @@ function success_message {
 }
 trap error_message ERR
 
+function show_help() {
+usage="$(basename "$0") [mode]
+Polycube installation script
+
+mode:
+  pcn-iptables: install only pcn-iptables service and related components
+  pcn-k8s: install only pcn-k8s (Only to be used with docker build)
+  default: install all available polycube services"
+echo "$usage"
+}
+
+while getopts h option; do
+ case "${option}" in
+ h|\?)
+  show_help
+  exit 0
+  esac
+done
+
 MODE=$1
 
 [ -z ${SUDO+x} ] && SUDO='sudo'

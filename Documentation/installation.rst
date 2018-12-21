@@ -51,7 +51,7 @@ In this case you have to:
     cd polycube
     git submodule update --init --recursive
 
-    # launch the automatic install script
+    # launch the automatic install script (use -h to see the different installation modes)
     ./scripts/install.sh
 
 Once the installation is completed, you can follow the :doc:`quickstart` instructions.
