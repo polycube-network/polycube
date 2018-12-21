@@ -141,7 +141,7 @@ elif [ "$MODE" == "pcn-k8s" ]; then
     -DENABLE_SERVICE_SIMPLEFORWARDER=OFF \
     -DINSTALL_CLI=OFF
 else
-  cmake ..
+  cmake .. -DENABLE_PCN_IPTABLES=ON
 fi
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
