@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-
-#pragma once
-
-#include <string>
-
 #include <uapi/linux/if_arp.h>
 #include <uapi/linux/ip.h>
 #include <uapi/linux/tcp.h>
