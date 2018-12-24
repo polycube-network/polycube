@@ -192,8 +192,6 @@ spec:
           configMap:
             name: kube-proxy
             #namespace: kube-public
-      imagePullSecrets:
-      - name: mvbdockersecret
       tolerations:
       - effect: NoSchedule
         key: node.kubernetes.io/not-ready
