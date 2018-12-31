@@ -1,8 +1,0 @@
-management.grpc.pb.cc
-management.grpc.pb.h
-management.pb.cc
-management.pb.h
-polycube_grpc.grpc.pb.cc
-polycube_grpc.grpc.pb.h
-polycube_grpc.pb.cc
-polycube_grpc.pb.h
