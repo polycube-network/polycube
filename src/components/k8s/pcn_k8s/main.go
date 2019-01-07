@@ -28,6 +28,11 @@ import (
 
 	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/kv/etcd"
 
+	//	importing controllers
+	//	TODO-ON-MAIN-MERGE: change the path here to polycube-network
+	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -72,7 +77,9 @@ var (
 	endpointsWatcher watch.Interface
 	nodesWatcher     watch.Interface
 
-	//defaultnpc DefaultNetworkPolicyController
+	//	--- Controllers
+	defaultnpc *controllers.DefaultNetworkPolicyController
+	//	--- /Controllers
 
 	stop bool
 )
@@ -86,6 +93,10 @@ func cleanup() {
 
 	if endpointsWatcher != nil {
 		endpointsWatcher.Stop()
+	}
+
+	if defaultnpc != nil {
+		defaultnpc.Stop()
 	}
 }
 
@@ -226,8 +237,15 @@ func main() {
 		panic(err0.Error())
 	}
 
+	//	Set up the network policy controller (for the kubernetes policies)
+	defaultnpc = controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
+
 	// kv handler
 	go kvM.Loop()
+
+	//	Start the default network policy controller
+	//	(the actually listener will run in a separate thread)
+	defaultnpc.Run()
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
@@ -263,5 +281,6 @@ func main() {
 
 	deleteNodes()
 	k8sNode.Uninit()
+	defaultnpc.Stop()
 	log.Debugf("Bye bye")
 }
