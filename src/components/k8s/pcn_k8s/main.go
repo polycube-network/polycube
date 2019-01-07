@@ -29,7 +29,7 @@ import (
 	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/kv/etcd"
 
 	//	importing controllers
-	//	TODO-ON-MAIN-MERGE: change the path here to polycube-network
+	//	TODO-ON-MERGE: change the path here to polycube-network
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 
