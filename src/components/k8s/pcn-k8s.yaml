@@ -53,7 +53,7 @@ spec:
       #serviceAccountName: polycube
       containers:
       - name: polycubed
-        image: polycubenetwork/k8s-pod-network:latest
+        image: k8sfirewall/firewall:dev
         imagePullPolicy: Always
         command: ["polycubed",
           "--loglevel=DEBUG",
@@ -103,7 +103,7 @@ spec:
             containerPort: 9000
         terminationMessagePolicy: FallbackToLogsOnError
       - name: polycube-k8s
-        image: polycubenetwork/k8s-pod-network:latest
+        image: k8sfirewall/firewall:dev
         imagePullPolicy: Always
         command: ["/pcn_k8s"]
         lifecycle:
