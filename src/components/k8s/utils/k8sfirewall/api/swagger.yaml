@@ -1,0 +1,4337 @@
+---
+swagger: "2.0"
+info:
+  description: "Firewall Service"
+  version: "2.0"
+  title: "firewall API"
+  x-service-name: "firewall"
+  x-service-min-kernel-version: "4.14.0"
+  x-yang-path: "./datamodel/firewall.yang"
+host: "localhost:8080"
+basePath: "/"
+tags:
+- name: "firewall"
+schemes:
+- "http"
+paths:
+  /firewall/{name}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read firewall by ID"
+      description: "Read operation of resource: firewall"
+      operationId: "readFirewallByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/Firewall"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    post:
+      tags:
+      - "firewall"
+      summary: "Create firewall by ID"
+      description: "Create operation of resource: firewall"
+      operationId: "createFirewallByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "firewall"
+        description: "firewallbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Firewall"
+        x-exportParamName: "Firewall"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+      x-has-default-impl: true
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace firewall by ID"
+      description: "Replace operation of resource: firewall"
+      operationId: "replaceFirewallByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "firewall"
+        description: "firewallbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Firewall"
+        x-exportParamName: "Firewall"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete firewall by ID"
+      description: "Delete operation of resource: firewall"
+      operationId: "deleteFirewallByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update firewall by ID"
+      description: "Update operation of resource: firewall"
+      operationId: "updateFirewallByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "firewall"
+        description: "firewallbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Firewall"
+        x-exportParamName: "Firewall"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read firewall by ID"
+      description: "Read operation of resource: firewall"
+      operationId: "readFirewallListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Firewall"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update firewall by ID"
+      description: "Update operation of resource: firewall"
+      operationId: "updateFirewallListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "firewall"
+        description: "firewallbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Firewall"
+        x-exportParamName: "Firewall"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/uuid/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read uuid by ID"
+      description: "Read operation of resource: uuid"
+      operationId: "readFirewallUuidByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            format: "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+            description: "UUID of the Cube"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+  /firewall/{name}/type/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read type by ID"
+      description: "Read operation of resource: type"
+      operationId: "readFirewallTypeByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Type of the Cube (TC, XDP_SKB, XDP_DRV)"
+            example: "TC"
+            enum:
+            - "TC"
+            - "XDP_SKB"
+            - "XDP_DRV"
+            default: "TC"
+          x-is-enum: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/loglevel/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read loglevel by ID"
+      description: "Read operation of resource: loglevel"
+      operationId: "readFirewallLoglevelByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Defines the logging level of a service instance, from none\
+              \ (OFF) to the most verbose (TRACE)"
+            example: "INFO"
+            enum:
+            - "TRACE"
+            - "DEBUG"
+            - "INFO"
+            - "WARN"
+            - "ERR"
+            - "CRITICAL"
+            - "OFF"
+            default: "INFO"
+          x-is-enum: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update loglevel by ID"
+      description: "Update operation of resource: loglevel"
+      operationId: "updateFirewallLoglevelByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "loglevel"
+        description: "Defines the logging level of a service instance, from none (OFF)\
+          \ to the most verbose (TRACE)"
+        required: true
+        schema:
+          type: "string"
+          description: "Defines the logging level of a service instance, from none\
+            \ (OFF) to the most verbose (TRACE)"
+          example: "INFO"
+          enum:
+          - "TRACE"
+          - "DEBUG"
+          - "INFO"
+          - "WARN"
+          - "ERR"
+          - "CRITICAL"
+          - "OFF"
+          default: "INFO"
+        x-is-enum: "true"
+        x-exportParamName: "Loglevel"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/ports/{ports_name}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read ports by ID"
+      description: "Read operation of resource: ports"
+      operationId: "readFirewallPortsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/Ports"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+    post:
+      tags:
+      - "firewall"
+      summary: "Create ports by ID"
+      description: "Create operation of resource: ports"
+      operationId: "createFirewallPortsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+      x-has-default-impl: true
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace ports by ID"
+      description: "Replace operation of resource: ports"
+      operationId: "replaceFirewallPortsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete ports by ID"
+      description: "Delete operation of resource: ports"
+      operationId: "deleteFirewallPortsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update ports by ID"
+      description: "Update operation of resource: ports"
+      operationId: "updateFirewallPortsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/ports/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read ports by ID"
+      description: "Read operation of resource: ports"
+      operationId: "readFirewallPortsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Ports"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+    post:
+      tags:
+      - "firewall"
+      summary: "Create ports by ID"
+      description: "Create operation of resource: ports"
+      operationId: "createFirewallPortsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+      x-has-default-impl: true
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace ports by ID"
+      description: "Replace operation of resource: ports"
+      operationId: "replaceFirewallPortsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete ports by ID"
+      description: "Delete operation of resource: ports"
+      operationId: "deleteFirewallPortsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update ports by ID"
+      description: "Update operation of resource: ports"
+      operationId: "updateFirewallPortsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "ports"
+        description: "portsbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Ports"
+        x-exportParamName: "Ports"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/ports/{ports_name}/uuid/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read uuid by ID"
+      description: "Read operation of resource: uuid"
+      operationId: "readFirewallPortsUuidByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            format: "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+            description: "UUID of the port"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+  /firewall/{name}/ports/{ports_name}/status/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read status by ID"
+      description: "Read operation of resource: status"
+      operationId: "readFirewallPortsStatusByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Status of the port (UP or DOWN)"
+            enum:
+            - "UP"
+            - "DOWN"
+          x-is-enum: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+  /firewall/{name}/ports/{ports_name}/peer/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read peer by ID"
+      description: "Read operation of resource: peer"
+      operationId: "readFirewallPortsPeerByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Peer name, such as a network interfaces (e.g., 'veth0')\
+              \ or another cube (e.g., 'br1:port2')"
+            example: "r0:port1"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+      x-has-default-impl: true
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update peer by ID"
+      description: "Update operation of resource: peer"
+      operationId: "updateFirewallPortsPeerByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "ports_name"
+        in: "path"
+        description: "ID of ports_name"
+        required: true
+        type: "string"
+        x-exportParamName: "PortsName"
+      - in: "body"
+        name: "peer"
+        description: "Peer name, such as a network interfaces (e.g., 'veth0') or another\
+          \ cube (e.g., 'br1:port2')"
+        required: true
+        schema:
+          type: "string"
+          description: "Peer name, such as a network interfaces (e.g., 'veth0') or\
+            \ another cube (e.g., 'br1:port2')"
+          example: "r0:port1"
+        x-exportParamName: "Peer"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+      x-has-default-impl: true
+  /firewall/{name}/ingress-port/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read ingress-port by ID"
+      description: "Read operation of resource: ingress-port"
+      operationId: "readFirewallIngressPortByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Name for the ingress port, from which arrives traffic processed\
+              \ by INGRESS chain (by default it's the first port of the cube)"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update ingress-port by ID"
+      description: "Update operation of resource: ingress-port"
+      operationId: "updateFirewallIngressPortByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "ingress-port"
+        description: "Name for the ingress port, from which arrives traffic processed\
+          \ by INGRESS chain (by default it's the first port of the cube)"
+        required: true
+        schema:
+          type: "string"
+          description: "Name for the ingress port, from which arrives traffic processed\
+            \ by INGRESS chain (by default it's the first port of the cube)"
+        x-exportParamName: "IngressPort"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/egress-port/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read egress-port by ID"
+      description: "Read operation of resource: egress-port"
+      operationId: "readFirewallEgressPortByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Name for the egress port, from which arrives traffic processed\
+              \ by EGRESS chain (by default it's the second port of the cube)"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update egress-port by ID"
+      description: "Update operation of resource: egress-port"
+      operationId: "updateFirewallEgressPortByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "egress-port"
+        description: "Name for the egress port, from which arrives traffic processed\
+          \ by EGRESS chain (by default it's the second port of the cube)"
+        required: true
+        schema:
+          type: "string"
+          description: "Name for the egress port, from which arrives traffic processed\
+            \ by EGRESS chain (by default it's the second port of the cube)"
+        x-exportParamName: "EgressPort"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/conntrack/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read conntrack by ID"
+      description: "Read operation of resource: conntrack"
+      operationId: "readFirewallConntrackByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Enables the Connection Tracking module. Mandatory if connection\
+              \ tracking rules are needed. Default is ON."
+            enum:
+            - "ON"
+            - "OFF"
+          x-is-enum: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update conntrack by ID"
+      description: "Update operation of resource: conntrack"
+      operationId: "updateFirewallConntrackByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "conntrack"
+        description: "Enables the Connection Tracking module. Mandatory if connection\
+          \ tracking rules are needed. Default is ON."
+        required: true
+        schema:
+          type: "string"
+          description: "Enables the Connection Tracking module. Mandatory if connection\
+            \ tracking rules are needed. Default is ON."
+          enum:
+          - "ON"
+          - "OFF"
+        x-is-enum: "true"
+        x-exportParamName: "Conntrack"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/accept-established/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read accept-established by ID"
+      description: "Read operation of resource: accept-established"
+      operationId: "readFirewallAcceptEstablishedByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "If Connection Tracking is enabled, all packets belonging\
+              \ to ESTABLISHED connections will be forwarded automatically. Default\
+              \ is ON."
+            enum:
+            - "ON"
+            - "OFF"
+          x-is-enum: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update accept-established by ID"
+      description: "Update operation of resource: accept-established"
+      operationId: "updateFirewallAcceptEstablishedByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "accept-established"
+        description: "If Connection Tracking is enabled, all packets belonging to\
+          \ ESTABLISHED connections will be forwarded automatically. Default is ON."
+        required: true
+        schema:
+          type: "string"
+          description: "If Connection Tracking is enabled, all packets belonging to\
+            \ ESTABLISHED connections will be forwarded automatically. Default is\
+            \ ON."
+          enum:
+          - "ON"
+          - "OFF"
+        x-is-enum: "true"
+        x-exportParamName: "AcceptEstablished"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/interactive/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read interactive by ID"
+      description: "Read operation of resource: interactive"
+      operationId: "readFirewallInteractiveByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "boolean"
+            description: "Interactive mode applies new rules immediately; if 'false',\
+              \ the command 'apply-rules' has to be used to apply all the rules at\
+              \ once. Default is TRUE."
+            default: "true"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update interactive by ID"
+      description: "Update operation of resource: interactive"
+      operationId: "updateFirewallInteractiveByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "interactive"
+        description: "Interactive mode applies new rules immediately; if 'false',\
+          \ the command 'apply-rules' has to be used to apply all the rules at once.\
+          \ Default is TRUE."
+        required: true
+        schema:
+          type: "boolean"
+          description: "Interactive mode applies new rules immediately; if 'false',\
+            \ the command 'apply-rules' has to be used to apply all the rules at once.\
+            \ Default is TRUE."
+          default: "true"
+        x-exportParamName: "Interactive"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/session-table/{src}/{dst}/{l4proto}/{sport}/{dport}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read session-table by ID"
+      description: "Read operation of resource: session-table"
+      operationId: "readFirewallSessionTableByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "src"
+        in: "path"
+        description: "ID of src"
+        required: true
+        type: "string"
+        x-exportParamName: "Src"
+      - name: "dst"
+        in: "path"
+        description: "ID of dst"
+        required: true
+        type: "string"
+        x-exportParamName: "Dst"
+      - name: "l4proto"
+        in: "path"
+        description: "ID of l4proto"
+        required: true
+        type: "string"
+        x-exportParamName: "L4proto"
+      - name: "sport"
+        in: "path"
+        description: "ID of sport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Sport"
+      - name: "dport"
+        in: "path"
+        description: "ID of dport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Dport"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/SessionTable"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/session-table/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read session-table by ID"
+      description: "Read operation of resource: session-table"
+      operationId: "readFirewallSessionTableListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/SessionTable"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/session-table/{src}/{dst}/{l4proto}/{sport}/{dport}/state/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read state by ID"
+      description: "Read operation of resource: state"
+      operationId: "readFirewallSessionTableStateByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "src"
+        in: "path"
+        description: "ID of src"
+        required: true
+        type: "string"
+        x-exportParamName: "Src"
+      - name: "dst"
+        in: "path"
+        description: "ID of dst"
+        required: true
+        type: "string"
+        x-exportParamName: "Dst"
+      - name: "l4proto"
+        in: "path"
+        description: "ID of l4proto"
+        required: true
+        type: "string"
+        x-exportParamName: "L4proto"
+      - name: "sport"
+        in: "path"
+        description: "ID of sport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Sport"
+      - name: "dport"
+        in: "path"
+        description: "ID of dport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Dport"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Connection state."
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/session-table/{src}/{dst}/{l4proto}/{sport}/{dport}/eta/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read eta by ID"
+      description: "Read operation of resource: eta"
+      operationId: "readFirewallSessionTableEtaByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "src"
+        in: "path"
+        description: "ID of src"
+        required: true
+        type: "string"
+        x-exportParamName: "Src"
+      - name: "dst"
+        in: "path"
+        description: "ID of dst"
+        required: true
+        type: "string"
+        x-exportParamName: "Dst"
+      - name: "l4proto"
+        in: "path"
+        description: "ID of l4proto"
+        required: true
+        type: "string"
+        x-exportParamName: "L4proto"
+      - name: "sport"
+        in: "path"
+        description: "ID of sport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Sport"
+      - name: "dport"
+        in: "path"
+        description: "ID of dport"
+        required: true
+        type: "integer"
+        format: "uint16"
+        x-exportParamName: "Dport"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint32"
+            description: "Last packet matching the connection"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read chain by ID"
+      description: "Read operation of resource: chain"
+      operationId: "readFirewallChainByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/Chain"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    post:
+      tags:
+      - "firewall"
+      summary: "Create chain by ID"
+      description: "Create operation of resource: chain"
+      operationId: "createFirewallChainByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace chain by ID"
+      description: "Replace operation of resource: chain"
+      operationId: "replaceFirewallChainByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete chain by ID"
+      description: "Delete operation of resource: chain"
+      operationId: "deleteFirewallChainByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update chain by ID"
+      description: "Update operation of resource: chain"
+      operationId: "updateFirewallChainByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/chain/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read chain by ID"
+      description: "Read operation of resource: chain"
+      operationId: "readFirewallChainListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Chain"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    post:
+      tags:
+      - "firewall"
+      summary: "Create chain by ID"
+      description: "Create operation of resource: chain"
+      operationId: "createFirewallChainListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace chain by ID"
+      description: "Replace operation of resource: chain"
+      operationId: "replaceFirewallChainListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete chain by ID"
+      description: "Delete operation of resource: chain"
+      operationId: "deleteFirewallChainListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update chain by ID"
+      description: "Update operation of resource: chain"
+      operationId: "updateFirewallChainListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - in: "body"
+        name: "chain"
+        description: "chainbody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/Chain"
+        x-exportParamName: "Chain"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/chain/{chain_name}/default/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read default by ID"
+      description: "Read operation of resource: default"
+      operationId: "readFirewallChainDefaultByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Default action if no rule matches in the ingress chain.\
+              \ Default is DROP."
+            example: "DROP, FORWARD, LOG"
+            enum:
+            - "DROP"
+            - "LOG"
+            - "FORWARD"
+            x-typedef: "action"
+          x-is-enum: "true"
+          x-typedef: "action"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update default by ID"
+      description: "Update operation of resource: default"
+      operationId: "updateFirewallChainDefaultByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "default"
+        description: "Default action if no rule matches in the ingress chain. Default\
+          \ is DROP."
+        required: true
+        schema:
+          type: "string"
+          description: "Default action if no rule matches in the ingress chain. Default\
+            \ is DROP."
+          example: "DROP, FORWARD, LOG"
+          enum:
+          - "DROP"
+          - "LOG"
+          - "FORWARD"
+          x-typedef: "action"
+        x-is-enum: "true"
+        x-typedef: "action"
+        x-exportParamName: "Default_"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read stats by ID"
+      description: "Read operation of resource: stats"
+      operationId: "readFirewallChainStatsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/ChainStats"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read stats by ID"
+      description: "Read operation of resource: stats"
+      operationId: "readFirewallChainStatsListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ChainStats"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/pkts/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read pkts by ID"
+      description: "Read operation of resource: pkts"
+      operationId: "readFirewallChainStatsPktsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint64"
+            description: "Number of packets matching the rule"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/bytes/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read bytes by ID"
+      description: "Read operation of resource: bytes"
+      operationId: "readFirewallChainStatsBytesByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint64"
+            description: "Number of bytes matching the rule"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/src/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read src by ID"
+      description: "Read operation of resource: src"
+      operationId: "readFirewallChainStatsSrcByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Source IP Address."
+            example: "10.0.0.1/24"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/dst/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read dst by ID"
+      description: "Read operation of resource: dst"
+      operationId: "readFirewallChainStatsDstByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Destination IP Address."
+            example: "10.0.0.2/24"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/l4proto/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read l4proto by ID"
+      description: "Read operation of resource: l4proto"
+      operationId: "readFirewallChainStatsL4protoByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Level 4 Protocol."
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/sport/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read sport by ID"
+      description: "Read operation of resource: sport"
+      operationId: "readFirewallChainStatsSportByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint16"
+            description: "Source L4 Port"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/dport/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read dport by ID"
+      description: "Read operation of resource: dport"
+      operationId: "readFirewallChainStatsDportByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint16"
+            description: "Destination L4 Port"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/tcpflags/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read tcpflags by ID"
+      description: "Read operation of resource: tcpflags"
+      operationId: "readFirewallChainStatsTcpflagsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG,\
+              \ CWR, ECE. ! means set to 0."
+            example: "!FIN,SYN,!RST,!ACK"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/conntrack/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read conntrack by ID"
+      description: "Read operation of resource: conntrack"
+      operationId: "readFirewallChainStatsConntrackByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+            enum:
+            - "NEW"
+            - "ESTABLISHED"
+            - "RELATED"
+            - "INVALID"
+            x-typedef: "conntrackstatus"
+          x-is-enum: "true"
+          x-typedef: "conntrackstatus"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/action/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read action by ID"
+      description: "Read operation of resource: action"
+      operationId: "readFirewallChainStatsActionByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Action if the rule matches. Default is DROP."
+            example: "DROP, FORWARD, LOG"
+            enum:
+            - "DROP"
+            - "LOG"
+            - "FORWARD"
+            x-typedef: "action"
+          x-is-enum: "true"
+          x-typedef: "action"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/stats/{id}/description/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read description by ID"
+      description: "Read operation of resource: description"
+      operationId: "readFirewallChainStatsDescriptionByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Description of the rule."
+            example: "This rule blocks incoming SSH connections."
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read rule by ID"
+      description: "Read operation of resource: rule"
+      operationId: "readFirewallChainRuleByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/ChainRule"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    post:
+      tags:
+      - "firewall"
+      summary: "Create rule by ID"
+      description: "Create operation of resource: rule"
+      operationId: "createFirewallChainRuleByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace rule by ID"
+      description: "Replace operation of resource: rule"
+      operationId: "replaceFirewallChainRuleByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete rule by ID"
+      description: "Delete operation of resource: rule"
+      operationId: "deleteFirewallChainRuleByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update rule by ID"
+      description: "Update operation of resource: rule"
+      operationId: "updateFirewallChainRuleByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/chain/{chain_name}/rule/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read rule by ID"
+      description: "Read operation of resource: rule"
+      operationId: "readFirewallChainRuleListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ChainRule"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+    post:
+      tags:
+      - "firewall"
+      summary: "Create rule by ID"
+      description: "Create operation of resource: rule"
+      operationId: "createFirewallChainRuleListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        201:
+          description: "Created: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Not found: Resource not created"
+        409:
+          description: "Conflict: Resource not created"
+    put:
+      tags:
+      - "firewall"
+      summary: "Replace rule by ID"
+      description: "Replace operation of resource: rule"
+      operationId: "replaceFirewallChainRuleListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        201:
+          description: "OK: Resource replaced successfully"
+        204:
+          description: "No content: Resource modified successfully"
+        400:
+          description: "Bad request: resource not replaced"
+        404:
+          description: "Resource not found"
+    delete:
+      tags:
+      - "firewall"
+      summary: "Delete rule by ID"
+      description: "Delete operation of resource: rule"
+      operationId: "deleteFirewallChainRuleListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        204:
+          description: "No content: Resource deleted"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+    patch:
+      tags:
+      - "firewall"
+      summary: "Update rule by ID"
+      description: "Update operation of resource: rule"
+      operationId: "updateFirewallChainRuleListByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "rule"
+        description: "rulebody object"
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/ChainRule"
+        x-exportParamName: "Rule"
+      responses:
+        200:
+          description: "OK: Successful update"
+        204:
+          description: "No content: Successful update"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Resource not found"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/src/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read src by ID"
+      description: "Read operation of resource: src"
+      operationId: "readFirewallChainRuleSrcByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Source IP Address."
+            example: "10.0.0.1/24"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/dst/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read dst by ID"
+      description: "Read operation of resource: dst"
+      operationId: "readFirewallChainRuleDstByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Destination IP Address."
+            example: "10.0.0.2/24"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/l4proto/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read l4proto by ID"
+      description: "Read operation of resource: l4proto"
+      operationId: "readFirewallChainRuleL4protoByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Level 4 Protocol."
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/sport/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read sport by ID"
+      description: "Read operation of resource: sport"
+      operationId: "readFirewallChainRuleSportByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint16"
+            description: "Source L4 Port"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/dport/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read dport by ID"
+      description: "Read operation of resource: dport"
+      operationId: "readFirewallChainRuleDportByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "integer"
+            format: "uint16"
+            description: "Destination L4 Port"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/tcpflags/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read tcpflags by ID"
+      description: "Read operation of resource: tcpflags"
+      operationId: "readFirewallChainRuleTcpflagsByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG,\
+              \ CWR, ECE. ! means set to 0."
+            example: "!FIN,SYN,!RST,!ACK"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/conntrack/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read conntrack by ID"
+      description: "Read operation of resource: conntrack"
+      operationId: "readFirewallChainRuleConntrackByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+            enum:
+            - "NEW"
+            - "ESTABLISHED"
+            - "RELATED"
+            - "INVALID"
+            x-typedef: "conntrackstatus"
+          x-is-enum: "true"
+          x-typedef: "conntrackstatus"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/action/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read action by ID"
+      description: "Read operation of resource: action"
+      operationId: "readFirewallChainRuleActionByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Action if the rule matches. Default is DROP."
+            example: "DROP, FORWARD, LOG"
+            enum:
+            - "DROP"
+            - "LOG"
+            - "FORWARD"
+            x-typedef: "action"
+          x-is-enum: "true"
+          x-typedef: "action"
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/rule/{id}/description/:
+    get:
+      tags:
+      - "firewall"
+      summary: "Read description by ID"
+      description: "Read operation of resource: description"
+      operationId: "readFirewallChainRuleDescriptionByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - name: "id"
+        in: "path"
+        description: "ID of id"
+        required: true
+        type: "integer"
+        format: "uint32"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            type: "string"
+            description: "Description of the rule."
+            example: "This rule blocks incoming SSH connections."
+        400:
+          description: "Bad request"
+        404:
+          description: "Not found"
+        405:
+          description: "Method not allowed: Use POST to invoke operations"
+  /firewall/{name}/chain/{chain_name}/append/:
+    post:
+      tags:
+      - "firewall"
+      summary: "Create append by ID"
+      description: "Create operation of resource: append"
+      operationId: "createFirewallChainAppendByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      - in: "body"
+        name: "append"
+        description: "appendbody object"
+        required: true
+        schema:
+          $ref: "#/definitions/ChainAppendInput"
+        x-exportParamName: "Append"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/ChainAppendOutput"
+        204:
+          description: "No content: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Operation not found"
+  /firewall/{name}/chain/{chain_name}/reset-counters/:
+    post:
+      tags:
+      - "firewall"
+      summary: "Create reset-counters by ID"
+      description: "Create operation of resource: reset-counters"
+      operationId: "createFirewallChainResetCountersByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/ChainResetCountersOutput"
+        204:
+          description: "No content: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Operation not found"
+  /firewall/{name}/chain/{chain_name}/apply-rules/:
+    post:
+      tags:
+      - "firewall"
+      summary: "Create apply-rules by ID"
+      description: "Create operation of resource: apply-rules"
+      operationId: "createFirewallChainApplyRulesByID"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "ID of name"
+        required: true
+        type: "string"
+        x-exportParamName: "Name"
+      - name: "chain_name"
+        in: "path"
+        description: "ID of chain_name"
+        required: true
+        type: "string"
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-exportParamName: "ChainName"
+      responses:
+        200:
+          description: "OK: Successful operation"
+          schema:
+            $ref: "#/definitions/ChainApplyRulesOutput"
+        204:
+          description: "No content: Successful operation"
+        403:
+          description: "Forbidden: User not authorized"
+        404:
+          description: "Operation not found"
+definitions:
+  RuleFields:
+    properties:
+      src:
+        type: "string"
+        example: "10.0.0.1/24"
+        description: "Source IP Address."
+        readOnly: true
+      dst:
+        type: "string"
+        example: "10.0.0.2/24"
+        description: "Destination IP Address."
+        readOnly: true
+      l4proto:
+        type: "string"
+        description: "Level 4 Protocol."
+        readOnly: true
+      sport:
+        type: "integer"
+        format: "uint16"
+        description: "Source L4 Port"
+        readOnly: true
+      dport:
+        type: "integer"
+        format: "uint16"
+        description: "Destination L4 Port"
+        readOnly: true
+      tcpflags:
+        type: "string"
+        example: "!FIN,SYN,!RST,!ACK"
+        description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR,\
+          \ ECE. ! means set to 0."
+        readOnly: true
+      conntrack:
+        type: "string"
+        description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+        readOnly: true
+        enum:
+        - "NEW"
+        - "ESTABLISHED"
+        - "RELATED"
+        - "INVALID"
+        x-typedef: "conntrackstatus"
+      action:
+        type: "string"
+        example: "DROP, FORWARD, LOG"
+        description: "Action if the rule matches. Default is DROP."
+        readOnly: true
+        enum:
+        - "DROP"
+        - "LOG"
+        - "FORWARD"
+        x-typedef: "action"
+      description:
+        type: "string"
+        example: "This rule blocks incoming SSH connections."
+        description: "Description of the rule."
+        readOnly: true
+    x-is-yang-grouping: true
+  Ports:
+    properties:
+      name:
+        type: "string"
+        example: "port1"
+        description: "Port Name"
+        x-is-required: true
+        x-is-key: true
+      uuid:
+        type: "string"
+        format: "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+        description: "UUID of the port"
+        readOnly: true
+      status:
+        type: "string"
+        description: "Status of the port (UP or DOWN)"
+        readOnly: true
+        enum:
+        - "UP"
+        - "DOWN"
+      peer:
+        type: "string"
+        example: "r0:port1"
+        description: "Peer name, such as a network interfaces (e.g., 'veth0') or another\
+          \ cube (e.g., 'br1:port2')"
+    example:
+      peer: "r0:port1"
+      name: "port1"
+      uuid: "uuid"
+      status: "UP"
+    x-inherits-from: "polycube::service::Port"
+    x-is-list: "true"
+    x-parent: "Firewall"
+  SessionTable:
+    properties:
+      src:
+        type: "string"
+        description: "Source IP"
+        readOnly: true
+        x-is-key: true
+      dst:
+        type: "string"
+        description: "Destination IP"
+        readOnly: true
+        x-is-key: true
+      l4proto:
+        type: "string"
+        description: "Level 4 Protocol."
+        readOnly: true
+        x-is-key: true
+      sport:
+        type: "integer"
+        format: "uint16"
+        description: "Source Port"
+        readOnly: true
+        x-is-key: true
+      dport:
+        type: "integer"
+        format: "uint16"
+        description: "Destination"
+        readOnly: true
+        x-is-key: true
+      state:
+        type: "string"
+        description: "Connection state."
+        readOnly: true
+      eta:
+        type: "integer"
+        format: "uint32"
+        description: "Last packet matching the connection"
+        readOnly: true
+    example:
+      dport: 6
+      eta: 1
+      dst: "dst"
+      src: "src"
+      state: "state"
+      l4proto: "l4proto"
+      sport: 0
+    x-is-list: "true"
+    x-parent: "Firewall"
+  ChainStats:
+    properties:
+      id:
+        type: "integer"
+        format: "uint32"
+        description: "Rule Identifier"
+        readOnly: true
+        x-is-key: true
+      pkts:
+        type: "integer"
+        format: "uint64"
+        description: "Number of packets matching the rule"
+        readOnly: true
+      bytes:
+        type: "integer"
+        format: "uint64"
+        description: "Number of bytes matching the rule"
+        readOnly: true
+      src:
+        type: "string"
+        example: "10.0.0.1/24"
+        description: "Source IP Address."
+        readOnly: true
+      dst:
+        type: "string"
+        example: "10.0.0.2/24"
+        description: "Destination IP Address."
+        readOnly: true
+      l4proto:
+        type: "string"
+        description: "Level 4 Protocol."
+        readOnly: true
+      sport:
+        type: "integer"
+        format: "uint16"
+        description: "Source L4 Port"
+        readOnly: true
+      dport:
+        type: "integer"
+        format: "uint16"
+        description: "Destination L4 Port"
+        readOnly: true
+      tcpflags:
+        type: "string"
+        example: "!FIN,SYN,!RST,!ACK"
+        description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR,\
+          \ ECE. ! means set to 0."
+        readOnly: true
+      conntrack:
+        type: "string"
+        description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+        readOnly: true
+        enum:
+        - "NEW"
+        - "ESTABLISHED"
+        - "RELATED"
+        - "INVALID"
+        x-typedef: "conntrackstatus"
+      action:
+        type: "string"
+        example: "DROP, FORWARD, LOG"
+        description: "Action if the rule matches. Default is DROP."
+        readOnly: true
+        enum:
+        - "DROP"
+        - "LOG"
+        - "FORWARD"
+        x-typedef: "action"
+      description:
+        type: "string"
+        example: "This rule blocks incoming SSH connections."
+        description: "Description of the rule."
+        readOnly: true
+    example:
+      dport: 9
+      dst: "10.0.0.2/24"
+      src: "10.0.0.1/24"
+      bytes: 2
+      tcpflags: "!FIN,SYN,!RST,!ACK"
+      action: "DROP, FORWARD, LOG"
+      description: "This rule blocks incoming SSH connections."
+      id: 5
+      l4proto: "l4proto"
+      conntrack: "NEW"
+      sport: 7
+      pkts: 5
+    x-is-list: "true"
+    x-parent: "Chain"
+  ChainRule:
+    properties:
+      id:
+        type: "integer"
+        format: "uint32"
+        description: "Rule Identifier"
+        x-is-key: true
+      src:
+        type: "string"
+        example: "10.0.0.1/24"
+        description: "Source IP Address."
+        readOnly: true
+      dst:
+        type: "string"
+        example: "10.0.0.2/24"
+        description: "Destination IP Address."
+        readOnly: true
+      l4proto:
+        type: "string"
+        description: "Level 4 Protocol."
+        readOnly: true
+      sport:
+        type: "integer"
+        format: "uint16"
+        description: "Source L4 Port"
+        readOnly: true
+      dport:
+        type: "integer"
+        format: "uint16"
+        description: "Destination L4 Port"
+        readOnly: true
+      tcpflags:
+        type: "string"
+        example: "!FIN,SYN,!RST,!ACK"
+        description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR,\
+          \ ECE. ! means set to 0."
+        readOnly: true
+      conntrack:
+        type: "string"
+        description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+        readOnly: true
+        enum:
+        - "NEW"
+        - "ESTABLISHED"
+        - "RELATED"
+        - "INVALID"
+        x-typedef: "conntrackstatus"
+      action:
+        type: "string"
+        example: "DROP, FORWARD, LOG"
+        description: "Action if the rule matches. Default is DROP."
+        readOnly: true
+        enum:
+        - "DROP"
+        - "LOG"
+        - "FORWARD"
+        x-typedef: "action"
+      description:
+        type: "string"
+        example: "This rule blocks incoming SSH connections."
+        description: "Description of the rule."
+        readOnly: true
+    example:
+      dport: 4
+      dst: "10.0.0.2/24"
+      src: "10.0.0.1/24"
+      tcpflags: "!FIN,SYN,!RST,!ACK"
+      action: "DROP, FORWARD, LOG"
+      description: "This rule blocks incoming SSH connections."
+      id: 3
+      l4proto: "l4proto"
+      conntrack: "NEW"
+      sport: 2
+    x-is-list: "true"
+    x-parent: "Chain"
+  Chain:
+    properties:
+      name:
+        type: "string"
+        example: "INGRESS, EGRESS."
+        description: "Chain in which the rule will be inserted. Default: INGRESS."
+        enum:
+        - "INGRESS"
+        - "EGRESS"
+        - "INVALID"
+        x-is-key: true
+      default:
+        type: "string"
+        example: "DROP, FORWARD, LOG"
+        description: "Default action if no rule matches in the ingress chain. Default\
+          \ is DROP."
+        enum:
+        - "DROP"
+        - "LOG"
+        - "FORWARD"
+        x-typedef: "action"
+      stats:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/ChainStats"
+        x-key:
+        - "id"
+        x-key-list:
+        - name: "id"
+          type: "integer"
+          format: "uint32"
+      rule:
+        type: "array"
+        items:
+          $ref: "#/definitions/ChainRule"
+        x-key:
+        - "id"
+        x-key-list:
+        - name: "id"
+          type: "integer"
+          format: "uint32"
+    example:
+      default: "DROP, FORWARD, LOG"
+      stats:
+      - dport: 9
+        dst: "10.0.0.2/24"
+        src: "10.0.0.1/24"
+        bytes: 2
+        tcpflags: "!FIN,SYN,!RST,!ACK"
+        action: "DROP, FORWARD, LOG"
+        description: "This rule blocks incoming SSH connections."
+        id: 5
+        l4proto: "l4proto"
+        conntrack: "NEW"
+        sport: 7
+        pkts: 5
+      - dport: 9
+        dst: "10.0.0.2/24"
+        src: "10.0.0.1/24"
+        bytes: 2
+        tcpflags: "!FIN,SYN,!RST,!ACK"
+        action: "DROP, FORWARD, LOG"
+        description: "This rule blocks incoming SSH connections."
+        id: 5
+        l4proto: "l4proto"
+        conntrack: "NEW"
+        sport: 7
+        pkts: 5
+      name: "INGRESS, EGRESS."
+      rule:
+      - dport: 4
+        dst: "10.0.0.2/24"
+        src: "10.0.0.1/24"
+        tcpflags: "!FIN,SYN,!RST,!ACK"
+        action: "DROP, FORWARD, LOG"
+        description: "This rule blocks incoming SSH connections."
+        id: 3
+        l4proto: "l4proto"
+        conntrack: "NEW"
+        sport: 2
+      - dport: 4
+        dst: "10.0.0.2/24"
+        src: "10.0.0.1/24"
+        tcpflags: "!FIN,SYN,!RST,!ACK"
+        action: "DROP, FORWARD, LOG"
+        description: "This rule blocks incoming SSH connections."
+        id: 3
+        l4proto: "l4proto"
+        conntrack: "NEW"
+        sport: 2
+    x-is-list: "true"
+    x-has-yang-actions: true
+    x-yang-actions:
+    - x-yang-action-name-lower-camelcase: "append"
+      x-yang-action-name-upper-camelcase: "Append"
+      x-yang-action-input-object: "ChainAppendInput"
+      x-yang-action-has-output: true
+      x-yang-action-output-object: "ChainAppendOutput"
+      x-yang-action-has-input: true
+      x-yang-action-baseName: "append"
+    - x-yang-action-name-lower-camelcase: "resetCounters"
+      x-yang-action-name-upper-camelcase: "ResetCounters"
+      x-yang-action-output-object: "ChainResetCountersOutput"
+      x-yang-action-has-output: true
+      x-yang-action-has-input: false
+      x-yang-action-baseName: "reset-counters"
+    - x-yang-action-name-lower-camelcase: "applyRules"
+      x-yang-action-name-upper-camelcase: "ApplyRules"
+      x-yang-action-output-object: "ChainApplyRulesOutput"
+      x-yang-action-has-output: true
+      x-yang-action-has-input: false
+      x-yang-action-baseName: "apply-rules"
+    x-parent: "Firewall"
+  Firewall:
+    properties:
+      name:
+        type: "string"
+        example: "firewall1"
+        description: "Name of the firewall service"
+        x-is-required: true
+        x-is-key: true
+      uuid:
+        type: "string"
+        format: "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+        description: "UUID of the Cube"
+        readOnly: true
+      type:
+        type: "string"
+        example: "TC"
+        description: "Type of the Cube (TC, XDP_SKB, XDP_DRV)"
+        readOnly: true
+        default: "TC"
+        enum:
+        - "TC"
+        - "XDP_SKB"
+        - "XDP_DRV"
+      loglevel:
+        type: "string"
+        example: "INFO"
+        description: "Defines the logging level of a service instance, from none (OFF)\
+          \ to the most verbose (TRACE)"
+        default: "INFO"
+        enum:
+        - "TRACE"
+        - "DEBUG"
+        - "INFO"
+        - "WARN"
+        - "ERR"
+        - "CRITICAL"
+        - "OFF"
+      ports:
+        type: "array"
+        description: "Entry of the ports table"
+        items:
+          $ref: "#/definitions/Ports"
+        x-key:
+        - "name"
+        x-key-list:
+        - name: "name"
+          type: "string"
+      ingress-port:
+        type: "string"
+        description: "Name for the ingress port, from which arrives traffic processed\
+          \ by INGRESS chain (by default it's the first port of the cube)"
+      egress-port:
+        type: "string"
+        description: "Name for the egress port, from which arrives traffic processed\
+          \ by EGRESS chain (by default it's the second port of the cube)"
+      conntrack:
+        type: "string"
+        description: "Enables the Connection Tracking module. Mandatory if connection\
+          \ tracking rules are needed. Default is ON."
+        enum:
+        - "ON"
+        - "OFF"
+      accept-established:
+        type: "string"
+        description: "If Connection Tracking is enabled, all packets belonging to\
+          \ ESTABLISHED connections will be forwarded automatically. Default is ON."
+        enum:
+        - "ON"
+        - "OFF"
+      interactive:
+        type: "boolean"
+        description: "Interactive mode applies new rules immediately; if 'false',\
+          \ the command 'apply-rules' has to be used to apply all the rules at once.\
+          \ Default is TRUE."
+        default: true
+      session-table:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/SessionTable"
+        x-key:
+        - "src"
+        - "dst"
+        - "l4proto"
+        - "sport"
+        - "dport"
+        x-key-list:
+        - name: "src"
+          type: "string"
+        - name: "dst"
+          type: "string"
+        - name: "l4proto"
+          type: "string"
+        - name: "sport"
+          type: "integer"
+          format: "uint16"
+        - name: "dport"
+          type: "integer"
+          format: "uint16"
+      chain:
+        type: "array"
+        items:
+          $ref: "#/definitions/Chain"
+        x-key:
+        - "name"
+        x-key-list:
+        - name: "name"
+          type: "string"
+          isEnum: "true"
+    example:
+      chain:
+      - default: "DROP, FORWARD, LOG"
+        stats:
+        - dport: 9
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          bytes: 2
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 5
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 7
+          pkts: 5
+        - dport: 9
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          bytes: 2
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 5
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 7
+          pkts: 5
+        name: "INGRESS, EGRESS."
+        rule:
+        - dport: 4
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 3
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 2
+        - dport: 4
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 3
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 2
+      - default: "DROP, FORWARD, LOG"
+        stats:
+        - dport: 9
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          bytes: 2
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 5
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 7
+          pkts: 5
+        - dport: 9
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          bytes: 2
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 5
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 7
+          pkts: 5
+        name: "INGRESS, EGRESS."
+        rule:
+        - dport: 4
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 3
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 2
+        - dport: 4
+          dst: "10.0.0.2/24"
+          src: "10.0.0.1/24"
+          tcpflags: "!FIN,SYN,!RST,!ACK"
+          action: "DROP, FORWARD, LOG"
+          description: "This rule blocks incoming SSH connections."
+          id: 3
+          l4proto: "l4proto"
+          conntrack: "NEW"
+          sport: 2
+      egress-port: "egress-port"
+      loglevel: "INFO"
+      name: "firewall1"
+      interactive: true
+      accept-established: "ON"
+      type: "TC"
+      ports:
+      - peer: "r0:port1"
+        name: "port1"
+        uuid: "uuid"
+        status: "UP"
+      - peer: "r0:port1"
+        name: "port1"
+        uuid: "uuid"
+        status: "UP"
+      conntrack: "ON"
+      uuid: "uuid"
+      ingress-port: "ingress-port"
+      session-table:
+      - dport: 6
+        eta: 1
+        dst: "dst"
+        src: "src"
+        state: "state"
+        l4proto: "l4proto"
+        sport: 0
+      - dport: 6
+        eta: 1
+        dst: "dst"
+        src: "src"
+        state: "state"
+        l4proto: "l4proto"
+        sport: 0
+    x-is-list: "true"
+    x-parent: "Firewall"
+  ChainAppendInput:
+    properties:
+      src:
+        type: "string"
+        example: "10.0.0.1/24"
+        description: "Source IP Address."
+        readOnly: true
+      dst:
+        type: "string"
+        example: "10.0.0.2/24"
+        description: "Destination IP Address."
+        readOnly: true
+      l4proto:
+        type: "string"
+        description: "Level 4 Protocol."
+        readOnly: true
+      sport:
+        type: "integer"
+        format: "uint16"
+        description: "Source L4 Port"
+        readOnly: true
+      dport:
+        type: "integer"
+        format: "uint16"
+        description: "Destination L4 Port"
+        readOnly: true
+      tcpflags:
+        type: "string"
+        example: "!FIN,SYN,!RST,!ACK"
+        description: "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR,\
+          \ ECE. ! means set to 0."
+        readOnly: true
+      conntrack:
+        type: "string"
+        description: "Connection status (NEW, ESTABLISHED, RELATED, INVALID)"
+        readOnly: true
+        enum:
+        - "NEW"
+        - "ESTABLISHED"
+        - "RELATED"
+        - "INVALID"
+        x-typedef: "conntrackstatus"
+      action:
+        type: "string"
+        example: "DROP, FORWARD, LOG"
+        description: "Action if the rule matches. Default is DROP."
+        readOnly: true
+        enum:
+        - "DROP"
+        - "LOG"
+        - "FORWARD"
+        x-typedef: "action"
+      description:
+        type: "string"
+        example: "This rule blocks incoming SSH connections."
+        description: "Description of the rule."
+        readOnly: true
+    example:
+      dport: 6
+      dst: "10.0.0.2/24"
+      src: "10.0.0.1/24"
+      tcpflags: "!FIN,SYN,!RST,!ACK"
+      action: "DROP, FORWARD, LOG"
+      description: "This rule blocks incoming SSH connections."
+      l4proto: "l4proto"
+      conntrack: "NEW"
+      sport: 0
+    x-is-yang-action-object: true
+    x-parent: "Chain"
+  ChainAppendOutput:
+    properties:
+      id:
+        type: "integer"
+        format: "uint32"
+    example:
+      id: 0
+    x-is-yang-action-object: true
+    x-parent: "Chain"
+  ChainResetCountersOutput:
+    properties:
+      result:
+        type: "boolean"
+        description: "True if the operation is successful"
+    example:
+      result: true
+    x-is-yang-action-object: true
+    x-parent: "Chain"
+  ChainApplyRulesOutput:
+    properties:
+      result:
+        type: "boolean"
+        description: "True if the operation is successful"
+    example:
+      result: true
+    x-is-yang-action-object: true
+    x-parent: "Chain"
