@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+
 	//"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -39,18 +40,18 @@ import (
 )
 
 const (
-	basePath           = "http://127.0.0.1:9000/polycube/v1"
-	vxlanInterface     = "pcn_vxlan"
-	stackInterface     = "pcn_stack"
-	routerInterface    = "pcn_router"
+	basePath             = "http://127.0.0.1:9000/polycube/v1"
+	vxlanInterface       = "pcn_vxlan"
+	stackInterface       = "pcn_stack"
+	routerInterface      = "pcn_router"
 	polycubeK8sInterface = "pcn_k8s"
 	polycubeLBInterface  = "pcn_lb"
-	k8switchName       = "k8switch0"
+	k8switchName         = "k8switch0"
 
-	vPodsRangeDefault = "10.10.0.0/16"
-	vtepsRangeDefault = "10.18.0.0/16"
+	vPodsRangeDefault            = "10.10.0.0/16"
+	vtepsRangeDefault            = "10.18.0.0/16"
 	serviceClusterIPRangeDefault = "10.96.0.0/12"
-	serviceNodePortRangeDefault = "30000-32767"
+	serviceNodePortRangeDefault  = "30000-32767"
 )
 
 var (
@@ -70,6 +71,8 @@ var (
 
 	endpointsWatcher watch.Interface
 	nodesWatcher     watch.Interface
+
+	//defaultnpc DefaultNetworkPolicyController
 
 	stop bool
 )
