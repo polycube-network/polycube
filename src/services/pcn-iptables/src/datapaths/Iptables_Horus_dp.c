@@ -15,7 +15,7 @@
  */
 
 /* =======================
-   Ddos Mitigator
+   HORUS Mitigator
    ======================= */
 // #include <uapi/linux/ip.h>
 // #include <uapi/linux/udp.h>
@@ -32,7 +32,7 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-struct ddosKey {
+struct horusKey {
 #if _SRCIP
   uint32_t srcIp;
 #endif
@@ -50,7 +50,7 @@ struct ddosKey {
 #endif
 } __attribute__((packed));
 
-struct ddosValue {
+struct horusValue {
   uint8_t action;
   uint32_t ruleID;
 } __attribute__((packed));
@@ -67,21 +67,21 @@ enum {
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
 // TODO 1024 -> const
-BPF_TABLE("hash", struct ddosKey, struct ddosValue, ddosTable, 1024);
+BPF_TABLE("hash", struct horusKey, struct horusValue, horusTable, 1024);
 
 BPF_TABLE("extern", int, int, forwardingDecision, 1);
 
-// Per-CPU maps used to keep counter of DDoS rules
-BPF_TABLE("percpu_array", int, u64, pkts_ddos, 1024);
-BPF_TABLE("percpu_array", int, u64, bytes_ddos, 1024);
+// Per-CPU maps used to keep counter of HORUS rules
+BPF_TABLE("percpu_array", int, u64, pkts_horus, 1024);
+BPF_TABLE("percpu_array", int, u64, bytes_horus, 1024);
 
-static __always_inline void incrementDDoSCounters(u32 ruleID, u32 bytes) {
+static __always_inline void incrementHorusCounters(u32 ruleID, u32 bytes) {
   u64 *value;
-  value = pkts_ddos.lookup(&ruleID);
+  value = pkts_horus.lookup(&ruleID);
   if (value) {
     *value += 1;
   }
-  value = bytes_ddos.lookup(&ruleID);
+  value = bytes_horus.lookup(&ruleID);
   if (value) {
     *value += bytes;
   }
@@ -93,7 +93,7 @@ static __always_inline void updateForwardingDecision(int decision) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Ddos receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "HORUS receiving packet.");
 
   // lookup pkt headers
 
@@ -108,7 +108,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   // build key
-  struct ddosKey key;
+  struct horusKey key;
 
   #if _SRCIP
   key.srcIp = pkt->srcIp;
@@ -127,10 +127,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   #endif
 
   // lookup key
-  struct ddosValue* value;
-  value = ddosTable.lookup(&key);
+  struct horusValue* value;
+  value = horusTable.lookup(&key);
 
-  pcn_log(ctx, LOG_DEBUG, "DDOS key: %x. pkt: %x", key.srcIp, pkt->srcIp);
+  pcn_log(ctx, LOG_DEBUG, "HORUS key: %x. pkt: %x", key.srcIp, pkt->srcIp);
   if (value == NULL){
     // Miss, goto pipleline
     goto PIPELINE;
@@ -138,20 +138,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     // Independently from the final action (ACCEPT or DROP)
     // I have to update the counters
     if (value->ruleID <= 1024) {
-      pcn_log(ctx, LOG_DEBUG, "DDOS RuleID: %d", value->ruleID);
-      incrementDDoSCounters(value->ruleID, md->packet_len);
+      pcn_log(ctx, LOG_DEBUG, "HORUS RuleID: %d", value->ruleID);
+      incrementHorusCounters(value->ruleID, md->packet_len);
     } else {
-      pcn_log(ctx, LOG_DEBUG, "DDOS RuleID is greater than 1024");
+      pcn_log(ctx, LOG_DEBUG, "HORUS RuleID is greater than 1024");
       goto PIPELINE;
     }
 
     if (value->action == 0){
-      pcn_log(ctx, LOG_DEBUG, "DDOS ACTION=DROP. Drop the packet. ");
+      pcn_log(ctx, LOG_DEBUG, "HORUS ACTION=DROP. Drop the packet. ");
       return RX_DROP;
     }
     if (value->action == 1){
       //goto PASS
-      pcn_log(ctx, LOG_DEBUG, "DDOS ACTION=ACCEPT. Tag with PASS_LABELING. ");
+      pcn_log(ctx, LOG_DEBUG, "HORUS ACTION=ACCEPT. Tag with PASS_LABELING. ");
       updateForwardingDecision(PASS_LABELING);
       call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
     }
@@ -159,7 +159,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   PIPELINE:;
-  pcn_log(ctx, LOG_DEBUG, "DDOS Lookup MISS. Goto PIPELINE. ");
+  pcn_log(ctx, LOG_DEBUG, "HORUS Lookup MISS. Goto PIPELINE. ");
   call_bpf_program(ctx, _CHAINSELECTOR);
   return RX_DROP;
 }

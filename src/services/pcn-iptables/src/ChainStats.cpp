@@ -149,20 +149,20 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
     conntrackLabelProgram->flushCounters(parent.name, id);
   }
 
-  if (parent.parent_.ddos_mitigator_runtime_enabled_) {
-    if (!parent.parent_.ddos_mitigator_swap_) {
-      auto ddosProgram = dynamic_cast<Iptables::Ddos *>(programs[std::make_pair(
-          ModulesConstants::DDOS_INGRESS, ChainNameEnum::INVALID_INGRESS)]);
-      bytes += ddosProgram->getBytesCount(id);
-      pkts += ddosProgram->getPktsCount(id);
-      ddosProgram->flushCounters(id);
+  if (parent.parent_.horus_runtime_enabled_) {
+    if (!parent.parent_.horus_swap_) {
+      auto horusProgram = dynamic_cast<Iptables::Horus *>(programs[std::make_pair(
+          ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS)]);
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
     } else {
-      auto ddosProgram = dynamic_cast<Iptables::Ddos *>(
-          programs[std::make_pair(ModulesConstants::DDOS_INGRESS_SWAP,
+      auto horusProgram = dynamic_cast<Iptables::Horus *>(
+          programs[std::make_pair(ModulesConstants::HORUS_INGRESS_SWAP,
                                   ChainNameEnum::INVALID_INGRESS)]);
-      bytes += ddosProgram->getBytesCount(id);
-      pkts += ddosProgram->getPktsCount(id);
-      ddosProgram->flushCounters(id);
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
     }
   }
 }

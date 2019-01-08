@@ -44,8 +44,8 @@ const uint8_t CONNTRACKTABLEUPDATE_INGRESS = 4;
 const uint8_t CONNTRACKTABLEUPDATE_EGRESS = 4;
 
 // index of others modules
-const uint8_t DDOS_INGRESS = 5;
-const uint8_t DDOS_INGRESS_SWAP = 6;
+const uint8_t HORUS_INGRESS = 5;
+const uint8_t HORUS_INGRESS_SWAP = 6;
 
 // offset of modules in filtering pipeline
 const uint8_t CONNTRACKMATCH = 0;
@@ -106,26 +106,26 @@ struct IpAddr {
   }
 };
 
-// const used by ddos mitigator optimization
-namespace DdosConst {
+// const used by horus optimization
+namespace HorusConst {
 const uint8_t SRCIP = 0;
 const uint8_t DSTIP = 1;
 const uint8_t L4PROTO = 2;
 const uint8_t SRCPORT = 3;
 const uint8_t DSTPORT = 4;
 
-// apply DDoS mitigator optimization if there are at least # rules
+// apply Horus mitigator optimization if there are at least # rules
 // matching the pattern, at ruleset begin
-const uint8_t MIN_RULE_SIZE_FOR_DDOS = 1;
-const uint8_t MAX_RULE_SIZE_FOR_DDOS = -1;  // not used
+const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
+const uint8_t MAX_RULE_SIZE_FOR_HORUS = -1;  // not used
 
-  // Enable DDoS optimization
-  // We want to disable DDoS Mitigator by default while we decide a policy to apply it or not.
+  // Enable Horus optimization
+  // We want to disable Horus by default while we decide a policy to apply it or not.
   // The problem of incompatibility is semantic, this function could break iptables compatibility in INPUT/FORWARD chain
-  // const uint8_t ENABLE_DDOS_MITIGATOR = 0;
+  // const uint8_t ENABLE_HORUS = 0;
 }
 
-struct DdosRule {
+struct HorusRule {
   uint32_t src_ip;
   uint32_t dst_ip;
   uint8_t l4proto;
@@ -134,7 +134,7 @@ struct DdosRule {
   // bitvector representing set fields for current rule
   uint64_t setFields;
 
-  bool operator<(const DdosRule &that) const {
+  bool operator<(const HorusRule &that) const {
     if (this->src_ip != that.src_ip)
       return (this->src_ip < that.src_ip);
     else if (this->dst_ip != that.dst_ip)
@@ -149,7 +149,7 @@ struct DdosRule {
   }
 } __attribute__((packed));
 
-struct DdosValue {
+struct HorusValue {
   uint8_t action;
   uint32_t ruleID;
 } __attribute__((packed));

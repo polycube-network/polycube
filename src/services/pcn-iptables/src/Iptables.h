@@ -195,12 +195,12 @@ class Iptables : public polycube::service::Cube<Ports>,
   // interactive mode
   bool interactive_ = true;
 
-  // ddos mitigator optimization enabled by current rule set
-  bool ddos_mitigator_runtime_enabled_ = false;
+  // HORUS optimization enabled by current rule set
+  bool horus_runtime_enabled_ = false;
   bool horus_enabled = false;
 
-  // are we on swap or regular ddosmitigator program index
-  bool ddos_mitigator_swap_ = false;
+  // are we on swap or regular horus program index
+  bool horus_swap_ = false;
 
   bool fib_lookup_enabled_;
   bool fib_lookup_set_ = false;
@@ -284,14 +284,14 @@ class Iptables : public polycube::service::Cube<Ports>,
     void updateLocalIps();
   };
 
-  class Ddos : public Program {
+  class Horus : public Program {
    public:
-    enum DdosType { DDOS_INGRESS, DDOS_EGRESS };
+    enum HorusType { HORUS_INGRESS, HORUS_EGRESS };
 
-    Ddos(const int &index, Iptables &outer,
-         const std::map<struct DdosRule, struct DdosValue> &ddos,
-         DdosType t = DDOS_INGRESS);
-    ~Ddos();
+    Horus(const int &index, Iptables &outer,
+         const std::map<struct HorusRule, struct HorusValue> &horus,
+         HorusType t = HORUS_INGRESS);
+    ~Horus();
 
     std::string getCode();
     std::string defaultActionString(ChainNameEnum chain);  // Overrides
@@ -300,12 +300,12 @@ class Iptables : public polycube::service::Cube<Ports>,
     uint64_t getBytesCount(int rule_number);
 
     void flushCounters(int rule_number);
-    void updateTableValue(struct DdosRule ddos_key, struct DdosValue ddos_value);
-    void updateMap(const std::map<struct DdosRule, struct DdosValue> &ddos);
+    void updateTableValue(struct HorusRule horus_key, struct HorusValue horus_value);
+    void updateMap(const std::map<struct HorusRule, struct HorusValue> &horus);
 
    private:
-    DdosType type_;
-    std::map<struct DdosRule, struct DdosValue> ddos_;
+    HorusType type_;
+    std::map<struct HorusRule, struct HorusValue> horus_;
   };
 
   class ChainSelector : public Program {

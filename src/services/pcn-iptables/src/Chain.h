@@ -126,11 +126,11 @@ class Chain : public ChainInterface {
           std::map<uint8_t, std::vector<uint64_t>> &statusMap,
           const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void ddosFromRulesToMap(
-          std::map<struct DdosRule, struct DdosValue> &ddos,
+  static void horusFromRulesToMap(
+          std::map<struct HorusRule, struct HorusValue> &horus,
           const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
-                                     struct DdosRule &key,
-                                     struct DdosValue &value);
+  static void fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+                                      struct HorusRule &key,
+                                      struct HorusValue &value);
 };
