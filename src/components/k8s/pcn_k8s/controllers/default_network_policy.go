@@ -94,6 +94,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 				"method": "AddFunc()",
 			}).Infof("Something has been added! Workspaces is %s", key)
 
+			//	Set up the event
 			event := Event{
 				key:       key,
 				eventType: New,
@@ -203,7 +204,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 		l.Infof("Just got the item: its key is %s on namespace", event.key, event.namespace)
 
 		//	Ok, parse & process the policy
-		err := npc.processPolicy(event.key)
+		err := npc.processPolicy(event)
 
 		//	No errors?
 		if err == nil {
@@ -225,7 +226,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 	}
 }
 
-func (npc *DefaultNetworkPolicyController) processPolicy(key string) error {
+func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 
 	var l = log.WithFields(log.Fields{
 		"by":     logBy,
@@ -233,20 +234,20 @@ func (npc *DefaultNetworkPolicyController) processPolicy(key string) error {
 	})
 	var policy *networking_v1.NetworkPolicy
 
-	defer npc.queue.Done(key)
+	defer npc.queue.Done(event)
 	//var annotations map[string]string
 
 	l.Infof("Starting to process policy")
 
 	//	Get the policy by querying the key that kubernetes has assigned to this in its cache
-	_policy, exists, err := npc.defaultNetworkPoliciesInformer.GetIndexer().GetByKey(key)
+	_policy, exists, err := npc.defaultNetworkPoliciesInformer.GetIndexer().GetByKey(event.key)
 
 	//	Errors?
 	if err != nil {
-		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", event.key, err)
 
 		//	TODO: check this
-		return fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
+		return fmt.Errorf("An error occurred: cannot find cache element with key %s from ", event.key)
 	}
 
 	//	Get the policy
@@ -408,7 +409,7 @@ func (npc *DefaultNetworkPolicyController) processPolicy(key string) error {
 
 	//	Does not exist?
 	if !exists {
-		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", key)
+		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.key)
 	}
 
 	return nil
