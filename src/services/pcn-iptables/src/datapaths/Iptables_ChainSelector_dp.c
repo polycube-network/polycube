@@ -132,6 +132,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   #if _INGRESS_ALLOWLOGIC
       pcn_log(ctx, LOG_DEBUG, "INGRESS LOGIC PASS. No rules for INPUT and FORWARD, and default is ACCEPT. ");
       updateForwardingDecision(PASS_LABELING);
+      incrementDefaultCountersInput(md->packet_len);
+      _DEFAULTACTION_INPUT
       call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
   #endif
 
