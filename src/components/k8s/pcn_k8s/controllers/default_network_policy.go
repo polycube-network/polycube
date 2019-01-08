@@ -6,6 +6,7 @@ import (
 	"time"
 
 	//	To check for protocol type
+
 	v1 "k8s.io/api/core/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -32,14 +33,17 @@ type DefaultNetworkPolicyController struct {
 	startedOn time.Time
 }
 
-var maxRetries = 5
+const (
+	maxRetries = 5
+	logBy      = "DNPC"
+)
 
 func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Clientset) *DefaultNetworkPolicyController {
 
 	//	Let them know we're starting
 	log.SetLevel(log.DebugLevel)
 	var l = log.WithFields(log.Fields{
-		"by":     "NPC",
+		"by":     logBy,
 		"method": "NewNetworkPolicyController()",
 	})
 
@@ -86,13 +90,19 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			log.WithFields(log.Fields{
-				"by":     "NPC",
+				"by":     logBy,
 				"method": "AddFunc()",
 			}).Infof("Something has been added! Workspaces is %s", key)
 
-			//	Add this key to the queue
+			event := Event{
+				key:       key,
+				eventType: New,
+				namespace: strings.Split(key, "/")[0],
+			}
+
+			//	Add this event to the queue
 			if err == nil {
-				queue.Add(key)
+				queue.Add(event)
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
@@ -104,7 +114,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 				queue.Add(newEvent)
 			}*/
 			log.WithFields(log.Fields{
-				"by":     "NPC",
+				"by":     logBy,
 				"method": "UpdateFunc()",
 			}).Info("Something has been updated!")
 		},
@@ -118,7 +128,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 				queue.Add(newEvent)
 			}*/
 			log.WithFields(log.Fields{
-				"by":     "NPC",
+				"by":     logBy,
 				"method": "DeleteFunc()",
 			}).Info("Something has been deleted!")
 		},
@@ -138,7 +148,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 func (npc *DefaultNetworkPolicyController) Run() {
 
 	var l = log.WithFields(log.Fields{
-		"by":     "NPC",
+		"by":     logBy,
 		"method": "Start()",
 	})
 
@@ -174,7 +184,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 
 	var stop = false
 	var l = log.WithFields(log.Fields{
-		"by":     "NPC",
+		"by":     logBy,
 		"method": "work()",
 	})
 
@@ -187,26 +197,27 @@ func (npc *DefaultNetworkPolicyController) work() {
 		//	Get the item's key from the queue
 		//	NOTE: as far as I have learned, this blocks when no items are there.
 		//	So this is a looper that does not consume cpu cycles
-		key, quit := npc.queue.Get()
+		_event, quit := npc.queue.Get()
+		event := _event.(Event)
 
-		l.Infof("Just got the item: its key is %s", key)
+		l.Infof("Just got the item: its key is %s on namespace", event.key, event.namespace)
 
 		//	Ok, parse & process the policy
-		err := npc.processPolicy(key.(string))
+		err := npc.processPolicy(event.key)
 
 		//	No errors?
 		if err == nil {
 			//	Then reset the ratelimit counters
-			npc.queue.Forget(key)
-			l.Infof("Item with key %s has been forgotten from the queue", key)
-		} else if npc.queue.NumRequeues(key) < maxRetries {
+			npc.queue.Forget(_event)
+			l.Infof("Item with key %s has been forgotten from the queue", event.key)
+		} else if npc.queue.NumRequeues(_event) < maxRetries {
 			//	Tried less than the maximum retries?
-			l.Warningf("Error processing item with key %s (will retry): %v", key, err)
-			npc.queue.AddRateLimited(key)
+			l.Warningf("Error processing item with key %s (will retry): %v", event.key, err)
+			npc.queue.AddRateLimited(_event)
 		} else {
 			//	Too many retries?
-			l.Errorf("Error processing %s (giving up): %v", key, err)
-			npc.queue.Forget(key)
+			l.Errorf("Error processing %s (giving up): %v", event.key, err)
+			npc.queue.Forget(_event)
 			utilruntime.HandleError(err)
 		}
 
@@ -217,7 +228,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 func (npc *DefaultNetworkPolicyController) processPolicy(key string) error {
 
 	var l = log.WithFields(log.Fields{
-		"by":     "NPC",
+		"by":     logBy,
 		"method": "processPolicy()",
 	})
 	var policy *networking_v1.NetworkPolicy
@@ -406,7 +417,7 @@ func (npc *DefaultNetworkPolicyController) processPolicy(key string) error {
 func (npc *DefaultNetworkPolicyController) Stop() {
 
 	log.WithFields(log.Fields{
-		"by":     "NPC",
+		"by":     logBy,
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
 }
