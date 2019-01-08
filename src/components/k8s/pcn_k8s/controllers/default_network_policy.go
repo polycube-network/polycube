@@ -201,7 +201,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 		_event, quit := npc.queue.Get()
 		event := _event.(Event)
 
-		l.Infof("Just got the item: its key is %s on namespace", event.key, event.namespace)
+		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
 
 		//	Ok, parse & process the policy
 		err := npc.processPolicy(event)
