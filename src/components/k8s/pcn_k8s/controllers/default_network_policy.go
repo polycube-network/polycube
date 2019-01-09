@@ -441,3 +441,51 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
 }
+
+func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method func(interface{})) (func(), error) {
+
+	//	What event are you subscribing to?
+	switch event {
+
+	//-------------------------------------
+	//	New event
+	//-------------------------------------
+
+	case New:
+		id := npc.dispatchers.new.Add(method)
+
+		return func() {
+			npc.dispatchers.new.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Update event
+	//-------------------------------------
+
+	case Update:
+		id := npc.dispatchers.update.Add(method)
+
+		return func() {
+			npc.dispatchers.update.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Delete Event
+	//-------------------------------------
+
+	case Delete:
+		id := npc.dispatchers.delete.Add(method)
+
+		return func() {
+			npc.dispatchers.delete.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Undefined event
+	//-------------------------------------
+
+	default:
+		return nil, fmt.Errorf("Undefined event type")
+	}
+
+}
