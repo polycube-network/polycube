@@ -440,6 +440,11 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 		"by":     logBy,
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
+
+	//	Clean up the dispatchers
+	npc.dispatchers.new.CleanUp()
+	npc.dispatchers.update.CleanUp()
+	npc.dispatchers.delete.CleanUp()
 }
 
 func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method func(interface{})) (func(), error) {
