@@ -272,6 +272,18 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 	//	Get the policy
 	policy = _policy.(*networking_v1.NetworkPolicy)
 
+	//	Dispatch the event
+	switch event.eventType {
+
+	case New:
+		npc.dispatchers.new.Dispatch(policy)
+	case Update:
+		npc.dispatchers.update.Dispatch(policy)
+	case Delete:
+		npc.dispatchers.delete.Dispatch(policy)
+
+	}
+
 	//	Get the annotations
 	//	TODO: this is going to be used to check for whitelist/blacklist feature
 	//policy.ObjectMeta.GetAnnotations()
