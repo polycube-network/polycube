@@ -205,6 +205,12 @@ ChainAppendOutputJsonObject Chain::append(ChainAppendInputJsonObject input) {
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
   }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
+  }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
   }
@@ -253,6 +259,12 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
   }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
+  }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
   }
@@ -300,6 +312,12 @@ void Chain::deletes(ChainDeleteInputJsonObject input) {
   }
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
+  }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
   }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
@@ -423,6 +441,7 @@ void Chain::updateChain() {
   std::map<struct IpAddr, std::vector<uint64_t>> ipdst_map;
   std::map<uint16_t, std::vector<uint64_t>> portsrc_map;
   std::map<uint16_t, std::vector<uint64_t>> portdst_map;
+  std::map<uint16_t, std::vector<uint64_t>> interface_map;
   std::map<int, std::vector<uint64_t>> protocol_map;
   std::vector<std::vector<uint64_t>> flags_map;
 
@@ -555,13 +574,15 @@ void Chain::updateChain() {
           portFromRulesToMap(SOURCE_TYPE, portsrc_map, getRuleList());
   bool portdst_break =
           portFromRulesToMap(DESTINATION_TYPE, portdst_map, getRuleList());
+  bool interface_break =
+          interfaceFromRulesToMap( (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE, interface_map, getRuleList(), parent_);
   bool flags_break = flagsFromRulesToMap(flags_map, getRuleList());
 
   logger()->debug(
       "Early break of pipeline conntrack:{0} ipsrc:{1} ipdst:{2} protocol:{3} "
-      "portstc:{4} portdst:{5} flags:{6} ",
+      "portstc:{4} portdst:{5} interface:{6} flags:{7} ",
       conntrack_break, ipsrc_break, ipdst_break, protocol_break, portsrc_break,
-      portdst_break, flags_break);
+      portdst_break, interface_break, flags_break);
 
   // first loop iteration pushes program that could early break the pipeline
   // second iteration, push others programs
@@ -739,6 +760,31 @@ void Chain::updateChain() {
     }
     // portdst_map.clear();
     // Done looping through destination port
+
+    // Looping through interface
+    if (!interface_map.empty() && interface_break ^ second) {
+      // At least one rule requires a matching on interface,
+      // so inject the  module  on the first available position
+      newProgramsChain.insert(
+              std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
+                      std::make_pair(ModulesConstants::INTERFACE, name),
+                      new Iptables::InterfaceLookup(index, name, (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE,
+                                                 this->parent_, interface_map)));
+
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = newProgramsChain[std::make_pair(
+                ModulesConstants::INTERFACE, name)];
+      }
+      logger()->trace("Interface index:{0}", index);
+      ++index;
+
+      // Now the program is loaded, populate it.
+      dynamic_cast<Iptables::InterfaceLookup *>(
+              newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)])
+              ->updateMap(interface_map);
+    }
+    // Done looping through interface
 
     // Looping through tcp flags
     if (!flags_map.empty() && flags_break ^ second) {

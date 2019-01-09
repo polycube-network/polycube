@@ -118,6 +118,11 @@ class Chain : public ChainInterface {
           const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
           const std::vector<std::shared_ptr<ChainRule>> &rules);
 
+  static bool interfaceFromRulesToMap(
+          const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &interfaces,
+          const std::vector<std::shared_ptr<ChainRule>> &rules,
+          Iptables& iptables);
+
   static bool flagsFromRulesToMap(
           std::vector<std::vector<uint64_t>> &flags,
           const std::vector<std::shared_ptr<ChainRule>> &rules);
