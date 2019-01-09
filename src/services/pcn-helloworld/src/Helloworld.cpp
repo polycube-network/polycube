@@ -26,8 +26,7 @@ using namespace polycube::service;
 
 Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf,
                        CubeType type)
-    : Cube(name, {generate_code()}, {helloworld_code_egress}, type,
-           conf.getPolycubeLoglevel()) {
+    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
   //: Cube(name, {generate_code()}, type, conf.getPolycubeLoglevel()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [helloworld] [%n] [%l] %v");
   // TODO: this should be done at initalization time
