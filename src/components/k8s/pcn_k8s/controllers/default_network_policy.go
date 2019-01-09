@@ -31,6 +31,14 @@ type DefaultNetworkPolicyController struct {
 	defaultNetworkPoliciesInformer cache.SharedIndexInformer
 
 	startedOn time.Time
+
+	dispatchers eventDispatchers
+}
+
+type eventDispatchers struct {
+	new    *EventDispatcher
+	update *EventDispatcher
+	delete *EventDispatcher
 }
 
 const (
@@ -137,12 +145,23 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 
 	l.Info("Just set up the event handlers")
 
+	//------------------------------------------------
+	//	Set up the dispatchers
+	//------------------------------------------------
+
+	dispatchers := eventDispatchers{
+		new:    NewEventDispatcher("new-default-policy-event-dispatcher"),
+		update: NewEventDispatcher("update-default-policy-event-dispatcher"),
+		delete: NewEventDispatcher("delete-default-policy-event-dispatcher"),
+	}
+
 	//	Everything set up, return the controller
 	return &DefaultNetworkPolicyController{
 		nodeName:  nodeName,
 		clientset: clientset,
 		queue:     queue,
 		defaultNetworkPoliciesInformer: npcInformer,
+		dispatchers:                    dispatchers,
 	}
 }
 
