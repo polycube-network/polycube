@@ -246,6 +246,9 @@ func main() {
 	//	Start the default network policy controller
 	//	(the actually listener will run in a separate thread)
 	defaultnpc.Run()
+	defaultnpc.Subscribe(controllers.New, func(interface{}) {
+		log.Println("new Event from subscription!")
+	})
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
