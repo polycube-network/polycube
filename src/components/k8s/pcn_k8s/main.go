@@ -246,6 +246,7 @@ func main() {
 	//	Start the default network policy controller
 	//	(the actually listener will run in a separate thread)
 	defaultnpc.Run()
+	log.Infoln("going to subscribe!")
 	defaultnpc.Subscribe(controllers.New, func(interface{}) {
 		log.Println("new Event from subscription!")
 	})
