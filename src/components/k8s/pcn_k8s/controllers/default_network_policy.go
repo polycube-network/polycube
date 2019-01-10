@@ -31,6 +31,14 @@ type DefaultNetworkPolicyController struct {
 	defaultNetworkPoliciesInformer cache.SharedIndexInformer
 
 	startedOn time.Time
+
+	dispatchers eventDispatchers
+}
+
+type eventDispatchers struct {
+	new    *EventDispatcher
+	update *EventDispatcher
+	delete *EventDispatcher
 }
 
 const (
@@ -137,12 +145,23 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 
 	l.Info("Just set up the event handlers")
 
+	//------------------------------------------------
+	//	Set up the dispatchers
+	//------------------------------------------------
+
+	dispatchers := eventDispatchers{
+		new:    NewEventDispatcher("new-default-policy-event-dispatcher"),
+		update: NewEventDispatcher("update-default-policy-event-dispatcher"),
+		delete: NewEventDispatcher("delete-default-policy-event-dispatcher"),
+	}
+
 	//	Everything set up, return the controller
 	return &DefaultNetworkPolicyController{
 		nodeName:  nodeName,
 		clientset: clientset,
 		queue:     queue,
 		defaultNetworkPoliciesInformer: npcInformer,
+		dispatchers:                    dispatchers,
 	}
 }
 
@@ -252,6 +271,18 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 
 	//	Get the policy
 	policy = _policy.(*networking_v1.NetworkPolicy)
+
+	//	Dispatch the event
+	switch event.eventType {
+
+	case New:
+		npc.dispatchers.new.Dispatch(policy)
+	case Update:
+		npc.dispatchers.update.Dispatch(policy)
+	case Delete:
+		npc.dispatchers.delete.Dispatch(policy)
+
+	}
 
 	//	Get the annotations
 	//	TODO: this is going to be used to check for whitelist/blacklist feature
@@ -421,4 +452,57 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 		"by":     logBy,
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
+
+	//	Clean up the dispatchers
+	npc.dispatchers.new.CleanUp()
+	npc.dispatchers.update.CleanUp()
+	npc.dispatchers.delete.CleanUp()
+}
+
+func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method func(interface{})) (func(), error) {
+
+	//	What event are you subscribing to?
+	switch event {
+
+	//-------------------------------------
+	//	New event
+	//-------------------------------------
+
+	case New:
+		id := npc.dispatchers.new.Add(method)
+
+		return func() {
+			npc.dispatchers.new.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Update event
+	//-------------------------------------
+
+	case Update:
+		id := npc.dispatchers.update.Add(method)
+
+		return func() {
+			npc.dispatchers.update.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Delete Event
+	//-------------------------------------
+
+	case Delete:
+		id := npc.dispatchers.delete.Add(method)
+
+		return func() {
+			npc.dispatchers.delete.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Undefined event
+	//-------------------------------------
+
+	default:
+		return nil, fmt.Errorf("Undefined event type")
+	}
+
 }
