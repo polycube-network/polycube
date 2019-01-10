@@ -109,11 +109,6 @@ class RestServer {
   void default_handler(const Rest::Request &request,
                        Http::ResponseWriter response);
 
-  void post_service_instance(const Rest::Request &request,
-                             Http::ResponseWriter response);
-  void delete_service_instance(const Rest::Request &request,
-                               Http::ResponseWriter response);
-
   void get_version(const Rest::Request &request,
                    Http::ResponseWriter response);
 
