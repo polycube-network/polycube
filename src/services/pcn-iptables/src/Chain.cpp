@@ -443,6 +443,8 @@ void Chain::updateChain() {
    * miss -> goto all pipeline steps
    */
 
+  parent_.ddos_mitigator_runtime_enabled_ = false;
+
   // Apply DDoS Mitigator optimization only if we are updating INPUT chain
   if ((name == ChainNameEnum::INPUT) && (parent_.horus_enabled)) {
     // if len INPUT >= MIN_RULES_DDOS_OPTIMIZATION
@@ -507,6 +509,27 @@ void Chain::updateChain() {
           parent_.programs_.erase(it);
         }
       }
+    }
+  }
+  if (parent_.ddos_mitigator_runtime_enabled_ == false) {
+    // Recompile parser
+    // parser should ask to DDos its index getIndex from DDoS
+    parent_.programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,ChainNameEnum::INVALID_INGRESS)]->reload();
+
+    // Delete old DDos, if present
+    auto it = parent_.programs_.find(
+            std::make_pair(ModulesConstants::DDOS_INGRESS, ChainNameEnum::INVALID_INGRESS));
+    if (it != parent_.programs_.end()) {
+      delete it->second;
+      parent_.programs_.erase(it);
+    }
+
+    // Delete old DDos, if present
+    it = parent_.programs_.find(
+            std::make_pair(ModulesConstants::DDOS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
+    if (it != parent_.programs_.end()) {
+      delete it->second;
+      parent_.programs_.erase(it);
     }
   }
 
