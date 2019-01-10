@@ -142,8 +142,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->dstPort = udp->dest;
   }
 
-#if _DDOS_ENABLED
-  call_bpf_program(ctx, _DDOS_MITIGATOR);
+#if _HORUS_ENABLED
+  call_bpf_program(ctx, _HORUS);
 #endif
 
   // or INGRESS or EGRESS

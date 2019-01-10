@@ -15,9 +15,9 @@
  */
 
 #include "../Iptables.h"
-#include "datapaths/Iptables_Ddos_dp.h"
+#include "datapaths/Iptables_Horus_dp.h"
 
-struct ddosKey {
+struct horusKey {
   bool src_ip_set = false;
   bool dst_ip_set = false;
   bool src_port_set = false;
@@ -58,35 +58,35 @@ struct ddosKey {
   }
 };
 
-Iptables::Ddos::Ddos(const int &index, Iptables &outer,
-                     const std::map<struct DdosRule, struct DdosValue> &ddos,
-                     DdosType type)
-    : Iptables::Program(iptables_code_ddos, index,
+Iptables::Horus::Horus(const int &index, Iptables &outer,
+                     const std::map<struct HorusRule, struct HorusValue> &horus,
+                     HorusType type)
+    : Iptables::Program(iptables_code_horus, index,
                         ChainNameEnum::INVALID_INGRESS, outer) {
   type_ = type;
-  ddos_ = ddos;
+  horus_ = horus;
   load();
 }
 
-Iptables::Ddos::~Ddos() {}
+Iptables::Horus::~Horus() {}
 
-std::string Iptables::Ddos::defaultActionString(ChainNameEnum chain) {
+std::string Iptables::Horus::defaultActionString(ChainNameEnum chain) {
   return "";
 }
 
-std::string Iptables::Ddos::getCode() {
+std::string Iptables::Horus::getCode() {
   std::string no_macro_code = code_;
 
-  struct DdosRule ddos_key;
-  for (auto ele : ddos_) {
-    ddos_key = ele.first;
+  struct HorusRule horus_key;
+  for (auto ele : horus_) {
+    horus_key = ele.first;
     break;
   }
 
   std::string enabled;
   std::string disabled;
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::SRCIP)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::SRCIP)) {
     replaceAll(no_macro_code, "_SRCIP", std::to_string(1));
     enabled += "SRCIP ";
   } else {
@@ -94,7 +94,7 @@ std::string Iptables::Ddos::getCode() {
     disabled += "SRCIP ";
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::DSTIP)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::DSTIP)) {
     replaceAll(no_macro_code, "_DSTIP", std::to_string(1));
     enabled += "DSTIP ";
   } else {
@@ -102,7 +102,7 @@ std::string Iptables::Ddos::getCode() {
     disabled += "DSTIP ";
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::SRCPORT)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::SRCPORT)) {
     replaceAll(no_macro_code, "_SRCPORT", std::to_string(1));
     enabled += "SRCPORT ";
   } else {
@@ -110,7 +110,7 @@ std::string Iptables::Ddos::getCode() {
     disabled += "SRCPORT ";
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::DSTPORT)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::DSTPORT)) {
     enabled += "DSTPORT ";
     replaceAll(no_macro_code, "_DSTPORT", std::to_string(1));
   } else {
@@ -118,7 +118,7 @@ std::string Iptables::Ddos::getCode() {
     disabled += "DSTPORT ";
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::L4PROTO)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::L4PROTO)) {
     replaceAll(no_macro_code, "_L4PROTO", std::to_string(1));
     enabled += "L4PROTO ";
   } else {
@@ -131,20 +131,20 @@ std::string Iptables::Ddos::getCode() {
   replaceAll(no_macro_code, "_CONNTRACK_LABEL_INGRESS",
              std::to_string(ModulesConstants::CONNTRACKLABEL_INGRESS));
 
-  if (program_type_ == ProgramType::INGRESS){
+  if (program_type_ == ProgramType::INGRESS) {
     replaceAll(no_macro_code, "call_bpf_program", "call_ingress_program");
-  } else if (program_type_ == ProgramType::EGRESS){
+  } else if (program_type_ == ProgramType::EGRESS) {
     replaceAll(no_macro_code, "call_bpf_program", "call_egress_program");
   }
 
-  iptables_.logger()->debug("DDoS fields ENABLED: {0} - DISABLED {1} ", enabled,
+  iptables_.logger()->debug("HORUS fields ENABLED: {0} - DISABLED {1} ", enabled,
                            disabled);
 
   return no_macro_code;
 }
 
-uint64_t Iptables::Ddos::getPktsCount(int rule_number) {
-  std::string table_name = "pkts_ddos";
+uint64_t Iptables::Horus::getPktsCount(int rule_number) {
+  std::string table_name = "pkts_horus";
 
   try {
     std::lock_guard<std::mutex> guard(program_mutex_);
@@ -159,8 +159,8 @@ uint64_t Iptables::Ddos::getPktsCount(int rule_number) {
   }
 }
 
-uint64_t Iptables::Ddos::getBytesCount(int rule_number) {
-  std::string table_name = "bytes_ddos";
+uint64_t Iptables::Horus::getBytesCount(int rule_number) {
+  std::string table_name = "bytes_horus";
 
   try {
     std::lock_guard<std::mutex> guard(program_mutex_);
@@ -174,9 +174,9 @@ uint64_t Iptables::Ddos::getBytesCount(int rule_number) {
   }
 }
 
-void Iptables::Ddos::flushCounters(int rule_number) {
-  std::string pkts_table_name = "pkts_ddos";
-  std::string bytes_table_name = "bytes_ddos";
+void Iptables::Horus::flushCounters(int rule_number) {
+  std::string pkts_table_name = "pkts_horus";
+  std::string bytes_table_name = "bytes_horus";
 
   try {
     auto pkts_table =
@@ -192,47 +192,47 @@ void Iptables::Ddos::flushCounters(int rule_number) {
   }
 }
 
-void Iptables::Ddos::updateTableValue(struct DdosRule ddos_key,
-                                      struct DdosValue ddos_value) {
+void Iptables::Horus::updateTableValue(struct HorusRule horus_key,
+                                      struct HorusValue horus_value) {
   std::vector<std::string> key_vector;
-  struct ddosKey key;
+  struct horusKey key;
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::SRCIP)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::SRCIP)) {
     key.src_ip_set = true;
-    key.src_ip = ddos_key.src_ip;
+    key.src_ip = horus_key.src_ip;
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::DSTIP)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::DSTIP)) {
     key.dst_ip_set = true;
-    key.dst_ip = ddos_key.dst_ip;
+    key.dst_ip = horus_key.dst_ip;
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::SRCPORT)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::SRCPORT)) {
     key.src_port_set = true;
-    key.src_port = ddos_key.src_port;
+    key.src_port = horus_key.src_port;
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::DSTPORT)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::DSTPORT)) {
     key.dst_port_set = true;
-    key.dst_port = ddos_key.dst_port;
+    key.dst_port = horus_key.dst_port;
   }
 
-  if (CHECK_BIT(ddos_key.setFields, DdosConst::L4PROTO)) {
+  if (CHECK_BIT(horus_key.setFields, HorusConst::L4PROTO)) {
     key.l4proto_set = true;
-    key.l4proto = ddos_key.l4proto;
+    key.l4proto = horus_key.l4proto;
   }
 
   char buffer[2 * sizeof(uint32_t) +
               2 * sizeof(uint16_t) /*+ sizeof(uint8_t)*/] = {0};
-  auto table = iptables_.get_raw_table("ddosTable", index_);
-  table.set(key.toData(buffer), &ddos_value);
+  auto table = iptables_.get_raw_table("horusTable", index_);
+  table.set(key.toData(buffer), &horus_value);
 }
 
-void Iptables::Ddos::updateMap(
-    const std::map<struct DdosRule, struct DdosValue> &ddos) {
-  iptables_.logger()->info("DDoS # offloaded rules: {0} ", ddos.size());
+void Iptables::Horus::updateMap(
+    const std::map<struct HorusRule, struct HorusValue> &horus) {
+  iptables_.logger()->info("HORUS # offloaded rules: {0} ", horus.size());
 
-  for (auto ele : ddos) {
+  for (auto ele : horus) {
     updateTableValue(ele.first, ele.second);
   }
 }

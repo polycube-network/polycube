@@ -426,84 +426,90 @@ void Chain::updateChain() {
   std::map<int, std::vector<uint64_t>> protocol_map;
   std::vector<std::vector<uint64_t>> flags_map;
 
-  std::map<struct DdosRule, struct DdosValue> ddos;
+  std::map<struct HorusRule, struct HorusValue> horus;
 
   /*
-   * DDOS mitigator optimization
+   * HORUS - Homogeneous RUleset analySis
    *
-   * if first rules of INPUT ruleset are matching on same fields (e.g. srcIp,
-   * dstIp, l4protocol, srcPort, dstPort)
-   * or a subset of them, but with exactly same subset
-   * and no rules are present for FORWARD chain
-   * a specific DDoS eBPF program is loaded before the INPUT/FORWARD chains
-   * it contains an hashmap with the current subset of fields
-   * each pkt received by the program, is looked-up vs this hashmap.
-   * hit -> DROP action: drop the packet; ACCEPT action: goto CTLABELING and
-   * CTTABLEUPDATE without goint through pipeline
-   * miss -> goto all pipeline steps
+   * Horus optimization allows to
+   * a) offload a group of contiguous rules matching on same field
+   * b) match the group of offloaded rules with complexity O(1) - single map lookup
+   * c) dynamically adapting to different groups of rules, matching each combination of ipsrc/dst, portsrc/dst, tcpflags
+   * d) dynamically check when the optimization is possible according to current ruleset. It means check orthogonality
+   * of rules before the offloaded group, respect to the group itself.
+   *
+   * -Working on INPUT chain, if no FORWARD rules are present.
+   * TODO: put Horus after chainselector, so it can work only on INPUT pkts without possible semantic issues.
+   *
+   * each pkt received by the program, is looked-up vs the HORUS HASHMAP.
+   * hit ->
+   * DROP action: drop the packet;
+   * ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through pipeline
+   * miss ->
+   * GOTO all pipeline steps
    */
 
-  parent_.ddos_mitigator_runtime_enabled_ = false;
+  parent_.horus_runtime_enabled_ = false;
 
-  // Apply DDoS Mitigator optimization only if we are updating INPUT chain
+  // Apply Horus optimization only if we are updating INPUT chain
   if ((name == ChainNameEnum::INPUT) && (parent_.horus_enabled)) {
-    // if len INPUT >= MIN_RULES_DDOS_OPTIMIZATION
+    // if len INPUT >= MIN_RULES_HORUS_OPTIMIZATION
     // if len FORWARD == 0
-    if ((getRuleList().size() >= DdosConst::MIN_RULE_SIZE_FOR_DDOS) &&
+    if ((getRuleList().size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) &&
         (parent_.getChain(ChainNameEnum::FORWARD)->getRuleList().size() == 0)) {
-      // calculate ddos mitigator ruleset
-      ddosFromRulesToMap(ddos, getRuleList());
+      // calculate horus ruleset
+      horusFromRulesToMap(horus, getRuleList());
 
-      // if ddos.size() >= MIN_RULES_DDOS_OPTIMIZATION
-      if (ddos.size() >= DdosConst::MIN_RULE_SIZE_FOR_DDOS) {
-        logger()->info("DDoS Mitigator Optimization ENABLED for this rule-set");
+      // if horus.size() >= MIN_RULES_HORUS_OPTIMIZATION
+      if (horus.size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+        logger()->info("Horus Optimization ENABLED for this rule-set");
 
-        // ddos_mitigator_runtime_enabled_ = true -> (Parser should access to
+        // horus_runtime_enabled_ = true -> (Parser should access to
         // this var to compile itself)
-        parent_.ddos_mitigator_runtime_enabled_ = true;
+        parent_.horus_runtime_enabled_ = true;
 
         // SWAP indexes
-        parent_.ddos_mitigator_swap_ = !parent_.ddos_mitigator_swap_;
+        parent_.horus_swap_ = !parent_.horus_swap_;
 
-        uint8_t ddos_index_new = -1;
-        uint8_t ddos_index_old = -1;
+        uint8_t horus_index_new = -1;
+        uint8_t horus_index_old = -1;
 
-        // Apply DDos mitigator
+        // Apply Horus mitigator
 
         // Calculate current new/old indexes
-        if (parent_.ddos_mitigator_swap_) {
-          ddos_index_new = ModulesConstants::DDOS_INGRESS_SWAP;
-          ddos_index_old = ModulesConstants::DDOS_INGRESS;
+        if (parent_.horus_swap_) {
+          horus_index_new = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_old = ModulesConstants::HORUS_INGRESS;
         } else {
-          ddos_index_old = ModulesConstants::DDOS_INGRESS_SWAP;
-          ddos_index_new = ModulesConstants::DDOS_INGRESS;
+          horus_index_old = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_new = ModulesConstants::HORUS_INGRESS;
         }
 
-        // Compile and inject program (DDoS Mitigator should have 1 static var
+        // Compile and inject program (Horus should have 1 static var
         // to switch index)
 
-        // DDoS Constructor is in charge to compile datapath with correct const
+        // Horus Constructor is in charge to compile datapath with correct const
         parent_.programs_.insert(
             std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
-                std::make_pair(ddos_index_new, ChainNameEnum::INVALID_INGRESS),
-                new Iptables::Ddos(ddos_index_new, parent_, ddos)));
+                std::make_pair(horus_index_new, ChainNameEnum::INVALID_INGRESS),
+                new Iptables::Horus(horus_index_new, parent_, horus)));
 
-        // DDoS UpdateMap is in charge to update maps
-        dynamic_cast<Iptables::Ddos *>(
-            parent_.programs_[std::make_pair(ddos_index_new,
+        // Horus UpdateMap is in charge to update maps
+        dynamic_cast<Iptables::Horus *>(
+            parent_.programs_[std::make_pair(horus_index_new,
                                             ChainNameEnum::INVALID_INGRESS)])
-            ->updateMap(ddos);
+            ->updateMap(horus);
 
         // Recompile parser
-        // parser should ask to DDos its index getIndex from DDoS
+        // parser should ask to Horus its index getIndex from Horus
         parent_
             .programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,
                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
 
-        // Delete old DDos, if present
+        // Delete old Horus, if present
         auto it = parent_.programs_.find(
-            std::make_pair(ddos_index_old, ChainNameEnum::INVALID_INGRESS));
+            std::make_pair(horus_index_old, ChainNameEnum::INVALID_INGRESS));
         if (it != parent_.programs_.end()) {
           delete it->second;
           parent_.programs_.erase(it);
@@ -511,22 +517,22 @@ void Chain::updateChain() {
       }
     }
   }
-  if (parent_.ddos_mitigator_runtime_enabled_ == false) {
+  if (parent_.horus_runtime_enabled_ == false) {
     // Recompile parser
-    // parser should ask to DDos its index getIndex from DDoS
+    // parser should ask to Horus its index getIndex from Horus
     parent_.programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,ChainNameEnum::INVALID_INGRESS)]->reload();
 
-    // Delete old DDos, if present
+    // Delete old Horus, if present
     auto it = parent_.programs_.find(
-            std::make_pair(ModulesConstants::DDOS_INGRESS, ChainNameEnum::INVALID_INGRESS));
+            std::make_pair(ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
       delete it->second;
       parent_.programs_.erase(it);
     }
 
-    // Delete old DDos, if present
+    // Delete old Horus, if present
     it = parent_.programs_.find(
-            std::make_pair(ModulesConstants::DDOS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
+            std::make_pair(ModulesConstants::HORUS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
       delete it->second;
       parent_.programs_.erase(it);

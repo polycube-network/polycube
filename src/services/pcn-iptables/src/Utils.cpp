@@ -479,16 +479,16 @@ bool Chain::portFromRulesToMap(
   return brk;
 }
 
-void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
-                                   struct DdosRule &key,
-                                   struct DdosValue &value) {
+void Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+                                    struct HorusRule &key,
+                                    struct HorusValue &value) {
   key.setFields = 0;
 
   try {
     IpAddr ips;
     ips.fromString(rule->getSrc());
     if (ips.netmask == 32) {
-      SET_BIT(key.setFields, DdosConst::SRCIP);
+      SET_BIT(key.setFields, HorusConst::SRCIP);
       key.src_ip = ips.ip;
     }
   } catch (std::runtime_error) {
@@ -498,7 +498,7 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
     IpAddr ipd;
     ipd.fromString(rule->getDst());
     if (ipd.netmask == 32) {
-      SET_BIT(key.setFields, DdosConst::DSTIP);
+      SET_BIT(key.setFields, HorusConst::DSTIP);
       key.dst_ip = ipd.ip;
     }
   } catch (std::runtime_error) {
@@ -506,21 +506,21 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
 
   try {
     uint8_t proto = Iptables::protocolFromStringToInt(rule->getL4proto());
-    SET_BIT(key.setFields, DdosConst::L4PROTO);
+    SET_BIT(key.setFields, HorusConst::L4PROTO);
     key.l4proto = proto;
   } catch (std::runtime_error) {
   }
 
   try {
     uint16_t srcport = rule->getSport();
-    SET_BIT(key.setFields, DdosConst::SRCPORT);
+    SET_BIT(key.setFields, HorusConst::SRCPORT);
     key.src_port = srcport;
   } catch (std::runtime_error) {
   }
 
   try {
     uint16_t dstport = rule->getDport();
-    SET_BIT(key.setFields, DdosConst::DSTPORT);
+    SET_BIT(key.setFields, HorusConst::DSTPORT);
     key.dst_port = dstport;
   } catch (std::runtime_error) {
   }
@@ -538,11 +538,11 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
   return;
 }
 
-void Chain::ddosFromRulesToMap(
-        std::map<struct DdosRule, struct DdosValue> &ddos,
+void Chain::horusFromRulesToMap(
+        std::map<struct HorusRule, struct HorusValue> &horus,
         const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  struct DdosRule key;
-  struct DdosValue value;
+  struct HorusRule key;
+  struct HorusValue value;
 
   bool first_rule = true;
   uint64_t set_fields = 0;
@@ -553,7 +553,7 @@ void Chain::ddosFromRulesToMap(
 
   for (auto const &rule : rules) {
     i++;
-    fromRuleToDdosKeyValue(rule, key, value);
+    fromRuleToHorusKeyValue(rule, key, value);
 
     if (i == 1) {
       if (key.setFields == 0) {
@@ -567,7 +567,7 @@ void Chain::ddosFromRulesToMap(
       break;
     }
 
-    ddos.insert(std::pair<struct DdosRule, struct DdosValue>(key, value));
+    horus.insert(std::pair<struct HorusRule, struct HorusValue>(key, value));
   }
 }
 
