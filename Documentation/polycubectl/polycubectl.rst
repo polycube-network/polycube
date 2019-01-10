@@ -45,6 +45,9 @@ You can start the daemon typing ``sudo polycubed`` in another terminal. Refer to
         connect           command   Connect ports
         disconnect        command   Disconnect ports
 
+        attach                  command   Attach transparent cubes
+        detach                  command   Detach transparent cubes
+
         services          command   Show/Add/Del services (e.g. Bridge, Router, ..)
         cubes             command   Show running service instances (e.g. br1, nat2, ..)
         topology          command   Show topology of service instances

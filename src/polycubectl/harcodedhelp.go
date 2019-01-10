@@ -42,6 +42,45 @@ func printConnectHelp(args []string) {
 	Buffer += fmt.Sprintf(" %s br1:port1 rt2:port2\n\n", args[0])
 }
 
+func printAttachHelp() {
+	var output = [][]string{}
+
+	output = append(output, []string{"keyword", "type", "description"})
+	output = append(output, []string{"<cube>", "cube", "Transparent cube to be attached (E.g. nat1)"})
+	output = append(output, []string{"<port>", "cube:port or netdev", "Port of a cube or netdev to attach the transparent cube (E.g. rt2:port2 or eth0)"})
+	output = append(output, []string{"position=value", "", "Position to place the cube. auto, first, last"})
+	output = append(output, []string{"before=value", "", "Place the cube before another one"})
+	output = append(output, []string{"after=value", "", "Place the cube after another one"})
+
+	config := columnize.DefaultConfig()
+	config.NoTrim = true
+
+	result := columnize.Format(output, config)
+	Buffer += fmt.Sprintf("\n")
+	Buffer += fmt.Sprintln(result)
+	Buffer += fmt.Sprintf("\n")
+	Buffer += fmt.Sprintf("Example:\n")
+	Buffer += fmt.Sprintf(" attach nat1 rt:port1\n\n")
+}
+
+func printDetachHelp() {
+	var output = [][]string{}
+
+	output = append(output, []string{"keyword", "type", "description"})
+	output = append(output, []string{"<cube>", "cube", "Transparent cube to be detached (E.g. nat1)"})
+	output = append(output, []string{"<port>", "cube:port or netdev", "Port of a cube or netdev to detach the transparent cube (E.g. rt2:port2 or eth0)"})
+
+	config := columnize.DefaultConfig()
+	config.NoTrim = true
+
+	result := columnize.Format(output, config)
+	Buffer += fmt.Sprintf("\n")
+	Buffer += fmt.Sprintln(result)
+	Buffer += fmt.Sprintf("\n")
+	Buffer += fmt.Sprintf("Example:\n")
+	Buffer += fmt.Sprintf(" detach nat1 rt:port1\n\n")
+}
+
 func printServicesHelp() {
 	var output = [][]string{}
 	output = append(output, []string{"keyword | type | description"})

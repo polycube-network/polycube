@@ -394,6 +394,10 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			Output = append(Output, []string{"disconnect", "command", "Disconnect ports"})
 			Output = append(Output, []string{""})
 
+			Output = append(Output, []string{"attach", "command", "Attach transparent cubes"})
+			Output = append(Output, []string{"detach", "command", "Detach transparent cubes"})
+			Output = append(Output, []string{""})
+
 			// hardcoded root help for services/cubes/netdevs commands
 			if config.GetConfig().Expert {
 				Output = append(Output, []string{"services", "command", "Show/Add/Del services (e.g. Bridge, Router, ..)"})
