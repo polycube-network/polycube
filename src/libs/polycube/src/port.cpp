@@ -31,7 +31,7 @@ class Port::impl {
   impl(std::shared_ptr<PortIface> &port);
   impl(Port &op);
   ~impl();
-  void send_packet_out(EthernetII &packet, Direction direction);
+  void send_packet_out(EthernetII &packet, bool recirculate);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);
@@ -69,7 +69,7 @@ const Guid &Port::impl::uuid() const {
   return port_->uuid();
 }
 
-void Port::impl::send_packet_out(EthernetII &packet, Direction direction) {
+void Port::impl::send_packet_out(EthernetII &packet, bool recirculate) {
   /*
    * Short story:
    *   EthernetII is used instead of an array of bytes to force
@@ -98,7 +98,7 @@ void Port::impl::send_packet_out(EthernetII &packet, Direction direction) {
    *   checksum is wrong, so this packet may be corrupted,
    *   (5) hence, drop the packet.
    */
-  port_->send_packet_out(packet.serialize(), direction);
+  port_->send_packet_out(packet.serialize(), recirculate);
 }
 
 PortStatus Port::impl::get_status() const {
@@ -114,8 +114,8 @@ Port::Port(std::shared_ptr<PortIface> port) : pimpl_(new Port::impl(port)) {}
 
 Port::~Port() {}
 
-void Port::send_packet_out(EthernetII &packet, Direction direction) {
-  return pimpl_->send_packet_out(packet, direction);
+void Port::send_packet_out(EthernetII &packet, bool recirculate) {
+  return pimpl_->send_packet_out(packet, recirculate);
 }
 
 int Port::index() const {

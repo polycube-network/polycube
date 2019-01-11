@@ -29,7 +29,6 @@
 #include <string>
 
 using polycube::service::CubeIface;
-using polycube::service::Direction;
 using polycube::service::PortStatus;
 using polycube::service::PortType;
 
@@ -66,7 +65,7 @@ class Port : public polycube::service::PortIface, public PeerIface {
   void set_peer(const std::string &peer);
   const std::string &peer() const;
   void send_packet_out(const std::vector<uint8_t> &packet,
-                       Direction direction = Direction::EGRESS);
+                       bool recirculate = false);
   PortStatus get_status() const;
   PortType get_type() const;
 

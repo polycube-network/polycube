@@ -28,14 +28,6 @@ namespace service {
 class CubeIface;
 enum class CubeType;
 
-// TODO: this "packet" structure should probably be on the controller
-
-enum class Direction {
-  INGRESS, /**< The packet is received through an port of the Cube. */
-  EGRESS   /**< The packet is sent to the node connected to the port of the
-              Cube */
-};
-
 struct PacketInMetadata {
   uint32_t reason;
   uint32_t metadata[3];

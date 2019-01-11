@@ -39,8 +39,7 @@ class Port {
  public:
   Port(std::shared_ptr<PortIface> port);
   ~Port();
-  void send_packet_out(EthernetII &packet,
-                       Direction direction = Direction::EGRESS);
+  void send_packet_out(EthernetII &packet, bool recirculate = false);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);

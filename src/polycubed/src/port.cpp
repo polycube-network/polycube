@@ -128,7 +128,7 @@ PortType Port::get_type() const {
 }
 
 void Port::send_packet_out(const std::vector<uint8_t> &packet,
-                           Direction direction) {
+                           bool recirculate) {
   if (get_status() != PortStatus::UP) {
     logger->warn("packetout: port {0}:{1} is down", parent_.get_name(), name_);
     return;
@@ -142,7 +142,7 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
   uint16_t port;
   uint16_t module;
 
-  if (direction == Direction::INGRESS) {
+  if (recirculate) {
     module = parent_.get_index(ProgramType::INGRESS);
     port = index();
   } else if (peer_port_) {
