@@ -35,6 +35,10 @@ type DefaultNetworkPolicyController struct {
 	dispatchers eventDispatchers
 
 	stopCh chan struct{}
+
+	maxRetries int
+
+	logBy string
 }
 
 type eventDispatchers struct {
@@ -43,12 +47,12 @@ type eventDispatchers struct {
 	delete *EventDispatcher
 }
 
-const (
-	maxRetries = 5
-	logBy      = "DNPC"
-)
-
 func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Clientset) *DefaultNetworkPolicyController {
+
+	//	Init here
+	//	TODO: make maxRetries settable on parameters?
+	logBy := "DNPC"
+	maxRetries := 5
 
 	//	Let them know we're starting
 	log.SetLevel(log.DebugLevel)
@@ -116,31 +120,42 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			/*newEvent.key, err = cache.MetaNamespaceKeyFunc(old)
-			newEvent.eventType = "update"
-			newEvent.resourceType = resourceType
-			logrus.WithField("pkg", "kubewatch-"+resourceType).Infof("Processing update to %v: %s", resourceType, newEvent.key)
-			if err == nil {
-				queue.Add(newEvent)
-			}*/
 			log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "UpdateFunc()",
 			}).Info("Something has been updated!")
+
+			key, err := cache.MetaNamespaceKeyFunc(new)
+
+			//	Set up the event
+			event := Event{
+				key:       key,
+				eventType: Update,
+				namespace: strings.Split(key, "/")[0],
+			}
+			//	Add this event to the queue
+			if err == nil {
+				queue.Add(event)
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			/*newEvent.key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			newEvent.eventType = "delete"
-			newEvent.resourceType = resourceType
-			newEvent.namespace = utils.GetObjectMetaData(obj).Namespace
-			logrus.WithField("pkg", "kubewatch-"+resourceType).Infof("Processing delete to %v: %s", resourceType, newEvent.key)
-			if err == nil {
-				queue.Add(newEvent)
-			}*/
 			log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "DeleteFunc()",
 			}).Info("Something has been deleted!")
+
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+
+			//	Set up the event
+			event := Event{
+				key:       key,
+				eventType: Delete,
+				namespace: strings.Split(key, "/")[0],
+			}
+			//	Add this event to the queue
+			if err == nil {
+				queue.Add(event)
+			}
 		},
 	})
 
@@ -163,13 +178,15 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		queue:     queue,
 		defaultNetworkPoliciesInformer: npcInformer,
 		dispatchers:                    dispatchers,
+		logBy:                          logBy,
+		maxRetries:                     maxRetries,
 	}
 }
 
 func (npc *DefaultNetworkPolicyController) Run() {
 
 	var l = log.WithFields(log.Fields{
-		"by":     logBy,
+		"by":     npc.logBy,
 		"method": "Start()",
 	})
 
@@ -207,7 +224,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 
 	var stop = false
 	var l = log.WithFields(log.Fields{
-		"by":     logBy,
+		"by":     npc.logBy,
 		"method": "work()",
 	})
 
@@ -237,7 +254,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 			//	Then reset the ratelimit counters
 			npc.queue.Forget(_event)
 			l.Infof("Item with key %s has been forgotten from the queue", event.key)
-		} else if npc.queue.NumRequeues(_event) < maxRetries {
+		} else if npc.queue.NumRequeues(_event) < npc.maxRetries {
 			//	Tried less than the maximum retries?
 			l.Warningf("Error processing item with key %s (will retry): %v", event.key, err)
 			npc.queue.AddRateLimited(_event)
@@ -255,7 +272,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 
 	var l = log.WithFields(log.Fields{
-		"by":     logBy,
+		"by":     npc.logBy,
 		"method": "processPolicy()",
 	})
 	var policy *networking_v1.NetworkPolicy
@@ -458,7 +475,7 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 func (npc *DefaultNetworkPolicyController) Stop() {
 
 	log.WithFields(log.Fields{
-		"by":     logBy,
+		"by":     npc.logBy,
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
 
