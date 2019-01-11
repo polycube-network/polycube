@@ -236,14 +236,16 @@ func (npc *DefaultNetworkPolicyController) work() {
 
 		//	Get the item's key from the queue
 		_event, quit := npc.queue.Get()
-		event := _event.(Event)
-
-		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
 
 		if quit {
 			l.Infoln("Quit requested... worker going to exit.")
 			return
 		}
+
+		event := _event.(Event)
+
+		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
+
 		err := npc.processPolicy(event)
 
 		//	No errors?
