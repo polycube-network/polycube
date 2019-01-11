@@ -27,7 +27,7 @@ func NewEventDispatcher(name string) *EventDispatcher {
 		"by":     name,
 		"method": "NewEventDispatcher()",
 	})
-	l.Println("%s starting...")
+	l.Printf("%s starting...", name)
 
 	return &EventDispatcher{
 		name:        name,
