@@ -214,8 +214,6 @@ func (npc *DefaultNetworkPolicyController) Run() {
 		return
 	}
 
-	l.Infoln("Going to work now the policies now...")
-
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
 	wait.Until(npc.work, time.Second, npc.stopCh)
@@ -240,15 +238,12 @@ func (npc *DefaultNetworkPolicyController) work() {
 		_event, quit := npc.queue.Get()
 		event := _event.(Event)
 
-		//	TODO: check if event is != nil, even if quit is requested. So that we could process one last item before exiting
-		if quit {
-			l.Infoln("Quit requested. Going to exit.")
-			return
-		}
-
 		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
 
-		//	Ok, parse & process the policy
+		if quit {
+			l.Infoln("Quit requested... worker going to exit.")
+			return
+		}
 		err := npc.processPolicy(event)
 
 		//	No errors?
@@ -479,10 +474,13 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 	log.WithFields(log.Fields{
 		"by":     npc.logBy,
 		"method": "Stop())",
-	}).Info("Network Policy Controller just stopped")
+	}).Info("Default network policy controller going to shutdown!")
 
 	//	Make them know that exit has been requested
 	close(npc.stopCh)
+
+	//	Shutdown the queue, making the worker unblock
+	npc.queue.ShutDown()
 
 	//	Clean up the dispatchers
 	npc.dispatchers.new.CleanUp()
