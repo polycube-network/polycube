@@ -42,8 +42,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	log "github.com/sirupsen/logrus"
-
-	networking_v1 "k8s.io/api/networking/v1"
 )
 
 const (
@@ -246,21 +244,7 @@ func main() {
 	go kvM.Loop()
 
 	//	Start the default network policy controller
-	//	(the actually listener will run in a separate thread)
 	go defaultnpc.Run()
-
-	defaultnpc.Subscribe(controllers.New, func(_policy interface{}) {
-		policy := _policy.(*networking_v1.NetworkPolicy)
-		log.Infoln("from a subscriber! I got the policy!")
-
-		spec := policy.Spec
-		ingress := spec.Ingress
-
-		//	Apparently, when yaml has Ingress: [] this is called, instead of len() < 1
-		if ingress == nil {
-			log.Info("From subscriber! Ingress is null: this resource accepts no connections.")
-		}
-	})
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
