@@ -228,7 +228,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 		"method": "work()",
 	})
 
-	l.Info("Starting method...")
+	l.Info("Starting method work...")
 
 	for !stop {
 
