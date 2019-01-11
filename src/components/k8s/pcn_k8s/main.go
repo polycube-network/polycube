@@ -245,6 +245,10 @@ func main() {
 
 	//	Start the default network policy controller
 	go defaultnpc.Run()
+	time.AfterFunc(5*time.Minute, func() {
+		log.Infoln("Going to call stop")
+		defaultnpc.Stop()
+	})
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so

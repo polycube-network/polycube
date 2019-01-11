@@ -180,6 +180,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		dispatchers:                    dispatchers,
 		logBy:                          logBy,
 		maxRetries:                     maxRetries,
+		stopCh:                         make(chan struct{}),
 	}
 }
 
@@ -191,8 +192,6 @@ func (npc *DefaultNetworkPolicyController) Run() {
 	})
 
 	l.Info("Network Policy Controller starting...")
-
-	npc.stopCh = make(chan struct{})
 
 	//	Channel will be closed by Stop().
 	//defer close(npc.stopCh)
@@ -218,6 +217,7 @@ func (npc *DefaultNetworkPolicyController) Run() {
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
 	wait.Until(npc.work, time.Second, npc.stopCh)
+	l.Infoln("Run method exiting...")
 }
 
 func (npc *DefaultNetworkPolicyController) work() {
