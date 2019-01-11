@@ -191,7 +191,7 @@ func (npc *DefaultNetworkPolicyController) Run() {
 		"method": "Start()",
 	})
 
-	l.Info("Network Policy Controller starting...")
+	l.Info("Network Policy Controller starting")
 
 	//	Channel will be closed by Stop().
 	//defer close(npc.stopCh)
@@ -213,6 +213,8 @@ func (npc *DefaultNetworkPolicyController) Run() {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
+
+	l.Infoln("Going to work now the policies now...")
 
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
