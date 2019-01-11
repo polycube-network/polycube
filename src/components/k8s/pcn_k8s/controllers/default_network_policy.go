@@ -200,7 +200,8 @@ func (npc *DefaultNetworkPolicyController) Run() {
 	defer utilruntime.HandleCrash()
 
 	//	Make sure the work queue is shutdown which will trigger workers to end
-	defer npc.queue.ShutDown()
+	//	This is going to be shutdown by Stop()
+	//defer npc.queue.ShutDown()
 
 	//	Record when we started, it is going to be used later
 	npc.startedOn = time.Now().UTC()
