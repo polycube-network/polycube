@@ -244,12 +244,7 @@ func main() {
 	go kvM.Loop()
 
 	//	Start the default network policy controller
-	//	(the actually listener will run in a separate thread)
-	defaultnpc.Run()
-	log.Infoln("going to subscribe!")
-	defaultnpc.Subscribe(controllers.New, func(interface{}) {
-		log.Println("new Event from subscription!")
-	})
+	go defaultnpc.Run()
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so

@@ -33,6 +33,8 @@ type DefaultNetworkPolicyController struct {
 	startedOn time.Time
 
 	dispatchers eventDispatchers
+
+	stopCh chan struct{}
 }
 
 type eventDispatchers struct {
@@ -62,8 +64,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 	//------------------------------------------------
 
 	//	TODO: is there really a need for a *shared* informer?
-	//	After all, I am the only one who's querying for network policies here.
-	//	Different story for the pod informer (which I'm going to do later).
+	//	After all, this should be the only controller to do this.
 	//	So, yeah... remember to check this up.
 	npcInformer := cache.NewSharedIndexInformer(&cache.ListWatch{
 		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
@@ -174,8 +175,10 @@ func (npc *DefaultNetworkPolicyController) Run() {
 
 	l.Info("Network Policy Controller starting...")
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	npc.stopCh = make(chan struct{})
+
+	//	Channel will be closed by Stop().
+	//defer close(npc.stopCh)
 
 	//	Don't let panics crash the process
 	defer utilruntime.HandleCrash()
@@ -187,17 +190,17 @@ func (npc *DefaultNetworkPolicyController) Run() {
 	npc.startedOn = time.Now().UTC()
 
 	//	Let's go!
-	go npc.defaultNetworkPoliciesInformer.Run(stopCh)
+	go npc.defaultNetworkPoliciesInformer.Run(npc.stopCh)
 
 	//	Make sure the cache is populated
-	if !cache.WaitForCacheSync(stopCh, npc.defaultNetworkPoliciesInformer.HasSynced) {
+	if !cache.WaitForCacheSync(npc.stopCh, npc.defaultNetworkPoliciesInformer.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
 
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
-	wait.Until(npc.work, time.Second, stopCh)
+	wait.Until(npc.work, time.Second, npc.stopCh)
 }
 
 func (npc *DefaultNetworkPolicyController) work() {
@@ -215,10 +218,14 @@ func (npc *DefaultNetworkPolicyController) work() {
 		l.Infof("Ok, I'm going to get a new item from the queue...")
 
 		//	Get the item's key from the queue
-		//	NOTE: as far as I have learned, this blocks when no items are there.
-		//	So this is a looper that does not consume cpu cycles
 		_event, quit := npc.queue.Get()
 		event := _event.(Event)
+
+		//	TODO: check if event is != nil, even if quit is requested. So that we could process one last item before exiting
+		if quit {
+			l.Infoln("Quit requested. Going to exit.")
+			return
+		}
 
 		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
 
@@ -254,7 +261,6 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 	var policy *networking_v1.NetworkPolicy
 
 	defer npc.queue.Done(event)
-	//var annotations map[string]string
 
 	l.Infof("Starting to process policy")
 
@@ -272,7 +278,10 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 	//	Get the policy
 	policy = _policy.(*networking_v1.NetworkPolicy)
 
+	//-------------------------------------
 	//	Dispatch the event
+	//-------------------------------------
+
 	switch event.eventType {
 
 	case New:
@@ -452,6 +461,9 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 		"by":     logBy,
 		"method": "Stop())",
 	}).Info("Network Policy Controller just stopped")
+
+	//	Make them know that exit has been requested
+	close(npc.stopCh)
 
 	//	Clean up the dispatchers
 	npc.dispatchers.new.CleanUp()
