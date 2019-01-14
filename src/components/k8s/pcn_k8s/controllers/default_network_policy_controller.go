@@ -6,7 +6,7 @@ import (
 	"time"
 
 	//	To check for protocol type
-
+	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	log "github.com/sirupsen/logrus"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,9 +106,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			}).Infof("Something has been added! Workspaces is %s", key)
 
 			//	Set up the event
-			event := Event{
+			event := events.Event{
 				key:       key,
-				eventType: New,
+				eventType: events.New,
 				namespace: strings.Split(key, "/")[0],
 			}
 
@@ -126,9 +126,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			key, err := cache.MetaNamespaceKeyFunc(new)
 
 			//	Set up the event
-			event := Event{
+			event := events.Event{
 				key:       key,
-				eventType: Update,
+				eventType: events.Update,
 				namespace: strings.Split(key, "/")[0],
 			}
 			//	Add this event to the queue
@@ -145,7 +145,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 
 			//	Set up the event
-			event := Event{
+			event := events.Event{
 				key:       key,
 				eventType: Delete,
 				namespace: strings.Split(key, "/")[0],
