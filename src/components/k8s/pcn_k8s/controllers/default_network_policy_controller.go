@@ -7,8 +7,6 @@ import (
 
 	//	To check for protocol type
 
-	v1 "k8s.io/api/core/v1"
-
 	log "github.com/sirupsen/logrus"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -310,160 +308,6 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 
 	}
 
-	//	Get the annotations
-	//	TODO: this is going to be used to check for whitelist/blacklist feature
-	//policy.ObjectMeta.GetAnnotations()
-
-	//	Get the specs
-	spec := policy.Spec
-
-	//-------------------------------------
-	//	Parse the ingress rules
-	//-------------------------------------
-
-	ingress := spec.Ingress
-
-	//	Apparently, when yaml has Ingress: [] this is called, instead of len() < 1
-	if ingress == nil {
-		l.Info("Ingress is null: this resource accepts no connections.")
-	} else {
-		//	Nothing? This means that this resource doesn't accept anything in ingress
-		if len(ingress) < 1 {
-			l.Info("There are no ingress rules: this resource accepts no connections.")
-		} else {
-			l.Info("The following rules have been found")
-
-			for _, ingressRule := range ingress {
-
-				//-------------------------------------
-				//	Peer Rules
-				//-------------------------------------
-
-				//	TODO: check this, because when ingress: - {} is found, this is called, totally different from the case above!!!
-				if ingressRule.From == nil {
-					l.Info("from is null: nothing can be accessed.")
-				} else {
-
-					//	From is specified but is an empty array => nothing is allowed
-					if len(ingressRule.From) < 1 {
-						l.Info("Found empty array, resource doesn't accept connections")
-					} else {
-						for _, peer := range ingressRule.From {
-
-							//-------------------------------------
-							//	Select an IP block
-							//-------------------------------------
-
-							if peer.IPBlock == nil {
-								l.Info("No IPBlock has been specified")
-							} else {
-
-								IPBlock := peer.IPBlock
-								cidr := IPBlock.CIDR
-
-								l.Info("%s specified", cidr)
-
-								if IPBlock.Except != nil && len(IPBlock.Except) > 0 {
-									l.Info("The following exceptions have been found")
-
-									for _, exception := range IPBlock.Except {
-										l.Info("%s", exception)
-									}
-								}
-							}
-
-							//-------------------------------------
-							//	Select pods
-							//-------------------------------------
-
-							if peer.PodSelector == nil {
-								l.Info("No pod selector has been specified")
-							} else {
-
-								podSelector := peer.PodSelector
-
-								//	Get match labels
-								//	TODO: same as above
-								if podSelector.MatchLabels == nil {
-									l.Info("Empty podSelector: I have to select all pods")
-								} else {
-									l.Info("I found the following match labels rules")
-									for key, value := range podSelector.MatchLabels {
-										l.Infof("%s => %s", key, value)
-									}
-								}
-
-								//	Get Expression match
-								if len(podSelector.MatchExpressions) < 1 {
-									l.Info("There are no match expressions")
-								} else {
-									for _, selectorRequirements := range podSelector.MatchExpressions {
-										//	TODO: selectorRequirements.Operator returns a LabelSelectorOperator, not a string. So check this
-										l.Infof("%s => %s: %s", selectorRequirements.Key, selectorRequirements.Operator, strings.Join(selectorRequirements.Values, ","))
-									}
-								}
-
-							}
-
-							//-------------------------------------
-							//	Select namespaces
-							//-------------------------------------
-
-							if peer.NamespaceSelector == nil {
-								l.Info("No namespaces has been specified ")
-							} else {
-
-								//	Commented just to make the compiler shut up
-								//nameSpaceSelector := peer.NamespaceSelector
-
-								//	basically do exactly the same as above. So the above piece of code must be done in a function
-								l.Info("Gotta parse the namespace, it seems!")
-							}
-						}
-					}
-				}
-
-				//-------------------------------------
-				//	Port rules
-				//-------------------------------------
-
-				if len(ingressRule.Ports) < 1 {
-					l.Info("There a no port rules")
-				} else {
-					for _, portStruct := range ingressRule.Ports {
-
-						//	TODO: protocol is a struct, not a string
-						_protocol := portStruct.Protocol
-						var protocol string
-
-						//	TODO: port is a
-						_port := portStruct.Port
-						var port int32
-
-						switch *_protocol {
-						case v1.ProtocolTCP:
-							protocol = "TCP"
-						case v1.ProtocolUDP:
-							protocol = "UDP"
-						case v1.ProtocolSCTP:
-							protocol = "SCTP"
-						}
-
-						/*if *_port.Type == intstr.String {
-							port = *_port.IntVal
-						} else {
-							port = convert the string to int
-						}*/
-						//	TODO: check if this always works. Or if I must do a type check (like above)
-						port = _port.IntVal
-
-						l.Infof("protocol is %s and port is %d", protocol, port)
-					}
-				}
-			}
-		}
-	}
-
 	//	Does not exist?
 	if !exists {
 		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.key)
@@ -491,7 +335,21 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 	npc.dispatchers.delete.CleanUp()
 }
 
-func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method func(interface{})) (func(), error) {
+/*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
+It returns a function to call when you want to stop tracking that event.*/
+func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
+
+	//	Prepare the function to be executed
+	consumerFunc := (func(item interface{}) {
+
+		//	First, cast the item to a network policy, so that the consumer will receive exactly what it wants...
+		policy := item.(*networking_v1.NetworkPolicy)
+
+		//	Then, execute the consumer in a separate thread.
+		//	NOTE: this step can also be done in the event dispatcher, but I want it to make them oblivious of the type they're handling.
+		//	This way, the event dispatcher is as general as possible (also, it is not their concern to cast objects.)
+		go consumer(policy)
+	})
 
 	//	What event are you subscribing to?
 	switch event {
@@ -501,7 +359,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case New:
-		id := npc.dispatchers.new.Add(method)
+		id := npc.dispatchers.new.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.new.Remove(id)
@@ -512,7 +370,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case Update:
-		id := npc.dispatchers.update.Add(method)
+		id := npc.dispatchers.update.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.update.Remove(id)
@@ -523,7 +381,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case Delete:
-		id := npc.dispatchers.delete.Add(method)
+		id := npc.dispatchers.delete.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.delete.Remove(id)

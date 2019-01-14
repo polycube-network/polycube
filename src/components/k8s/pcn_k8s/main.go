@@ -81,6 +81,9 @@ var (
 	defaultnpc *controllers.DefaultNetworkPolicyController
 	//	--- /Controllers
 
+	//	networkPolicyManager parses network policies and knows how to handle them
+	networkPolicyManager *NetworkPolicyManager
+
 	stop bool
 )
 
@@ -239,6 +242,9 @@ func main() {
 
 	//	Set up the network policy controller (for the kubernetes policies)
 	defaultnpc = controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
+
+	//	Get the policy manager
+	networkPolicyManager = NewNetworkPolicyManager(defaultnpc)
 
 	// kv handler
 	go kvM.Loop()
