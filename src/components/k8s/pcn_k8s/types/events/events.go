@@ -1,10 +1,9 @@
 package eventtypes
 
 type Event struct {
-	key       string
-	eventType EventType
-	namespace string
-	Test      string
+	Key       string
+	Type      EventType
+	Namespace string
 }
 
 type EventType int

@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	//	To check for protocol type
-	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
+	//	TODO-ON-MERGE: change this to the polycube path
+	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+
 	log "github.com/sirupsen/logrus"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,9 +108,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 
 			//	Set up the event
 			event := events.Event{
-				key:       key,
-				eventType: events.New,
-				namespace: strings.Split(key, "/")[0],
+				Key:       key,
+				Type:      events.New,
+				Namespace: strings.Split(key, "/")[0],
 			}
 
 			//	Add this event to the queue
@@ -127,9 +128,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 
 			//	Set up the event
 			event := events.Event{
-				key:       key,
-				eventType: events.Update,
-				namespace: strings.Split(key, "/")[0],
+				Key:       key,
+				Type:      events.Update,
+				Namespace: strings.Split(key, "/")[0],
 			}
 			//	Add this event to the queue
 			if err == nil {
@@ -146,9 +147,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 
 			//	Set up the event
 			event := events.Event{
-				key:       key,
-				eventType: Delete,
-				namespace: strings.Split(key, "/")[0],
+				Key:       key,
+				Type:      events.Delete,
+				Namespace: strings.Split(key, "/")[0],
 			}
 			//	Add this event to the queue
 			if err == nil {
@@ -241,9 +242,9 @@ func (npc *DefaultNetworkPolicyController) work() {
 			return
 		}
 
-		event := _event.(Event)
+		event := _event.(events.Event)
 
-		l.Infof("Just got the item: its key is %s on namespace %s", event.key, event.namespace)
+		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
 		err := npc.processPolicy(event)
 
@@ -251,14 +252,14 @@ func (npc *DefaultNetworkPolicyController) work() {
 		if err == nil {
 			//	Then reset the ratelimit counters
 			npc.queue.Forget(_event)
-			l.Infof("Item with key %s has been forgotten from the queue", event.key)
+			l.Infof("Item with key %s has been forgotten from the queue", event.Key)
 		} else if npc.queue.NumRequeues(_event) < npc.maxRetries {
 			//	Tried less than the maximum retries?
-			l.Warningf("Error processing item with key %s (will retry): %v", event.key, err)
+			l.Warningf("Error processing item with key %s (will retry): %v", event.Key, err)
 			npc.queue.AddRateLimited(_event)
 		} else {
 			//	Too many retries?
-			l.Errorf("Error processing %s (giving up): %v", event.key, err)
+			l.Errorf("Error processing %s (giving up): %v", event.Key, err)
 			npc.queue.Forget(_event)
 			utilruntime.HandleError(err)
 		}
@@ -267,7 +268,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 	}
 }
 
-func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
+func (npc *DefaultNetworkPolicyController) processPolicy(event events.Event) error {
 
 	var l = log.WithFields(log.Fields{
 		"by":     npc.logBy,
@@ -280,14 +281,14 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 	l.Infof("Starting to process policy")
 
 	//	Get the policy by querying the key that kubernetes has assigned to this in its cache
-	_policy, exists, err := npc.defaultNetworkPoliciesInformer.GetIndexer().GetByKey(event.key)
+	_policy, exists, err := npc.defaultNetworkPoliciesInformer.GetIndexer().GetByKey(event.Key)
 
 	//	Errors?
 	if err != nil {
-		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", event.key, err)
+		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", event.Key, err)
 
 		//	TODO: check this
-		return fmt.Errorf("An error occurred: cannot find cache element with key %s from ", event.key)
+		return fmt.Errorf("An error occurred: cannot find cache element with key %s from ", event.Key)
 	}
 
 	//	Get the policy
@@ -297,20 +298,20 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event Event) error {
 	//	Dispatch the event
 	//-------------------------------------
 
-	switch event.eventType {
+	switch event.Type {
 
-	case New:
+	case events.New:
 		npc.dispatchers.new.Dispatch(policy)
-	case Update:
+	case events.Update:
 		npc.dispatchers.update.Dispatch(policy)
-	case Delete:
+	case events.Delete:
 		npc.dispatchers.delete.Dispatch(policy)
 
 	}
 
 	//	Does not exist?
 	if !exists {
-		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.key)
+		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
 	}
 
 	return nil
@@ -337,7 +338,7 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
+func (npc *DefaultNetworkPolicyController) Subscribe(event events.EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
@@ -358,7 +359,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer f
 	//	New event
 	//-------------------------------------
 
-	case New:
+	case events.New:
 		id := npc.dispatchers.new.Add(consumerFunc)
 
 		return func() {
@@ -369,7 +370,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer f
 	//	Update event
 	//-------------------------------------
 
-	case Update:
+	case events.Update:
 		id := npc.dispatchers.update.Add(consumerFunc)
 
 		return func() {
@@ -380,7 +381,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer f
 	//	Delete Event
 	//-------------------------------------
 
-	case Delete:
+	case events.Delete:
 		id := npc.dispatchers.delete.Add(consumerFunc)
 
 		return func() {

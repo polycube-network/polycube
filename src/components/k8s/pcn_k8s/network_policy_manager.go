@@ -3,7 +3,10 @@ package main
 import (
 	"strings"
 
+	//	TODO-ON-MERGE: change these two to the polycube path
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
@@ -24,9 +27,9 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 	}
 
 	//	Let me listen for default network policies deployments
-	dnpc.Subscribe(controllers.New, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(controllers.Update, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(controllers.Delete, manager.ParseDefaultPolicy)
+	dnpc.Subscribe(events.New, manager.ParseDefaultPolicy)
+	//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
+	//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
 
 	return manager
 }
@@ -38,7 +41,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 		"method": "ParseDefaultPolicy()",
 	})
 
-	l.Infof("Network Policy Manager is going to parse the default policy now (with already casted policy)")
+	l.Infof("Network Policy Manager is going to parse the default policy")
 
 	//	Get the annotations
 	//	TODO: this is going to be used to check for whitelist/blacklist feature
