@@ -335,7 +335,21 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 	npc.dispatchers.delete.CleanUp()
 }
 
-func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method func(interface{})) (func(), error) {
+/*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
+It returns a function to call when you want to stop tracking that event.*/
+func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
+
+	//	Prepare the function to be executed
+	consumerFunc := (func(item interface{}) {
+
+		//	First, cast the item to a network policy, so that the consumer will receive exactly what it wants...
+		policy := item.(*networking_v1.NetworkPolicy)
+
+		//	Then, execute the consumer in a separate thread.
+		//	NOTE: this step can also be done in the event dispatcher, but I want it to make them oblivious of the type they're handling.
+		//	This way, the event dispatcher is as general as possible (also, it is not their concern to cast objects.)
+		go consumer(policy)
+	})
 
 	//	What event are you subscribing to?
 	switch event {
@@ -345,7 +359,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case New:
-		id := npc.dispatchers.new.Add(method)
+		id := npc.dispatchers.new.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.new.Remove(id)
@@ -356,7 +370,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case Update:
-		id := npc.dispatchers.update.Add(method)
+		id := npc.dispatchers.update.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.update.Remove(id)
@@ -367,7 +381,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event EventType, method fun
 	//-------------------------------------
 
 	case Delete:
-		id := npc.dispatchers.delete.Add(method)
+		id := npc.dispatchers.delete.Add(consumerFunc)
 
 		return func() {
 			npc.dispatchers.delete.Remove(id)

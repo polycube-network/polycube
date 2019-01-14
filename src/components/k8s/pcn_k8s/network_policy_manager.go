@@ -25,21 +25,20 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 
 	//	Let me listen for default network policies deployments
 	dnpc.Subscribe(controllers.New, manager.ParseDefaultPolicy)
+	//dnpc.Subscribe(controllers.Update, manager.ParseDefaultPolicy)
+	//dnpc.Subscribe(controllers.Delete, manager.ParseDefaultPolicy)
 
 	return manager
 }
 
-func (manager *NetworkPolicyManager) ParseDefaultPolicy(item interface{}) {
+func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) {
 
 	var l = log.WithFields(log.Fields{
 		"by":     manager.logBy,
 		"method": "ParseDefaultPolicy()",
 	})
 
-	l.Infof("Network Policy Manager is going to parse the default policy now")
-
-	//	Get the policy
-	policy := item.(*networking_v1.NetworkPolicy)
+	l.Infof("Network Policy Manager is going to parse the default policy now (with already casted policy)")
 
 	//	Get the annotations
 	//	TODO: this is going to be used to check for whitelist/blacklist feature
