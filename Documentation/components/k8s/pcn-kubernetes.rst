@@ -93,7 +93,6 @@ At this point you can install ``pcn-k8s``:
 
 .. parsed-literal::
 
-    # TODO: repo is private, add your token to download this file.
     kubectl apply -f |SCM_WEB|/src/components/k8s/pcn-k8s.yaml
     # It will take some time until the images are pulled.
 
