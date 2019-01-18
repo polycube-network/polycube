@@ -77,7 +77,7 @@ func (f *FirewallAPI) Create(firewall k8sfirewall.Firewall) (string, error) {
 			go func(currentChain k8sfirewall.Chain) {
 				defer chainWaitGroup.Done()
 				f.BulkAddRules(firewall.Name, chain.Name, chain.Rule)
-				//f.ApplyRules(firewall.Name, chain.Name)
+				f.ApplyRules(firewall.Name, chain.Name)
 			}(chain)
 
 		}
@@ -109,6 +109,11 @@ func (f *FirewallAPI) Destroy(name string) {
 
 func (f *FirewallAPI) BulkAddRules(name string, type_ string, rules []k8sfirewall.ChainRule) {
 
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "BulkAddRules()",
+	})
+
 	var waitRules sync.WaitGroup
 	waitRules.Add(len(rules))
 
@@ -123,6 +128,8 @@ func (f *FirewallAPI) BulkAddRules(name string, type_ string, rules []k8sfirewal
 
 	//	Wait for them to finish
 	waitRules.Wait()
+
+	l.Debugf("Finished waiting for bulkAddRules(%s,%s) to finish", name, type_)
 }
 
 func (f *FirewallAPI) AddRule(name string, type_ string, rule k8sfirewall.ChainRule) {
@@ -131,6 +138,7 @@ func (f *FirewallAPI) AddRule(name string, type_ string, rule k8sfirewall.ChainR
 		"by":     f.logBy,
 		"method": "AddRule()",
 	})
+
 	//	Convert it to a Chain Append struct (nothing changes...)
 	ruleToAppend := k8sfirewall.ChainAppendInput{
 		Src:         rule.Src,
@@ -153,6 +161,22 @@ func (f *FirewallAPI) AddRule(name string, type_ string, rule k8sfirewall.ChainR
 
 	l.Debugf("added rule for %s, output id is %d", type_, output.Id)
 
+}
+
+func (f *FirewallAPI) ApplyRules(name string, type_ string) {
+
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "ApplyRules()",
+	})
+
+	output, response, err := f.fwAPI.CreateFirewallChainApplyRulesByID(nil, "newone", "ingress")
+
+	if err != nil {
+		l.Errorf("Could not apply rules for %s, in %s! %d", name, type_, response.StatusCode)
+	}
+
+	l.Debugf("Applied rules for %s, in %s, output  %s", name, type_, output.Result)
 }
 
 func (f *FirewallAPI) createFirewall(name string) error {
