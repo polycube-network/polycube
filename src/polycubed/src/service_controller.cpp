@@ -35,10 +35,10 @@ std::mutex ServiceController::service_ctrl_mutex_;
 // FIXME: to be defined somewhere else
 const static std::string HOST_PEER(":host");
 
-std::unordered_map<std::string, std::shared_ptr<CubeIface>>
-    ServiceController::cubes;
 std::unordered_map<Guid, std::unique_ptr<Node>>
     ServiceController::ports_to_ifaces;
+std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>>
+    ServiceController::cubes;
 std::unordered_map<std::string, std::string> ServiceController::ports_to_ports;
 std::unordered_map<std::string, std::string> ServiceController::cubes_x_service;
 
@@ -174,7 +174,7 @@ std::string ServiceController::get_datamodel() const {
   return datamodel_;
 }
 
-std::shared_ptr<CubeIface> ServiceController::get_cube(
+std::shared_ptr<BaseCubeIface> ServiceController::get_cube(
     const std::string &name) {
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
   try {
@@ -185,13 +185,13 @@ std::shared_ptr<CubeIface> ServiceController::get_cube(
 }
 
 /* get cubes for this service */
-std::vector<std::shared_ptr<CubeIface>> ServiceController::get_cubes() {
+std::vector<std::shared_ptr<BaseCubeIface>> ServiceController::get_cubes() {
   return factory_.get_cubes();
 }
 
 /* get cubes for all services */
-std::vector<std::shared_ptr<CubeIface>> ServiceController::get_all_cubes() {
-  std::vector<std::shared_ptr<CubeIface>> r;
+std::vector<std::shared_ptr<BaseCubeIface>> ServiceController::get_all_cubes() {
+  std::vector<std::shared_ptr<BaseCubeIface>> r;
   r.reserve(cubes.size());
 
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
@@ -202,7 +202,7 @@ std::vector<std::shared_ptr<CubeIface>> ServiceController::get_all_cubes() {
   return r;
 }
 
-void ServiceController::register_cube(std::shared_ptr<CubeIface> cube,
+void ServiceController::register_cube(std::shared_ptr<BaseCubeIface> cube,
                                       const std::string &service) {
   auto &&name = cube->get_name();
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
@@ -272,7 +272,11 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
     if (iter == cubes.end()) {
       throw std::runtime_error("Cube " + cube_name + " does not exist");
     }
-    auto cube = iter->second;
+    auto cube_ = iter->second;
+    auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+    if (!cube) {
+      throw std::runtime_error("Bad cube type");
+    }
     auto port_peer = cube->get_port(port_name);
 
     if (p.get_type() != port_peer->get_type()) {

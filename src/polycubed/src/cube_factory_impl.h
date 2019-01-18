@@ -28,6 +28,7 @@
 namespace polycube {
 namespace polycubed {
 
+using service::BaseCubeIface;
 using service::CubeIface;
 using service::CubeFactory;
 using service::packet_in_cb;
@@ -45,11 +46,11 @@ class CubeFactoryImpl : public CubeFactory {
 
   void destroy_cube(const std::string &name);
 
-  std::vector<std::shared_ptr<CubeIface>> get_cubes();
+  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
 
  private:
   std::string service_name_;
-  std::unordered_map<std::string, std::shared_ptr<CubeIface>> cubes_;
+  std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes_;
   Controller &controller_tc_;
   Controller &controller_xdp_;
   DatapathLog &datapathlog_;

@@ -39,8 +39,8 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
     const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
     const CubeType type, const packet_in_cb &cb, LogLevel level) {
   std::shared_ptr<CubeIface> cube;
-  typename std::unordered_map<std::string, std::shared_ptr<CubeIface>>::iterator
-      iter;
+  typename std::unordered_map<std::string,
+                              std::shared_ptr<BaseCubeIface>>::iterator iter;
   bool inserted;
 
   switch (type) {
@@ -57,26 +57,25 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
     throw std::runtime_error("invalid cube type");
   }
 
-  std::tie(iter, inserted) = cubes_.emplace(name, std::move(cube));
+  std::tie(iter, inserted) = cubes_.emplace(name, cube);
   if (!inserted) {
     return nullptr;
   }
 
-  auto &m = iter->second;
-  ServiceController::register_cube(m, service_name_);
-  datapathlog_.register_cb(m->get_id(), log_msg);
+  ServiceController::register_cube(cube, service_name_);
+  datapathlog_.register_cb(cube->get_id(), log_msg);
   if (cb) {
     switch (type) {
     case CubeType::XDP_SKB:
     case CubeType::XDP_DRV:
-      controller_xdp_.register_cb(m->get_id(), cb);
+      controller_xdp_.register_cb(cube->get_id(), cb);
       break;
     case CubeType::TC:
-      controller_tc_.register_cb(m->get_id(), cb);
+      controller_tc_.register_cb(cube->get_id(), cb);
       break;
     }
   }
-  return m;
+  return cube;
 }
 
 void CubeFactoryImpl::destroy_cube(const std::string &name) {
@@ -102,8 +101,8 @@ void CubeFactoryImpl::destroy_cube(const std::string &name) {
   cubes_.erase(name);
 }
 
-std::vector<std::shared_ptr<CubeIface>> CubeFactoryImpl::get_cubes() {
-  std::vector<std::shared_ptr<CubeIface>> r;
+std::vector<std::shared_ptr<BaseCubeIface>> CubeFactoryImpl::get_cubes() {
+  std::vector<std::shared_ptr<BaseCubeIface>> r;
   r.reserve(cubes_.size());
 
   for (auto &&i : cubes_) {

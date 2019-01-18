@@ -43,7 +43,7 @@ CubeTC::~CubeTC() {
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
                         ebpf::BPF &bpf, const std::string &code, int index) {
   // compile ebpf program
-  std::string all_code(CUBE_H + WRAPPERC +
+  std::string all_code(Cube::get_wrapper_code() + WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags_(cflags);

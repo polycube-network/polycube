@@ -89,7 +89,7 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
 }
 
 void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
-  std::string all_code(CUBE_H + XDP_HELPERS + XDP_WRAPPERC +
+  std::string all_code(Cube::get_wrapper_code() + XDP_HELPERS + XDP_WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags_(cflags);
@@ -112,7 +112,7 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
 
 void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
   // compile ebpf program
-  std::string all_code(CubeTC::CUBE_H + CubeTC::WRAPPERC +
+  std::string all_code(Cube::get_wrapper_code() + CubeTC::WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags_(cflags);
