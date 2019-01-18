@@ -13,6 +13,8 @@
 package networkpolicies
 
 import (
+	"sync"
+
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
 )
@@ -41,6 +43,8 @@ func (f *FirewallAPI) Create(firewall k8sfirewall.Firewall) (string, error) {
 	// Generate it here ....
 	generatedName := firewall.Name
 	var err error
+	var chainWaitGroup sync.WaitGroup
+	var chainsWaitLen int
 
 	//	First create the firewall
 	if err = f.createFirewall(generatedName); err == nil {
@@ -50,9 +54,37 @@ func (f *FirewallAPI) Create(firewall k8sfirewall.Firewall) (string, error) {
 	//	Then create the ports
 	if err = f.createPorts(generatedName, firewall.Ports); err == nil {
 
+		f.Destroy(generatedName)
+
 		//	delete the firewall here
 		return "", nil
 	}
+
+	//	No chains?
+	if len(firewall.Chain) < 1 {
+		return generatedName, nil
+	}
+
+	//	Now for the harder part.
+	//	(usually there are just two)
+	chainsWaitLen = len(firewall.Chain)
+	chainWaitGroup.Add(chainsWaitLen)
+
+	for _, chain := range firewall.Chain {
+
+		if chain.Name == "ingress" || chain.Name == "egress" {
+
+			go func(currentChain k8sfirewall.Chain) {
+				defer chainWaitGroup.Done()
+				f.BulkAddRules(firewall.Name, chain.Name, chain.Rule)
+				//f.ApplyRules(firewall.Name, chain.Name)
+			}(chain)
+
+		}
+	}
+
+	//	Wait for ingress and egress to finish
+	chainWaitGroup.Wait()
 
 	return generatedName, nil
 }
@@ -73,6 +105,53 @@ func (f *FirewallAPI) Destroy(name string) {
 	}
 
 	l.Debugf("Successfully deleted firewall with name %s.", name)
+}
+
+func (f *FirewallAPI) BulkAddRules(name string, type_ string, rules []k8sfirewall.ChainRule) {
+
+	var waitRules sync.WaitGroup
+	waitRules.Add(len(rules))
+
+	for _, rule := range rules {
+
+		go func(currentRule k8sfirewall.ChainRule) {
+			defer waitRules.Done()
+			f.AddRule(name, type_, currentRule)
+		}(rule)
+
+	}
+
+	//	Wait for them to finish
+	waitRules.Wait()
+}
+
+func (f *FirewallAPI) AddRule(name string, type_ string, rule k8sfirewall.ChainRule) {
+
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "AddRule()",
+	})
+	//	Convert it to a Chain Append struct (nothing changes...)
+	ruleToAppend := k8sfirewall.ChainAppendInput{
+		Src:         rule.Src,
+		Dst:         rule.Dst,
+		L4proto:     rule.L4proto,
+		Action:      rule.Action,
+		Sport:       rule.Sport,
+		Dport:       rule.Dport,
+		Tcpflags:    rule.Tcpflags,
+		Conntrack:   rule.Conntrack,
+		Description: rule.Description,
+	}
+
+	//	Make the request now
+	output, response, err := f.fwAPI.CreateFirewallChainAppendByID(nil, name, type_, ruleToAppend)
+
+	if err != nil {
+		l.Errorf("could not add rule for %s, %d", type_, response.StatusCode)
+	}
+
+	l.Debugf("added rule for %s, output id is %d", type_, output.Id)
 
 }
 
@@ -100,15 +179,26 @@ func (f *FirewallAPI) createFirewall(name string) error {
 		l.Errorf("Could not create firewall with name %s: %s", name, err)
 	}
 
-	l.Infof("Successfully created firewall with name %s", name)
+	l.Debugf("Successfully created firewall with name %s", name)
 
 	return err
 }
 
 func (f *FirewallAPI) createPorts(name string, ports []k8sfirewall.Ports) error {
 
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "createPorts()",
+	})
+
 	//	As above, there is no point in checking the response...
 	_, err := f.fwAPI.CreateFirewallPortsListByID(nil, name, ports)
+
+	if err != nil {
+		l.Errorf("Could not add ports for firewall %s", name)
+	}
+
+	l.Debugf("Created ports for firewall %s", name)
 
 	return err
 }
