@@ -14,6 +14,7 @@ package networkpolicies
 
 import (
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
+	log "github.com/sirupsen/logrus"
 )
 
 type FirewallAPI struct {
@@ -39,18 +40,49 @@ func (f *FirewallAPI) Create(firewall k8sfirewall.Firewall) (string, error) {
 	//	TODO: the name must be sha-1-ed or uuid.
 	// Generate it here ....
 	generatedName := firewall.Name
+	var err error
 
 	//	First create the firewall
-	if err := f.createFirewall("c"); err == nil {
+	if err = f.createFirewall(generatedName); err == nil {
 		return "", nil
 	}
 
 	//	Then create the ports
+	if err = f.createPorts(generatedName, firewall.Ports); err == nil {
+
+		//	delete the firewall here
+		return "", nil
+	}
 
 	return generatedName, nil
 }
 
+func (f *FirewallAPI) Destroy(name string) {
+
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "Destroy()",
+	})
+
+	//	If the firewall does not exist, 500 is returned, not 404. So... why even bother to check the result?
+	//	If you did it, ok! If not... well just log it, man....
+	response, err := f.fwAPI.DeleteFirewallByID(nil, name)
+
+	if err != nil {
+		l.Errorf("Could not delete firewall with name %s! The error returned was %d.", name, response.StatusCode)
+	}
+
+	l.Debugf("Successfully deleted firewall with name %s.", name)
+
+}
+
 func (f *FirewallAPI) createFirewall(name string) error {
+
+	var l = log.WithFields(log.Fields{
+		"by":     f.logBy,
+		"method": "createFirewall()",
+	})
+
 	//	Make the request
 	//	NOTE: as I wrote above, response is always 500 in case of errors. So is there really a point in checking the response code?
 	//	That's why the response is not checked and this function just returns an error
@@ -63,6 +95,20 @@ func (f *FirewallAPI) createFirewall(name string) error {
 		//	... but it seems that the API don't even bother to consider it :( I'm leaving it here anyways...
 		Interactive: false,
 	})
+
+	if err != nil {
+		l.Errorf("Could not create firewall with name %s: %s", name, err)
+	}
+
+	l.Infof("Successfully created firewall with name %s", name)
+
+	return err
+}
+
+func (f *FirewallAPI) createPorts(name string, ports []k8sfirewall.Ports) error {
+
+	//	As above, there is no point in checking the response...
+	_, err := f.fwAPI.CreateFirewallPortsListByID(nil, name, ports)
 
 	return err
 }
