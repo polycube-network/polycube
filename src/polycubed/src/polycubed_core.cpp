@@ -24,6 +24,7 @@ namespace polycubed {
 PolycubedCore::PolycubedCore() : logger(spdlog::get("polycubed")) {}
 
 PolycubedCore::~PolycubedCore() {
+  servicectrls_map_.clear();
   ServiceController::ports_to_ifaces.clear();
 }
 
