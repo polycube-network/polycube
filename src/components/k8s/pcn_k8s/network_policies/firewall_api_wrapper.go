@@ -47,20 +47,21 @@ func (f *FirewallAPI) Create(firewall k8sfirewall.Firewall) (string, error) {
 	var chainsWaitLen int
 
 	//	First create the firewall
-	if err = f.createFirewall(generatedName); err == nil {
-		return "", nil
+	if err = f.createFirewall(generatedName); err != nil {
+		return "", err
 	}
 
 	//	Then create the ports
-	if err = f.createPorts(generatedName, firewall.Ports); err == nil {
+	if err = f.createPorts(generatedName, firewall.Ports); err != nil {
 
 		f.Destroy(generatedName)
 
 		//	delete the firewall here
-		return "", nil
+		return "", err
 	}
 
 	//	No chains?
+	//	TODO: Check if this needs another function
 	if len(firewall.Chain) < 1 {
 		return generatedName, nil
 	}
@@ -102,6 +103,7 @@ func (f *FirewallAPI) Destroy(name string) {
 
 	if err != nil {
 		l.Errorf("Could not delete firewall with name %s! The error returned was %d.", name, response.StatusCode)
+		return
 	}
 
 	l.Debugf("Successfully deleted firewall with name %s.", name)
@@ -157,13 +159,15 @@ func (f *FirewallAPI) AddRule(name string, type_ string, rule k8sfirewall.ChainR
 
 	if err != nil {
 		l.Errorf("could not add rule for %s, %d", type_, response.StatusCode)
+		return
 	}
 
 	l.Debugf("added rule for %s, output id is %d", type_, output.Id)
 
+	//	TODO: does it make sense to return the rule id? Check this up
 }
 
-func (f *FirewallAPI) ApplyRules(name string, type_ string) {
+func (f *FirewallAPI) ApplyRules(name string, type_ string) bool {
 
 	var l = log.WithFields(log.Fields{
 		"by":     f.logBy,
@@ -172,11 +176,13 @@ func (f *FirewallAPI) ApplyRules(name string, type_ string) {
 
 	output, response, err := f.fwAPI.CreateFirewallChainApplyRulesByID(nil, "newone", "ingress")
 
-	if err != nil {
+	if err != nil || !output.Result {
 		l.Errorf("Could not apply rules for %s, in %s! %d", name, type_, response.StatusCode)
+		return false
 	}
 
-	l.Debugf("Applied rules for %s, in %s, output  %s", name, type_, output.Result)
+	l.Debugf("Applied rules for %s, in %s", name, type_)
+	return true
 }
 
 func (f *FirewallAPI) createFirewall(name string) error {
@@ -201,11 +207,11 @@ func (f *FirewallAPI) createFirewall(name string) error {
 
 	if err != nil {
 		l.Errorf("Could not create firewall with name %s: %s", name, err)
+		return err
 	}
 
 	l.Debugf("Successfully created firewall with name %s", name)
-
-	return err
+	return nil
 }
 
 func (f *FirewallAPI) createPorts(name string, ports []k8sfirewall.Ports) error {
@@ -220,9 +226,9 @@ func (f *FirewallAPI) createPorts(name string, ports []k8sfirewall.Ports) error 
 
 	if err != nil {
 		l.Errorf("Could not add ports for firewall %s", name)
+		return err
 	}
 
 	l.Debugf("Created ports for firewall %s", name)
-
-	return err
+	return nil
 }
