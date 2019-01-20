@@ -78,7 +78,8 @@ class Port : public polycube::service::PortIface, public PeerIface {
 
  protected:
   void update_indexes() override;
-  int calculate_cube_index(int index) override;
+  void update_parent_fwd_table(uint16_t next);
+  uint16_t get_parent_index() const;
 
   PortType type_;
   CubeIface &parent_;

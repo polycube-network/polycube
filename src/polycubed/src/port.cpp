@@ -54,11 +54,32 @@ uint16_t Port::index() const {
 }
 
 uint16_t Port::get_index() const {
-  return parent_.get_index(ProgramType::INGRESS);
+  // check if there is ingress-enabled transparent cube
+  for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
+    auto index = (*it)->get_index(ProgramType::INGRESS);
+    if (index) {
+      return index;
+    }
+  }
+  // there are not transparent cubes
+  return get_parent_index();
 }
 
 void Port::set_next_index(uint16_t index) {
-  parent_.update_forwarding_table(get_port_id(), index);
+  // TODO
+  if (index == 0) {
+    return;
+  }
+
+  // it there is loaded an egrees cube, set next on it
+  for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
+    if ((*it)->get_index(ProgramType::EGRESS)) {
+      (*it)->set_next(index, ProgramType::EGRESS);
+      return;
+    }
+  }
+
+  update_parent_fwd_table(index);
 }
 
 void Port::set_peer_iface(PeerIface *peer) {
@@ -76,8 +97,18 @@ const Guid &Port::uuid() const {
   return uuid_;
 }
 
+// gets index of element that should be called when a packet comes in
+uint16_t Port::get_parent_index() const {
+  return parent_.get_index(ProgramType::INGRESS);
+}
+
 uint16_t Port::get_egress_index() const {
   return parent_.get_index(ProgramType::EGRESS);
+}
+
+void Port::update_parent_fwd_table(uint16_t next) {
+  uint16_t id = peer_port_ ? peer_port_->get_port_id() : 0;
+  parent_.update_forwarding_table(index(), next | id << 16);
 }
 
 std::string Port::name() const {
@@ -144,7 +175,7 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
   uint16_t module;
 
   if (recirculate) {
-    module = parent_.get_index(ProgramType::INGRESS);
+    module = get_parent_index();
     port = index();
   } else if (peer_port_) {
     port = peer_port_->get_port_id();
@@ -153,9 +184,74 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
   c.send_packet_to_cube(module, port, packet);
 }
 
-void Port::update_indexes() {}
+void Port::update_indexes() {
+  PeerIface *peer = get_peer_iface();
+  int i;
 
-int Port::calculate_cube_index(int index) {}
+  // TODO: could we avoid to recalculate in case there is not peer?
+
+  std::vector<uint16_t> ingress_indexes(cubes_.size());
+  std::vector<uint16_t> egress_indexes(cubes_.size());
+
+  for (i = 0; i < cubes_.size(); i++) {
+    ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
+    egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
+  }
+
+  // ingress chain: peer -> cube[N-1] -> ... -> cube[0] -> port
+  // CASE2: cube[0] -> port
+  for (i = 0; i < cubes_.size(); i++) {
+    if (ingress_indexes[i]) {
+      cubes_[i]->set_next(get_parent_index(), ProgramType::INGRESS);
+      break;
+    }
+  }
+
+  // cube[N-1] -> ... -> cube[0]
+  for (int j = i + 1; j < cubes_.size(); j++) {
+    if (ingress_indexes[j]) {
+      cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
+      i = j;
+    }
+  }
+
+  // CASE4: peer -> cube[N-1]
+  if (peer) {
+    peer->set_next_index(get_index());
+  }
+
+  // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
+  // CASE3: cube[N-1] -> peer
+  uint16_t egress_next = peer ? peer->get_index() : 0;
+  for (i = cubes_.size() - 1; i >= 0; i--) {
+    if (egress_indexes[i]) {
+      cubes_[i]->set_next(egress_next, ProgramType::EGRESS);
+      break;
+    }
+  }
+
+  if (i < 0) {
+    update_parent_fwd_table(egress_next);
+    return;
+  }
+
+  // cube[N-2] -> Tcube[N-1] (egress)
+  // i = 0;
+  for (int j = i - 1; j >= 0; j--) {
+    if (egress_indexes[j]) {
+      cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
+      i = j;
+    }
+  }
+
+  // CASE1: port -> cubes[0]
+  for (i = 0; i < cubes_.size(); i++) {
+    if (egress_indexes[i]) {
+      update_parent_fwd_table(egress_indexes[i]);
+      break;
+    }
+  }
+}
 
 void Port::connect(PeerIface &p1, PeerIface &p2) {
   p1.set_peer_iface(&p2);
