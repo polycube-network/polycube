@@ -45,6 +45,7 @@ class PortIface {
   virtual uint16_t index() const = 0;
   virtual bool operator==(const PortIface &rhs) const = 0;
   virtual std::string name() const = 0;
+  virtual std::string get_path() const = 0;
   virtual void set_peer(const std::string &peer) = 0;
   virtual const std::string &peer() const = 0;
   virtual const Guid &uuid() const = 0;

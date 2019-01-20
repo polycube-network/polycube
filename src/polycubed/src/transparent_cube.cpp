@@ -21,6 +21,10 @@
 
 #include <iostream>
 
+// workaround for now
+#include "polycubed_core.h"
+extern polycube::polycubed::PolycubedCore *core;
+
 namespace polycube {
 namespace polycubed {
 
@@ -76,6 +80,20 @@ void TransparentCube::set_parent(PeerIface *parent) {
 
 PeerIface *TransparentCube::get_parent() {
   return parent_;
+}
+
+std::string TransparentCube::get_parent_parameter(
+    const std::string &parameter) {
+  if (!parent_) {
+    throw std::runtime_error("cube is not attached");
+  }
+
+  return parent_->get_parameter(parameter);
+}
+
+void TransparentCube::set_parameter(const std::string &parameter,
+                                    const std::string &value) {
+  core->set_cube_parameter(get_name(), parameter, value);
 }
 
 void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,

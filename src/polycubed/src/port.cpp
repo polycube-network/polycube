@@ -21,6 +21,10 @@
 
 #include "service_controller.h"
 
+// workaround for now
+#include "polycubed_core.h"
+extern polycube::polycubed::PolycubedCore *core;
+
 namespace polycube {
 namespace polycubed {
 
@@ -97,6 +101,10 @@ void Port::set_peer_iface(PeerIface *peer) {
 PeerIface *Port::get_peer_iface() {
   std::lock_guard<std::mutex> guard(port_mutex_);
   return peer_port_;
+}
+
+std::string Port::get_parameter(const std::string &parameter) {
+  return core->get_cube_port_parameter(parent_.get_name(), name(), parameter);
 }
 
 const Guid &Port::uuid() const {

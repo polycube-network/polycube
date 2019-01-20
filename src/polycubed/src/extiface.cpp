@@ -148,6 +148,10 @@ PeerIface *ExtIface::get_peer_iface() {
   return peer_;
 }
 
+std::string ExtIface::get_parameter(const std::string &parameter) {
+  throw std::runtime_error("get parameter not implemented in netdev");
+}
+
 void ExtIface::set_next_index(uint16_t index) {
   std::lock_guard<std::mutex> guard(iface_mutex_);
   set_next(index, ProgramType::INGRESS);

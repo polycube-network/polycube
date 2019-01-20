@@ -37,6 +37,8 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   void set_next(uint16_t next, ProgramType type);
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
+  std::string get_parent_parameter(const std::string &parameter);
+  void set_parameter(const std::string &parameter, const std::string &value);
   void send_packet_out(const std::vector<uint8_t> &packet, service::Sense sense,
                        bool recirculate = false);
 

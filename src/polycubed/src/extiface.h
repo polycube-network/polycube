@@ -43,6 +43,7 @@ class ExtIface : public PeerIface {
   uint16_t get_port_id() const override;
   void set_peer_iface(PeerIface *peer) override;
   PeerIface *get_peer_iface() override;
+  std::string get_parameter(const std::string &parameter) override;
 
   void set_next_index(uint16_t index);
   bool is_used() const;

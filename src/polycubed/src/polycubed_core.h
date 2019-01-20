@@ -70,6 +70,13 @@ class PolycubedCore {
   void set_polycubeendpoint(std::string &polycube);
   std::string get_polycubeendpoint();
 
+  std::string get_cube_port_parameter(const std::string &cube,
+                                      const std::string &port,
+                                      const std::string &parameter);
+  std::string set_cube_parameter(const std::string &cube,
+                                 const std::string &parameter,
+                                 const std::string &value);
+
  private:
   bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
 

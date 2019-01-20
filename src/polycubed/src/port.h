@@ -56,6 +56,7 @@ class Port : public polycube::service::PortIface, public PeerIface {
   void set_next_index(uint16_t index) override;
   void set_peer_iface(PeerIface *peer) override;
   PeerIface *get_peer_iface() override;
+  std::string get_parameter(const std::string &parameter) override;
 
   // TODO: rename this
   uint16_t index() const;

@@ -432,5 +432,52 @@ void PolycubedCore::detach(const std::string &cube_name,
   cube->set_parent(nullptr);
 }
 
+std::string PolycubedCore::get_cube_port_parameter(
+    const std::string &cube, const std::string &port,
+    const std::string &parameter) {
+  std::string service_name = ServiceController::get_cube_service(cube);
+  auto iter = servicectrls_map_.find(service_name);
+  if (iter == servicectrls_map_.end()) {
+    throw std::runtime_error("Service Controller does not exist");
+  }
+
+  ServiceController &s = iter->second;
+
+  std::string url("/" + service_name + "/" + cube + "/ports/" + port + "/" +
+                  parameter);
+  auto req = HttpHandleRequest(polycube::service::Http::Method::Get, url, "");
+  auto res = HttpHandleResponse();
+
+  s.managementInterface->control_handler(req, res);
+
+  if (res.code() != polycube::service::Http::Code::Ok) {
+    throw std::runtime_error("Error getting port parameter: " + res.body());
+  }
+
+  return res.body();
+}
+
+std::string PolycubedCore::set_cube_parameter(const std::string &cube,
+                                              const std::string &parameter,
+                                              const std::string &value) {
+  std::string service_name = ServiceController::get_cube_service(cube);
+  auto iter = servicectrls_map_.find(service_name);
+  if (iter == servicectrls_map_.end()) {
+    throw std::runtime_error("Service Controller does not exist");
+  }
+
+  ServiceController &s = iter->second;
+
+  std::string url("/" + service_name + "/" + cube + "/" + parameter);
+  auto req = HttpHandleRequest(polycube::service::Http::Method::Put, url, "");
+  auto res = HttpHandleResponse();
+
+  s.managementInterface->control_handler(req, res);
+
+  if (res.code() != polycube::service::Http::Code::Ok) {
+    throw std::runtime_error("Error setting cube parameter: " + res.body());
+  }
+}
+
 }  // namespace polycubed
 }  // namespace polycube

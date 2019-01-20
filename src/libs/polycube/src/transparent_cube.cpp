@@ -59,6 +59,11 @@ TransparentCube::~TransparentCube() {
   factory_->destroy_cube(get_name());
 }
 
+std::string TransparentCube::get_parent_parameter(
+    const std::string &parameter) {
+  return cube_->get_parent_parameter(parameter);
+}
+
 void TransparentCube::send_packet_out(EthernetII &packet, Sense sense,
                                       bool recirculate) {
   cube_->send_packet_out(packet.serialize(), sense, recirculate);
