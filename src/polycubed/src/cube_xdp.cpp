@@ -92,10 +92,6 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
   std::string all_code(CUBE_H + XDP_HELPERS + XDP_WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
-#ifdef LOG_COMPILEED_CODE
-  Cube::log_compileed_code(all_code);
-#endif
-
   std::vector<std::string> cflags_(cflags);
   cflags_.push_back(std::string("-DMOD_NAME=") + std::string(name_));
   cflags_.push_back("-DCUBE_ID=" + std::to_string(get_id()));
@@ -104,18 +100,8 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
   cflags_.push_back(std::string("-DPOLYCUBE_XDP=1"));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("xdp_md"));
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.init: {0}s", elapsed_seconds.count());
-#endif
 
   if (init_res.code() != 0) {
     logger->error("failed to init XDP program: {0}", init_res.msg());
@@ -129,27 +115,13 @@ void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
   std::string all_code(CubeTC::CUBE_H + CubeTC::WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
-#ifdef LOG_COMPILEED_CODE
-  Cube::log_compileed_code(all_code);
-#endif
-
   std::vector<std::string> cflags_(cflags);
   cflags_.push_back("-DCUBE_ID=" + std::to_string(get_id()));
   cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.init: {0}s", elapsed_seconds.count());
-#endif
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -158,20 +130,10 @@ void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
 }
 
 int CubeXDP::do_load(ebpf::BPF &bpf) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   int fd_;
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res =
       bpf.load_func("handle_rx_xdp_wrapper", BPF_PROG_TYPE_XDP, fd_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.load_func: {0}s", elapsed_seconds.count());
-#endif
 
   if (load_res.code() != 0) {
     logger->error("failed to load XDP program: {0}", load_res.msg());
@@ -183,19 +145,9 @@ int CubeXDP::do_load(ebpf::BPF &bpf) {
 }
 
 void CubeXDP::do_unload(ebpf::BPF &bpf) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res = bpf.unload_func("handle_rx_xdp_wrapper");
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.unload_func: {0}s", elapsed_seconds.count());
-#endif
-  // TODO: Remove also from the xdp_prog list?
+  //TODO: Remove also from the xdp_prog list?
   logger->debug("XDP program unloaded");
 }
 

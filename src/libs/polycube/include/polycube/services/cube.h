@@ -226,17 +226,9 @@ Cube<PortType>::impl::impl(Cube<PortType> &parent_, const std::string &name,
     parent_.datapath_log_msg(msg);
   };
 
-#ifdef LOG_COMPILATION_TIME
-  std::shared_ptr<spdlog::logger> l = spdlog::get("polycubed");
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-  cube_ = factory_->create_cube(name, ingress_code, egress_code, handle_log_msg,
-                                type, handle_packet_in, level);
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  l->info("+create_cube: {0}s", elapsed_seconds.count());
-#endif
+  cube_ = factory_->create_cube(name, ingress_code, egress_code,
+                                handle_log_msg, type, handle_packet_in,
+                                level);
 }
 
 template <class PortType>

@@ -46,27 +46,13 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
   std::string all_code(CUBE_H + WRAPPERC +
                        DatapathLog::get_instance().parse_log(code));
 
-#ifdef LOG_COMPILEED_CODE
-  Cube::log_compileed_code(all_code);
-#endif
-
   std::vector<std::string> cflags_(cflags);
   cflags_.push_back("-DCUBE_ID=" + std::to_string(id));
   cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.init: {0}s", elapsed_seconds.count());
-#endif
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -77,19 +63,10 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
 int CubeTC::do_load(ebpf::BPF &bpf) {
   int fd_;
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res =
       bpf.load_func("handle_rx_wrapper", BPF_PROG_TYPE_SCHED_CLS, fd_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.load_func: {0}s", elapsed_seconds.count());
-#endif
 
   if (load_res.code() != 0) {
     // logger->error("failed to load bpf program: {0}", load_res.msg());
@@ -100,18 +77,8 @@ int CubeTC::do_load(ebpf::BPF &bpf) {
 }
 
 void CubeTC::do_unload(ebpf::BPF &bpf) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res = bpf.unload_func("handle_rx_wrapper");
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.unload_func: {0}s", elapsed_seconds.count());
-#endif
   // TODO: what to do with load_res?
 }
 

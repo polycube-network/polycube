@@ -22,30 +22,6 @@
 namespace polycube {
 namespace polycubed {
 
-#ifdef LOG_COMPILEED_CODE
-void Cube::log_compileed_code(std::string &code) {
-  int i = 0;
-  int lines_not_empty = 0;
-
-  std::string well_formatted_code;
-  std::istringstream iss(code);
-  for (std::string line; std::getline(iss, line); ++i) {
-    well_formatted_code += std::to_string(i) + ": " + line + "\n";
-    if (line != "")
-      lines_not_empty++;
-  }
-
-  logger->info("C code compileed\n");
-  logger->info(
-      "\n--------------------------------------\n{0}\n-------------------------"
-      "--------\n",
-      well_formatted_code);
-
-  logger->info("+Lines of C code: {0}", i);
-  logger->info("+Lines of C code (not empty): {0}", lines_not_empty);
-}
-#endif
-
 std::vector<std::string> Cube::cflags = {
     std::string("-D_POLYCUBE_MAX_NODES=") +
         std::to_string(Node::_POLYCUBE_MAX_NODES),
@@ -247,11 +223,6 @@ void Cube::reload(const std::string &code, int index, ProgramType type) {
   return do_reload(code, index, type);
 }
 
-void Cube::do_reload(const std::string &code, int index, ProgramType type) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
   std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
   int fd;
@@ -309,13 +280,6 @@ void Cube::do_reload(const std::string &code, int index, ProgramType type) {
   (*programs)[index] = std::move(new_bpf_program);
   // update last used code
   (*code_)[index] = code;
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+reload: {0}s", elapsed_seconds.count());
-#endif
-}
 
 int Cube::add_program(const std::string &code, int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);

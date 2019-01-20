@@ -39,19 +39,6 @@
 #include <string>
 #include <vector>
 
-// Print compileed eBPF C code (wrappers provided by polycubed included)
-//   as it is passed to bcc in order to get compiled and executed.
-// Print # Lines of Code
-// Print # Lines of Code (not empty)
-// #define LOG_COMPILEED_CODE
-
-// Print eBPF code compilation time.
-// bpf.init      -> time bcc uses to compile C into eBPF bytecode
-// bpf.load_func -> time bcc uses to compile eBPF bytecode
-// #define LOG_COMPILATION_TIME
-
-// Output of such defines is polycubed log
-
 using polycube::service::CubeIface;
 using polycube::service::PortIface;
 using polycube::service::ProgramType;
