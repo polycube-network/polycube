@@ -32,9 +32,6 @@ namespace polycubed {
 
 std::mutex ServiceController::service_ctrl_mutex_;
 
-// FIXME: to be defined somewhere else
-const static std::string HOST_PEER(":host");
-
 std::unordered_map<Guid, std::unique_ptr<Node>>
     ServiceController::ports_to_ifaces;
 std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>>
@@ -246,15 +243,7 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
   std::unique_ptr<Node> iface;
   std::string cube_name, port_name;  // used if peer is cube:port syntax
 
-  if (peer_name == HOST_PEER) {
-    iface.reset(new PortHost(p.get_type()));
-    ports_to_ifaces.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(p.uuid()),
-                            std::forward_as_tuple(std::move(iface)));
-    p.logger->info("connecting port {0} to host networking", p.name());
-    Port::connect(p, *ports_to_ifaces.at(p.uuid()));
-  } else if (Netlink::getInstance().get_available_ifaces().count(peer_name) !=
-             0) {
+  if (Netlink::getInstance().get_available_ifaces().count(peer_name) != 0) {
     switch (p.get_type()) {
     case PortType::TC:
       iface.reset(new ExtIfaceTC(peer_name, static_cast<PortTC &>(p)));
