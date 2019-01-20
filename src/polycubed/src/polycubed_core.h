@@ -63,6 +63,9 @@ class PolycubedCore {
 
   void connect(const std::string &peer1, const std::string &peer2);
   void disconnect(const std::string &peer1, const std::string &peer2);
+  void attach(const std::string &cube_name, const std::string &port_name,
+              const std::string &position, const std::string &other);
+  void detach(const std::string &cube_name, const std::string &port_name);
 
   void set_polycubeendpoint(std::string &polycube);
   std::string get_polycubeendpoint();

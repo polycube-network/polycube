@@ -300,5 +300,105 @@ void PolycubedCore::disconnect(const std::string &peer1,
   try_to_set_peer(peer2, "");
 }
 
+void PolycubedCore::attach(const std::string &cube_name,
+                           const std::string &port_name,
+                           const std::string &position,
+                           const std::string &other) {
+  std::shared_ptr<TransparentCube> cube;
+  std::shared_ptr<PeerIface> peer;
+
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    throw std::runtime_error("Cube " + cube_name + " does not exist");
+  }
+
+  cube = std::dynamic_pointer_cast<TransparentCube>(cube_);
+  if (!cube) {
+    throw std::runtime_error("Cube " + cube_name + " is not transparent");
+  }
+
+  if (cube->get_parent()) {
+    throw std::runtime_error("Cube " + cube_name + " is already attached");
+  }
+
+  std::smatch match;
+  std::regex rule("(\\S+):(\\S+)");
+
+  if (std::regex_match(port_name, match, rule)) {
+    auto cube2_ = ServiceController::get_cube(match[1]);
+    if (cube2_ == nullptr) {
+      throw std::runtime_error("Port " + port_name + " does not exist");
+    }
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    if (!cube2) {
+      throw std::runtime_error("Cube " + std::string(match[1]) +
+                               " is transparent");
+    }
+
+    auto port = cube2->get_port(match[2]);
+    switch (port->get_type()) {
+    case PortType::TC:
+      if (cube->get_type() != CubeType::TC) {
+        throw std::runtime_error(cube_name + " and " + port_name +
+                                 " have incompatible types");
+      }
+      break;
+    case PortType::XDP:
+      if (cube->get_type() != CubeType::XDP_DRV &&
+          cube->get_type() != CubeType::XDP_DRV) {
+        throw std::runtime_error(cube_name + " and " + port_name +
+                                 " have incompatible types");
+      }
+      break;
+    }
+
+    peer = std::dynamic_pointer_cast<PeerIface>(port);
+  } else {
+    throw std::runtime_error(port_name + " is not a valid port");
+  }
+
+  cube->set_parent(peer.get());
+  peer->add_cube(cube.get(), position, other);
+}
+
+void PolycubedCore::detach(const std::string &cube_name,
+                           const std::string &port_name) {
+  std::shared_ptr<TransparentCube> cube;
+  std::shared_ptr<PeerIface> peer;
+
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    throw std::runtime_error("Cube " + cube_name + " does not exist");
+  }
+
+  cube = std::dynamic_pointer_cast<TransparentCube>(cube_);
+  if (!cube) {
+    throw std::runtime_error("Cube " + cube_name + " is not transparent");
+  }
+
+  std::smatch match;
+  std::regex rule("(\\S+):(\\S+)");
+
+  if (std::regex_match(port_name, match, rule)) {
+    auto cube_ = ServiceController::get_cube(match[1]);
+    if (cube_ == nullptr) {
+      throw std::runtime_error("Port " + port_name + " does not exist");
+    }
+    auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+    if (!cube) {
+      throw std::runtime_error("Cube " + std::string(match[1]) +
+                               " is transparent");
+    }
+
+    auto port = cube->get_port(match[2]);
+    peer = std::dynamic_pointer_cast<PeerIface>(port);
+  } else {
+    throw std::runtime_error(port_name + " is not a valid port");
+  }
+
+  peer->remove_cube(cube->get_name());
+  cube->set_parent(nullptr);
+}
+
 }  // namespace polycubed
 }  // namespace polycube

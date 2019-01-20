@@ -191,6 +191,12 @@ void RestServer::setup_routes() {
   Routes::Post(router, base + std::string("/disconnect"),
                Routes::bind(&RestServer::disconnect, this));
 
+  // attach & detach
+  Routes::Post(router, base + std::string("/attach"),
+               Routes::bind(&RestServer::attach, this));
+  Routes::Post(router, base + std::string("/detach"),
+               Routes::bind(&RestServer::detach, this));
+
   // topology
   Routes::Get(router, base + std::string("/topology"),
               Routes::bind(&RestServer::topology, this));
@@ -572,6 +578,104 @@ void RestServer::disconnect(const Rest::Request &request,
 
   try {
     core.disconnect(peer1, peer2);
+    response.send(Http::Code::Ok);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Http::Code::Bad_Request, e.what());
+  }
+}
+
+void RestServer::attach(const Rest::Request &request,
+                        Http::ResponseWriter response) {
+  logRequest(request);
+
+  std::string cube, port, position, other;
+  bool position_(false);
+
+  nlohmann::json val = nlohmann::json::parse(request.body());
+
+  if (val.find("cube") == val.end()) {
+    response.send(Http::Code::Bad_Request, "Cube is missing");
+    return;
+  }
+
+  cube = val.at("cube");
+
+  if (val.find("port") == val.end()) {
+    response.send(Http::Code::Bad_Request, "Port is missing");
+    return;
+  }
+
+  port = val.at("port");
+
+  position = "auto";  // default value
+
+  if (val.find("position") != val.end()) {
+    position = val.at("position");
+    position_ = true;
+  }
+
+  if (val.find("after") != val.end()) {
+    if (position_) {
+      response.send(Http::Code::Bad_Request,
+                    "position and after cannot be used together");
+      return;
+    }
+
+    position = "after";
+    other = val.at("after");
+  }
+
+  if (val.find("before") != val.end()) {
+    if (position_) {
+      response.send(Http::Code::Bad_Request,
+                    "position and before cannot be used together");
+      return;
+    }
+
+    if (!other.empty()) {
+      response.send(Http::Code::Bad_Request,
+                    "after and before cannot be used together");
+      return;
+    }
+
+    position = "before";
+    other = val.at("before");
+  }
+
+  try {
+    core.attach(cube, port, position, other);
+    response.send(Http::Code::Ok);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Http::Code::Bad_Request, e.what());
+  }
+}
+
+void RestServer::detach(const Rest::Request &request,
+                        Http::ResponseWriter response) {
+  logRequest(request);
+
+  std::string cube, port;
+
+  nlohmann::json val = nlohmann::json::parse(request.body());
+
+  if (val.find("cube") == val.end()) {
+    response.send(Http::Code::Bad_Request, "Cube is missing");
+    return;
+  }
+
+  cube = val.at("cube");
+
+  if (val.find("port") == val.end()) {
+    response.send(Http::Code::Bad_Request, "Port is missing");
+    return;
+  }
+
+  port = val.at("port");
+
+  try {
+    core.detach(cube, port);
     response.send(Http::Code::Ok);
   } catch (const std::runtime_error &e) {
     logger->error("{0}", e.what());

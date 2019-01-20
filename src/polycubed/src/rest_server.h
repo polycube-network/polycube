@@ -92,6 +92,8 @@ class RestServer {
   void connect(const Rest::Request &request, Http::ResponseWriter response);
   void disconnect(const Rest::Request &request, Http::ResponseWriter response);
 
+  void attach(const Rest::Request &request, Http::ResponseWriter response);
+  void detach(const Rest::Request &request, Http::ResponseWriter response);
   void topology(const Rest::Request &request, Http::ResponseWriter response);
   void topology_help(const Rest::Request &request,
                      Http::ResponseWriter response);
