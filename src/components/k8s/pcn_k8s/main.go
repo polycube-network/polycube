@@ -32,6 +32,7 @@ import (
 	//	TODO-ON-MERGE: change the path here to polycube-network
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
+	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
