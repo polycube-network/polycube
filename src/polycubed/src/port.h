@@ -37,10 +37,12 @@ namespace polycubed {
 
 class ServiceController;
 class ExtIface;
+class TransparentCube;
 
 class Port : public polycube::service::PortIface, public PeerIface {
   friend class ServiceController;
   friend class ExtIface;
+  friend class TransparentCube;
 
  public:
   Port(CubeIface &parent, const std::string &name, uint16_t index);

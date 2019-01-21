@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 The Polycube Authors
+ * Copyright 2018 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,30 @@
 
 #pragma once
 
-#include "cube.h"
-#include "node.h"
-#include "polycube/services/guid.h"
+#include "transparent_cube.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
 
 #include <spdlog/spdlog.h>
-#include "polycube/services/cube_factory.h"
 
 #include <exception>
 #include <map>
 #include <set>
 #include <vector>
 
-using polycube::service::PortIface;
-
 namespace polycube {
 namespace polycubed {
 
-class PortXDP;
-class TransparentCubeXDP;
-
-class CubeXDP : public Cube {
-  friend class PortXDP;
-  friend class TransparentCubeXDP;
-
+class TransparentCubeXDP : virtual public TransparentCube {
  public:
-  explicit CubeXDP(const std::string &name, const std::string &service_name,
-                   const std::vector<std::string> &ingress_code,
-                   const std::vector<std::string> &egress_code, LogLevel level,
-                   CubeType type);
-
-  virtual ~CubeXDP();
-  int get_attach_flags() const;
+  explicit TransparentCubeXDP(const std::string &name,
+                              const std::string &service_name,
+                              const std::vector<std::string> &ingres_code,
+                              const std::vector<std::string> &egress_code,
+                              LogLevel level, CubeType type,
+                              const service::attach_cb &attach);
+  virtual ~TransparentCubeXDP();
 
  protected:
   static std::string get_wrapper_code();
@@ -59,18 +48,11 @@ class CubeXDP : public Cube {
                ProgramType type);
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
-
-  static void do_unload(ebpf::BPF &bpf);
-  static int do_load(ebpf::BPF &bpf);
-  void compileIngress(ebpf::BPF &bpf, const std::string &code);
-  void compileEgress(ebpf::BPF &bpf, const std::string &code);
-
-  int attach_flags_;
+  void compileIngress(ebpf::BPF &bpf, const std::string &code, uint16_t next);
+  void compileEgress(ebpf::BPF &bpf, const std::string &code, uint16_t next);
 
  private:
-  static const std::string CUBEXDP_COMMON_WRAPPER;
-  static const std::string CUBEXDP_WRAPPER;
-  static const std::string CUBEXDP_HELPERS;
+  static const std::string TRANSPARENTCUBEXDP_WRAPPER;
 };
 
 }  // namespace polycubed

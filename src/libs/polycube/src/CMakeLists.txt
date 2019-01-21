@@ -7,6 +7,7 @@ add_definitions(-DGUID_LIBUUID)
 
 add_library(polycube STATIC
   base_cube.cpp
+  transparent_cube.cpp
   port.cpp
   table.cpp
   http_router.cpp

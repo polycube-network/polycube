@@ -43,6 +43,9 @@ set(polycubed_sources
   cube.cpp
   cube_tc.cpp
   cube_xdp.cpp
+  transparent_cube.cpp
+  transparent_cube_tc.cpp
+  transparent_cube_xdp.cpp
   controller.cpp
   extiface.cpp
   extiface_tc.cpp

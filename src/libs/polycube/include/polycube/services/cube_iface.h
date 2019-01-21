@@ -38,6 +38,11 @@ enum class ProgramType {
   EGRESS,
 };
 
+enum class Sense {
+  INGRESS,
+  EGRESS,
+};
+
 enum class CubeType {
   TC,
   XDP_SKB,
@@ -52,11 +57,9 @@ class BaseCubeIface {
   virtual void del_program(int index, ProgramType type) = 0;
 
   virtual CubeType get_type() const = 0;
-
   // get unique system-wide module id
   // TODO: how is this related to uuid?
   virtual uint32_t get_id() const = 0;
-
   virtual uint16_t get_index(ProgramType type) const = 0;
   virtual int get_table_fd(const std::string &table_name, int index,
                            ProgramType type) = 0;
@@ -77,6 +80,13 @@ class CubeIface : virtual public BaseCubeIface {
   virtual std::shared_ptr<PortIface> get_port(const std::string &name) = 0;
 
   virtual void update_forwarding_table(int index, int value) = 0;
+};
+
+class TransparentCubeIface : virtual public BaseCubeIface {
+ public:
+  virtual void set_next(uint16_t next, ProgramType type) = 0;
+  virtual void send_packet_out(const std::vector<uint8_t> &packet, Sense sense,
+                               bool recirculate = false) = 0;
 };
 }
 }

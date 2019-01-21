@@ -18,6 +18,8 @@
 #include "cube_tc.h"
 #include "cube_xdp.h"
 #include "service_controller.h"
+#include "transparent_cube_tc.h"
+#include "transparent_cube_xdp.h"
 
 #include <iostream>
 #include <sstream>
@@ -75,6 +77,52 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
       break;
     }
   }
+  return cube;
+}
+
+std::shared_ptr<TransparentCubeIface> CubeFactoryImpl::create_transparent_cube(
+    const std::string &name, const std::vector<std::string> &ingress_code,
+    const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+    const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
+    LogLevel level) {
+  std::shared_ptr<TransparentCubeIface> cube;
+  typename std::unordered_map<std::string,
+                              std::shared_ptr<BaseCubeIface>>::iterator iter;
+  bool inserted;
+
+  switch (type) {
+  case CubeType::XDP_SKB:
+  case CubeType::XDP_DRV:
+    cube = std::make_shared<TransparentCubeXDP>(
+        name, service_name_, ingress_code, egress_code, level, type, attach);
+    break;
+  case CubeType::TC:
+    cube = std::make_shared<TransparentCubeTC>(
+        name, service_name_, ingress_code, egress_code, level, attach);
+    break;
+  default:
+    throw std::runtime_error("invalid cube type");
+  }
+
+  std::tie(iter, inserted) = cubes_.emplace(name, cube);
+  if (!inserted) {
+    return nullptr;
+  }
+
+  ServiceController::register_cube(cube, service_name_);
+  datapathlog_.register_cb(cube->get_id(), log_msg);
+  if (cb) {
+    switch (type) {
+    case CubeType::XDP_SKB:
+    case CubeType::XDP_DRV:
+      controller_xdp_.register_cb(cube->get_id(), cb);
+      break;
+    case CubeType::TC:
+      controller_tc_.register_cb(cube->get_id(), cb);
+      break;
+    }
+  }
+
   return cube;
 }
 
