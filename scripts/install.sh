@@ -27,6 +27,25 @@ function success_message {
 }
 trap error_message ERR
 
+function show_help() {
+usage="$(basename "$0") [mode]
+Polycube installation script
+
+mode:
+  pcn-iptables: install only pcn-iptables service and related components
+  pcn-k8s: install only pcn-k8s (Only to be used with docker build)
+  default: install all available polycube services"
+echo "$usage"
+}
+
+while getopts h option; do
+ case "${option}" in
+ h|\?)
+  show_help
+  exit 0
+  esac
+done
+
 MODE=$1
 
 [ -z ${SUDO+x} ] && SUDO='sudo'
@@ -126,7 +145,8 @@ if [ "$MODE" == "pcn-iptables" ]; then
     -DENABLE_SERVICE_SIMPLEBRIDGE=OFF \
     -DENABLE_SERVICE_SIMPLEFORWARDER=OFF
 elif [ "$MODE" == "pcn-k8s" ]; then
-  cmake .. -DENABLE_SERVICE_DDOSMITIGATOR=OFF \
+  cmake .. -DENABLE_SERVICE_BRIDGE=OFF \
+    -DENABLE_SERVICE_DDOSMITIGATOR=OFF \
     -DENABLE_SERVICE_FIREWALL=OFF \
     -DENABLE_SERVICE_HELLOWORLD=OFF \
     -DENABLE_SERVICE_IPTABLES=OFF \
@@ -141,7 +161,7 @@ elif [ "$MODE" == "pcn-k8s" ]; then
     -DENABLE_SERVICE_SIMPLEFORWARDER=OFF \
     -DINSTALL_CLI=OFF
 else
-  cmake ..
+  cmake .. -DENABLE_PCN_IPTABLES=ON
 fi
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
