@@ -36,6 +36,7 @@ set(polycubed_sources
   management_lib.cpp
   polycubed_core.cpp
   rest_server.cpp
+  peer_iface.cpp
   port.cpp
   port_tc.cpp
   port_xdp.cpp

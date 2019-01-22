@@ -77,6 +77,9 @@ class Port : public polycube::service::PortIface, public PeerIface {
   static void unconnect(PeerIface &p1, PeerIface &p2);
 
  protected:
+  void update_indexes() override;
+  int calculate_cube_index(int index) override;
+
   PortType type_;
   CubeIface &parent_;
   std::string name_;

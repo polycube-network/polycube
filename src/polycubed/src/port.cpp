@@ -25,7 +25,8 @@ namespace polycube {
 namespace polycubed {
 
 Port::Port(CubeIface &parent, const std::string &name, uint16_t index)
-    : parent_(parent),
+    : PeerIface(port_mutex_),
+      parent_(parent),
       name_(name),
       path_(parent.get_name() + ":" + name),
       index_(index),
@@ -151,6 +152,10 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
   }
   c.send_packet_to_cube(module, port, packet);
 }
+
+void Port::update_indexes() {}
+
+int Port::calculate_cube_index(int index) {}
 
 void Port::connect(PeerIface &p1, PeerIface &p2) {
   p1.set_peer_iface(&p2);

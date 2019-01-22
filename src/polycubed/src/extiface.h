@@ -57,6 +57,9 @@ class ExtIface : public PeerIface {
   virtual std::string get_tx_code() const = 0;
   virtual bpf_prog_type get_program_type() const = 0;
 
+  void update_indexes() override;
+  int calculate_cube_index(int index) override;
+
   ebpf::BPF ingress_program_;
   ebpf::BPF egress_program_;
   void set_next(uint16_t next, ProgramType type);
@@ -69,6 +72,8 @@ class ExtIface : public PeerIface {
   uint16_t next_index_;
 
   bool egress_program_loaded;
+
+  mutable std::mutex iface_mutex_;
 
   std::shared_ptr<spdlog::logger> logger;
 };

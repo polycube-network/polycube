@@ -23,6 +23,8 @@ using polycube::service::TransparentCubeIface;
 namespace polycube {
 namespace polycubed {
 
+class PeerIface;
+
 class TransparentCube : public BaseCube, public TransparentCubeIface {
  public:
   explicit TransparentCube(const std::string &name,
@@ -33,15 +35,15 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   virtual ~TransparentCube();
 
   void set_next(uint16_t next, ProgramType type);
-  void set_parent(PortIface *parent);
-  PortIface *get_parent();
+  void set_parent(PeerIface *parent);
+  PeerIface *get_parent();
   void send_packet_out(const std::vector<uint8_t> &packet, service::Sense sense,
                        bool recirculate = false);
 
  protected:
   void uninit();
   service::attach_cb attach_;
-  PortIface *parent_;
+  PeerIface *parent_;
   static std::string get_wrapper_code();
   uint16_t ingress_next_;
   uint16_t egress_next_;
