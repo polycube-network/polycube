@@ -138,28 +138,23 @@ uint16_t ExtIface::get_port_id() const {
 }
 
 void ExtIface::set_peer_iface(PeerIface *peer) {
+  std::lock_guard<std::mutex> guard(iface_mutex_);
   peer_ = peer;
-  set_next_index(peer_ ? peer_->get_index() : 0);
-
-  Port *peer_port = dynamic_cast<Port *>(peer);
-  if (peer_port) {
-    set_next(peer_port->get_egress_index(), ProgramType::EGRESS);
-  }
+  update_indexes();
 }
 
 PeerIface *ExtIface::get_peer_iface() {
+  std::lock_guard<std::mutex> guard(iface_mutex_);
   return peer_;
 }
 
 void ExtIface::set_next_index(uint16_t index) {
+  std::lock_guard<std::mutex> guard(iface_mutex_);
   set_next(index, ProgramType::INGRESS);
 }
 
 void ExtIface::set_next(uint16_t next, ProgramType type) {
-  uint16_t port_id = 0;
-  if (peer_) {
-    port_id = peer_->get_port_id();
-  }
+  uint16_t port_id = peer_ ? peer_->get_port_id() : 0;
   uint32_t value = port_id << 16 | next;
   if (type == ProgramType::INGRESS) {
     auto index_map = ingress_program_.get_array_table<uint32_t>("index_map");
@@ -170,9 +165,87 @@ void ExtIface::set_next(uint16_t next, ProgramType type) {
   }
 }
 
-void ExtIface::update_indexes() {}
+void ExtIface::update_indexes() {
+  int i;
 
-int ExtIface::calculate_cube_index(int index) {}
+  // TODO: could we avoid to recalculate in case there is not peer?
+
+  std::vector<uint16_t> ingress_indexes(cubes_.size());
+  std::vector<uint16_t> egress_indexes(cubes_.size());
+
+  for (i = 0; i < cubes_.size(); i++) {
+    ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
+    egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
+  }
+
+  // ingress chain: NIC -> cube[N-1] -> ... -> cube[0] -> stack (or peer)
+  // CASE2: cube[0] -> stack (or)
+  for (i = 0; i < cubes_.size(); i++) {
+    if (ingress_indexes[i]) {
+      cubes_[i]->set_next(peer_ ? peer_->get_index() : 0xffff,
+                          ProgramType::INGRESS);
+      break;
+    }
+  }
+
+  // cube[N-1] -> ... -> cube[0]
+  for (int j = i + 1; j < cubes_.size(); j++) {
+    if (ingress_indexes[j]) {
+      cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
+      i = j;
+    }
+  }
+
+  // CASE4: NIC -> cube[N-1] or peer
+  if (i < cubes_.size() && ingress_indexes[i]) {
+    set_next(ingress_indexes[i], ProgramType::INGRESS);
+  } else {
+    set_next(peer_ ? peer_->get_index() : 0, ProgramType::INGRESS);
+  }
+
+  // egress chain: "nic" -> cubes[N-1] -> ... -> cube[0] -> "egress"
+
+  // cube[0] -> "egress"
+  for (i = 0; i < cubes_.size(); i++) {
+    if (egress_indexes[i]) {
+      cubes_[i]->set_next(0xffff, ProgramType::EGRESS);
+      break;
+    }
+  }
+
+  // if (i == cubes_.size()) {
+  //  set_next(0xffff, ProgramType::EGRESS);
+  //  return;
+  //}
+
+  // cubes[N-1] -> ... -> cube[0]
+  for (int j = i + 1; j < cubes_.size(); j++) {
+    if (egress_indexes[j]) {
+      cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
+      i = j;
+    }
+  }
+
+  // "nic" -> cubes[N-1] or peer
+  if (i < cubes_.size() && egress_indexes[i]) {
+    set_next(egress_indexes[i], ProgramType::EGRESS);
+  } else {
+    Port *peer_port = dynamic_cast<Port *>(peer_);
+    set_next(peer_port ? peer_port->get_egress_index() : 0xffff,
+             ProgramType::EGRESS);
+  }
+}
+
+// in external ifaces the cubes must be allocated in the inverse order.
+// first is the one that hits ingress traffic.
+int ExtIface::calculate_cube_index(int index) {
+  return 0 - index;
+}
+
+bool ExtIface::is_used() const {
+  std::lock_guard<std::mutex> guard(iface_mutex_);
+  return cubes_.size() > 0 || peer_ != nullptr;
+}
 
 }  // namespace polycubed
 }  // namespace polycube

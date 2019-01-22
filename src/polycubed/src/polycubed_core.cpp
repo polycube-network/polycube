@@ -23,7 +23,9 @@ namespace polycubed {
 
 PolycubedCore::PolycubedCore() : logger(spdlog::get("polycubed")) {}
 
-PolycubedCore::~PolycubedCore() {}
+PolycubedCore::~PolycubedCore() {
+  ServiceController::ports_to_ifaces.clear();
+}
 
 void PolycubedCore::set_polycubeendpoint(std::string &polycube) {
   polycubeendpoint_ = polycube;
@@ -354,7 +356,29 @@ void PolycubedCore::attach(const std::string &cube_name,
 
     peer = std::dynamic_pointer_cast<PeerIface>(port);
   } else {
-    throw std::runtime_error(port_name + " is not a valid port");
+    std::unique_ptr<ExtIface> iface;
+    if (ServiceController::ports_to_ifaces.count(port_name) == 0) {
+      switch (cube->get_type()) {
+      case CubeType::TC:
+        iface.reset(new ExtIfaceTC(port_name));
+        break;
+      case CubeType::XDP_DRV:
+        iface.reset(new ExtIfaceXDP(port_name, 1U << 2));
+        break;
+      case CubeType::XDP_SKB:
+        iface.reset(new ExtIfaceXDP(port_name, 1U << 1));
+        break;
+      }
+
+      ServiceController::ports_to_ifaces.emplace(
+          std::piecewise_construct, std::forward_as_tuple(port_name),
+          std::forward_as_tuple(std::move(iface)));
+    }
+
+    // peer = dynamic_cast<PeerIface
+    // *>(ServiceController::ports_to_ifaces.at(port_name).get());
+    peer = std::dynamic_pointer_cast<PeerIface>(
+        ServiceController::ports_to_ifaces.at(port_name));
   }
 
   cube->set_parent(peer.get());
@@ -380,23 +404,31 @@ void PolycubedCore::detach(const std::string &cube_name,
   std::regex rule("(\\S+):(\\S+)");
 
   if (std::regex_match(port_name, match, rule)) {
-    auto cube_ = ServiceController::get_cube(match[1]);
-    if (cube_ == nullptr) {
+    auto cube2_ = ServiceController::get_cube(match[1]);
+    if (cube2_ == nullptr) {
       throw std::runtime_error("Port " + port_name + " does not exist");
     }
-    auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
-    if (!cube) {
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    if (!cube2) {
       throw std::runtime_error("Cube " + std::string(match[1]) +
                                " is transparent");
     }
 
-    auto port = cube->get_port(match[2]);
+    auto port = cube2->get_port(match[2]);
     peer = std::dynamic_pointer_cast<PeerIface>(port);
+    peer->remove_cube(cube->get_name());
   } else {
-    throw std::runtime_error(port_name + " is not a valid port");
+    if (ServiceController::ports_to_ifaces.count(port_name) == 0) {
+      throw std::runtime_error("netdev " + port_name + " not found");
+    }
+    auto iface = ServiceController::ports_to_ifaces.at(port_name);
+    peer = std::dynamic_pointer_cast<PeerIface>(iface);
+    peer->remove_cube(cube->get_name());
+    if (!iface->is_used()) {
+      ServiceController::ports_to_ifaces.erase(port_name);
+    }
   }
 
-  peer->remove_cube(cube->get_name());
   cube->set_parent(nullptr);
 }
 

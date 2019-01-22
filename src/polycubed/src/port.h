@@ -96,6 +96,9 @@ class Port : public polycube::service::PortIface, public PeerIface {
   mutable std::mutex port_mutex_;
 
   std::shared_ptr<spdlog::logger> logger;
+
+ private:
+  uint16_t __get_index() const;
 };
 
 }  // namespace polycubed

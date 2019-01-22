@@ -34,7 +34,7 @@ std::mutex ServiceController::service_ctrl_mutex_;
 
 std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>>
     ServiceController::cubes;
-std::unordered_map<std::string, std::unique_ptr<ExtIface>>
+std::unordered_map<std::string, std::shared_ptr<ExtIface>>
     ServiceController::ports_to_ifaces;
 std::unordered_map<std::string, std::string> ServiceController::ports_to_ports;
 std::unordered_map<std::string, std::string> ServiceController::cubes_x_service;
@@ -230,7 +230,7 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
   if (peer_iface != nullptr) {
     Port::unconnect(p, *p.get_peer_iface());
     ExtIface *iface = dynamic_cast<ExtIface *>(peer_iface);
-    if (iface) {
+    if (iface && !iface->is_used()) {
       ports_to_ifaces.erase(p.peer());
     }
   }

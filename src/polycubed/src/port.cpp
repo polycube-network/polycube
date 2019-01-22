@@ -54,6 +54,11 @@ uint16_t Port::index() const {
 }
 
 uint16_t Port::get_index() const {
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  return __get_index();
+}
+
+uint16_t Port::__get_index() const {
   // check if there is ingress-enabled transparent cube
   for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
     auto index = (*it)->get_index(ProgramType::INGRESS);
@@ -66,6 +71,7 @@ uint16_t Port::get_index() const {
 }
 
 void Port::set_next_index(uint16_t index) {
+  std::lock_guard<std::mutex> guard(port_mutex_);
   // TODO
   if (index == 0) {
     return;
@@ -83,13 +89,13 @@ void Port::set_next_index(uint16_t index) {
 }
 
 void Port::set_peer_iface(PeerIface *peer) {
+  std::lock_guard<std::mutex> guard(port_mutex_);
   peer_port_ = peer;
-  if (peer) {
-    set_next_index(peer->get_index());
-  }
+  update_indexes();
 }
 
 PeerIface *Port::get_peer_iface() {
+  std::lock_guard<std::mutex> guard(port_mutex_);
   return peer_port_;
 }
 
@@ -185,7 +191,6 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
 }
 
 void Port::update_indexes() {
-  PeerIface *peer = get_peer_iface();
   int i;
 
   // TODO: could we avoid to recalculate in case there is not peer?
@@ -216,13 +221,13 @@ void Port::update_indexes() {
   }
 
   // CASE4: peer -> cube[N-1]
-  if (peer) {
-    peer->set_next_index(get_index());
+  if (peer_port_) {
+    peer_port_->set_next_index(__get_index());
   }
 
   // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
   // CASE3: cube[N-1] -> peer
-  uint16_t egress_next = peer ? peer->get_index() : 0;
+  uint16_t egress_next = peer_port_ ? peer_port_->get_index() : 0;
   for (i = cubes_.size() - 1; i >= 0; i--) {
     if (egress_indexes[i]) {
       cubes_[i]->set_next(egress_next, ProgramType::EGRESS);

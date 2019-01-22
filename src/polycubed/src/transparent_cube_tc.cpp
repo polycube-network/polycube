@@ -102,8 +102,12 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
       skb->cb[0] = CUBE_ID | TYPE << 16;
       return to_controller(skb, md.reason);
     case RX_OK:
+#if NEXT == 0xffff
+      return TC_ACT_OK;
+#else
       nodes.call(skb, NEXT);
       return TC_ACT_SHOT;
+#endif
   }
   return TC_ACT_SHOT;
 }
