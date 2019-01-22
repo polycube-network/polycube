@@ -21,7 +21,7 @@ namespace polycubed {
 
 std::vector<std::string> BaseCube::cflags = {
     std::string("-D_POLYCUBE_MAX_NODES=") +
-        std::to_string(Node::_POLYCUBE_MAX_NODES),
+        std::to_string(PatchPanel::_POLYCUBE_MAX_NODES),
     std::string("-D_POLYCUBE_MAX_BPF_PROGRAMS=") +
         std::to_string(_POLYCUBE_MAX_BPF_PROGRAMS),
     std::string("-D_POLYCUBE_MAX_PORTS=") + std::to_string(_POLYCUBE_MAX_PORTS),
@@ -372,7 +372,7 @@ json BaseCube::to_json() const {
   return j;
 }
 
-IDGenerator BaseCube::id_generator_(Node::_POLYCUBE_MAX_NODES - 2);
+IDGenerator BaseCube::id_generator_(PatchPanel::_POLYCUBE_MAX_NODES - 2);
 
 const std::string BaseCube::BASECUBE_MASTER_CODE = R"(
 // tables to save file descriptor of ingress and egress programs

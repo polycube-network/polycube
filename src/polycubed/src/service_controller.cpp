@@ -32,10 +32,10 @@ namespace polycubed {
 
 std::mutex ServiceController::service_ctrl_mutex_;
 
-std::unordered_map<Guid, std::unique_ptr<Node>>
-    ServiceController::ports_to_ifaces;
 std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>>
     ServiceController::cubes;
+std::unordered_map<std::string, std::unique_ptr<ExtIface>>
+    ServiceController::ports_to_ifaces;
 std::unordered_map<std::string, std::string> ServiceController::ports_to_ports;
 std::unordered_map<std::string, std::string> ServiceController::cubes_x_service;
 
@@ -226,12 +226,13 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
   p.logger->debug("setting port peer {0} -> {1}", p.get_path(), peer_name);
 
   // Remove previous connection, if any
-  if (p.peer_port_ != nullptr) {
-    Port::unconnect(p, *p.peer_port_);
-    ports_to_ports.erase(p.get_path());
-  } else if (p.peer_iface_ != nullptr) {
-    Port::unconnect(p, *p.peer_iface_);
-    ports_to_ifaces.erase(p.uuid());
+  PeerIface *peer_iface = p.get_peer_iface();
+  if (peer_iface != nullptr) {
+    Port::unconnect(p, *p.get_peer_iface());
+    ExtIface *iface = dynamic_cast<ExtIface *>(peer_iface);
+    if (iface) {
+      ports_to_ifaces.erase(p.peer());
+    }
   }
 
   if (peer_name.empty()) {
@@ -240,22 +241,23 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
 
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
 
-  std::unique_ptr<Node> iface;
+  std::unique_ptr<ExtIface> iface;
   std::string cube_name, port_name;  // used if peer is cube:port syntax
 
   if (Netlink::getInstance().get_available_ifaces().count(peer_name) != 0) {
     switch (p.get_type()) {
     case PortType::TC:
-      iface.reset(new ExtIfaceTC(peer_name, static_cast<PortTC &>(p)));
+      iface.reset(new ExtIfaceTC(peer_name));
       break;
     case PortType::XDP:
-      iface.reset(new ExtIfaceXDP(peer_name, static_cast<PortXDP &>(p)));
+      PortXDP &port_xdp = dynamic_cast<PortXDP &>(p);
+      iface.reset(new ExtIfaceXDP(peer_name, port_xdp.get_attach_flags()));
       break;
     }
     ports_to_ifaces.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(p.uuid()),
+                            std::forward_as_tuple(peer_name),
                             std::forward_as_tuple(std::move(iface)));
-    Port::connect(p, *ports_to_ifaces.at(p.uuid()));
+    Port::connect(p, *ports_to_ifaces.at(peer_name));
   } else if (parse_peer_name(peer_name, cube_name, port_name)) {
     auto iter = cubes.find(cube_name);
     if (iter == cubes.end()) {

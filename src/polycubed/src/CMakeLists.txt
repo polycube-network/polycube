@@ -44,6 +44,7 @@ set(polycubed_sources
   cube_tc.cpp
   cube_xdp.cpp
   controller.cpp
+  extiface.cpp
   extiface_tc.cpp
   extiface_xdp.cpp
   extiface_info.cpp

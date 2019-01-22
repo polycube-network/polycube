@@ -298,7 +298,8 @@ Controller &Controller::get_tc_instance() {
   if (!initialized) {
     Netlink::getInstance().attach_to_tc(instance.iface_->getName(),
                                         instance.fd_rx_);
-    PatchPanel::get_tc_instance().add(instance, Node::_POLYCUBE_MAX_NODES - 1);
+    PatchPanel::get_tc_instance().add(instance,
+                                      PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
@@ -313,7 +314,8 @@ Controller &Controller::get_xdp_instance() {
     attach_flags |= 2 << 0;
     Netlink::getInstance().attach_to_xdp(instance.iface_->getName(),
                                          instance.fd_rx_, attach_flags);
-    PatchPanel::get_xdp_instance().add(instance, Node::_POLYCUBE_MAX_NODES - 1);
+    PatchPanel::get_xdp_instance().add(instance,
+                                       PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
@@ -323,7 +325,7 @@ Controller::Controller(const std::string &tx_code, const std::string &rx_code,
                        enum bpf_prog_type type)
     : ctrl_rx_md_index_(0),
       logger(spdlog::get("polycubed")),
-      id_(_POLYCUBE_MAX_NODES - 1) {
+      id_(PatchPanel::_POLYCUBE_MAX_NODES - 1) {
   ebpf::StatusTuple res(0);
 
   if (type == BPF_PROG_TYPE_XDP)
@@ -335,7 +337,7 @@ Controller::Controller(const std::string &tx_code, const std::string &rx_code,
 
   std::vector<std::string> flags;
   flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
-                  std::to_string(_POLYCUBE_MAX_NODES));
+                  std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
   flags.push_back(std::string("-DCUBE_ID=") + std::to_string(get_id()));
   flags.push_back(std::string("-DMD_MAP_SIZE=") + std::to_string(MD_MAP_SIZE));
   // FIXME: this should be taken from a global log level conf
