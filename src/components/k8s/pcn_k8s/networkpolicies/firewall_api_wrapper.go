@@ -25,7 +25,7 @@ type FirewallAPI struct {
 	fwAPI *k8sfirewall.FirewallApiService
 }
 
-func NewFirewallApi(basePath string) *FirewallAPI {
+func NewFirewallAPI(basePath string) *FirewallAPI {
 	var fwAPI *k8sfirewall.FirewallApiService
 
 	cfgK8firewall := k8sfirewall.Configuration{BasePath: basePath}
