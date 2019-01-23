@@ -23,18 +23,27 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 	//	Create the resource
 	manager := &NetworkPolicyManager{
 		logBy: "Network Policy Manager",
-		dnpc:  dnpc,
 	}
 
-	//	Let me listen for default network policies deployments
-	dnpc.Subscribe(events.New, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	//	For use with k8s
+	if dnpc != nil {
+		manager.dnpc = dnpc
+		//	Let me listen for default network policies deployments
+		dnpc.Subscribe(events.New, manager.CreateNewFirewallFromDefaultPolicy)
+		//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
+		//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	}
 
 	return manager
 }
 
-func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) {
+func (manager *NetworkPolicyManager) CreateNewFirewallFromDefaultPolicy(policy *networking_v1.NetworkPolicy) {
+
+	//	Get the firewall instance
+	firewall := manager.ParseDefaultPolicy(policy)
+}
+
+func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) *k8sfirewall.Firewall {
 
 	var l = log.WithFields(log.Fields{
 		"by":     manager.logBy,
@@ -250,12 +259,16 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 	for _, rule := range rules {
 
 		//	The rules generated in this iteration.
-		//	So that we could also apply ports for each of them
-		//var generatedRules []k8sfirewall.ChainRule
+		var generatedRules []k8sfirewall.ChainRule
+
+		//	The ports generated in this iteration
 		var generatedPorts = []struct {
 			protocol string
 			port     int32
 		}{}
+
+		//	Tells if we can go on parsing rules
+		var proceed = true
 
 		//	From is {} ?
 		if rule.From == nil {
@@ -300,33 +313,45 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 			}
 		}
 
+		l.Debugf("generated ports: %d", len(generatedPorts))
+
 		//	If this rule consists of only unsupported protocols, then we can't go on!
+		//	If we did, we would be creating wrong rules!
 		//	We just need to ignore the rules, for now.
 		//	But if there is at least one supported protocol, then we can proceed
 		if len(rule.Ports) > 0 && len(generatedPorts) == 0 {
-
+			proceed = false
 		}
 
 		//-------------------------------------
 		//	Peers
 		//-------------------------------------
 
-		for _, from := range rule.From {
+		for i := 0; i < len(rule.From) && proceed; i++ {
+			from := rule.From[i]
 
 			//	IPBlock?
 			if from.IPBlock != nil {
-				parsedRules := manager.parseDefaultIPBlock(from.IPBlock)
-
-				//	Applied all the ports for the found ipb blocks
-				for _, parsedRule := range parsedRules {
-					for _, generatedPort := range generatedPorts {
-						parsedRule.L4proto = generatedPort.protocol
-						parsedRule.Sport = generatedPort.port
-					}
-				}
+				generatedRules = append(generatedRules, manager.parseDefaultIPBlock(from.IPBlock)...)
 			}
 		}
 
+		l.Debugf("generated rules: %d", len(generatedRules))
+
+		//-------------------------------------
+		//	Finalize
+		//-------------------------------------
+
+		//	Finally, for each parsed rule, apply the ports that have been found
+		for i := 0; i < len(generatedRules); i++ {
+			for _, generatedPort := range generatedPorts {
+				generatedRules[i].L4proto = generatedPort.protocol
+				generatedRules[i].Sport = generatedPort.port
+			}
+		}
+
+		//	Now add these rules to the chain, please
+		ingressChain.Rule = append(ingressChain.Rule, generatedRules...)
 	}
 
 	return ingressChain
