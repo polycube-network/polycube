@@ -31,7 +31,6 @@ A brief overview of the Polycube layered structure is shown in the picture below
  - [Documentation](Documentation)
  - [pcn-k8s - Kubernetes network provider](Documentation/components/k8s/pcn-kubernetes.rst)
  - [pcn-iptables - Iptables clone](Documentation/components/iptables/pcn-iptables.rst)
- - [Contributing]()
 
 ## Main features
 
