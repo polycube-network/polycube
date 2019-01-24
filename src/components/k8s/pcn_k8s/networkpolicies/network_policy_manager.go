@@ -1,14 +1,14 @@
 package networkpolicies
 
 import (
-	"strings"
 
 	//	TODO-ON-MERGE: change these two to the polycube path
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 )
 
@@ -23,29 +23,51 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 	//	Create the resource
 	manager := &NetworkPolicyManager{
 		logBy: "Network Policy Manager",
-		dnpc:  dnpc,
 	}
 
-	//	Let me listen for default network policies deployments
-	dnpc.Subscribe(events.New, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
-	//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	//	For use with k8s
+	if dnpc != nil {
+		manager.dnpc = dnpc
+		//	Let me listen for default network policies deployments
+		dnpc.Subscribe(events.New, manager.CreateNewFirewallFromDefaultPolicy)
+		//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
+		//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	}
 
 	return manager
 }
 
-func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) {
+func (manager *NetworkPolicyManager) CreateNewFirewallFromDefaultPolicy(policy *networking_v1.NetworkPolicy) {
+
+	//	Get the firewall instance
+	//firewall, err := manager.ParseDefaultPolicy(policy)
+}
+
+func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) (*k8sfirewall.Firewall, error) {
 
 	var l = log.WithFields(log.Fields{
 		"by":     manager.logBy,
 		"method": "ParseDefaultPolicy()",
 	})
 
-	l.Infof("Network Policy Manager is going to parse the default policy")
+	generatedFirewall := &k8sfirewall.Firewall{
+		Chain: []k8sfirewall.Chain{
+			k8sfirewall.Chain{
+				Default_: "drop",
+				Name:     "egress",
+			},
+		},
+	}
 
-	//	Get the annotations
-	//	TODO: this is going to be used to check for whitelist/blacklist feature
-	//policy.ObjectMeta.GetAnnotations()
+	//	TODO: this is just a test. It mocks the pod controller
+	//ipsFound := []string{"192.168.1.1", "192.168.10.10", "192.168.122.35"}
+
+	l.Infof("Network Policy Manager is going to parse the default policy")
+	l.Debugf("%+v\n", policy)
+
+	//-------------------------------------
+	//	Parse the basics
+	//-------------------------------------
 
 	//	Get the specs
 	spec := policy.Spec
@@ -54,10 +76,15 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	//	Parse the ingress rules
 	//-------------------------------------
 
-	ingress := spec.Ingress
+	ingressChain := manager.parseDefaultIngressRules(spec.Ingress)
+	generatedFirewall.Chain = append(generatedFirewall.Chain, ingressChain)
+
+	l.Debugln("Generated chain after parsing:")
+	l.Debugf("%+v\n", ingressChain)
+	//ingress := spec.Ingress
 
 	//	Apparently, when yaml has Ingress: [] this is called, instead of len() < 1
-	if ingress == nil {
+	/*if ingress == nil {
 		l.Info("Ingress is null: this resource accepts no connections.")
 	} else {
 		//	Nothing? This means that this resource doesn't accept anything in ingress
@@ -182,11 +209,11 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 							protocol = "SCTP"
 						}
 
-						/*if *_port.Type == intstr.String {
-							port = *_port.IntVal
-						} else {
-							port = convert the string to int
-						}*/
+						//if *_port.Type == intstr.String {
+						//	port = *_port.IntVal
+						//} else {
+						//	port = convert the string to int
+						//}
 						//	TODO: check if this always works. Or if I must do a type check (like above)
 						port = _port.IntVal
 
@@ -195,5 +222,231 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 				}
 			}
 		}
+	}*/
+
+	return generatedFirewall, nil
+}
+
+func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule) k8sfirewall.Chain {
+
+	//-------------------------------------
+	//	Init
+	//-------------------------------------
+
+	var l = log.WithFields(log.Fields{
+		"by":     manager.logBy,
+		"method": "parseDefaultIngressRules()",
+	})
+	var ingressChain = k8sfirewall.Chain{
+		Name:     "ingress",
+		Default_: "drop",
+		Rule:     []k8sfirewall.ChainRule{},
 	}
+
+	l.Debugln("Network Policy Manager is going to parse the ingress rules")
+
+	//-------------------------------------
+	//	Preliminary checks
+	//-------------------------------------
+
+	//	Rules is nil?
+	if rules == nil {
+		l.Debugln("rules is nil: nothing is accepted")
+
+		ingressChain.Default_ = "drop"
+		return ingressChain
+	}
+
+	//	No rules?
+	//	Same as above, but I kept it separate to improve readability
+	if len(rules) < 1 {
+		l.Debugln("rules is empty: nothing is accepted")
+
+		ingressChain.Default_ = "drop"
+		return ingressChain
+	}
+
+	//-------------------------------------
+	//	Actual parsing
+	//-------------------------------------
+
+	for _, rule := range rules {
+
+		//	The rules generated in this iteration.
+		var incompleteRules []k8sfirewall.ChainRule
+
+		//	The ports generated in this iteration
+		var generatedPorts = []struct {
+			protocol string
+			port     int32
+		}{}
+
+		//	Tells if we can go on parsing rules
+		var proceed = true
+
+		//	From is {} ?
+		if rule.From == nil {
+
+			l.Debugln("from is nil: everything is accepted")
+
+			ingressChain.Default_ = "forward"
+			return ingressChain
+		}
+
+		//	From is [] ?
+		if len(rule.From) < 1 {
+
+			l.Debugln("from is empty: nothing is accepted")
+
+			ingressChain.Default_ = "drop"
+			return ingressChain
+		}
+
+		//-------------------------------------
+		//	Protocol & Port
+		//-------------------------------------
+
+		//	First, parse the protocol: so that if an unsupported protocol is listed, we silently ignore it.
+		//	By doing it this way we don't have to remove rules later on
+		for _, port := range rule.Ports {
+
+			//	If protocol is nil, then we have to get all protocols
+			if port.Protocol == nil {
+
+				//	If the port is not nil, default port is not 0
+				var defaultPort int32
+				if port.Port != nil {
+					defaultPort = int32(port.Port.IntValue())
+				}
+
+				generatedPorts = []struct {
+					protocol string
+					port     int32
+				}{
+					{"TCP", defaultPort},
+					{"UDP", defaultPort},
+				}
+			} else {
+				//	else parse the protocol
+				supported, proto, port := manager.parseDefaultProtocolAndPort(port)
+
+				//	Our firewall does not support SCTP, so we check if protocol is supported
+				if supported {
+
+					var protoPort = struct {
+						protocol string
+						port     int32
+					}{
+						proto,
+						port,
+					}
+
+					generatedPorts = append(generatedPorts, protoPort)
+				}
+			}
+		}
+
+		l.Debugf("generated ports: %d", len(generatedPorts))
+
+		//	If this rule consists of only unsupported protocols, then we can't go on!
+		//	If we did, we would be creating wrong rules!
+		//	We just need to ignore the rules, for now.
+		//	But if there is at least one supported protocol, then we can proceed
+		if len(rule.Ports) > 0 && len(generatedPorts) == 0 {
+			proceed = false
+		}
+
+		//-------------------------------------
+		//	Peers
+		//-------------------------------------
+
+		for i := 0; i < len(rule.From) && proceed; i++ {
+			from := rule.From[i]
+
+			//	IPBlock?
+			if from.IPBlock != nil {
+				incompleteRules = append(incompleteRules, manager.parseDefaultIPBlock(from.IPBlock)...)
+			}
+		}
+
+		l.Debugf("generated rules: %d", len(incompleteRules))
+
+		//-------------------------------------
+		//	Finalize
+		//-------------------------------------
+
+		//	Finally, for each parsed rule, apply the ports that have been found
+		//	But only if you have at least one port
+		for i := 0; i < len(incompleteRules) && len(generatedPorts) > 0; i++ {
+			rule := incompleteRules[i]
+			for _, generatedPort := range generatedPorts {
+
+				ingressChain.Rule = append(ingressChain.Rule, k8sfirewall.ChainRule{
+					Src:     rule.Src,
+					L4proto: generatedPort.protocol,
+					Sport:   generatedPort.port,
+					Action:  rule.Action,
+				})
+			}
+		}
+
+		//	No ports in this? Then just append the rules with ports 0
+		if len(generatedPorts) < 1 {
+			ingressChain.Rule = append(ingressChain.Rule, incompleteRules...)
+		}
+	}
+
+	return ingressChain
+}
+
+func (manager *NetworkPolicyManager) parseDefaultIPBlock(block *networking_v1.IPBlock) []k8sfirewall.ChainRule {
+
+	var l = log.WithFields(log.Fields{
+		"by":     manager.logBy,
+		"method": "parseDefaultIPBlock()",
+	})
+	var rules []k8sfirewall.ChainRule
+
+	l.Debugln("Parsing IPBlock...")
+
+	//	Add the default one
+	rules = append(rules, k8sfirewall.ChainRule{
+		Src:    block.CIDR,
+		Action: "forward",
+	})
+
+	//	Loop through all exceptions
+	for _, exception := range block.Except {
+		rules = append(rules, k8sfirewall.ChainRule{
+			Src:    exception,
+			Action: "drop",
+		})
+	}
+
+	l.Debugln("Finished parsing IPBlock. Generated rules: ")
+	l.Debugf("%+v\n", rules)
+
+	return rules
+}
+
+func (manager *NetworkPolicyManager) parseDefaultProtocolAndPort(pp networking_v1.NetworkPolicyPort) (bool, string, int32) {
+
+	//	Not sure if port can be nil, but it doesn't harm to do a simple reset
+	var port int32
+	if pp.Port != nil {
+		port = int32(pp.Port.IntValue())
+	}
+
+	//	TCP?
+	if *pp.Protocol == core_v1.ProtocolTCP {
+		return true, "TCP", port
+	}
+
+	//	UDP?
+	if *pp.Protocol == core_v1.ProtocolUDP {
+		return true, "UDP", port
+	}
+
+	//	Not supported ¯\_(ツ)_/¯
+	return false, "", 0
 }

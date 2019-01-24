@@ -292,7 +292,9 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event events.Event) err
 	}
 
 	//	Get the policy
-	policy = _policy.(*networking_v1.NetworkPolicy)
+	if _policy != nil {
+		policy = _policy.(*networking_v1.NetworkPolicy)
+	}
 
 	//-------------------------------------
 	//	Dispatch the event
@@ -306,7 +308,6 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event events.Event) err
 		npc.dispatchers.update.Dispatch(policy)
 	case events.Delete:
 		npc.dispatchers.delete.Dispatch(policy)
-
 	}
 
 	//	Does not exist?
