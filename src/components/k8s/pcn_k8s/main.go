@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"poly/networkpolicies"
 	"runtime"
 	"syscall"
 	"time"
@@ -31,6 +32,8 @@ import (
 	//	importing controllers
 	//	TODO-ON-MERGE: change the path here to polycube-network
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	//"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies"
+
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
 
@@ -83,7 +86,7 @@ var (
 	//	--- /Controllers
 
 	//	networkPolicyManager parses network policies and knows how to handle them
-	networkPolicyManager *NetworkPolicyManager
+	networkPolicyManager *networkpolicies.NetworkPolicyManager
 
 	stop bool
 )
@@ -245,7 +248,7 @@ func main() {
 	defaultnpc = controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
 
 	//	Get the policy manager
-	networkPolicyManager = NewNetworkPolicyManager(defaultnpc)
+	networkPolicyManager = networkpolicies.NewNetworkPolicyManager(defaultnpc)
 
 	// kv handler
 	go kvM.Loop()

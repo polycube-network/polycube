@@ -40,24 +40,34 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 func (manager *NetworkPolicyManager) CreateNewFirewallFromDefaultPolicy(policy *networking_v1.NetworkPolicy) {
 
 	//	Get the firewall instance
-	firewall := manager.ParseDefaultPolicy(policy)
+	//firewall, err := manager.ParseDefaultPolicy(policy)
 }
 
-func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) *k8sfirewall.Firewall {
+func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) (*k8sfirewall.Firewall, error) {
 
 	var l = log.WithFields(log.Fields{
 		"by":     manager.logBy,
 		"method": "ParseDefaultPolicy()",
 	})
 
+	generatedFirewall := &k8sfirewall.Firewall{
+		Chain: []k8sfirewall.Chain{
+			k8sfirewall.Chain{
+				Default_: "drop",
+				Name:     "egress",
+			},
+		},
+	}
+
 	//	TODO: this is just a test. It mocks the pod controller
 	//ipsFound := []string{"192.168.1.1", "192.168.10.10", "192.168.122.35"}
 
 	l.Infof("Network Policy Manager is going to parse the default policy")
+	l.Debugf("%+v\n", policy)
 
-	//	Get the annotations
-	//	TODO: this is going to be used to check for whitelist/blacklist feature
-	//policy.ObjectMeta.GetAnnotations()
+	//-------------------------------------
+	//	Parse the basics
+	//-------------------------------------
 
 	//	Get the specs
 	spec := policy.Spec
@@ -67,6 +77,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	//-------------------------------------
 
 	ingressChain := manager.parseDefaultIngressRules(spec.Ingress)
+	generatedFirewall.Chain = append(generatedFirewall.Chain, ingressChain)
 
 	l.Debugln("Generated chain after parsing:")
 	l.Debugf("%+v\n", ingressChain)
@@ -212,6 +223,8 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 			}
 		}
 	}*/
+
+	return generatedFirewall, nil
 }
 
 func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule) k8sfirewall.Chain {
@@ -225,8 +238,9 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 		"method": "parseDefaultIngressRules()",
 	})
 	var ingressChain = k8sfirewall.Chain{
-		Name: "ingress",
-		Rule: []k8sfirewall.ChainRule{},
+		Name:     "ingress",
+		Default_: "drop",
+		Rule:     []k8sfirewall.ChainRule{},
 	}
 
 	l.Debugln("Network Policy Manager is going to parse the ingress rules")
@@ -259,7 +273,7 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 	for _, rule := range rules {
 
 		//	The rules generated in this iteration.
-		var generatedRules []k8sfirewall.ChainRule
+		var incompleteRules []k8sfirewall.ChainRule
 
 		//	The ports generated in this iteration
 		var generatedPorts = []struct {
@@ -296,20 +310,39 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 		//	By doing it this way we don't have to remove rules later on
 		for _, port := range rule.Ports {
 
-			supported, proto, port := manager.parseDefaultProtocolAndPort(port)
+			//	If protocol is nil, then we have to get all protocols
+			if port.Protocol == nil {
 
-			//	Our firewall does not support SCTP, so we check if protocol is supported
-			if supported {
+				//	If the port is not nil, default port is not 0
+				var defaultPort int32
+				if port.Port != nil {
+					defaultPort = int32(port.Port.IntValue())
+				}
 
-				var protoPort = struct {
+				generatedPorts = []struct {
 					protocol string
 					port     int32
 				}{
-					proto,
-					port,
+					{"TCP", defaultPort},
+					{"UDP", defaultPort},
 				}
+			} else {
+				//	else parse the protocol
+				supported, proto, port := manager.parseDefaultProtocolAndPort(port)
 
-				generatedPorts = append(generatedPorts, protoPort)
+				//	Our firewall does not support SCTP, so we check if protocol is supported
+				if supported {
+
+					var protoPort = struct {
+						protocol string
+						port     int32
+					}{
+						proto,
+						port,
+					}
+
+					generatedPorts = append(generatedPorts, protoPort)
+				}
 			}
 		}
 
@@ -332,26 +365,35 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 
 			//	IPBlock?
 			if from.IPBlock != nil {
-				generatedRules = append(generatedRules, manager.parseDefaultIPBlock(from.IPBlock)...)
+				incompleteRules = append(incompleteRules, manager.parseDefaultIPBlock(from.IPBlock)...)
 			}
 		}
 
-		l.Debugf("generated rules: %d", len(generatedRules))
+		l.Debugf("generated rules: %d", len(incompleteRules))
 
 		//-------------------------------------
 		//	Finalize
 		//-------------------------------------
 
 		//	Finally, for each parsed rule, apply the ports that have been found
-		for i := 0; i < len(generatedRules); i++ {
+		//	But only if you have at least one port
+		for i := 0; i < len(incompleteRules) && len(generatedPorts) > 0; i++ {
+			rule := incompleteRules[i]
 			for _, generatedPort := range generatedPorts {
-				generatedRules[i].L4proto = generatedPort.protocol
-				generatedRules[i].Sport = generatedPort.port
+
+				ingressChain.Rule = append(ingressChain.Rule, k8sfirewall.ChainRule{
+					Src:     rule.Src,
+					L4proto: generatedPort.protocol,
+					Sport:   generatedPort.port,
+					Action:  rule.Action,
+				})
 			}
 		}
 
-		//	Now add these rules to the chain, please
-		ingressChain.Rule = append(ingressChain.Rule, generatedRules...)
+		//	No ports in this? Then just append the rules with ports 0
+		if len(generatedPorts) < 1 {
+			ingressChain.Rule = append(ingressChain.Rule, incompleteRules...)
+		}
 	}
 
 	return ingressChain
@@ -389,14 +431,20 @@ func (manager *NetworkPolicyManager) parseDefaultIPBlock(block *networking_v1.IP
 
 func (manager *NetworkPolicyManager) parseDefaultProtocolAndPort(pp networking_v1.NetworkPolicyPort) (bool, string, int32) {
 
+	//	Not sure if port can be nil, but it doesn't harm to do a simple reset
+	var port int32
+	if pp.Port != nil {
+		port = int32(pp.Port.IntValue())
+	}
+
 	//	TCP?
 	if *pp.Protocol == core_v1.ProtocolTCP {
-		return true, "TCP", pp.Port.IntVal
+		return true, "TCP", port
 	}
 
 	//	UDP?
 	if *pp.Protocol == core_v1.ProtocolUDP {
-		return true, "UDP", pp.Port.IntVal
+		return true, "UDP", port
 	}
 
 	//	Not supported ¯\_(ツ)_/¯
