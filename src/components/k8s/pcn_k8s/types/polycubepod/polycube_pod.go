@@ -6,5 +6,5 @@ import (
 
 type Pod struct {
 	Pod  core_v1.Pod
-	veth string
+	Veth string
 }

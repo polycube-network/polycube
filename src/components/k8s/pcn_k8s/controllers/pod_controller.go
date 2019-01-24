@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	core_v1 "k8s.io/api/core/v1"
 
 	//	TODO-ON-MERGE: change the path to polycube
 	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
@@ -17,5 +16,5 @@ type PodController interface {
 	AsyncGetPodsByName(chan<- []polycube_pod.Pod, string, string) ([]polycube_pod.Pod, error)
 
 	GetPodsByLabels(map[string]string, string) ([]polycube_pod.Pod, error)
-	AsyncGetPodsByLabels(chan<- []polycube_pod.Pod, map[string]string, string) ([]core_v1.Pod, error)
+	AsyncGetPodsByLabels(chan<- []polycube_pod.Pod, map[string]string, string) ([]polycube_pod.Pod, error)
 }
