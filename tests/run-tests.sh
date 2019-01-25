@@ -210,6 +210,7 @@ function run_tests_from_dir {
 echo "*scanning current dir for tests*"
 # ./test*.sh
 run_tests_from_dir ./
+run_tests_from_dir ./transparent_services/
 
 echo "*scanning services for tests*"
 # /services/<servicename>/test/test*.sh
