@@ -1,24 +1,31 @@
 package networkpolicies
 
 import (
-
 	//	TODO-ON-MERGE: change these two to the polycube path
+	"errors"
+
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+	podquery "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/podquery"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type NetworkPolicyManager struct {
 	logBy string
 
 	dnpc *controllers.DefaultNetworkPolicyController
+
+	podController controllers.PodController
 }
 
-func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *NetworkPolicyManager {
+func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController, podController controllers.PodController) *NetworkPolicyManager {
+
+	//https://play.golang.org/p/0AaBhB1MHBc
 
 	//	Create the resource
 	manager := &NetworkPolicyManager{
@@ -32,6 +39,11 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController) *
 		dnpc.Subscribe(events.New, manager.CreateNewFirewallFromDefaultPolicy)
 		//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
 		//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	}
+
+	if podController != nil {
+		manager.podController = podController
+		//podController.Subscribe()
 	}
 
 	return manager
@@ -72,11 +84,17 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	//	Get the specs
 	spec := policy.Spec
 
+	//	Get the namespace (for us, '*' means all namespaces)
+	namespace := "*"
+	if len(policy.ObjectMeta.Namespace) > 0 {
+		namespace = policy.Namespace
+	}
+
 	//-------------------------------------
 	//	Parse the ingress rules
 	//-------------------------------------
 
-	ingressChain := manager.parseDefaultIngressRules(spec.Ingress)
+	ingressChain := manager.parseDefaultIngressRules(spec.Ingress, namespace)
 	generatedFirewall.Chain = append(generatedFirewall.Chain, ingressChain)
 
 	l.Debugln("Generated chain after parsing:")
@@ -224,10 +242,11 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 		}
 	}*/
 
+	l.Printf("generated firewall: %+v", generatedFirewall)
 	return generatedFirewall, nil
 }
 
-func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule) k8sfirewall.Chain {
+func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule, namespace string) k8sfirewall.Chain {
 
 	//-------------------------------------
 	//	Init
@@ -367,6 +386,22 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 			if from.IPBlock != nil {
 				incompleteRules = append(incompleteRules, manager.parseDefaultIPBlock(from.IPBlock)...)
 			}
+
+			//	PodSelector Or NamespaceSelector?
+			if from.PodSelector != nil || from.NamespaceSelector != nil {
+
+				rulesGot, err := manager.parseDefaultSelectors(from.PodSelector, from.NamespaceSelector, namespace)
+
+				if err == nil && len(rulesGot) > 0 {
+					incompleteRules = append(incompleteRules, rulesGot...)
+				}
+				/*rulesGot, err := manager.parsePodLabels(from.PodSelector.MatchLabels, "*", "forward")
+
+				if err == nil && len(rulesGot) > 0 {
+					l.Printf("got by pod controller: %+v\n", rulesGot)
+					incompleteRules = append(incompleteRules, rulesGot...)
+				}*/
+			}
 		}
 
 		l.Debugf("generated rules: %d", len(incompleteRules))
@@ -449,4 +484,107 @@ func (manager *NetworkPolicyManager) parseDefaultProtocolAndPort(pp networking_v
 
 	//	Not supported ¯\_(ツ)_/¯
 	return false, "", 0
+}
+
+func (manager *NetworkPolicyManager) parseDefaultSelectors(podSelector, namespaceSelector *meta_v1.LabelSelector, namespace string) ([]k8sfirewall.ChainRule, error) {
+	var l = log.WithFields(log.Fields{
+		"by":     manager.logBy,
+		"method": "parseDefaultSelectors()",
+	})
+	var rules []k8sfirewall.ChainRule
+	var query podquery.Query
+	action := "forward"
+
+	l.Debugln("Parsing selectors...")
+
+	//	Build the query
+	if podSelector != nil {
+
+		//	This is not supported yet...
+		if podSelector.MatchExpressions != nil {
+			return rules, errors.New("MatchExpressions is not supported yet")
+		}
+
+		//	Empty labels means "select everything"
+		//	Nil labels means do not select anything. Which, for us, means deny access to those pods (see below)
+		if len(podSelector.MatchLabels) < 1 || podSelector.MatchLabels == nil {
+
+			//	Are you here because match labels is nil?
+			if podSelector.MatchLabels == nil {
+				action = "drop"
+			}
+
+			query.Pod = []podquery.QueryObject{
+				podquery.QueryObject{
+					By:   "name",
+					Name: "*",
+				},
+			}
+		} else {
+			query.Pod = []podquery.QueryObject{
+				podquery.QueryObject{
+					By:     "labels",
+					Labels: podSelector.MatchLabels,
+				},
+			}
+		}
+	}
+
+	//	Namespace selector
+	if namespaceSelector != nil {
+
+	} else {
+		//	If namespace selector is nil, we're going to use the one we found on the policy
+		query.Namespace = []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: namespace,
+			},
+		}
+	}
+
+	//	Now get the pods
+	podsFound, err := manager.podController.GetPods(query)
+
+	if err != nil {
+		l.Errorln("error when trying to get pods:", err)
+	}
+
+	for _, pod := range podsFound {
+		rules = append(rules, k8sfirewall.ChainRule{
+			Src:    pod.Pod.Status.PodIP,
+			Action: action,
+		})
+	}
+
+	return rules, nil
+}
+
+func (manager *NetworkPolicyManager) parsePodLabels(labels map[string]string, onNamespace string, action string) ([]k8sfirewall.ChainRule, error) {
+
+	var l = log.WithFields(log.Fields{
+		"by":     manager.logBy,
+		"method": "parsePodLabels()",
+	})
+	var rules []k8sfirewall.ChainRule
+
+	l.Debugln("Parsing pod labels...")
+
+	//	Get the pods from the pod controller
+	podsFound, err := manager.podController.GetPodsByLabels(labels, "*")
+
+	if err != nil {
+		return []k8sfirewall.ChainRule{}, err
+	}
+
+	l.Debugln("Got", len(podsFound), "pods")
+
+	for _, pod := range podsFound {
+		rules = append(rules, k8sfirewall.ChainRule{
+			Src:    pod.Pod.Status.PodIP,
+			Action: action,
+		})
+	}
+	return rules, nil
+
 }

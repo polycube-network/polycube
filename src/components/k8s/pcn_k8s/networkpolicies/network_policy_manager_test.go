@@ -4,29 +4,66 @@ import (
 	"testing"
 
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	podquery "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/podquery"
+
+	"github.com/stretchr/testify/mock"
+
+	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+	polycube_pod "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/polycubepod"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	"github.com/stretchr/testify/assert"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type DnpcMock struct {
-	controllers.DefaultNetworkPolicyController
+//	Mock the pod controller
+type MockPodController struct {
+	mock.Mock
 }
 
-func Init() *NetworkPolicyManager {
+func (m *MockPodController) Run()  {}
+func (m *MockPodController) Stop() {}
+func (m *MockPodController) Subscribe(event events.EventType, consumer func(*polycube_pod.Pod)) (func(), error) {
+	return func() {}, nil
+}
+func (m *MockPodController) GetPodsByName(name string, ns string) ([]polycube_pod.Pod, error) {
+	args := m.Called(name, ns)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
+func (m *MockPodController) AsyncGetPodsByName(channel chan<- []polycube_pod.Pod, name string, ns string) ([]polycube_pod.Pod, error) {
+	args := m.Called(channel, name, ns)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
+func (m *MockPodController) GetPodsByLabels(labels map[string]string, ns string) ([]polycube_pod.Pod, error) {
+	args := m.Called(labels, ns)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
+func (m *MockPodController) AsyncGetPodsByLabels(channel chan<- []polycube_pod.Pod, labels map[string]string, ns string) ([]polycube_pod.Pod, error) {
+	args := m.Called(channel, labels, ns)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
+func (m *MockPodController) GetPods(query podquery.Query) ([]polycube_pod.Pod, error) {
+	args := m.Called(query)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
+func (m *MockPodController) AsyncGetPods(channel chan<- []polycube_pod.Pod, query podquery.Query) ([]polycube_pod.Pod, error) {
+	args := m.Called(query)
+	return args.Get(0).([]polycube_pod.Pod), args.Error(1)
+}
 
-	//dnpc := &dnpcMock{}
-	manager := NewNetworkPolicyManager(nil)
+func Init(podController controllers.PodController) *NetworkPolicyManager {
+
+	//podController := &MockPodController{}
+	manager := NewNetworkPolicyManager(nil, podController)
 
 	return manager
 	//dnpc := controllers.NewDefaultNetworkPolicyController(dnpcMock)
-
 }
 
 func TestNotNil(t *testing.T) {
-	manager := Init()
+	manager := Init(nil)
 	assert.NotNil(t, manager)
 }
 
@@ -46,7 +83,7 @@ func TestNoSpec(t *testing.T) {
 	/*	When Spec is null, nothing should be allowed, both in ingress and egress */
 
 	ingress := &networking_v1.NetworkPolicy{}
-	manager := Init()
+	manager := Init(nil)
 
 	result, err := manager.ParseDefaultPolicy(ingress)
 
@@ -71,7 +108,7 @@ func TestIngressLenIsZero(t *testing.T) {
 			Ingress: []networking_v1.NetworkPolicyIngressRule{},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -100,7 +137,7 @@ func TestFromIsEmpty(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -133,7 +170,7 @@ func TestSingleRuleIPBlockNoExceptions(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -174,7 +211,7 @@ func TestSingleRuleIPBlockMultipleExceptions(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 	var zero int32 = 0
@@ -234,7 +271,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolNoPort(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -296,7 +333,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolAndPort(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -363,7 +400,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -437,7 +474,7 @@ func TestUnsupportedProtocolWithSupported(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -501,7 +538,7 @@ func TestOnlyUnsupportedProtocol(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -545,7 +582,7 @@ func TestProtocolIsNil(t *testing.T) {
 			},
 		},
 	}
-	manager := Init()
+	manager := Init(nil)
 	result, err := manager.ParseDefaultPolicy(policy)
 	CommonTest(t, err, result)
 
@@ -578,6 +615,464 @@ func TestProtocolIsNil(t *testing.T) {
 			for _, occurrences := range allValues {
 				assert.Equal(t, occurrences, 2)
 			}
+		}
+	}
+}
+
+func TestPodSelectorWithProtocol(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{
+		"v":     "1.2",
+		"cache": "redis",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", mock.Anything).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 1)
+
+			for _, rule := range chain.Rule {
+				assert.Equal(t, rule.Action, "forward")
+				assert.Equal(t, rule.Src, "172.10.30.30")
+				assert.Equal(t, rule.L4proto, "TCP")
+				assert.Equal(t, rule.Sport, port.IntVal)
+			}
+		}
+	}
+}
+
+func TestPodSelectorNoPodsFound(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{
+		"v":     "1.2",
+		"cache": "redis",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", mock.Anything).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 0)
+		}
+	}
+}
+
+func TestPodSelectorMultiplePodsFound(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{
+		"v":     "1.2",
+		"cache": "redis",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", mock.Anything).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 2)
+
+			var found int
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.25.153.77", "172.10.30.30":
+					found++
+					assert.Equal(t, rule.Sport, port.IntVal)
+				default:
+					assert.Fail(t, "unrecognized ip")
+				}
+			}
+
+			assert.Equal(t, 2, found)
+		}
+	}
+}
+
+func TestPodMatchExpressionReturnsNoRules(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	expression := []meta_v1.LabelSelectorRequirement{
+		meta_v1.LabelSelectorRequirement{
+			Key:      "cache",
+			Operator: "In",
+			Values:   []string{"redis", "memcached"},
+		},
+	}
+
+	policy := &networking_v1.NetworkPolicy{
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchExpressions: expression,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", mock.Anything).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 0)
+		}
+	}
+}
+
+func TestEmptyPodSelectorSelectsAllPodsInSameNamespace(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{}
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: "Same",
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "Same",
+			},
+		},
+	}).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 2)
+
+			var found int
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.25.153.77", "172.10.30.30":
+					found++
+					assert.Equal(t, rule.Sport, port.IntVal)
+					assert.Equal(t, rule.Action, "forward")
+				default:
+					assert.Fail(t, "unrecognized ip")
+				}
+			}
+
+			assert.Equal(t, 2, found)
+		}
+	}
+}
+
+func TestNilLabelSelectorBlocksAllPodsInSameNamespace(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: "Same",
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: nil,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "Same",
+			},
+		},
+	}).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 2)
+
+			var found int
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.25.153.77", "172.10.30.30":
+					found++
+					assert.Equal(t, rule.Sport, port.IntVal)
+					assert.Equal(t, rule.Action, "drop")
+				default:
+					assert.Fail(t, "unrecognized ip")
+				}
+			}
+
+			assert.Equal(t, 2, found)
 		}
 	}
 }
