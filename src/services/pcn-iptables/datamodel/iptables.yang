@@ -3,17 +3,13 @@ module iptables {
   namespace "http://polycube.network/iptables";
   prefix "iptables";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube iptables service";
 
-  uses "basemodel:base-yang-module";
-
-  extension cli-example {
-    argument "value";
-    description "A sample value used by the CLI generator";
-  }
+  uses "polycube-standard-base:standard-base-yang-module";
 
   typedef action {
     type enumeration {
@@ -38,26 +34,26 @@ module iptables {
     leaf in-iface {
       type string;
       description "Name of the interface via which the packet is received";
-      iptables:cli-example "eth0";
+      polycube-base:cli-example "eth0";
     }
 
 
     leaf out-iface {
       type string;
       description "Name of the interface via which the packet is going to be sent";
-      iptables:cli-example "eth1";
+      polycube-base:cli-example "eth1";
     }
 
     leaf src {
       type string;
       description "Source IP Address.";
-      iptables:cli-example "10.0.0.1/24";
+      polycube-base:cli-example "10.0.0.1/24";
     }
 
     leaf dst {
       type string;
       description "Destination IP Address.";
-      iptables:cli-example "10.0.0.2/24";
+      polycube-base:cli-example "10.0.0.2/24";
     }
 
     leaf l4proto {
@@ -78,7 +74,7 @@ module iptables {
     leaf tcpflags {
       type string;
       description "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.";
-      iptables:cli-example "!FIN,SYN,!RST,!ACK";
+      polycube-base:cli-example "!FIN,SYN,!RST,!ACK";
     }
 
     leaf conntrack {
@@ -89,7 +85,7 @@ module iptables {
     leaf action {
       type action;
       description "Action if the rule matches. Default is DROP.";
-      iptables:cli-example "DROP, ACCEPT, LOG";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
   }
 
@@ -106,7 +102,7 @@ module iptables {
     }
     description "Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.";
   }
-  
+
   leaf horus {
     type enumeration {
       enum ON;
@@ -167,13 +163,13 @@ module iptables {
         enum INVALID;
       }
       description "Chain in which the rule will be inserted. Default: FORWARD.";
-      iptables:cli-example "INPUT, FORWARD, OUTPUT.";
+      polycube-base:cli-example "INPUT, FORWARD, OUTPUT.";
     }
 
     leaf default {
       type action;
       description "Default action if no rule matches in the ingress chain. Default is DROP.";
-      iptables:cli-example "DROP, ACCEPT, LOG";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
 
     list stats {

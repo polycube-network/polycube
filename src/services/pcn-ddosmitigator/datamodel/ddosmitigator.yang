@@ -3,22 +3,18 @@ module ddosmitigator {
   namespace "http://polycube.network/ddosmitigator";
   prefix "ddosmitigator";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube DDoS Mitigator service";
 
-  basemodel:service-description "DDoS Mitigator Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "ddosmitigator";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "DDoS Mitigator Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "ddosmitigator";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
-
-  extension cli-example {
-    argument "value";
-    description "A sample value used by the CLI generator";
-  }
+  uses "polycube-standard-base:standard-base-yang-module";
 
   container stats {
     description "Statistics on dropped packets";
@@ -54,7 +50,7 @@ module ddosmitigator {
       leaf ip {
         type string;
         description "Source IP Address";
-        ddosmitigator:cli-example "10.0.0.1";
+        polycube-base:cli-example "10.0.0.1";
       }
 
       leaf drop-pkts {
@@ -71,7 +67,7 @@ module ddosmitigator {
       leaf ip {
         type string;
         description "Destination IP Address";
-        ddosmitigator:cli-example "10.0.0.2";
+        polycube-base:cli-example "10.0.0.2";
       }
 
       leaf drop-pkts {

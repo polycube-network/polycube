@@ -1,0 +1,11 @@
+module polycube-transparent-base {
+  yang-version 1.1;
+  namespace "http://polycube.network/polycube-transparent-base";
+  prefix "polycube-transparent-base";
+
+  import polycube-base { prefix "polycube-base"; }
+
+  grouping transparent-base-yang-module {
+    uses "polycube-base:base-yang-module";
+  }
+}
