@@ -20,6 +20,8 @@
 
 #include "service_controller.h"
 
+using polycube::service::CubeType;
+
 namespace polycube {
 namespace polycubed {
 
@@ -85,11 +87,9 @@ void Port::set_peer(const std::string &peer) {
     if (peer_ == peer) {
       return;
     }
+    peer_ = peer;
   }
   ServiceController::set_port_peer(*this, peer);
-
-  std::lock_guard<std::mutex> guard(port_mutex_);
-  peer_ = peer;
 }
 
 const std::string &Port::peer() const {
@@ -138,12 +138,24 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction directi
   c.send_packet_to_cube(module, port, packet);
 }
 
+/*
+* TC programs receive as value on the update_forwarding_table function a value
+* representing the virtual id of the next port and the index of the next module
+* to jump.
+* On the other hand, XDP programs receive as value the ifindex of the interface
+* that will be inserted into the devmap in order to use the bpf_redirect_map helper.
+*/
 void Port::connect(Port &p1, Node &iface) {
   std::lock_guard<std::mutex> guard(p1.port_mutex_);
   p1.peer_iface_ = &iface;
   // TODO: provide an accessor for forward chain?
   // Even smarter, should be forward chain a property of Port?
-  p1.parent_.update_forwarding_table(p1.index_, iface.get_index());
+
+  if (p1.parent_.get_type() == CubeType::TC) {
+    p1.parent_.update_forwarding_table(p1.index_, iface.get_index(), true);
+  } else {
+    p1.parent_.update_forwarding_table(p1.index_, Netlink::getInstance().get_iface_index(p1.peer_), true);
+  }
 }
 
 void Port::connect(Port &p1, Port &p2) {
@@ -152,14 +164,14 @@ void Port::connect(Port &p1, Port &p2) {
   p1.logger->debug("connecting ports {0} and {1}", p1.name_, p2.name_);
   p1.peer_port_ = &p2;
   p2.peer_port_ = &p1;
-  p1.parent_.update_forwarding_table(p1.index_, p2.serialize_ingress());
-  p2.parent_.update_forwarding_table(p2.index_, p1.serialize_ingress());
+  p1.parent_.update_forwarding_table(p1.index_, p2.serialize_ingress(), false);
+  p2.parent_.update_forwarding_table(p2.index_, p1.serialize_ingress(), false);
 }
 
 void Port::unconnect(Port &p1, Node &iface) {
   std::lock_guard<std::mutex> guard(p1.port_mutex_);
   p1.peer_iface_ = nullptr;
-  p1.parent_.update_forwarding_table(p1.index_, 0);
+  p1.parent_.update_forwarding_table(p1.index_, 0, true);
 }
 
 void Port::unconnect(Port &p1, Port &p2) {
@@ -167,8 +179,8 @@ void Port::unconnect(Port &p1, Port &p2) {
   std::lock_guard<std::mutex> guard2(p2.port_mutex_);
   p1.peer_port_ = nullptr;
   p2.peer_port_ = nullptr;
-  p1.parent_.update_forwarding_table(p1.index_, 0);
-  p2.parent_.update_forwarding_table(p2.index_, 0);
+  p1.parent_.update_forwarding_table(p1.index_, 0, false);
+  p2.parent_.update_forwarding_table(p2.index_, 0, false);
 }
 
 }  // namespace polycubed

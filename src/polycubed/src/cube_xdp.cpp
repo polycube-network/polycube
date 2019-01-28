@@ -33,7 +33,7 @@ CubeXDP::CubeXDP(const std::string &name,
     : Cube(name, service_name,
            PatchPanel::get_xdp_instance(),
            PatchPanel::get_tc_instance(),
-           level, type), attach_flags_(0) {
+           level, type, CubeXDP::MASTER_CODE), attach_flags_(0) {
   switch(type) {
     // FIXME: replace by definitions in if_link.h when update to new kernel.
     case CubeType::XDP_SKB:
@@ -44,9 +44,13 @@ CubeXDP::CubeXDP(const std::string &name,
       break;
   }
 
-  // it has to be done here becuase it needs the load, compile methods
+  // it has to be done here because it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
+  auto devmap_ = master_program_->get_devmap_table("xdp_devmap_");
+  xdp_devmap_ = std::unique_ptr<ebpf::BPFDevmapTable>(new ebpf::BPFDevmapTable(devmap_));
+
+  logger->debug("Created devmap with fd {0}", xdp_devmap_->get_fd());
 }
 
 CubeXDP::~CubeXDP() {
@@ -88,6 +92,29 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
   default:
     throw std::runtime_error("Bad program type");
   }
+}
+
+void CubeXDP::update_forwarding_table(int index, int value, bool is_netdev) {
+    std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+
+    if (forward_chain_) {// is the forward chain still active?
+        if (!is_netdev) {
+            //fwd_chain_value_t entry = {static_cast<uint32_t>(value), is_netdev};
+            //forward_chain_.insert(std::pair<int, fwd_chain_value_t>(index, entry));
+            forward_chain_->update_value(index, value);
+        } else {
+            //Add also the mapping in the devmap
+            if (value == 0) {
+                //Removing the element from the list
+                xdp_devmap_->remove_value(index);
+            } else {
+                logger->debug("Updating devmap value with index {0}, value {1}", index, value);
+                xdp_devmap_->update_value(index, value);
+                logger->debug("Devmap updated");
+            }
+        }
+    }
+
 }
 
 void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
@@ -200,8 +227,13 @@ void CubeXDP::do_unload(ebpf::BPF &bpf) {
   logger->debug("XDP program unloaded");
 }
 
+const std::string CubeXDP::MASTER_CODE = R"(
+BPF_TABLE_SHARED("devmap", u32, int, xdp_devmap_, _POLYCUBE_MAX_PORTS);
+)";
+
 const std::string CubeXDP::XDP_WRAPPERC = R"(
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
+BPF_TABLE("extern", u32, int, xdp_devmap_, _POLYCUBE_MAX_PORTS);
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
@@ -233,11 +265,19 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
   u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
+  if (next && *next != 0) {
+    /*
+     * The forward_chain is an array map.
+     * When initilized, its value will always be present
+     * but if zero it means that there are no entries
+     * for that out_port.
+     */
     u32 inport_key = 0;
     md->in_port = (*next) >> 16;  // update port_id for next module.
     port_md.update(&inport_key, md);
     xdp_nodes.call(pkt, *next & 0xffff);
+  } else {
+    return xdp_devmap_.redirect_map(out_port, 0);
   }
 
   return XDP_ABORTED;

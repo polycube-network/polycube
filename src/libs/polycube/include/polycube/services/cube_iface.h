@@ -63,7 +63,7 @@ public:
 
   virtual uint16_t get_index(ProgramType type) const = 0;
 
-  virtual void update_forwarding_table(int index, int value) = 0;
+  virtual void update_forwarding_table(int index, int value, bool is_netdev) = 0;
 
   virtual int get_table_fd(const std::string &table_name, int index,
                              ProgramType type) = 0;

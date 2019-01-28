@@ -38,7 +38,8 @@ Cube::Cube(const std::string &name,
            const std::string &service_name,
            PatchPanel &patch_panel_ingress,
            PatchPanel &patch_panel_egress,
-           LogLevel level, CubeType type)
+           LogLevel level, CubeType type,
+           const std::string &add_master_code)
     : name_(name), service_name_(service_name),
     logger(spdlog::get("polycubed")),
     uuid_(GuidGenerator().newGuid()),
@@ -50,7 +51,7 @@ Cube::Cube(const std::string &name,
 
   // create master program that contains some maps definitions
   master_program_ = std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
-  master_program_->init(MASTER_CODE, cflags);
+  master_program_->init(MASTER_CODE + add_master_code, cflags);
 
   // get references to those maps
   auto ingress_ = master_program_->get_prog_table("ingress_programs");
@@ -192,7 +193,7 @@ CubeType Cube::get_type() const {
   return type_;
 }
 
-void Cube::update_forwarding_table(int index, int value) {
+void Cube::update_forwarding_table(int index, int value, bool is_netdev) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (forward_chain_) // is the forward chain still active?
     forward_chain_->update_value(index, value);

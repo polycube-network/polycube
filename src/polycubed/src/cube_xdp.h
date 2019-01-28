@@ -55,6 +55,8 @@ class CubeXDP : public Cube {
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 
+  void update_forwarding_table(int index, int value, bool is_netdev) override;
+
   void do_unload(ebpf::BPF &bpf);
   int do_load(ebpf::BPF &bpf);
   void compileIngress(ebpf::BPF &bpf, const std::string &code);
@@ -62,6 +64,9 @@ class CubeXDP : public Cube {
 
   int attach_flags_;
 
+  std::unique_ptr<ebpf::BPFDevmapTable> xdp_devmap_;
+
+  static const std::string MASTER_CODE;
   static const std::string XDP_WRAPPERC;
   static const std::string XDP_HELPERS;
 };

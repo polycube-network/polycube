@@ -68,7 +68,8 @@ class Cube : public CubeIface {
                 const std::string &service_name,
                 PatchPanel &patch_panel_ingress_,
                 PatchPanel &patch_panel_egress_,
-                LogLevel level, CubeType type);
+                LogLevel level, CubeType type,
+                const std::string &master_code = "");
   virtual ~Cube();
 
   // It is not possible to copy nor assign nor move an cube.
@@ -87,7 +88,7 @@ class Cube : public CubeIface {
 
   CubeType get_type() const;
 
-  void update_forwarding_table(int index, int value);
+  virtual void update_forwarding_table(int index, int value, bool is_netdev);
 
   uint32_t get_id() const;
 
