@@ -1076,3 +1076,493 @@ func TestNilLabelSelectorBlocksAllPodsInSameNamespace(t *testing.T) {
 		}
 	}
 }
+
+func TestSelectAllFromSpecificNamespace(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{
+		"environment": "production",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: "Same",
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:     "labels",
+				Labels: labels,
+			},
+		},
+	}).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 2)
+
+			var found int
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.10.30.30", "172.25.153.77":
+					found++
+					assert.Equal(t, rule.Sport, port.IntVal)
+					assert.Equal(t, rule.Action, "forward")
+				default:
+					assert.Fail(t, "unrecognized ip")
+				}
+			}
+
+			assert.Equal(t, 2, found)
+		}
+	}
+}
+
+func TestBlockAllFromSpecificNamespace(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	port := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	labels := map[string]string{
+		"environment": "beta",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: "Same",
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: nil,
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: labels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.10.30.30",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Same",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.25.153.77",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:     "labels",
+				Labels: labels,
+			},
+		},
+	}).Return(podsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 2)
+
+			var found int
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.10.30.30", "172.25.153.77":
+					found++
+					assert.Equal(t, rule.Sport, port.IntVal)
+					assert.Equal(t, rule.Action, "drop")
+				default:
+					assert.Fail(t, "unrecognized ip")
+				}
+			}
+
+			assert.Equal(t, 2, found)
+		}
+	}
+}
+
+func TestComplexPolicy(t *testing.T) {
+	tcp := core_v1.ProtocolTCP
+	udp := core_v1.ProtocolUDP
+
+	port1 := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	port2 := &intstr.IntOrString{
+		IntVal: 8080,
+	}
+	port3 := &intstr.IntOrString{
+		IntVal: 80,
+	}
+	port4 := &intstr.IntOrString{
+		IntVal: 5000,
+	}
+
+	namespaceLabels := map[string]string{
+		"environment": "production",
+	}
+	podLabels := map[string]string{
+		"type":    "app",
+		"version": "2.0",
+	}
+
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: "Production",
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+
+				/* First rule
+				Block the following if it comes with TCP6895 Or UDP6895
+					- what comes from 192.168.2.0/24
+					- what comes from 192.168.5.0/24
+					- what comes from 192.168.100.20/32
+					- All pods that belong to all namespaces
+
+				Allow the following if it comes with TCP6895 & UDP6895
+					- what comes from 192.168.0.0/16 (see exceptions above)
+				*/
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.168.0.0/16",
+								Except: []string{
+									"192.168.2.0/24",
+									"192.168.5.0/24",
+									"192.168.100.20/32",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: nil,
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: map[string]string{},
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port1,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &udp,
+							Port:     port1,
+						},
+					},
+				},
+
+				/*	Second Rule
+					Block the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.2.0/24
+						- what comes from 192.169.5.0/24
+						- what comes from 192.169.100.20/32
+
+					Allow the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.0.0/16 (see exceptions above)
+						- all pods with labels podLabels that belong to certain namespace (namespaceLabels)
+				*/
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.169.0.0/16",
+								Except: []string{
+									"192.169.2.0/24",
+									"192.169.5.0/24",
+									"192.169.100.20/32",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: podLabels,
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: namespaceLabels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port2,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port3,
+						},
+					},
+				},
+
+				/*	Third rule
+					Allow everything that comes from 5000
+				*/
+				networking_v1.NetworkPolicyIngressRule{
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port4,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &udp,
+							Port:     port4,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	//	pods find for the first rule
+	firstPodsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Production",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.20.20.20",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Production",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.30.30.30",
+				},
+			},
+			Veth: "veth312",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Beta",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.40.40.40",
+				},
+			},
+			Veth: "veth512",
+		},
+	}
+
+	//	Pods found for the second rule
+	secondPodsFound := []polycube_pod.Pod{
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Production",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.20.20.20",
+				},
+			},
+			Veth: "veth123",
+		},
+		polycube_pod.Pod{
+			Pod: core_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Namespace: "Production",
+				},
+				Status: core_v1.PodStatus{
+					PodIP: "172.30.30.30",
+				},
+			},
+			Veth: "veth312",
+		},
+	}
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:   "name",
+				Name: "*",
+			},
+		},
+	}).Return(firstPodsFound, nil)
+	testObj.On("GetPods", podquery.Query{
+		Pod: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:     "labels",
+				Labels: podLabels,
+			},
+		},
+		Namespace: []podquery.QueryObject{
+			podquery.QueryObject{
+				By:     "labels",
+				Labels: namespaceLabels,
+			},
+		},
+	}).Return(secondPodsFound, nil)
+
+	manager := Init(testObj)
+
+	result, err := manager.ParseDefaultPolicy(policy)
+	CommonTest(t, err, result)
+
+	for _, chain := range result.Chain {
+		if chain.Name == "ingress" {
+			assert.Len(t, chain.Rule, 14+12+2)
+
+			for _, rule := range chain.Rule {
+
+				switch rule.Src {
+				case "172.20.20.20", "172.30.30.30", "172.40.40.40", "192.168.2.0/24", "192.168.5.0/24", "192.168.100.20/32":
+					switch rule.Sport {
+					case port1.IntVal:
+						assert.Equal(t, rule.Action, "drop")
+						if rule.L4proto != "TCP" && rule.L4proto != "UDP" {
+							assert.Fail(t, "first rules: protocol unrecognized")
+						}
+					case port2.IntVal, port3.IntVal:
+						assert.Equal(t, rule.Action, "forward")
+						assert.Equal(t, rule.L4proto, "TCP")
+					}
+				case "192.168.0.0/16":
+					switch rule.Sport {
+					case port1.IntVal:
+						if rule.L4proto != "TCP" && rule.L4proto != "UDP" {
+							assert.Fail(t, "first rules: protocol unrecognized")
+						}
+					case port2.IntVal, port3.IntVal:
+						assert.Equal(t, rule.L4proto, "TCP")
+					}
+					assert.Equal(t, rule.Action, "forward")
+				case "192.169.2.0/24", "192.169.5.0/24", "192.169.100.20/32":
+					assert.Equal(t, rule.L4proto, "TCP")
+					if rule.Sport != port2.IntVal && rule.Sport != port3.IntVal {
+						assert.Fail(t, "second rule, port unrecognized", rule.Sport)
+						assert.Equal(t, rule.Action, "drop")
+					}
+				case "192.169.0.0/16":
+					assert.Equal(t, rule.L4proto, "TCP")
+					if rule.Sport != port2.IntVal && rule.Sport != port3.IntVal {
+						assert.Fail(t, "second rule, port unrecognized", rule.Sport)
+						assert.Equal(t, rule.Action, "forward")
+					}
+				case "0":
+					if rule.L4proto != "TCP" && rule.L4proto != "UDP" {
+						assert.Fail(t, "case 0: protocol unrecognized")
+					}
+					assert.Equal(t, rule.Sport, port4.IntVal)
+					assert.Equal(t, rule.Action, "forward")
+				default:
+					assert.Fail(t, "first rule: unrecognized", rule.Src)
+				}
+			}
+		}
+	}
+}
