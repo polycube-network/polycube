@@ -48,6 +48,10 @@ module polycube-base {
     description "Minimum kernel version required by the service. Format is x.y.z (e.g. 4.13.1, 4.14.0)";
   }
 
+  extension init-only-config {
+    description "TODO";
+  }
+
   grouping base-yang-module {
     leaf uuid {
       type polycube-uuid;
@@ -61,8 +65,9 @@ module polycube-base {
         enum XDP_SKB;
         enum XDP_DRV;
       }
-      config false;
+      config true;
       default TC;
+      polycube-base:init-only-config;
       description "Type of the Cube (TC, XDP_SKB, XDP_DRV)";
       polycube-base:cli-example "TC";
     }
