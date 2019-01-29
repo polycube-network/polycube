@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "SimplebridgeApi.h"
-
 
 #include <memory>
 #include <map>
@@ -42,11 +40,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class SimplebridgeApiImpl : public io::swagger::server::api::SimplebridgeApi {
-public:
-  SimplebridgeApiImpl();
-  ~SimplebridgeApiImpl() { };
-
+namespace SimplebridgeApiImpl {
   void create_simplebridge_by_id(const std::string &name, const SimplebridgeJsonObject &value);
   void create_simplebridge_fdb_by_id(const std::string &name, const FdbJsonObject &value);
   void create_simplebridge_fdb_entry_by_id(const std::string &name, const std::string &address, const FdbEntryJsonObject &value);
@@ -97,13 +91,7 @@ public:
   void update_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_simplebridge_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Simplebridge>> cubes;
-  std::shared_ptr<Simplebridge> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

@@ -17,37 +17,36 @@
 #define SERVICE_DESCRIPTION "Simple L2 Bridge Service"
 #define SERVICE_VERSION "1.0.0"
 #define SERVICE_PYANG_GIT ""
-#define SERVICE_SWAGGER_CODEGEN_GIT "polycube/50b9d4f"
+#define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 #define SERVICE_REQUIRED_KERNEL_VERSION "4.11.0"
+
 const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
 module simplebridge {
   yang-version 1.1;
   namespace "http://polycube.network/simplebridge";
   prefix "simplebridge";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
+
   import ietf-yang-types { prefix "yang"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube simple L2 bridge";
 
-  basemodel:service-description "Simple L2 Bridge Service";
-  basemodel:service-version "1.0.0";
-  basemodel:service-name "simplebridge";
-  basemodel:service-min-kernel-version "4.11.0";
+  polycube-base:service-description "Simple L2 Bridge Service";
+  polycube-base:service-version "1.0.0";
+  polycube-base:service-name "simplebridge";
+  polycube-base:service-min-kernel-version "4.11.0";
 
-  extension cli-example {
-    argument "value";
-    description "A sample value used by the CLI generator";
-  }
-
-  uses "basemodel:base-yang-module" {
+  uses "polycube-standard-base:standard-base-yang-module" {
     augment ports {
       leaf mac {
         type yang:mac-address;
         description "MAC address of the port";
-        config false;
-        simplebridge:cli-example "C5:13:2D:36:27:9B";
+        config true;
+        polycube-base:init-only-config;
+        polycube-base:cli-example "C5:13:2D:36:27:9B";
       }
     }
   }
@@ -58,7 +57,7 @@ module simplebridge {
       units seconds;
       default 300;
       description "Aging time of the filtering database (in seconds)";
-      simplebridge:cli-example "300";
+      polycube-base:cli-example "300";
     }
 
     list entry {
@@ -68,14 +67,14 @@ module simplebridge {
         type yang:mac-address;
         mandatory true;
         description "Address of the filtering database entry";
-        simplebridge:cli-example "C5:13:2D:36:27:9B";
+        polycube-base:cli-example "C5:13:2D:36:27:9B";
       }
 
       leaf port {
         type string;
         mandatory true;
         description "Output port name";
-        simplebridge:cli-example "port2";
+        polycube-base:cli-example "port2";
       }
 
       leaf age {
@@ -100,4 +99,10 @@ module simplebridge {
 }
 
 )POLYCUBE_DM";
+
+extern "C" const char *data_model() {
+  return SERVICE_DATA_MODEL.c_str();
+}
+
+
 #include <polycube/services/shared_library.h>

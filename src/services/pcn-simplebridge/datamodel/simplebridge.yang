@@ -21,7 +21,8 @@ module simplebridge {
       leaf mac {
         type yang:mac-address;
         description "MAC address of the port";
-        config false;
+        config true;
+        polycube-base:init-only-config;
         polycube-base:cli-example "C5:13:2D:36:27:9B";
       }
     }
