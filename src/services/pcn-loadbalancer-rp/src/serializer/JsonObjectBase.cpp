@@ -19,10 +19,6 @@ namespace swagger {
 namespace server {
 namespace model {
 
-JsonObjectBase::JsonObjectBase() {}
-
-JsonObjectBase::~JsonObjectBase() {}
-
 bool JsonObjectBase::iequals(const std::string &a, const std::string &b) {
   if(a.size() != b.size())
     return false;

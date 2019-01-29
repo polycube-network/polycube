@@ -36,17 +36,13 @@ namespace model {
 class  ServiceBackendJsonObject : public JsonObjectBase {
 public:
   ServiceBackendJsonObject();
-  virtual ~ServiceBackendJsonObject();
+  ServiceBackendJsonObject(nlohmann::json& json);
+  ~ServiceBackendJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -89,7 +85,7 @@ public:
   void unsetWeight();
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_ip;
@@ -98,8 +94,6 @@ protected:
   bool m_portIsSet;
   uint16_t m_weight;
   bool m_weightIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "ip", "port", "weight" };
 };
 
 }
