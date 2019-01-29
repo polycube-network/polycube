@@ -22,40 +22,38 @@ namespace swagger {
 namespace server {
 namespace model {
 
-PortsJsonObject::PortsJsonObject() {
+PortsJsonObject::PortsJsonObject() : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_statusIsSet(false),
+  m_peerIsSet(false),
+  m_type(PortsTypeEnum::DEFAULT),
+  m_typeIsSet(true) { }
 
-  m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_statusIsSet = false;
-
-  m_peerIsSet = false;
-
-  m_type = PortsTypeEnum::DEFAULT;
-  m_typeIsSet = false;
-}
-
-PortsJsonObject::~PortsJsonObject() {}
-
-void PortsJsonObject::validateKeys() {
-
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+PortsJsonObject::PortsJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_statusIsSet(false),
+  m_peerIsSet(false),
+  m_typeIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void PortsJsonObject::validateMandatoryFields() {
+  if (val.count("uuid")) {
+    setUuid(val.at("uuid").get<std::string>());
+  }
 
-}
+  if (val.count("status")) {
+    setStatus(string_to_PortsStatusEnum(val.at("status").get<std::string>()));
+  }
 
-void PortsJsonObject::validateParams() {
+  if (val.count("peer")) {
+    setPeer(val.at("peer").get<std::string>());
+  }
 
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  if (val.count("type")) {
+    setType(string_to_PortsTypeEnum(val.at("type").get<std::string>()));
   }
 }
 
@@ -84,37 +82,6 @@ nlohmann::json PortsJsonObject::toJson() const {
 
 
   return val;
-}
-
-void PortsJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("status") != val.end()) {
-    setStatus(string_to_PortsStatusEnum(val.at("status")));
-  }
-
-  if (val.find("peer") != val.end()) {
-    setPeer(val.at("peer"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_PortsTypeEnum(val.at("type")));
-  }
 }
 
 nlohmann::json PortsJsonObject::helpKeys() {
@@ -196,9 +163,7 @@ bool PortsJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void PortsJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
+
 
 
 

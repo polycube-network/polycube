@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-K8switchApiImpl::K8switchApiImpl() {}
+namespace K8switchApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<K8switch>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<K8switch> K8switchApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<K8switch> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<K8switch> K8switchApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void K8switchApiImpl::create_k8switch_by_id(const std::string &name, const K8switchJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_k8switch_by_id(const std::string &name, const K8switchJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<K8switch>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void K8switchApiImpl::create_k8switch_by_id(const std::string &name, const K8swi
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void K8switchApiImpl::replace_k8switch_by_id(const std::string &name, const K8switchJsonObject &bridge){
+void replace_k8switch_by_id(const std::string &name, const K8switchJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void K8switchApiImpl::delete_k8switch_by_id(const std::string &name) {
+void delete_k8switch_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void K8switchApiImpl::delete_k8switch_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string K8switchApiImpl::read_k8switch_uuid_by_id(const std::string &name) {
+std::string read_k8switch_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<K8switchJsonObject> K8switchApiImpl::read_k8switch_list_by_id() {
+std::vector<K8switchJsonObject> read_k8switch_list_by_id() {
   std::vector<K8switchJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<K8switchJsonObject> K8switchApiImpl::read_k8switch_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_k8switch_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_
 /*
 * Ports list related functions
 */
-void K8switchApiImpl::create_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> K8switchApiImpl::read_k8switch_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_k8switch_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> K8switchApiImpl::read_k8switch_ports_list_by_id(con
   return vect;
 }
 
-void K8switchApiImpl::replace_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void K8switchApiImpl::delete_k8switch_ports_list_by_id(const std::string &name) {
+void delete_k8switch_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_k8switch_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_
 /*
 * Ports related functions
 */
-void K8switchApiImpl::create_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject K8switchApiImpl::read_k8switch_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_k8switch_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void K8switchApiImpl::replace_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void K8switchApiImpl::delete_k8switch_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_k8switch_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string K8switchApiImpl::read_k8switch_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_k8switch_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum K8switchApiImpl::read_k8switch_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_k8switch_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string K8switchApiImpl::read_k8switch_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_k8switch_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void K8switchApiImpl::update_k8switch_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_k8switch_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -193,7 +197,7 @@ void K8switchApiImpl::update_k8switch_ports_peer_by_id(const std::string &name, 
 *
 */
 void
-K8switchApiImpl::create_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
+create_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
   auto k8switch = get_cube(name);
 
   k8switch->addFwdTable(address, value);
@@ -214,14 +218,14 @@ K8switchApiImpl::create_k8switch_fwd_table_by_id(const std::string &name, const 
 *
 */
 void
-K8switchApiImpl::create_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+create_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   auto k8switch = get_cube(name);
   k8switch->addFwdTableList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::create_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -251,7 +255,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::creat
 *
 */
 void
-K8switchApiImpl::create_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
+create_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
 
@@ -276,7 +280,7 @@ K8switchApiImpl::create_k8switch_service_backend_by_id(const std::string &name, 
 *
 */
 void
-K8switchApiImpl::create_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+create_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   service->addBackendList(value);
@@ -284,7 +288,7 @@ K8switchApiImpl::create_k8switch_service_backend_list_by_id(const std::string &n
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::create_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
   auto &&service = k8switch->getService(vip, vport, proto);
@@ -313,7 +317,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::creat
 *
 */
 void
-K8switchApiImpl::create_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+create_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto k8switch = get_cube(name);
 
   k8switch->addService(vip, vport, proto, value);
@@ -334,14 +338,14 @@ K8switchApiImpl::create_k8switch_service_by_id(const std::string &name, const st
 *
 */
 void
-K8switchApiImpl::create_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+create_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   auto k8switch = get_cube(name);
   k8switch->addServiceList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::create_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -366,7 +370,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::creat
 *
 */
 void
-K8switchApiImpl::delete_k8switch_fwd_table_by_id(const std::string &name, const std::string &address) {
+delete_k8switch_fwd_table_by_id(const std::string &name, const std::string &address) {
   auto k8switch = get_cube(name);
 
   k8switch->delFwdTable(address);
@@ -386,14 +390,14 @@ K8switchApiImpl::delete_k8switch_fwd_table_by_id(const std::string &name, const 
 *
 */
 void
-K8switchApiImpl::delete_k8switch_fwd_table_list_by_id(const std::string &name) {
+delete_k8switch_fwd_table_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   k8switch->delFwdTableList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delete_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -422,7 +426,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delet
 *
 */
 void
-K8switchApiImpl::delete_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
+delete_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
 
@@ -446,7 +450,7 @@ K8switchApiImpl::delete_k8switch_service_backend_by_id(const std::string &name, 
 *
 */
 void
-K8switchApiImpl::delete_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+delete_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   service->delBackendList();
@@ -454,7 +458,7 @@ K8switchApiImpl::delete_k8switch_service_backend_list_by_id(const std::string &n
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delete_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
   auto &&service = k8switch->getService(vip, vport, proto);
@@ -482,7 +486,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delet
 *
 */
 void
-K8switchApiImpl::delete_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+delete_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto k8switch = get_cube(name);
 
   k8switch->delService(vip, vport, proto);
@@ -502,14 +506,14 @@ K8switchApiImpl::delete_k8switch_service_by_id(const std::string &name, const st
 *
 */
 void
-K8switchApiImpl::delete_k8switch_service_list_by_id(const std::string &name) {
+delete_k8switch_service_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   k8switch->delServiceList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delete_k8switch_service_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_service_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -533,7 +537,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::delet
 * K8switchJsonObject
 */
 K8switchJsonObject
-K8switchApiImpl::read_k8switch_by_id(const std::string &name) {
+read_k8switch_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -552,7 +556,7 @@ K8switchApiImpl::read_k8switch_by_id(const std::string &name) {
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_client_subnet_by_id(const std::string &name) {
+read_k8switch_client_subnet_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   return k8switch->getClientSubnet();
 
@@ -572,7 +576,7 @@ K8switchApiImpl::read_k8switch_client_subnet_by_id(const std::string &name) {
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_cluster_ip_subnet_by_id(const std::string &name) {
+read_k8switch_cluster_ip_subnet_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   return k8switch->getClusterIpSubnet();
 
@@ -593,7 +597,7 @@ K8switchApiImpl::read_k8switch_cluster_ip_subnet_by_id(const std::string &name) 
 * FwdTableJsonObject
 */
 FwdTableJsonObject
-K8switchApiImpl::read_k8switch_fwd_table_by_id(const std::string &name, const std::string &address) {
+read_k8switch_fwd_table_by_id(const std::string &name, const std::string &address) {
   auto k8switch = get_cube(name);
   return k8switch->getFwdTable(address)->toJsonObject();
 
@@ -613,7 +617,7 @@ K8switchApiImpl::read_k8switch_fwd_table_by_id(const std::string &name, const st
 * std::vector<FwdTableJsonObject>
 */
 std::vector<FwdTableJsonObject>
-K8switchApiImpl::read_k8switch_fwd_table_list_by_id(const std::string &name) {
+read_k8switch_fwd_table_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   auto &&fwdTable = k8switch->getFwdTableList();
   std::vector<FwdTableJsonObject> m;
@@ -625,7 +629,7 @@ K8switchApiImpl::read_k8switch_fwd_table_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -651,7 +655,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &address) {
+read_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &address) {
   auto k8switch = get_cube(name);
   auto fwdTable = k8switch->getFwdTable(address);
   return fwdTable->getMac();
@@ -673,7 +677,7 @@ K8switchApiImpl::read_k8switch_fwd_table_mac_by_id(const std::string &name, cons
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &address) {
+read_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &address) {
   auto k8switch = get_cube(name);
   auto fwdTable = k8switch->getFwdTable(address);
   return fwdTable->getPort();
@@ -694,7 +698,7 @@ K8switchApiImpl::read_k8switch_fwd_table_port_by_id(const std::string &name, con
 * K8switchLoglevelEnum
 */
 K8switchLoglevelEnum
-K8switchApiImpl::read_k8switch_loglevel_by_id(const std::string &name) {
+read_k8switch_loglevel_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   return k8switch->getLoglevel();
 
@@ -715,7 +719,7 @@ K8switchApiImpl::read_k8switch_loglevel_by_id(const std::string &name) {
 * PortsTypeEnum
 */
 PortsTypeEnum
-K8switchApiImpl::read_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName) {
+read_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName) {
   auto k8switch = get_cube(name);
   auto ports = k8switch->getPorts(portsName);
   return ports->getType();
@@ -741,7 +745,7 @@ K8switchApiImpl::read_k8switch_ports_type_by_id(const std::string &name, const s
 * ServiceBackendJsonObject
 */
 ServiceBackendJsonObject
-K8switchApiImpl::read_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
+read_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   return service->getBackend(ip, port)->toJsonObject();
@@ -765,7 +769,7 @@ K8switchApiImpl::read_k8switch_service_backend_by_id(const std::string &name, co
 * std::vector<ServiceBackendJsonObject>
 */
 std::vector<ServiceBackendJsonObject>
-K8switchApiImpl::read_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto &&backend = service->getBackendList();
@@ -778,7 +782,7 @@ K8switchApiImpl::read_k8switch_service_backend_list_by_id(const std::string &nam
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
   auto &&service = k8switch->getService(vip, vport, proto);
@@ -809,7 +813,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
+read_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto backend = service->getBackend(ip, port);
@@ -836,7 +840,7 @@ K8switchApiImpl::read_k8switch_service_backend_name_by_id(const std::string &nam
 * uint16_t
 */
 uint16_t
-K8switchApiImpl::read_k8switch_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
+read_k8switch_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto backend = service->getBackend(ip, port);
@@ -861,7 +865,7 @@ K8switchApiImpl::read_k8switch_service_backend_weight_by_id(const std::string &n
 * ServiceJsonObject
 */
 ServiceJsonObject
-K8switchApiImpl::read_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto k8switch = get_cube(name);
   return k8switch->getService(vip, vport, proto)->toJsonObject();
 
@@ -881,7 +885,7 @@ K8switchApiImpl::read_k8switch_service_by_id(const std::string &name, const std:
 * std::vector<ServiceJsonObject>
 */
 std::vector<ServiceJsonObject>
-K8switchApiImpl::read_k8switch_service_list_by_id(const std::string &name) {
+read_k8switch_service_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   auto &&service = k8switch->getServiceList();
   std::vector<ServiceJsonObject> m;
@@ -893,7 +897,7 @@ K8switchApiImpl::read_k8switch_service_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_k8switch_service_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&k8switch = get_cube(name);
 
@@ -921,7 +925,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::read_
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   return service->getName();
@@ -942,7 +946,7 @@ K8switchApiImpl::read_k8switch_service_name_by_id(const std::string &name, const
 * CubeType
 */
 CubeType
-K8switchApiImpl::read_k8switch_type_by_id(const std::string &name) {
+read_k8switch_type_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   return k8switch->getType();
 
@@ -962,7 +966,7 @@ K8switchApiImpl::read_k8switch_type_by_id(const std::string &name) {
 * std::string
 */
 std::string
-K8switchApiImpl::read_k8switch_virtual_client_subnet_by_id(const std::string &name) {
+read_k8switch_virtual_client_subnet_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   return k8switch->getVirtualClientSubnet();
 
@@ -984,7 +988,7 @@ K8switchApiImpl::read_k8switch_virtual_client_subnet_by_id(const std::string &na
 *
 */
 void
-K8switchApiImpl::replace_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
+replace_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
   auto k8switch = get_cube(name);
 
   k8switch->replaceFwdTable(address, value);
@@ -1005,13 +1009,13 @@ K8switchApiImpl::replace_k8switch_fwd_table_by_id(const std::string &name, const
 *
 */
 void
-K8switchApiImpl::replace_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+replace_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::replace_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1034,7 +1038,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::repla
 *
 */
 void
-K8switchApiImpl::replace_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
+replace_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
 
@@ -1059,13 +1063,13 @@ K8switchApiImpl::replace_k8switch_service_backend_by_id(const std::string &name,
 *
 */
 void
-K8switchApiImpl::replace_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+replace_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::replace_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1086,7 +1090,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::repla
 *
 */
 void
-K8switchApiImpl::replace_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+replace_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto k8switch = get_cube(name);
 
   k8switch->replaceService(vip, vport, proto, value);
@@ -1107,13 +1111,13 @@ K8switchApiImpl::replace_k8switch_service_by_id(const std::string &name, const s
 *
 */
 void
-K8switchApiImpl::replace_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+replace_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::replace_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1131,7 +1135,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::repla
 *
 */
 void
-K8switchApiImpl::update_k8switch_by_id(const std::string &name, const K8switchJsonObject &value) {
+update_k8switch_by_id(const std::string &name, const K8switchJsonObject &value) {
   auto k8switch = get_cube(name);
 
   k8switch->update(value);
@@ -1152,7 +1156,7 @@ K8switchApiImpl::update_k8switch_by_id(const std::string &name, const K8switchJs
 *
 */
 void
-K8switchApiImpl::update_k8switch_client_subnet_by_id(const std::string &name, const std::string &value) {
+update_k8switch_client_subnet_by_id(const std::string &name, const std::string &value) {
   auto k8switch = get_cube(name);
 
   k8switch->setClientSubnet(value);
@@ -1173,7 +1177,7 @@ K8switchApiImpl::update_k8switch_client_subnet_by_id(const std::string &name, co
 *
 */
 void
-K8switchApiImpl::update_k8switch_cluster_ip_subnet_by_id(const std::string &name, const std::string &value) {
+update_k8switch_cluster_ip_subnet_by_id(const std::string &name, const std::string &value) {
   auto k8switch = get_cube(name);
 
   k8switch->setClusterIpSubnet(value);
@@ -1195,7 +1199,7 @@ K8switchApiImpl::update_k8switch_cluster_ip_subnet_by_id(const std::string &name
 *
 */
 void
-K8switchApiImpl::update_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
+update_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value) {
   auto k8switch = get_cube(name);
   auto fwdTable = k8switch->getFwdTable(address);
 
@@ -1217,13 +1221,13 @@ K8switchApiImpl::update_k8switch_fwd_table_by_id(const std::string &name, const 
 *
 */
 void
-K8switchApiImpl::update_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+update_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::update_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1242,7 +1246,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::updat
 *
 */
 void
-K8switchApiImpl::update_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &address, const std::string &value) {
+update_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &address, const std::string &value) {
   auto k8switch = get_cube(name);
   auto fwdTable = k8switch->getFwdTable(address);
 
@@ -1265,7 +1269,7 @@ K8switchApiImpl::update_k8switch_fwd_table_mac_by_id(const std::string &name, co
 *
 */
 void
-K8switchApiImpl::update_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &address, const std::string &value) {
+update_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &address, const std::string &value) {
   auto k8switch = get_cube(name);
   auto fwdTable = k8switch->getFwdTable(address);
 
@@ -1286,13 +1290,13 @@ K8switchApiImpl::update_k8switch_fwd_table_port_by_id(const std::string &name, c
 *
 */
 void
-K8switchApiImpl::update_k8switch_list_by_id(const std::vector<K8switchJsonObject> &value) {
+update_k8switch_list_by_id(const std::vector<K8switchJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::update_k8switch_list_by_id_get_list(const std::vector<K8switchJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_list_by_id_get_list(const std::vector<K8switchJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1310,7 +1314,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::updat
 *
 */
 void
-K8switchApiImpl::update_k8switch_loglevel_by_id(const std::string &name, const K8switchLoglevelEnum &value) {
+update_k8switch_loglevel_by_id(const std::string &name, const K8switchLoglevelEnum &value) {
   auto k8switch = get_cube(name);
 
   k8switch->setLoglevel(value);
@@ -1332,7 +1336,7 @@ K8switchApiImpl::update_k8switch_loglevel_by_id(const std::string &name, const K
 *
 */
 void
-K8switchApiImpl::update_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto k8switch = get_cube(name);
   auto ports = k8switch->getPorts(portsName);
 
@@ -1354,13 +1358,13 @@ K8switchApiImpl::update_k8switch_ports_by_id(const std::string &name, const std:
 *
 */
 void
-K8switchApiImpl::update_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::update_k8switch_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1379,7 +1383,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::updat
 *
 */
 void
-K8switchApiImpl::update_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
+update_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
   auto k8switch = get_cube(name);
   auto ports = k8switch->getPorts(portsName);
 
@@ -1406,7 +1410,7 @@ K8switchApiImpl::update_k8switch_ports_type_by_id(const std::string &name, const
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
+update_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto backend = service->getBackend(ip, port);
@@ -1432,13 +1436,13 @@ K8switchApiImpl::update_k8switch_service_backend_by_id(const std::string &name, 
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+update_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::update_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1461,7 +1465,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::updat
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const std::string &value) {
+update_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const std::string &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto backend = service->getBackend(ip, port);
@@ -1489,7 +1493,7 @@ K8switchApiImpl::update_k8switch_service_backend_name_by_id(const std::string &n
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const uint16_t &value) {
+update_k8switch_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const uint16_t &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
   auto backend = service->getBackend(ip, port);
@@ -1515,7 +1519,7 @@ K8switchApiImpl::update_k8switch_service_backend_weight_by_id(const std::string 
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+update_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
 
@@ -1537,13 +1541,13 @@ K8switchApiImpl::update_k8switch_service_by_id(const std::string &name, const st
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+update_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::update_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1564,7 +1568,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8switchApiImpl::updat
 *
 */
 void
-K8switchApiImpl::update_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value) {
+update_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value) {
   auto k8switch = get_cube(name);
   auto service = k8switch->getService(vip, vport, proto);
 
@@ -1586,7 +1590,7 @@ K8switchApiImpl::update_k8switch_service_name_by_id(const std::string &name, con
 *
 */
 void
-K8switchApiImpl::update_k8switch_virtual_client_subnet_by_id(const std::string &name, const std::string &value) {
+update_k8switch_virtual_client_subnet_by_id(const std::string &name, const std::string &value) {
   auto k8switch = get_cube(name);
 
   k8switch->setVirtualClientSubnet(value);
@@ -1595,6 +1599,7 @@ K8switchApiImpl::update_k8switch_virtual_client_subnet_by_id(const std::string &
 
 
 
+}
 }
 }
 }

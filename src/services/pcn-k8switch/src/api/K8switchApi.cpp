@@ -14,2166 +14,2598 @@
 
 
 #include "K8switchApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "K8switchApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::K8switchApiImpl;
 
-K8switchApi::K8switchApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void K8switchApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
+Response create_k8switch_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
   try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    K8switchJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_k8switch_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_k8switch_fwd_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
-
-void K8switchApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/", Routes::bind(&K8switchApi::create_k8switch_by_id_handler, this));
-  Routes::Post(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::create_k8switch_fwd_table_by_id_handler, this));
-  Routes::Post(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::create_k8switch_fwd_table_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::create_k8switch_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&K8switchApi::create_k8switch_ports_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::create_k8switch_service_backend_by_id_handler, this));
-  Routes::Post(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::create_k8switch_service_backend_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::create_k8switch_service_by_id_handler, this));
-  Routes::Post(router, base + ":name/service/", Routes::bind(&K8switchApi::create_k8switch_service_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&K8switchApi::delete_k8switch_by_id_handler, this));
-  Routes::Delete(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::delete_k8switch_fwd_table_by_id_handler, this));
-  Routes::Delete(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::delete_k8switch_fwd_table_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::delete_k8switch_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&K8switchApi::delete_k8switch_ports_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::delete_k8switch_service_backend_by_id_handler, this));
-  Routes::Delete(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::delete_k8switch_service_backend_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::delete_k8switch_service_by_id_handler, this));
-  Routes::Delete(router, base + ":name/service/", Routes::bind(&K8switchApi::delete_k8switch_service_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&K8switchApi::read_k8switch_by_id_handler, this));
-  Routes::Get(router, base + ":name/client-subnet/", Routes::bind(&K8switchApi::read_k8switch_client_subnet_by_id_handler, this));
-  Routes::Get(router, base + ":name/cluster-ip-subnet/", Routes::bind(&K8switchApi::read_k8switch_cluster_ip_subnet_by_id_handler, this));
-  Routes::Get(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_by_id_handler, this));
-  Routes::Get(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/fwd-table/:address/mac/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_mac_by_id_handler, this));
-  Routes::Get(router, base + ":name/fwd-table/:address/port/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_port_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&K8switchApi::read_k8switch_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&K8switchApi::read_k8switch_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::read_k8switch_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&K8switchApi::read_k8switch_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&K8switchApi::read_k8switch_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&K8switchApi::read_k8switch_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/type/", Routes::bind(&K8switchApi::read_k8switch_ports_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&K8switchApi::read_k8switch_ports_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::read_k8switch_service_backend_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::read_k8switch_service_backend_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/name/", Routes::bind(&K8switchApi::read_k8switch_service_backend_name_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/weight/", Routes::bind(&K8switchApi::read_k8switch_service_backend_weight_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::read_k8switch_service_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/", Routes::bind(&K8switchApi::read_k8switch_service_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/service/:vip/:vport/:proto/name/", Routes::bind(&K8switchApi::read_k8switch_service_name_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&K8switchApi::read_k8switch_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&K8switchApi::read_k8switch_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/virtual-client-subnet/", Routes::bind(&K8switchApi::read_k8switch_virtual_client_subnet_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&K8switchApi::replace_k8switch_by_id_handler, this));
-  Routes::Put(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::replace_k8switch_fwd_table_by_id_handler, this));
-  Routes::Put(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::replace_k8switch_fwd_table_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::replace_k8switch_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&K8switchApi::replace_k8switch_ports_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::replace_k8switch_service_backend_by_id_handler, this));
-  Routes::Put(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::replace_k8switch_service_backend_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::replace_k8switch_service_by_id_handler, this));
-  Routes::Put(router, base + ":name/service/", Routes::bind(&K8switchApi::replace_k8switch_service_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&K8switchApi::update_k8switch_by_id_handler, this));
-  Routes::Patch(router, base + ":name/client-subnet/", Routes::bind(&K8switchApi::update_k8switch_client_subnet_by_id_handler, this));
-  Routes::Patch(router, base + ":name/cluster-ip-subnet/", Routes::bind(&K8switchApi::update_k8switch_cluster_ip_subnet_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::update_k8switch_fwd_table_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::update_k8switch_fwd_table_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fwd-table/:address/mac/", Routes::bind(&K8switchApi::update_k8switch_fwd_table_mac_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fwd-table/:address/port/", Routes::bind(&K8switchApi::update_k8switch_fwd_table_port_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&K8switchApi::update_k8switch_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&K8switchApi::update_k8switch_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::update_k8switch_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&K8switchApi::update_k8switch_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&K8switchApi::update_k8switch_ports_peer_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/type/", Routes::bind(&K8switchApi::update_k8switch_ports_type_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::update_k8switch_service_backend_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::update_k8switch_service_backend_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/name/", Routes::bind(&K8switchApi::update_k8switch_service_backend_name_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/weight/", Routes::bind(&K8switchApi::update_k8switch_service_backend_weight_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::update_k8switch_service_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/", Routes::bind(&K8switchApi::update_k8switch_service_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/service/:vip/:vport/:proto/name/", Routes::bind(&K8switchApi::update_k8switch_service_name_by_id_handler, this));
-  Routes::Patch(router, base + ":name/virtual-client-subnet/", Routes::bind(&K8switchApi::update_k8switch_virtual_client_subnet_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/", Routes::bind(&K8switchApi::read_k8switch_by_id_help, this));
-  Routes::Options(router, base + ":name/fwd-table/:address/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_by_id_help, this));
-  Routes::Options(router, base + ":name/fwd-table/", Routes::bind(&K8switchApi::read_k8switch_fwd_table_list_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&K8switchApi::read_k8switch_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&K8switchApi::read_k8switch_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&K8switchApi::read_k8switch_ports_list_by_id_help, this));
-  Routes::Options(router, base + ":name/service/:vip/:vport/:proto/backend/:ip/:port/", Routes::bind(&K8switchApi::read_k8switch_service_backend_by_id_help, this));
-  Routes::Options(router, base + ":name/service/:vip/:vport/:proto/backend/", Routes::bind(&K8switchApi::read_k8switch_service_backend_list_by_id_help, this));
-  Routes::Options(router, base + ":name/service/:vip/:vport/:proto/", Routes::bind(&K8switchApi::read_k8switch_service_by_id_help, this));
-  Routes::Options(router, base + ":name/service/", Routes::bind(&K8switchApi::read_k8switch_service_list_by_id_help, this));
-
-}
-
-void K8switchApi::create_k8switch_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    K8switchJsonObject value;
+    FwdTableJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_k8switch_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setAddress(unique_address);
+    create_k8switch_fwd_table_by_id(unique_name, unique_address, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::create_k8switch_fwd_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_k8switch_fwd_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<FwdTableJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FwdTableJsonObject> unique_value;
+    for (auto &j : request_body) {
+      FwdTableJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_k8switch_fwd_table_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_k8switch_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    FwdTableJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_k8switch_fwd_table_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setName(unique_portsName);
+    create_k8switch_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::create_k8switch_fwd_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_k8switch_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_k8switch_ports_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_k8switch_service_backend_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ServiceBackendJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    unique_value.setPort(unique_port);
+    create_k8switch_service_backend_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_k8switch_service_backend_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
   // Getting the body param
-  std::vector<FwdTableJsonObject> value;
+  std::vector<ServiceBackendJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      FwdTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_k8switch_fwd_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::create_k8switch_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_k8switch_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::create_k8switch_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    std::vector<ServiceBackendJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ServiceBackendJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_k8switch_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_k8switch_service_backend_list_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::create_k8switch_service_backend_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_k8switch_service_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ServiceBackendJsonObject value;
+    ServiceJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.setPort(port);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_k8switch_service_backend_by_id(name, vip, vport, proto_, ip, port, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setVip(unique_vip);
+    unique_value.setVport(unique_vport);
+    unique_value.setProto(unique_proto_);
+    create_k8switch_service_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::create_k8switch_service_backend_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
 
+Response create_k8switch_service_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<ServiceBackendJsonObject> value;
+  std::vector<ServiceJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ServiceBackendJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_k8switch_service_backend_list_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::create_k8switch_service_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ServiceJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setVip(vip);
-    value.setVport(vport);
-    value.setProto(proto_);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_k8switch_service_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::create_k8switch_service_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<ServiceJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    std::vector<ServiceJsonObject> unique_value;
     for (auto &j : request_body) {
-      ServiceJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ServiceJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_k8switch_service_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_k8switch_service_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_k8switch_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_k8switch_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_k8switch_fwd_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_k8switch_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_k8switch_fwd_table_by_id(unique_name, unique_address);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_fwd_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_k8switch_fwd_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_k8switch_fwd_table_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_k8switch_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_k8switch_fwd_table_by_id(name, address);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_k8switch_ports_by_id(unique_name, unique_portsName);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_fwd_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_k8switch_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_k8switch_ports_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_k8switch_service_backend_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
-
-    delete_k8switch_fwd_table_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_k8switch_service_backend_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_k8switch_service_backend_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
-
-    delete_k8switch_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_k8switch_service_backend_list_by_id(unique_name, unique_vip, unique_vport, unique_proto_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_k8switch_service_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
-
-    delete_k8switch_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_k8switch_service_by_id(unique_name, unique_vip, unique_vport, unique_proto_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::delete_k8switch_service_backend_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
 
+Response delete_k8switch_service_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_k8switch_service_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_k8switch_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-    delete_k8switch_service_backend_by_id(name, vip, vport, proto_, ip, port);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::delete_k8switch_service_backend_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
-
-    delete_k8switch_service_backend_list_by_id(name, vip, vport, proto_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::delete_k8switch_service_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
-
-    delete_k8switch_service_by_id(name, vip, vport, proto_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::delete_k8switch_service_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_k8switch_service_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::read_k8switch_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_k8switch_by_id(name);
+    auto x = read_k8switch_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_client_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_client_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_client_subnet_by_id(name);
+    auto x = read_k8switch_client_subnet_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_cluster_ip_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_cluster_ip_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_cluster_ip_subnet_by_id(name);
+    auto x = read_k8switch_cluster_ip_subnet_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_fwd_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_fwd_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_fwd_table_by_id(name, address);
+    auto x = read_k8switch_fwd_table_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_fwd_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_fwd_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_fwd_table_list_by_id(name);
+    auto x = read_k8switch_fwd_table_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_fwd_table_mac_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_fwd_table_mac_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_fwd_table_mac_by_id(name, address);
+    auto x = read_k8switch_fwd_table_mac_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_fwd_table_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_fwd_table_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_fwd_table_port_by_id(name, address);
+    auto x = read_k8switch_fwd_table_port_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_k8switch_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_loglevel_by_id(name);
+    auto x = read_k8switch_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = K8switchJsonObject::K8switchLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_ports_by_id(name, portsName);
+    auto x = read_k8switch_ports_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_ports_list_by_id(name);
+    auto x = read_k8switch_ports_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_ports_peer_by_id(name, portsName);
+    auto x = read_k8switch_ports_peer_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_ports_status_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_ports_status_by_id(name, portsName);
+    auto x = read_k8switch_ports_status_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_ports_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_ports_type_by_id(name, portsName);
+    auto x = read_k8switch_ports_type_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = PortsJsonObject::PortsTypeEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_ports_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_ports_uuid_by_id(name, portsName);
+    auto x = read_k8switch_ports_uuid_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_backend_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_backend_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_service_backend_by_id(name, vip, vport, proto_, ip, port);
+    auto x = read_k8switch_service_backend_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_backend_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_backend_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
 
-
-    auto x = read_k8switch_service_backend_list_by_id(name, vip, vport, proto_);
+    auto x = read_k8switch_service_backend_list_by_id(unique_name, unique_vip, unique_vport, unique_proto_);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_backend_name_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_backend_name_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_service_backend_name_by_id(name, vip, vport, proto_, ip, port);
+    auto x = read_k8switch_service_backend_name_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_backend_weight_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_backend_weight_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_k8switch_service_backend_weight_by_id(name, vip, vport, proto_, ip, port);
+    auto x = read_k8switch_service_backend_weight_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
 
-
-    auto x = read_k8switch_service_by_id(name, vip, vport, proto_);
+    auto x = read_k8switch_service_by_id(unique_name, unique_vip, unique_vport, unique_proto_);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_service_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_service_list_by_id(name);
+    auto x = read_k8switch_service_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_service_name_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_k8switch_service_name_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
 
-
-    auto x = read_k8switch_service_name_by_id(name, vip, vport, proto_);
+    auto x = read_k8switch_service_name_by_id(unique_name, unique_vip, unique_vport, unique_proto_);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_type_by_id(name);
+    auto x = read_k8switch_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = K8switchJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_uuid_by_id(name);
+    auto x = read_k8switch_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::read_k8switch_virtual_client_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_k8switch_virtual_client_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_k8switch_virtual_client_subnet_by_id(name);
+    auto x = read_k8switch_virtual_client_subnet_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_k8switch_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    K8switchJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    replace_k8switch_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_k8switch_fwd_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    K8switchJsonObject value;
+    FwdTableJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_k8switch_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setAddress(unique_address);
+    replace_k8switch_fwd_table_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_fwd_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_k8switch_fwd_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<FwdTableJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FwdTableJsonObject> unique_value;
+    for (auto &j : request_body) {
+      FwdTableJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_k8switch_fwd_table_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_k8switch_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    FwdTableJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_k8switch_fwd_table_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    replace_k8switch_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_fwd_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_k8switch_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_k8switch_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_k8switch_service_backend_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ServiceBackendJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    unique_value.setPort(unique_port);
+    replace_k8switch_service_backend_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_k8switch_service_backend_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
   // Getting the body param
-  std::vector<FwdTableJsonObject> value;
+  std::vector<ServiceBackendJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      FwdTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_k8switch_fwd_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::replace_k8switch_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_k8switch_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<ServiceBackendJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ServiceBackendJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_k8switch_service_backend_list_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_k8switch_service_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ServiceJsonObject unique_value { request_body };
+
+    unique_value.setVip(unique_vip);
+    unique_value.setVport(unique_vport);
+    unique_value.setProto(unique_proto_);
+    replace_k8switch_service_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_k8switch_service_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<ServiceJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ServiceJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ServiceJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_k8switch_service_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    K8switchJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    update_k8switch_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_client_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_client_subnet_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_cluster_ip_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_cluster_ip_subnet_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_fwd_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    FwdTableJsonObject unique_value { request_body };
+
+    unique_value.setAddress(unique_address);
+    update_k8switch_fwd_table_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_fwd_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<FwdTableJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FwdTableJsonObject> unique_value;
+    for (auto &j : request_body) {
+      FwdTableJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_k8switch_fwd_table_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_fwd_table_mac_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_fwd_table_mac_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_fwd_table_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_fwd_table_port_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<K8switchJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_k8switch_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::replace_k8switch_service_backend_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ServiceBackendJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.setPort(port);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_k8switch_service_backend_by_id(name, vip, vport, proto_, ip, port, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<K8switchJsonObject> unique_value;
+    for (auto &j : request_body) {
+      K8switchJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_k8switch_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_service_backend_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_k8switch_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    K8switchLoglevelEnum unique_value_ = K8switchJsonObject::string_to_K8switchLoglevelEnum(request_body);
+    update_k8switch_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    PortsJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_portsName);
+    update_k8switch_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_k8switch_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_ports_peer_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_ports_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    PortsTypeEnum unique_value_ = PortsJsonObject::string_to_PortsTypeEnum(request_body);
+    update_k8switch_ports_type_by_id(unique_name, unique_portsName, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_service_backend_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ServiceBackendJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    unique_value.setPort(unique_port);
+    update_k8switch_service_backend_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_service_backend_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
   // Getting the body param
-  std::vector<ServiceBackendJsonObject> value;
+  std::vector<ServiceBackendJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ServiceBackendJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_k8switch_service_backend_list_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::replace_k8switch_service_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ServiceJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setVip(vip);
-    value.setVport(vport);
-    value.setProto(proto_);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_k8switch_service_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<ServiceBackendJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ServiceBackendJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_k8switch_service_backend_list_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::replace_k8switch_service_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_k8switch_service_backend_name_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_k8switch_service_backend_name_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_service_backend_weight_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_k8switch_service_backend_weight_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_ip, unique_port, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_service_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ServiceJsonObject unique_value { request_body };
+
+    unique_value.setVip(unique_vip);
+    unique_value.setVport(unique_vport);
+    unique_value.setProto(unique_proto_);
+    update_k8switch_service_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_k8switch_service_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<ServiceJsonObject> value;
+  std::vector<ServiceJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ServiceJsonObject> unique_value;
     for (auto &j : request_body) {
-      ServiceJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ServiceJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_k8switch_service_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_k8switch_service_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::update_k8switch_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_k8switch_service_name_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    K8switchJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_k8switch_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_client_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_client_subnet_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_cluster_ip_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_cluster_ip_subnet_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_fwd_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    FwdTableJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateParams();
-    update_k8switch_fwd_table_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_fwd_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<FwdTableJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      FwdTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
     }
-    update_k8switch_fwd_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void K8switchApi::update_k8switch_fwd_table_mac_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
 
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_fwd_table_mac_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_fwd_table_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_fwd_table_port_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-
-  // Getting the body param
-  std::vector<K8switchJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      K8switchJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
     }
-    update_k8switch_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void K8switchApi::update_k8switch_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
-
-  try {
-    // Getting the body param
-    K8switchLoglevelEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = K8switchJsonObject::string_to_K8switchLoglevelEnum(request_body);
-    update_k8switch_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_k8switch_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
     }
-    update_k8switch_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void K8switchApi::update_k8switch_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
 
   try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_ports_peer_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_k8switch_service_name_by_id(unique_name, unique_vip, unique_vport, unique_proto_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void K8switchApi::update_k8switch_ports_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
 
+Response update_k8switch_virtual_client_subnet_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
-    // Getting the body param
-    PortsTypeEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = PortsJsonObject::string_to_PortsTypeEnum(request_body);
-    update_k8switch_ports_type_by_id(name, portsName, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_backend_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
-
-
-  try {
-    // Getting the body param
-    ServiceBackendJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.setPort(port);
-    value.validateParams();
-    update_k8switch_service_backend_by_id(name, vip, vport, proto_, ip, port, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_backend_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-  // Getting the body param
-  std::vector<ServiceBackendJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ServiceBackendJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_k8switch_service_backend_list_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_backend_name_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_service_backend_name_by_id(name, vip, vport, proto_, ip, port, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_k8switch_virtual_client_subnet_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_backend_weight_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_service_backend_weight_by_id(name, vip, vport, proto_, ip, port, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
-    // Getting the body param
-    ServiceJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setVip(vip);
-    value.setVport(vport);
-    value.setProto(proto_);
-    value.validateParams();
-    update_k8switch_service_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<ServiceJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ServiceJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_k8switch_service_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_service_name_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_service_name_by_id(name, vip, vport, proto_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void K8switchApi::update_k8switch_virtual_client_subnet_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_k8switch_virtual_client_subnet_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
 
-void K8switchApi::read_k8switch_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response k8switch_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = K8switchJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = K8switchJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = K8switchJsonObject::helpComplexElements();
     val["actions"] = K8switchJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_fwd_table_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_fwd_table_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = FwdTableJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = FwdTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = FwdTableJsonObject::helpComplexElements();
     val["actions"] = FwdTableJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_fwd_table_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_fwd_table_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = FwdTableJsonObject::helpKeys();
-    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = FwdTableJsonObject::helpKeys();
     val["optional-params"] = FwdTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = FwdTableJsonObject::helpKeys();
-    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = FwdTableJsonObject::helpKeys();
-    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_fwd_table_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = K8switchJsonObject::helpKeys();
     val["elements"] = read_k8switch_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = K8switchJsonObject::helpKeys();
     val["optional-params"] = K8switchJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = K8switchJsonObject::helpKeys();
     val["elements"] = read_k8switch_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = K8switchJsonObject::helpKeys();
     val["elements"] = read_k8switch_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_ports_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = PortsJsonObject::helpComplexElements();
     val["actions"] = PortsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_ports_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_k8switch_ports_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = PortsJsonObject::helpKeys();
     val["optional-params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_k8switch_ports_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_k8switch_ports_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_ports_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_service_backend_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_service_backend_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
-  auto ip = request.param(":ip").as<std::string>();
-  auto port = request.param(":port").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_port;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "port")) {
+      unique_port = keys[i].value.uint16;
+      break;
+    }
+  }
+
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ServiceBackendJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ServiceBackendJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ServiceBackendJsonObject::helpComplexElements();
     val["actions"] = ServiceBackendJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_service_backend_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_service_backend_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(name, vip, vport, proto_);
+    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
   break;
-
   case HelpType::ADD:
     val["params"] = ServiceBackendJsonObject::helpKeys();
     val["optional-params"] = ServiceBackendJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(name, vip, vport, proto_);
+    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(name, vip, vport, proto_);
+    val["elements"] = read_k8switch_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_service_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_service_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto vip = request.param(":vip").as<std::string>();
-  auto vport = request.param(":vport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-  auto proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(proto);
+  std::string unique_name { name };
+  std::string unique_vip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vip")) {
+      unique_vip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
+  uint16_t unique_vport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "vport")) {
+      unique_vport = keys[i].value.uint16;
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
+
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ServiceJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ServiceJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ServiceJsonObject::helpComplexElements();
     val["actions"] = ServiceJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void K8switchApi::read_k8switch_service_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response k8switch_service_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_service_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = ServiceJsonObject::helpKeys();
     val["optional-params"] = ServiceJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_service_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_k8switch_service_list_by_id_get_list(name);
+    val["elements"] = read_k8switch_service_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

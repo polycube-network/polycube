@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "K8switchApi.h"
-
 
 #include <memory>
 #include <map>
@@ -42,11 +40,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class K8switchApiImpl : public io::swagger::server::api::K8switchApi {
-public:
-  K8switchApiImpl();
-  ~K8switchApiImpl() { };
-
+namespace K8switchApiImpl {
   void create_k8switch_by_id(const std::string &name, const K8switchJsonObject &value);
   void create_k8switch_fwd_table_by_id(const std::string &name, const std::string &address, const FwdTableJsonObject &value);
   void create_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value);
@@ -125,13 +119,7 @@ public:
   void update_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value);
   void update_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value);
   void update_k8switch_virtual_client_subnet_by_id(const std::string &name, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<K8switch>> cubes;
-  std::shared_ptr<K8switch> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

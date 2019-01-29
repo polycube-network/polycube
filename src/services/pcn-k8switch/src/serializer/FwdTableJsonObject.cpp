@@ -22,36 +22,26 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FwdTableJsonObject::FwdTableJsonObject() {
+FwdTableJsonObject::FwdTableJsonObject() : 
+  m_addressIsSet(false),
+  m_macIsSet(false),
+  m_portIsSet(false) { }
 
-  m_addressIsSet = false;
-
-  m_macIsSet = false;
-
-  m_portIsSet = false;
-}
-
-FwdTableJsonObject::~FwdTableJsonObject() {}
-
-void FwdTableJsonObject::validateKeys() {
-
-  if (!m_addressIsSet) {
-    throw std::runtime_error("Variable address is required");
+FwdTableJsonObject::FwdTableJsonObject(nlohmann::json &val) : 
+  m_addressIsSet(false),
+  m_macIsSet(false),
+  m_portIsSet(false) { 
+  if (val.count("address")) {
+    setAddress(val.at("address").get<std::string>());
   }
-}
 
-void FwdTableJsonObject::validateMandatoryFields() {
-
-  if (!m_macIsSet) {
-    throw std::runtime_error("Variable mac is required");
+  if (val.count("mac")) {
+    setMac(val.at("mac").get<std::string>());
   }
-  if (!m_portIsSet) {
-    throw std::runtime_error("Variable port is required");
+
+  if (val.count("port")) {
+    setPort(val.at("port").get<std::string>());
   }
-}
-
-void FwdTableJsonObject::validateParams() {
-
 }
 
 nlohmann::json FwdTableJsonObject::toJson() const {
@@ -61,33 +51,16 @@ nlohmann::json FwdTableJsonObject::toJson() const {
     val["address"] = m_address;
   }
 
-  val["mac"] = m_mac;
-  val["port"] = m_port;
+  if (m_macIsSet) {
+    val["mac"] = m_mac;
+  }
+
+  if (m_portIsSet) {
+    val["port"] = m_port;
+  }
+
 
   return val;
-}
-
-void FwdTableJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("address") != val.end()) {
-    setAddress(val.at("address"));
-  }
-
-  if (val.find("mac") != val.end()) {
-    setMac(val.at("mac"));
-  }
-
-  if (val.find("port") != val.end()) {
-    setPort(val.at("port"));
-  }
 }
 
 nlohmann::json FwdTableJsonObject::helpKeys() {
@@ -159,9 +132,7 @@ bool FwdTableJsonObject::addressIsSet() const {
   return m_addressIsSet;
 }
 
-void FwdTableJsonObject::unsetAddress() {
-  m_addressIsSet = false;
-}
+
 
 
 
@@ -178,9 +149,7 @@ bool FwdTableJsonObject::macIsSet() const {
   return m_macIsSet;
 }
 
-void FwdTableJsonObject::unsetMac() {
-  m_macIsSet = false;
-}
+
 
 
 
@@ -197,9 +166,7 @@ bool FwdTableJsonObject::portIsSet() const {
   return m_portIsSet;
 }
 
-void FwdTableJsonObject::unsetPort() {
-  m_portIsSet = false;
-}
+
 
 
 
