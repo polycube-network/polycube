@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-K8sfilterApiImpl::K8sfilterApiImpl() {}
+namespace K8sfilterApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<K8sfilter>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<K8sfilter> K8sfilterApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<K8sfilter> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<K8sfilter> K8sfilterApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void K8sfilterApiImpl::create_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<K8sfilter>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void K8sfilterApiImpl::create_k8sfilter_by_id(const std::string &name, const K8s
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void K8sfilterApiImpl::replace_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &bridge){
+void replace_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void K8sfilterApiImpl::delete_k8sfilter_by_id(const std::string &name) {
+void delete_k8sfilter_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void K8sfilterApiImpl::delete_k8sfilter_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string K8sfilterApiImpl::read_k8sfilter_uuid_by_id(const std::string &name) {
+std::string read_k8sfilter_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<K8sfilterJsonObject> K8sfilterApiImpl::read_k8sfilter_list_by_id() {
+std::vector<K8sfilterJsonObject> read_k8sfilter_list_by_id() {
   std::vector<K8sfilterJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<K8sfilterJsonObject> K8sfilterApiImpl::read_k8sfilter_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::read_k8sfilter_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::read
 /*
 * Ports list related functions
 */
-void K8sfilterApiImpl::create_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> K8sfilterApiImpl::read_k8sfilter_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_k8sfilter_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> K8sfilterApiImpl::read_k8sfilter_ports_list_by_id(c
   return vect;
 }
 
-void K8sfilterApiImpl::replace_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void K8sfilterApiImpl::delete_k8sfilter_ports_list_by_id(const std::string &name) {
+void delete_k8sfilter_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::read_k8sfilter_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::read
 /*
 * Ports related functions
 */
-void K8sfilterApiImpl::create_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject K8sfilterApiImpl::read_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void K8sfilterApiImpl::replace_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void K8sfilterApiImpl::delete_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string K8sfilterApiImpl::read_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum K8sfilterApiImpl::read_k8sfilter_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_k8sfilter_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string K8sfilterApiImpl::read_k8sfilter_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_k8sfilter_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void K8sfilterApiImpl::update_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -191,7 +195,7 @@ void K8sfilterApiImpl::update_k8sfilter_ports_peer_by_id(const std::string &name
 * K8sfilterJsonObject
 */
 K8sfilterJsonObject
-K8sfilterApiImpl::read_k8sfilter_by_id(const std::string &name) {
+read_k8sfilter_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -210,7 +214,7 @@ K8sfilterApiImpl::read_k8sfilter_by_id(const std::string &name) {
 * K8sfilterLoglevelEnum
 */
 K8sfilterLoglevelEnum
-K8sfilterApiImpl::read_k8sfilter_loglevel_by_id(const std::string &name) {
+read_k8sfilter_loglevel_by_id(const std::string &name) {
   auto k8sfilter = get_cube(name);
   return k8sfilter->getLoglevel();
 
@@ -230,7 +234,7 @@ K8sfilterApiImpl::read_k8sfilter_loglevel_by_id(const std::string &name) {
 * std::string
 */
 std::string
-K8sfilterApiImpl::read_k8sfilter_nodeport_range_by_id(const std::string &name) {
+read_k8sfilter_nodeport_range_by_id(const std::string &name) {
   auto k8sfilter = get_cube(name);
   return k8sfilter->getNodeportRange();
 
@@ -251,7 +255,7 @@ K8sfilterApiImpl::read_k8sfilter_nodeport_range_by_id(const std::string &name) {
 * PortsTypeEnum
 */
 PortsTypeEnum
-K8sfilterApiImpl::read_k8sfilter_ports_type_by_id(const std::string &name, const std::string &portsName) {
+read_k8sfilter_ports_type_by_id(const std::string &name, const std::string &portsName) {
   auto k8sfilter = get_cube(name);
   auto ports = k8sfilter->getPorts(portsName);
   return ports->getType();
@@ -272,7 +276,7 @@ K8sfilterApiImpl::read_k8sfilter_ports_type_by_id(const std::string &name, const
 * CubeType
 */
 CubeType
-K8sfilterApiImpl::read_k8sfilter_type_by_id(const std::string &name) {
+read_k8sfilter_type_by_id(const std::string &name) {
   auto k8sfilter = get_cube(name);
   return k8sfilter->getType();
 
@@ -293,7 +297,7 @@ K8sfilterApiImpl::read_k8sfilter_type_by_id(const std::string &name) {
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value) {
+update_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value) {
   auto k8sfilter = get_cube(name);
 
   k8sfilter->update(value);
@@ -313,13 +317,13 @@ K8sfilterApiImpl::update_k8sfilter_by_id(const std::string &name, const K8sfilte
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_list_by_id(const std::vector<K8sfilterJsonObject> &value) {
+update_k8sfilter_list_by_id(const std::vector<K8sfilterJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::update_k8sfilter_list_by_id_get_list(const std::vector<K8sfilterJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8sfilter_list_by_id_get_list(const std::vector<K8sfilterJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -337,7 +341,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::upda
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_loglevel_by_id(const std::string &name, const K8sfilterLoglevelEnum &value) {
+update_k8sfilter_loglevel_by_id(const std::string &name, const K8sfilterLoglevelEnum &value) {
   auto k8sfilter = get_cube(name);
 
   k8sfilter->setLoglevel(value);
@@ -358,7 +362,7 @@ K8sfilterApiImpl::update_k8sfilter_loglevel_by_id(const std::string &name, const
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_nodeport_range_by_id(const std::string &name, const std::string &value) {
+update_k8sfilter_nodeport_range_by_id(const std::string &name, const std::string &value) {
   auto k8sfilter = get_cube(name);
 
   k8sfilter->setNodeportRange(value);
@@ -380,7 +384,7 @@ K8sfilterApiImpl::update_k8sfilter_nodeport_range_by_id(const std::string &name,
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto k8sfilter = get_cube(name);
   auto ports = k8sfilter->getPorts(portsName);
 
@@ -402,18 +406,19 @@ K8sfilterApiImpl::update_k8sfilter_ports_by_id(const std::string &name, const st
 *
 */
 void
-K8sfilterApiImpl::update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> K8sfilterApiImpl::update_k8sfilter_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8sfilter_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
 
 
+}
 }
 }
 }

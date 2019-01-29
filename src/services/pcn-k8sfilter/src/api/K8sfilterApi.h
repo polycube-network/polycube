@@ -22,321 +22,55 @@
 #define POLYCUBE_SERVICE_NAME "k8sfilter"
 
 
-#include <polycube/services/http_router.h>
-#include <polycube/services/management_interface.h>
-#include <vector>
+#include "polycube/services/response.h"
+#include "polycube/services/shared_lib_elements.h"
 
 #include "K8sfilterJsonObject.h"
 #include "PortsJsonObject.h"
 #include <vector>
 
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
 
-using namespace io::swagger::server::model;
-using namespace polycube::service;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class  K8sfilterApi : public ManagementInterface {
- public:
-  K8sfilterApi();
-  virtual ~K8sfilterApi() {};
+Response create_k8sfilter_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response delete_k8sfilter_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_nodeport_range_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_k8sfilter_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response replace_k8sfilter_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_nodeport_range_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_k8sfilter_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-  const std::string base = "/" + std::string(POLYCUBE_SERVICE_NAME) + "/";
-
- protected:
-  void setup_routes();
-  void control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) override;
-
-  void create_k8sfilter_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_k8sfilter_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_k8sfilter_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_k8sfilter_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_k8sfilter_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_k8sfilter_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_nodeport_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_k8sfilter_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_k8sfilter_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_k8sfilter_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_nodeport_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_k8sfilter_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-
-  void read_k8sfilter_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_k8sfilter_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
+Response k8sfilter_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response k8sfilter_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response k8sfilter_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response k8sfilter_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 
 
-  polycube::service::Rest::Router router;
 
-  /// <summary>
-  /// Create k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">k8sfilterbody object</param>
-  virtual void create_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Delete k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_k8sfilter_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_k8sfilter_ports_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual K8sfilterJsonObject read_k8sfilter_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: k8sfilter
-  /// </remarks>
-  virtual std::vector<K8sfilterJsonObject> read_k8sfilter_list_by_id() = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_list_by_id_get_list() = 0;
-  /// <summary>
-  /// Read loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual K8sfilterLoglevelEnum read_k8sfilter_loglevel_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read nodeport-range by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: nodeport-range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_k8sfilter_nodeport_range_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_k8sfilter_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_k8sfilter_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsTypeEnum read_k8sfilter_ports_type_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_k8sfilter_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual CubeType read_k8sfilter_type_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_k8sfilter_uuid_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Replace k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">k8sfilterbody object</param>
-  virtual void replace_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">k8sfilterbody object</param>
-  virtual void update_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value) = 0;
-  /// <summary>
-  /// Update k8sfilter by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: k8sfilter
-  /// </remarks>
-  /// <param name="value">k8sfilterbody object</param>
-  virtual void update_k8sfilter_list_by_id(const std::vector<K8sfilterJsonObject> &value) = 0;
-  /// <summary>
-  /// Update loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)</param>
-  virtual void update_k8sfilter_loglevel_by_id(const std::string &name, const K8sfilterLoglevelEnum &value) = 0;
-  /// <summary>
-  /// Update nodeport-range by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: nodeport-range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Port range used for NodePort services</param>
-  virtual void update_k8sfilter_nodeport_range_by_id(const std::string &name, const std::string &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-};
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

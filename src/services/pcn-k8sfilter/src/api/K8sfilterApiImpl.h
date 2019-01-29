@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "K8sfilterApi.h"
-
 
 #include <memory>
 #include <map>
@@ -39,11 +37,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class K8sfilterApiImpl : public io::swagger::server::api::K8sfilterApi {
-public:
-  K8sfilterApiImpl();
-  ~K8sfilterApiImpl() { };
-
+namespace K8sfilterApiImpl {
   void create_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value);
   void create_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void create_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
@@ -74,13 +68,7 @@ public:
   void update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_k8sfilter_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<K8sfilter>> cubes;
-  std::shared_ptr<K8sfilter> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

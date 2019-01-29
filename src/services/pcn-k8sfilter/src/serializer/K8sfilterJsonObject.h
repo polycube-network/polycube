@@ -44,17 +44,13 @@ enum class K8sfilterLoglevelEnum {
 class  K8sfilterJsonObject : public JsonObjectBase {
 public:
   K8sfilterJsonObject();
-  virtual ~K8sfilterJsonObject();
+  K8sfilterJsonObject(nlohmann::json& json);
+  ~K8sfilterJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -117,7 +113,7 @@ public:
   void unsetNodeportRange();
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_uuid;
@@ -130,8 +126,6 @@ protected:
   bool m_portsIsSet;
   std::string m_nodeportRange;
   bool m_nodeportRangeIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ports", "nodeport-range" };
 };
 
 }
