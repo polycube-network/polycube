@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-HelloworldApiImpl::HelloworldApiImpl() {}
+namespace HelloworldApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Helloworld>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Helloworld> HelloworldApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Helloworld> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Helloworld> HelloworldApiImpl::get_cube(const std::string &name)
   return iter->second;
 }
 
-void HelloworldApiImpl::create_helloworld_by_id(const std::string &name, const HelloworldJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_helloworld_by_id(const std::string &name, const HelloworldJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Helloworld>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void HelloworldApiImpl::create_helloworld_by_id(const std::string &name, const H
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void HelloworldApiImpl::replace_helloworld_by_id(const std::string &name, const HelloworldJsonObject &bridge){
+void replace_helloworld_by_id(const std::string &name, const HelloworldJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void HelloworldApiImpl::delete_helloworld_by_id(const std::string &name) {
+void delete_helloworld_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void HelloworldApiImpl::delete_helloworld_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string HelloworldApiImpl::read_helloworld_uuid_by_id(const std::string &name) {
+std::string read_helloworld_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<HelloworldJsonObject> HelloworldApiImpl::read_helloworld_list_by_id() {
+std::vector<HelloworldJsonObject> read_helloworld_list_by_id() {
   std::vector<HelloworldJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<HelloworldJsonObject> HelloworldApiImpl::read_helloworld_list_by_id(
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::read_helloworld_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::rea
 /*
 * Ports list related functions
 */
-void HelloworldApiImpl::create_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> HelloworldApiImpl::read_helloworld_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_helloworld_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> HelloworldApiImpl::read_helloworld_ports_list_by_id
   return vect;
 }
 
-void HelloworldApiImpl::replace_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void HelloworldApiImpl::delete_helloworld_ports_list_by_id(const std::string &name) {
+void delete_helloworld_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::read_helloworld_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::rea
 /*
 * Ports related functions
 */
-void HelloworldApiImpl::create_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject HelloworldApiImpl::read_helloworld_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_helloworld_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void HelloworldApiImpl::replace_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void HelloworldApiImpl::delete_helloworld_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_helloworld_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string HelloworldApiImpl::read_helloworld_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_helloworld_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum HelloworldApiImpl::read_helloworld_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_helloworld_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string HelloworldApiImpl::read_helloworld_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_helloworld_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void HelloworldApiImpl::update_helloworld_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_helloworld_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -191,7 +195,7 @@ void HelloworldApiImpl::update_helloworld_ports_peer_by_id(const std::string &na
 * HelloworldActionEnum
 */
 HelloworldActionEnum
-HelloworldApiImpl::read_helloworld_action_by_id(const std::string &name) {
+read_helloworld_action_by_id(const std::string &name) {
   auto helloworld = get_cube(name);
   return helloworld->getAction();
 
@@ -211,7 +215,7 @@ HelloworldApiImpl::read_helloworld_action_by_id(const std::string &name) {
 * HelloworldJsonObject
 */
 HelloworldJsonObject
-HelloworldApiImpl::read_helloworld_by_id(const std::string &name) {
+read_helloworld_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -230,7 +234,7 @@ HelloworldApiImpl::read_helloworld_by_id(const std::string &name) {
 * HelloworldLoglevelEnum
 */
 HelloworldLoglevelEnum
-HelloworldApiImpl::read_helloworld_loglevel_by_id(const std::string &name) {
+read_helloworld_loglevel_by_id(const std::string &name) {
   auto helloworld = get_cube(name);
   return helloworld->getLoglevel();
 
@@ -250,7 +254,7 @@ HelloworldApiImpl::read_helloworld_loglevel_by_id(const std::string &name) {
 * CubeType
 */
 CubeType
-HelloworldApiImpl::read_helloworld_type_by_id(const std::string &name) {
+read_helloworld_type_by_id(const std::string &name) {
   auto helloworld = get_cube(name);
   return helloworld->getType();
 
@@ -271,7 +275,7 @@ HelloworldApiImpl::read_helloworld_type_by_id(const std::string &name) {
 *
 */
 void
-HelloworldApiImpl::update_helloworld_action_by_id(const std::string &name, const HelloworldActionEnum &value) {
+update_helloworld_action_by_id(const std::string &name, const HelloworldActionEnum &value) {
   auto helloworld = get_cube(name);
 
   helloworld->setAction(value);
@@ -292,7 +296,7 @@ HelloworldApiImpl::update_helloworld_action_by_id(const std::string &name, const
 *
 */
 void
-HelloworldApiImpl::update_helloworld_by_id(const std::string &name, const HelloworldJsonObject &value) {
+update_helloworld_by_id(const std::string &name, const HelloworldJsonObject &value) {
   auto helloworld = get_cube(name);
 
   helloworld->update(value);
@@ -312,13 +316,13 @@ HelloworldApiImpl::update_helloworld_by_id(const std::string &name, const Hellow
 *
 */
 void
-HelloworldApiImpl::update_helloworld_list_by_id(const std::vector<HelloworldJsonObject> &value) {
+update_helloworld_list_by_id(const std::vector<HelloworldJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::update_helloworld_list_by_id_get_list(const std::vector<HelloworldJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_helloworld_list_by_id_get_list(const std::vector<HelloworldJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -336,7 +340,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::upd
 *
 */
 void
-HelloworldApiImpl::update_helloworld_loglevel_by_id(const std::string &name, const HelloworldLoglevelEnum &value) {
+update_helloworld_loglevel_by_id(const std::string &name, const HelloworldLoglevelEnum &value) {
   auto helloworld = get_cube(name);
 
   helloworld->setLoglevel(value);
@@ -358,7 +362,7 @@ HelloworldApiImpl::update_helloworld_loglevel_by_id(const std::string &name, con
 *
 */
 void
-HelloworldApiImpl::update_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto helloworld = get_cube(name);
   auto ports = helloworld->getPorts(portsName);
 
@@ -380,18 +384,19 @@ HelloworldApiImpl::update_helloworld_ports_by_id(const std::string &name, const 
 *
 */
 void
-HelloworldApiImpl::update_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> HelloworldApiImpl::update_helloworld_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_helloworld_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
 
 
+}
 }
 }
 }
