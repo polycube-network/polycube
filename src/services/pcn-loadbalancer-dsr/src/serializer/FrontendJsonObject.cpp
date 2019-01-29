@@ -22,36 +22,19 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FrontendJsonObject::FrontendJsonObject() {
+FrontendJsonObject::FrontendJsonObject() : 
+  m_vipIsSet(false),
+  m_macIsSet(false) { }
 
-  m_vipIsSet = false;
-
-  m_macIsSet = false;
-}
-
-FrontendJsonObject::~FrontendJsonObject() {}
-
-void FrontendJsonObject::validateKeys() {
-
-}
-
-void FrontendJsonObject::validateMandatoryFields() {
-
-}
-
-void FrontendJsonObject::validateParams() {
-
-  if (m_vipIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(%[\p{N}\p{L}]+)?)PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_vip, e))
-      throw std::runtime_error("Variable vip has not a valid format");
+FrontendJsonObject::FrontendJsonObject(nlohmann::json &val) : 
+  m_vipIsSet(false),
+  m_macIsSet(false) { 
+  if (val.count("vip")) {
+    setVip(val.at("vip").get<std::string>());
   }
-  if (m_macIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_mac, e))
-      throw std::runtime_error("Variable mac has not a valid format");
+
+  if (val.count("mac")) {
+    setMac(val.at("mac").get<std::string>());
   }
 }
 
@@ -68,25 +51,6 @@ nlohmann::json FrontendJsonObject::toJson() const {
 
 
   return val;
-}
-
-void FrontendJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("vip") != val.end()) {
-    setVip(val.at("vip"));
-  }
-
-  if (val.find("mac") != val.end()) {
-    setMac(val.at("mac"));
-  }
 }
 
 nlohmann::json FrontendJsonObject::helpKeys() {

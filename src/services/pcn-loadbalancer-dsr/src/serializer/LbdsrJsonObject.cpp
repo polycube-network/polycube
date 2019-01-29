@@ -22,47 +22,71 @@ namespace swagger {
 namespace server {
 namespace model {
 
-LbdsrJsonObject::LbdsrJsonObject() {
+LbdsrJsonObject::LbdsrJsonObject() : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_type(CubeType::TC),
+  m_typeIsSet(true),
+  m_loglevel(LbdsrLoglevelEnum::INFO),
+  m_loglevelIsSet(true),
+  m_portsIsSet(false),
+  m_algorithmIsSet(false),
+  m_frontendIsSet(false),
+  m_backendIsSet(false) { }
 
-  m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_type = CubeType::TC;
-  m_typeIsSet = false;
-
-  m_loglevel = LbdsrLoglevelEnum::INFO;
-  m_loglevelIsSet = false;
-
-  m_portsIsSet = false;
-
-  m_algorithmIsSet = false;
-
-  m_frontendIsSet = false;
-
-  m_backendIsSet = false;
-}
-
-LbdsrJsonObject::~LbdsrJsonObject() {}
-
-void LbdsrJsonObject::validateKeys() {
-
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+LbdsrJsonObject::LbdsrJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_typeIsSet(false),
+  m_loglevelIsSet(false),
+  m_portsIsSet(false),
+  m_algorithmIsSet(false),
+  m_frontendIsSet(false),
+  m_backendIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void LbdsrJsonObject::validateMandatoryFields() {
+  if (val.count("uuid")) {
+    setUuid(val.at("uuid").get<std::string>());
+  }
 
-}
+  if (val.count("type")) {
+    setType(string_to_CubeType(val.at("type").get<std::string>()));
+  }
 
-void LbdsrJsonObject::validateParams() {
+  if (val.count("loglevel")) {
+    setLoglevel(string_to_LbdsrLoglevelEnum(val.at("loglevel").get<std::string>()));
+  }
 
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  m_ports.clear();
+  for (auto& item : val["ports"]) { 
+    PortsJsonObject newItem { item };
+    m_ports.push_back(newItem);
+  }
+  m_portsIsSet = !m_ports.empty();
+  
+
+  if (val.count("algorithm")) {
+    setAlgorithm(val.at("algorithm").get<std::string>());
+  }
+
+  if (val.count("frontend")) {
+  
+  
+    if (!val["frontend"].is_null()) {
+      FrontendJsonObject newItem { val["frontend"] };
+      setFrontend(newItem);
+    }
+  }
+
+  if (val.count("backend")) {
+  
+  
+    if (!val["backend"].is_null()) {
+      BackendJsonObject newItem { val["backend"] };
+      setBackend(newItem);
+    }
   }
 }
 
@@ -90,7 +114,6 @@ nlohmann::json LbdsrJsonObject::toJson() const {
     for (auto& item : m_ports) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["ports"] = jsonArray;
     }
@@ -107,67 +130,6 @@ nlohmann::json LbdsrJsonObject::toJson() const {
   }
 
   return val;
-}
-
-void LbdsrJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_CubeType(val.at("type")));
-  }
-
-  if (val.find("loglevel") != val.end()) {
-    setLoglevel(string_to_LbdsrLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
-
-  if (val.find("algorithm") != val.end()) {
-    setAlgorithm(val.at("algorithm"));
-  }
-
-  if (val.find("frontend") != val.end()) {
-
-
-    if (!val["frontend"].is_null()) {
-      FrontendJsonObject newItem;
-      newItem.fromJson(val["frontend"]);
-      setFrontend(newItem);
-    }
-  }
-
-  if (val.find("backend") != val.end()) {
-
-
-    if (!val["backend"].is_null()) {
-      BackendJsonObject newItem;
-      newItem.fromJson(val["backend"]);
-      setBackend(newItem);
-    }
-  }
 }
 
 nlohmann::json LbdsrJsonObject::helpKeys() {
@@ -274,9 +236,7 @@ bool LbdsrJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void LbdsrJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
+
 
 
 
@@ -319,22 +279,22 @@ void LbdsrJsonObject::unsetType() {
 std::string LbdsrJsonObject::CubeType_to_string(const CubeType &value){
   switch(value){
     case CubeType::TC:
-      return std::string("TC");
+      return std::string("tc");
     case CubeType::XDP_SKB:
-      return std::string("XDP_SKB");
+      return std::string("xdp_skb");
     case CubeType::XDP_DRV:
-      return std::string("XDP_DRV");
+      return std::string("xdp_drv");
     default:
       throw std::runtime_error("Bad Lbdsr type");
   }
 }
 
 CubeType LbdsrJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("TC", str))
+  if (JsonObjectBase::iequals("tc", str))
     return CubeType::TC;
-  if (JsonObjectBase::iequals("XDP_SKB", str))
+  if (JsonObjectBase::iequals("xdp_skb", str))
     return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("XDP_DRV", str))
+  if (JsonObjectBase::iequals("xdp_drv", str))
     return CubeType::XDP_DRV;
   throw std::runtime_error("Lbdsr type is invalid");
 }

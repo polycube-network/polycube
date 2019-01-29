@@ -22,36 +22,19 @@ namespace swagger {
 namespace server {
 namespace model {
 
-BackendPoolJsonObject::BackendPoolJsonObject() {
+BackendPoolJsonObject::BackendPoolJsonObject() : 
+  m_idIsSet(false),
+  m_macIsSet(false) { }
 
-  m_idIsSet = false;
-
-  m_macIsSet = false;
-}
-
-BackendPoolJsonObject::~BackendPoolJsonObject() {}
-
-void BackendPoolJsonObject::validateKeys() {
-
-  if (!m_idIsSet) {
-    throw std::runtime_error("Variable id is required");
+BackendPoolJsonObject::BackendPoolJsonObject(nlohmann::json &val) : 
+  m_idIsSet(false),
+  m_macIsSet(false) { 
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
   }
-}
 
-void BackendPoolJsonObject::validateMandatoryFields() {
-
-  if (!m_macIsSet) {
-    throw std::runtime_error("Variable mac is required");
-  }
-}
-
-void BackendPoolJsonObject::validateParams() {
-
-  if (m_macIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_mac, e))
-      throw std::runtime_error("Variable mac has not a valid format");
+  if (val.count("mac")) {
+    setMac(val.at("mac").get<std::string>());
   }
 }
 
@@ -62,28 +45,12 @@ nlohmann::json BackendPoolJsonObject::toJson() const {
     val["id"] = m_id;
   }
 
-  val["mac"] = m_mac;
+  if (m_macIsSet) {
+    val["mac"] = m_mac;
+  }
+
 
   return val;
-}
-
-void BackendPoolJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("id") != val.end()) {
-    setId(val.at("id"));
-  }
-
-  if (val.find("mac") != val.end()) {
-    setMac(val.at("mac"));
-  }
 }
 
 nlohmann::json BackendPoolJsonObject::helpKeys() {
@@ -142,9 +109,7 @@ bool BackendPoolJsonObject::idIsSet() const {
   return m_idIsSet;
 }
 
-void BackendPoolJsonObject::unsetId() {
-  m_idIsSet = false;
-}
+
 
 
 
@@ -161,9 +126,7 @@ bool BackendPoolJsonObject::macIsSet() const {
   return m_macIsSet;
 }
 
-void BackendPoolJsonObject::unsetMac() {
-  m_macIsSet = false;
-}
+
 
 
 

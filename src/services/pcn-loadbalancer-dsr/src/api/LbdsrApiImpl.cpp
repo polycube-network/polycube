@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-LbdsrApiImpl::LbdsrApiImpl() {}
+namespace LbdsrApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Lbdsr>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Lbdsr> LbdsrApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Lbdsr> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Lbdsr> LbdsrApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void LbdsrApiImpl::create_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Lbdsr>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void LbdsrApiImpl::create_lbdsr_by_id(const std::string &name, const LbdsrJsonOb
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void LbdsrApiImpl::replace_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &bridge){
+void replace_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void LbdsrApiImpl::delete_lbdsr_by_id(const std::string &name) {
+void delete_lbdsr_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void LbdsrApiImpl::delete_lbdsr_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string LbdsrApiImpl::read_lbdsr_uuid_by_id(const std::string &name) {
+std::string read_lbdsr_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<LbdsrJsonObject> LbdsrApiImpl::read_lbdsr_list_by_id() {
+std::vector<LbdsrJsonObject> read_lbdsr_list_by_id() {
   std::vector<LbdsrJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<LbdsrJsonObject> LbdsrApiImpl::read_lbdsr_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbdsr_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbd
 /*
 * Ports list related functions
 */
-void LbdsrApiImpl::create_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> LbdsrApiImpl::read_lbdsr_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_lbdsr_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> LbdsrApiImpl::read_lbdsr_ports_list_by_id(const std
   return vect;
 }
 
-void LbdsrApiImpl::replace_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void LbdsrApiImpl::delete_lbdsr_ports_list_by_id(const std::string &name) {
+void delete_lbdsr_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbdsr_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbd
 /*
 * Ports related functions
 */
-void LbdsrApiImpl::create_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject LbdsrApiImpl::read_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void LbdsrApiImpl::replace_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void LbdsrApiImpl::delete_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string LbdsrApiImpl::read_lbdsr_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_lbdsr_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum LbdsrApiImpl::read_lbdsr_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_lbdsr_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string LbdsrApiImpl::read_lbdsr_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_lbdsr_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void LbdsrApiImpl::update_lbdsr_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_lbdsr_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -192,7 +196,7 @@ void LbdsrApiImpl::update_lbdsr_ports_peer_by_id(const std::string &name, const 
 *
 */
 void
-LbdsrApiImpl::create_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
+create_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->addBackend(value);
@@ -214,7 +218,7 @@ LbdsrApiImpl::create_lbdsr_backend_by_id(const std::string &name, const BackendJ
 *
 */
 void
-LbdsrApiImpl::create_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
+create_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
 
@@ -236,7 +240,7 @@ LbdsrApiImpl::create_lbdsr_backend_pool_by_id(const std::string &name, const uin
 *
 */
 void
-LbdsrApiImpl::create_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+create_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   backend->addPoolList(value);
@@ -244,7 +248,7 @@ LbdsrApiImpl::create_lbdsr_backend_pool_list_by_id(const std::string &name, cons
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::create_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbdsr = get_cube(name);
   auto &&backend = lbdsr->getBackend();
@@ -270,7 +274,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::create_l
 *
 */
 void
-LbdsrApiImpl::create_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
+create_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->addFrontend(value);
@@ -290,7 +294,7 @@ LbdsrApiImpl::create_lbdsr_frontend_by_id(const std::string &name, const Fronten
 *
 */
 void
-LbdsrApiImpl::delete_lbdsr_backend_by_id(const std::string &name) {
+delete_lbdsr_backend_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
 
   lbdsr->delBackend();
@@ -311,7 +315,7 @@ LbdsrApiImpl::delete_lbdsr_backend_by_id(const std::string &name) {
 *
 */
 void
-LbdsrApiImpl::delete_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
+delete_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
 
@@ -332,7 +336,7 @@ LbdsrApiImpl::delete_lbdsr_backend_pool_by_id(const std::string &name, const uin
 *
 */
 void
-LbdsrApiImpl::delete_lbdsr_backend_pool_list_by_id(const std::string &name) {
+delete_lbdsr_backend_pool_list_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   backend->delPoolList();
@@ -340,7 +344,7 @@ LbdsrApiImpl::delete_lbdsr_backend_pool_list_by_id(const std::string &name) {
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::delete_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbdsr = get_cube(name);
   auto &&backend = lbdsr->getBackend();
@@ -365,7 +369,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::delete_l
 *
 */
 void
-LbdsrApiImpl::delete_lbdsr_frontend_by_id(const std::string &name) {
+delete_lbdsr_frontend_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
 
   lbdsr->delFrontend();
@@ -385,7 +389,7 @@ LbdsrApiImpl::delete_lbdsr_frontend_by_id(const std::string &name) {
 * std::string
 */
 std::string
-LbdsrApiImpl::read_lbdsr_algorithm_by_id(const std::string &name) {
+read_lbdsr_algorithm_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   return lbdsr->getAlgorithm();
 
@@ -405,7 +409,7 @@ LbdsrApiImpl::read_lbdsr_algorithm_by_id(const std::string &name) {
 * BackendJsonObject
 */
 BackendJsonObject
-LbdsrApiImpl::read_lbdsr_backend_by_id(const std::string &name) {
+read_lbdsr_backend_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   return lbdsr->getBackend()->toJsonObject();
 
@@ -426,7 +430,7 @@ LbdsrApiImpl::read_lbdsr_backend_by_id(const std::string &name) {
 * BackendPoolJsonObject
 */
 BackendPoolJsonObject
-LbdsrApiImpl::read_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
+read_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   return backend->getPool(id)->toJsonObject();
@@ -447,7 +451,7 @@ LbdsrApiImpl::read_lbdsr_backend_pool_by_id(const std::string &name, const uint3
 * std::vector<BackendPoolJsonObject>
 */
 std::vector<BackendPoolJsonObject>
-LbdsrApiImpl::read_lbdsr_backend_pool_list_by_id(const std::string &name) {
+read_lbdsr_backend_pool_list_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   auto &&pool = backend->getPoolList();
@@ -460,7 +464,7 @@ LbdsrApiImpl::read_lbdsr_backend_pool_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbdsr = get_cube(name);
   auto &&backend = lbdsr->getBackend();
@@ -487,7 +491,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::read_lbd
 * std::string
 */
 std::string
-LbdsrApiImpl::read_lbdsr_backend_pool_mac_by_id(const std::string &name, const uint32_t &id) {
+read_lbdsr_backend_pool_mac_by_id(const std::string &name, const uint32_t &id) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   auto pool = backend->getPool(id);
@@ -509,7 +513,7 @@ LbdsrApiImpl::read_lbdsr_backend_pool_mac_by_id(const std::string &name, const u
 * LbdsrJsonObject
 */
 LbdsrJsonObject
-LbdsrApiImpl::read_lbdsr_by_id(const std::string &name) {
+read_lbdsr_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -528,7 +532,7 @@ LbdsrApiImpl::read_lbdsr_by_id(const std::string &name) {
 * FrontendJsonObject
 */
 FrontendJsonObject
-LbdsrApiImpl::read_lbdsr_frontend_by_id(const std::string &name) {
+read_lbdsr_frontend_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   return lbdsr->getFrontend()->toJsonObject();
 
@@ -548,7 +552,7 @@ LbdsrApiImpl::read_lbdsr_frontend_by_id(const std::string &name) {
 * std::string
 */
 std::string
-LbdsrApiImpl::read_lbdsr_frontend_mac_by_id(const std::string &name) {
+read_lbdsr_frontend_mac_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   auto frontend = lbdsr->getFrontend();
   return frontend->getMac();
@@ -569,7 +573,7 @@ LbdsrApiImpl::read_lbdsr_frontend_mac_by_id(const std::string &name) {
 * std::string
 */
 std::string
-LbdsrApiImpl::read_lbdsr_frontend_vip_by_id(const std::string &name) {
+read_lbdsr_frontend_vip_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   auto frontend = lbdsr->getFrontend();
   return frontend->getVip();
@@ -590,7 +594,7 @@ LbdsrApiImpl::read_lbdsr_frontend_vip_by_id(const std::string &name) {
 * LbdsrLoglevelEnum
 */
 LbdsrLoglevelEnum
-LbdsrApiImpl::read_lbdsr_loglevel_by_id(const std::string &name) {
+read_lbdsr_loglevel_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   return lbdsr->getLoglevel();
 
@@ -611,7 +615,7 @@ LbdsrApiImpl::read_lbdsr_loglevel_by_id(const std::string &name) {
 * PortsTypeEnum
 */
 PortsTypeEnum
-LbdsrApiImpl::read_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName) {
+read_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName) {
   auto lbdsr = get_cube(name);
   auto ports = lbdsr->getPorts(portsName);
   return ports->getType();
@@ -632,7 +636,7 @@ LbdsrApiImpl::read_lbdsr_ports_type_by_id(const std::string &name, const std::st
 * CubeType
 */
 CubeType
-LbdsrApiImpl::read_lbdsr_type_by_id(const std::string &name) {
+read_lbdsr_type_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   return lbdsr->getType();
 
@@ -653,7 +657,7 @@ LbdsrApiImpl::read_lbdsr_type_by_id(const std::string &name) {
 *
 */
 void
-LbdsrApiImpl::replace_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
+replace_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->replaceBackend(value);
@@ -675,7 +679,7 @@ LbdsrApiImpl::replace_lbdsr_backend_by_id(const std::string &name, const Backend
 *
 */
 void
-LbdsrApiImpl::replace_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
+replace_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
 
@@ -697,13 +701,13 @@ LbdsrApiImpl::replace_lbdsr_backend_pool_by_id(const std::string &name, const ui
 *
 */
 void
-LbdsrApiImpl::replace_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+replace_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::replace_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -721,7 +725,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::replace_
 *
 */
 void
-LbdsrApiImpl::replace_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
+replace_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->replaceFrontend(value);
@@ -742,7 +746,7 @@ LbdsrApiImpl::replace_lbdsr_frontend_by_id(const std::string &name, const Fronte
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_algorithm_by_id(const std::string &name, const std::string &value) {
+update_lbdsr_algorithm_by_id(const std::string &name, const std::string &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->setAlgorithm(value);
@@ -763,7 +767,7 @@ LbdsrApiImpl::update_lbdsr_algorithm_by_id(const std::string &name, const std::s
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
+update_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
 
@@ -786,7 +790,7 @@ LbdsrApiImpl::update_lbdsr_backend_by_id(const std::string &name, const BackendJ
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
+update_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto backend = lbdsr->getBackend();
   auto pool = backend->getPool(id);
@@ -809,13 +813,13 @@ LbdsrApiImpl::update_lbdsr_backend_pool_by_id(const std::string &name, const uin
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+update_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -833,7 +837,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_l
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &value) {
+update_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->update(value);
@@ -854,7 +858,7 @@ LbdsrApiImpl::update_lbdsr_by_id(const std::string &name, const LbdsrJsonObject 
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
+update_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto frontend = lbdsr->getFrontend();
 
@@ -876,7 +880,7 @@ LbdsrApiImpl::update_lbdsr_frontend_by_id(const std::string &name, const Fronten
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_frontend_mac_by_id(const std::string &name, const std::string &value) {
+update_lbdsr_frontend_mac_by_id(const std::string &name, const std::string &value) {
   auto lbdsr = get_cube(name);
   auto frontend = lbdsr->getFrontend();
 
@@ -898,7 +902,7 @@ LbdsrApiImpl::update_lbdsr_frontend_mac_by_id(const std::string &name, const std
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_frontend_vip_by_id(const std::string &name, const std::string &value) {
+update_lbdsr_frontend_vip_by_id(const std::string &name, const std::string &value) {
   auto lbdsr = get_cube(name);
   auto frontend = lbdsr->getFrontend();
 
@@ -919,13 +923,13 @@ LbdsrApiImpl::update_lbdsr_frontend_vip_by_id(const std::string &name, const std
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_list_by_id(const std::vector<LbdsrJsonObject> &value) {
+update_lbdsr_list_by_id(const std::vector<LbdsrJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_lbdsr_list_by_id_get_list(const std::vector<LbdsrJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_list_by_id_get_list(const std::vector<LbdsrJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -943,7 +947,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_l
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_loglevel_by_id(const std::string &name, const LbdsrLoglevelEnum &value) {
+update_lbdsr_loglevel_by_id(const std::string &name, const LbdsrLoglevelEnum &value) {
   auto lbdsr = get_cube(name);
 
   lbdsr->setLoglevel(value);
@@ -965,7 +969,7 @@ LbdsrApiImpl::update_lbdsr_loglevel_by_id(const std::string &name, const LbdsrLo
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto lbdsr = get_cube(name);
   auto ports = lbdsr->getPorts(portsName);
 
@@ -987,13 +991,13 @@ LbdsrApiImpl::update_lbdsr_ports_by_id(const std::string &name, const std::strin
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_lbdsr_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1012,7 +1016,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbdsrApiImpl::update_l
 *
 */
 void
-LbdsrApiImpl::update_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
+update_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
   auto lbdsr = get_cube(name);
   auto ports = lbdsr->getPorts(portsName);
 
@@ -1022,6 +1026,7 @@ LbdsrApiImpl::update_lbdsr_ports_type_by_id(const std::string &name, const std::
 
 
 
+}
 }
 }
 }

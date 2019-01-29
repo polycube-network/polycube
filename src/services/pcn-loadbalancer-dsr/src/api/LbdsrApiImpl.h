@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "LbdsrApi.h"
-
 
 #include <memory>
 #include <map>
@@ -42,11 +40,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class LbdsrApiImpl : public io::swagger::server::api::LbdsrApi {
-public:
-  LbdsrApiImpl();
-  ~LbdsrApiImpl() { };
-
+namespace LbdsrApiImpl {
   void create_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value);
   void create_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value);
   void create_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value);
@@ -104,13 +98,7 @@ public:
   void update_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_lbdsr_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
   void update_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Lbdsr>> cubes;
-  std::shared_ptr<Lbdsr> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }
