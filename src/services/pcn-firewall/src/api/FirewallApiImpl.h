@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "FirewallApi.h"
-
 
 #include <memory>
 #include <map>
@@ -47,11 +45,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class FirewallApiImpl : public io::swagger::server::api::FirewallApi {
-public:
-  FirewallApiImpl();
-  ~FirewallApiImpl() { };
-
+namespace FirewallApiImpl {
   void create_firewall_by_id(const std::string &name, const FirewallJsonObject &value);
   ChainAppendOutputJsonObject create_firewall_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value);
   ChainApplyRulesOutputJsonObject create_firewall_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName);
@@ -144,13 +138,7 @@ public:
   void update_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_firewall_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Firewall>> cubes;
-  std::shared_ptr<Firewall> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

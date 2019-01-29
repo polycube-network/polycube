@@ -39,59 +39,59 @@ module firewall {
     leaf src {
       type string;
       description "Source IP Address.";
-      config false;
+      polycube-base:init-only-config;
       polycube-base:cli-example "10.0.0.1/24";
     }
 
     leaf dst {
       type string;
       description "Destination IP Address.";
-      config false;
+      polycube-base:init-only-config;
       polycube-base:cli-example "10.0.0.2/24";
     }
 
     leaf l4proto {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "Level 4 Protocol.";
     }
 
     leaf sport {
       type uint16;
-      config false;
+      polycube-base:init-only-config;
       description "Source L4 Port";
     }
 
     leaf dport {
       type uint16;
-      config false;
+      polycube-base:init-only-config;
       description "Destination L4 Port";
     }
 
     leaf tcpflags {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.";
       polycube-base:cli-example "!FIN,SYN,!RST,!ACK";
     }
 
     leaf conntrack {
       type conntrackstatus;
-      config false;
+      polycube-base:init-only-config;
       description "Connection status (NEW, ESTABLISHED, RELATED, INVALID)";
     }
 
 
     leaf action {
       type action;
-      config false;
+      polycube-base:init-only-config;
       description "Action if the rule matches. Default is DROP.";
       polycube-base:cli-example "DROP, FORWARD, LOG";
     }
 
     leaf description {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "Description of the rule.";
       polycube-base:cli-example "This rule blocks incoming SSH connections.";
     }
@@ -177,7 +177,7 @@ module firewall {
   }
 
   list chain {
-    key name;
+    key "name";
 
     leaf name {
       type enumeration {

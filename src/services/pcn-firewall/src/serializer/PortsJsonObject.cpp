@@ -22,27 +22,30 @@ namespace swagger {
 namespace server {
 namespace model {
 
-PortsJsonObject::PortsJsonObject() :
-  m_nameIsSet (false),
-  m_uuidIsSet (false),
-  m_statusIsSet (false),
-  m_peerIsSet (false) { }
+PortsJsonObject::PortsJsonObject() : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_statusIsSet(false),
+  m_peerIsSet(false) { }
 
-PortsJsonObject::PortsJsonObject(nlohmann::json& val) :
-  m_nameIsSet (false),
-  m_uuidIsSet (false),
-  m_statusIsSet (false),
-  m_peerIsSet (false) {
+PortsJsonObject::PortsJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_statusIsSet(false),
+  m_peerIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
+  }
 
-  if (val.count("uuid") != 0) {
+  if (val.count("uuid")) {
     setUuid(val.at("uuid").get<std::string>());
   }
 
-  if (val.count("status") != 0) {
+  if (val.count("status")) {
     setStatus(string_to_PortsStatusEnum(val.at("status").get<std::string>()));
   }
 
-  if (val.count("peer") != 0) {
+  if (val.count("peer")) {
     setPeer(val.at("peer").get<std::string>());
   }
 }
@@ -50,7 +53,10 @@ PortsJsonObject::PortsJsonObject(nlohmann::json& val) :
 nlohmann::json PortsJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
 
-  val["name"] = m_name;
+  if (m_nameIsSet) {
+    val["name"] = m_name;
+  }
+
   if (m_uuidIsSet) {
     val["uuid"] = m_uuid;
   }
@@ -221,5 +227,4 @@ void PortsJsonObject::unsetPeer() {
 }
 }
 }
-
 

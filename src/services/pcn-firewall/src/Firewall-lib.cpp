@@ -17,30 +17,27 @@
 #define SERVICE_DESCRIPTION "Firewall Service"
 #define SERVICE_VERSION "2.0"
 #define SERVICE_PYANG_GIT ""
-#define SERVICE_SWAGGER_CODEGEN_GIT "polycube/50b9d4f"
+#define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 #define SERVICE_REQUIRED_KERNEL_VERSION "4.14.0"
+
 const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
 module firewall {
   yang-version 1.1;
   namespace "http://polycube.network/firewall";
   prefix "firewall";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Firewall service";
 
-  basemodel:service-description "Firewall Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "firewall";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Firewall Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "firewall";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
-
-  extension cli-example {
-    argument "value";
-    description "A sample value used by the CLI generator";
-  }
+  uses "polycube-standard-base:standard-base-yang-module";
 
   typedef action {
     type enumeration {
@@ -65,61 +62,61 @@ module firewall {
     leaf src {
       type string;
       description "Source IP Address.";
-      config false;
-      firewall:cli-example "10.0.0.1/24";
+      polycube-base:init-only-config;
+      polycube-base:cli-example "10.0.0.1/24";
     }
 
     leaf dst {
       type string;
       description "Destination IP Address.";
-      config false;
-      firewall:cli-example "10.0.0.2/24";
+      polycube-base:init-only-config;
+      polycube-base:cli-example "10.0.0.2/24";
     }
 
     leaf l4proto {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "Level 4 Protocol.";
     }
 
     leaf sport {
       type uint16;
-      config false;
+      polycube-base:init-only-config;
       description "Source L4 Port";
     }
 
     leaf dport {
       type uint16;
-      config false;
+      polycube-base:init-only-config;
       description "Destination L4 Port";
     }
 
     leaf tcpflags {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.";
-      firewall:cli-example "!FIN,SYN,!RST,!ACK";
+      polycube-base:cli-example "!FIN,SYN,!RST,!ACK";
     }
 
     leaf conntrack {
       type conntrackstatus;
-      config false;
+      polycube-base:init-only-config;
       description "Connection status (NEW, ESTABLISHED, RELATED, INVALID)";
     }
 
 
     leaf action {
       type action;
-      config false;
+      polycube-base:init-only-config;
       description "Action if the rule matches. Default is DROP.";
-      firewall:cli-example "DROP, FORWARD, LOG";
+      polycube-base:cli-example "DROP, FORWARD, LOG";
     }
 
     leaf description {
       type string;
-      config false;
+      polycube-base:init-only-config;
       description "Description of the rule.";
-      firewall:cli-example "This rule blocks incoming SSH connections.";
+      polycube-base:cli-example "This rule blocks incoming SSH connections.";
     }
   }
 
@@ -203,7 +200,7 @@ module firewall {
   }
 
   list chain {
-    key name;
+    key "name";
 
     leaf name {
       type enumeration {
@@ -212,13 +209,13 @@ module firewall {
         enum INVALID;
       }
       description "Chain in which the rule will be inserted. Default: INGRESS.";
-      firewall:cli-example "INGRESS, EGRESS.";
+      polycube-base:cli-example "INGRESS, EGRESS.";
     }
 
     leaf default {
       type action;
       description "Default action if no rule matches in the ingress chain. Default is DROP.";
-      firewall:cli-example "DROP, FORWARD, LOG";
+      polycube-base:cli-example "DROP, FORWARD, LOG";
     }
 
     list stats {
@@ -288,5 +285,12 @@ module firewall {
   }
 }
 
+
 )POLYCUBE_DM";
+
+extern "C" const char *data_model() {
+  return SERVICE_DATA_MODEL.c_str();
+}
+
+
 #include <polycube/services/shared_library.h>
