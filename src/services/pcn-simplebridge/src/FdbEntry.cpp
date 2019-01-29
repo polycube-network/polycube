@@ -28,7 +28,7 @@ FdbEntry::FdbEntry(Fdb &parent, const FdbEntryJsonObject &conf): parent_(parent)
   logger()->info("Creating FdbEntry instance");
 }
 
-FdbEntry::FdbEntry(Fdb &parent, const std::string &address, uint64_t entry_age, uint32_t out_port) :
+FdbEntry::FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age, uint32_t out_port) :
 parent_(parent), address_(address), entry_age_(entry_age), port_no_(out_port)
 {
   auto port = parent.parent_.get_port(port_no_);
@@ -74,12 +74,10 @@ void FdbEntry::create(Fdb &parent, const std::string &address, const FdbEntryJso
 
   struct timespec now_timespec;
   clock_gettime(CLOCK_MONOTONIC, &now_timespec);
-  const uint64_t SEC2NANOSEC = 1000000000ULL;
-  uint64_t now = now_timespec.tv_sec*SEC2NANOSEC + now_timespec.tv_nsec;
 
   uint64_t key = utils::mac_string_to_be_uint(address);
   fwd_entry value {
-    .timestamp = now,
+    .timestamp = (uint32_t) now_timespec.tv_sec,
     .port = port_index,
   };
 
@@ -97,22 +95,21 @@ std::shared_ptr<FdbEntry> FdbEntry::constructFromMap(Fdb &parent, const std::str
                                                      const fwd_entry &value) {
   struct timespec now_timespec;
   clock_gettime(CLOCK_MONOTONIC, &now_timespec);
-  const uint64_t SEC2NANOSEC = 1000000000ULL;
-  uint64_t now = now_timespec.tv_sec*SEC2NANOSEC + now_timespec.tv_nsec;
+  uint32_t now = now_timespec.tv_sec;
 
   uint64_t key = utils::mac_string_to_be_uint(address);
-  uint64_t timestamp = value.timestamp;
+  uint32_t timestamp = value.timestamp;
 
   //Here I'm going to check if the entry in the filtering database is too old.\
   //In this case, I'll not show the entry
-  if ((now - timestamp) > parent.getAgingTime()*SEC2NANOSEC) {
+  if ((now - timestamp) > parent.getAgingTime()) {
     parent.logger()->debug("Ignoring old entry: now {0}, last_seen: {1}",
-      now/SEC2NANOSEC, timestamp/SEC2NANOSEC);
+      now, timestamp);
     auto fwdtable =  parent.parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
     fwdtable.remove(key);
     return nullptr;
   }
-  uint64_t entry_age = (now - timestamp)/SEC2NANOSEC;
+  uint32_t entry_age = now - timestamp;
   uint32_t port_no = value.port;
   return std::make_shared<FdbEntry>(parent, address, entry_age, port_no);
 }

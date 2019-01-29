@@ -27,7 +27,7 @@ class Fdb;
 
 /* definitions copied from datapath */
 struct fwd_entry {
-  uint64_t timestamp;
+  uint32_t timestamp;
   uint32_t port;
 } __attribute__((packed));
 
@@ -36,7 +36,7 @@ using namespace io::swagger::server::model;
 class FdbEntry : public FdbEntryInterface {
 public:
   FdbEntry(Fdb &parent, const FdbEntryJsonObject &conf);
-  FdbEntry(Fdb &parent, const std::string &address, uint64_t entry_age, uint32_t out_port);
+  FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age, uint32_t out_port);
   virtual ~FdbEntry();
 
   static void create(Fdb &parent, const std::string &address, const FdbEntryJsonObject &conf);
@@ -77,7 +77,7 @@ private:
 
   std::string address_;
   std::string port_name_;
-  uint64_t entry_age_;
+  uint32_t entry_age_;
   uint32_t port_no_;
 };
 
