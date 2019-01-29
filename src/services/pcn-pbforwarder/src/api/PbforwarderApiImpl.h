@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "PbforwarderApi.h"
-
 
 #include <memory>
 #include <map>
@@ -40,11 +38,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class PbforwarderApiImpl : public io::swagger::server::api::PbforwarderApi {
-public:
-  PbforwarderApiImpl();
-  ~PbforwarderApiImpl() { };
-
+namespace PbforwarderApiImpl {
   void create_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value);
   void create_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void create_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
@@ -105,13 +99,7 @@ public:
   void update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value);
   void update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id, const uint32_t &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Pbforwarder>> cubes;
-  std::shared_ptr<Pbforwarder> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

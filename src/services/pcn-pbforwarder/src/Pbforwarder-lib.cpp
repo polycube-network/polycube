@@ -17,27 +17,30 @@
 #define SERVICE_DESCRIPTION "Policy-Based Forwarder Service"
 #define SERVICE_VERSION "2.0"
 #define SERVICE_PYANG_GIT ""
-#define SERVICE_SWAGGER_CODEGEN_GIT "polycube/50b9d4f"
+#define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 #define SERVICE_REQUIRED_KERNEL_VERSION "4.14.0"
+
 const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
 module pbforwarder {
   yang-version 1.1;
   namespace "http://polycube.network/pbforwarder";
   prefix "pbforwarder";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
+
   import ietf-inet-types { prefix "inet"; }
   import ietf-yang-types { prefix "yang"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Policy-Based Forwarder service";
 
-  basemodel:service-description "Policy-Based Forwarder Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "pbforwarder";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Policy-Based Forwarder Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "pbforwarder";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
+  uses "polycube-standard-base:standard-base-yang-module";
 
   list rules {
     key "id";
@@ -78,8 +81,7 @@ module pbforwarder {
         enum UDP;
         enum TCP;
       }
-      default TCP;
-      description "Level 4 Protocol (i.e. UDP, TCP; default: TCP)";
+      description "Level 4 Protocol (i.e. UDP, TCP)";
     }
 
     leaf src_port {
@@ -114,5 +116,12 @@ module pbforwarder {
   }
 }
 
+
 )POLYCUBE_DM";
+
+extern "C" const char *data_model() {
+  return SERVICE_DATA_MODEL.c_str();
+}
+
+
 #include <polycube/services/shared_library.h>

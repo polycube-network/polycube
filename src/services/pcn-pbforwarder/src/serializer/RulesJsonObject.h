@@ -42,17 +42,13 @@ enum class RulesActionEnum {
 class  RulesJsonObject : public JsonObjectBase {
 public:
   RulesJsonObject();
-  virtual ~RulesJsonObject();
+  RulesJsonObject(nlohmann::json& json);
+  ~RulesJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -111,7 +107,7 @@ public:
   void unsetDstIp();
 
   /// <summary>
-  /// Level 4 Protocol (i.e. UDP, TCP; default: TCP)
+  /// Level 4 Protocol (i.e. UDP, TCP)
   /// </summary>
   RulesL4ProtoEnum getL4Proto() const;
   void setL4Proto(RulesL4ProtoEnum value);
@@ -163,7 +159,7 @@ public:
   static RulesActionEnum string_to_RulesActionEnum(const std::string &str);
 
 
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
   uint32_t m_vlan;
@@ -188,8 +184,6 @@ protected:
   bool m_outPortIsSet;
   RulesActionEnum m_action;
   bool m_actionIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id", "vlan", "src_mac", "dst_mac", "src_ip", "dst_ip", "l4_proto", "src_port", "dst_port", "in_port", "out_port", "action" };
 };
 
 }

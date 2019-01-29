@@ -67,7 +67,7 @@ public:
   virtual void setDstIp(const std::string &value) = 0;
 
   /// <summary>
-  /// Level 4 Protocol (i.e. UDP, TCP; default: TCP)
+  /// Level 4 Protocol (i.e. UDP, TCP)
   /// </summary>
   virtual RulesL4ProtoEnum getL4Proto() = 0;
   virtual void setL4Proto(const RulesL4ProtoEnum &value) = 0;
