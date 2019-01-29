@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-DdosmitigatorApiImpl::DdosmitigatorApiImpl() {}
+namespace DdosmitigatorApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Ddosmitigator>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Ddosmitigator> DdosmitigatorApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Ddosmitigator> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Ddosmitigator> DdosmitigatorApiImpl::get_cube(const std::string 
   return iter->second;
 }
 
-void DdosmitigatorApiImpl::create_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Ddosmitigator>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void DdosmitigatorApiImpl::create_ddosmitigator_by_id(const std::string &name, c
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void DdosmitigatorApiImpl::replace_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &bridge){
+void replace_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void DdosmitigatorApiImpl::delete_ddosmitigator_by_id(const std::string &name) {
+void delete_ddosmitigator_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void DdosmitigatorApiImpl::delete_ddosmitigator_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string DdosmitigatorApiImpl::read_ddosmitigator_uuid_by_id(const std::string &name) {
+std::string read_ddosmitigator_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<DdosmitigatorJsonObject> DdosmitigatorApiImpl::read_ddosmitigator_list_by_id() {
+std::vector<DdosmitigatorJsonObject> read_ddosmitigator_list_by_id() {
   std::vector<DdosmitigatorJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<DdosmitigatorJsonObject> DdosmitigatorApiImpl::read_ddosmitigator_li
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::read_ddosmitigator_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -108,7 +112,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::create_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
+create_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->addBlacklistDst(ip, value);
@@ -129,14 +133,14 @@ DdosmitigatorApiImpl::create_ddosmitigator_blacklist_dst_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::create_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+create_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->addBlacklistDstList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::create_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -162,7 +166,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::create_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
+create_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->addBlacklistSrc(ip, value);
@@ -183,14 +187,14 @@ DdosmitigatorApiImpl::create_ddosmitigator_blacklist_src_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::create_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+create_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->addBlacklistSrcList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::create_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -215,7 +219,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip) {
+delete_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->delBlacklistDst(ip);
@@ -235,14 +239,14 @@ DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_dst_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
+delete_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->delBlacklistDstList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -267,7 +271,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip) {
+delete_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->delBlacklistSrc(ip);
@@ -287,14 +291,14 @@ DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_src_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
+delete_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->delBlacklistSrcList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::delete_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -305,6 +309,9 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
   return r;
 }
 #endif
+
+
+
 
 
 /**
@@ -319,7 +326,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 * BlacklistDstJsonObject
 */
 BlacklistDstJsonObject
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip) {
+read_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
   return ddosmitigator->getBlacklistDst(ip)->toJsonObject();
 
@@ -340,7 +347,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_by_id(const std::string &
 * uint64_t
 */
 uint64_t
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std::string &name, const std::string &ip) {
+read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
   auto blacklistDst = ddosmitigator->getBlacklistDst(ip);
   return blacklistDst->getDropPkts();
@@ -361,7 +368,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std
 * std::vector<BlacklistDstJsonObject>
 */
 std::vector<BlacklistDstJsonObject>
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
+read_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   auto &&blacklistDst = ddosmitigator->getBlacklistDstList();
   std::vector<BlacklistDstJsonObject> m;
@@ -373,7 +380,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_list_by_id(const std::str
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -399,7 +406,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 * BlacklistSrcJsonObject
 */
 BlacklistSrcJsonObject
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip) {
+read_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
   return ddosmitigator->getBlacklistSrc(ip)->toJsonObject();
 
@@ -420,7 +427,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_by_id(const std::string &
 * uint64_t
 */
 uint64_t
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_drop_pkts_by_id(const std::string &name, const std::string &ip) {
+read_ddosmitigator_blacklist_src_drop_pkts_by_id(const std::string &name, const std::string &ip) {
   auto ddosmitigator = get_cube(name);
   auto blacklistSrc = ddosmitigator->getBlacklistSrc(ip);
   return blacklistSrc->getDropPkts();
@@ -441,7 +448,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_drop_pkts_by_id(const std
 * std::vector<BlacklistSrcJsonObject>
 */
 std::vector<BlacklistSrcJsonObject>
-DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
+read_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   auto &&blacklistSrc = ddosmitigator->getBlacklistSrcList();
   std::vector<BlacklistSrcJsonObject> m;
@@ -453,7 +460,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_list_by_id(const std::str
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&ddosmitigator = get_cube(name);
 
@@ -478,7 +485,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 * DdosmitigatorJsonObject
 */
 DdosmitigatorJsonObject
-DdosmitigatorApiImpl::read_ddosmitigator_by_id(const std::string &name) {
+read_ddosmitigator_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -497,11 +504,12 @@ DdosmitigatorApiImpl::read_ddosmitigator_by_id(const std::string &name) {
 * DdosmitigatorLoglevelEnum
 */
 DdosmitigatorLoglevelEnum
-DdosmitigatorApiImpl::read_ddosmitigator_loglevel_by_id(const std::string &name) {
+read_ddosmitigator_loglevel_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   return ddosmitigator->getLoglevel();
 
 }
+
 
 
 
@@ -517,7 +525,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_loglevel_by_id(const std::string &name)
 * StatsJsonObject
 */
 StatsJsonObject
-DdosmitigatorApiImpl::read_ddosmitigator_stats_by_id(const std::string &name) {
+read_ddosmitigator_stats_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   return ddosmitigator->getStats()->toJsonObject();
 
@@ -537,7 +545,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_stats_by_id(const std::string &name) {
 * uint64_t
 */
 uint64_t
-DdosmitigatorApiImpl::read_ddosmitigator_stats_pkts_by_id(const std::string &name) {
+read_ddosmitigator_stats_pkts_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   auto stats = ddosmitigator->getStats();
   return stats->getPkts();
@@ -558,7 +566,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_stats_pkts_by_id(const std::string &nam
 * uint64_t
 */
 uint64_t
-DdosmitigatorApiImpl::read_ddosmitigator_stats_pps_by_id(const std::string &name) {
+read_ddosmitigator_stats_pps_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   auto stats = ddosmitigator->getStats();
   return stats->getPps();
@@ -579,7 +587,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_stats_pps_by_id(const std::string &name
 * CubeType
 */
 CubeType
-DdosmitigatorApiImpl::read_ddosmitigator_type_by_id(const std::string &name) {
+read_ddosmitigator_type_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   return ddosmitigator->getType();
 
@@ -601,7 +609,7 @@ DdosmitigatorApiImpl::read_ddosmitigator_type_by_id(const std::string &name) {
 *
 */
 void
-DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
+replace_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->replaceBlacklistDst(ip, value);
@@ -622,13 +630,13 @@ DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_dst_by_id(const std::strin
 *
 */
 void
-DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+replace_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -647,7 +655,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
+replace_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->replaceBlacklistSrc(ip, value);
@@ -668,16 +676,18 @@ DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_src_by_id(const std::strin
 *
 */
 void
-DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+replace_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::replace_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
+
+
 
 
 
@@ -694,7 +704,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
+update_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value) {
   auto ddosmitigator = get_cube(name);
   auto blacklistDst = ddosmitigator->getBlacklistDst(ip);
 
@@ -716,13 +726,13 @@ DdosmitigatorApiImpl::update_ddosmitigator_blacklist_dst_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+update_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::update_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -741,7 +751,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
+update_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value) {
   auto ddosmitigator = get_cube(name);
   auto blacklistSrc = ddosmitigator->getBlacklistSrc(ip);
 
@@ -763,13 +773,13 @@ DdosmitigatorApiImpl::update_ddosmitigator_blacklist_src_by_id(const std::string
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+update_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::update_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -787,7 +797,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value) {
+update_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->update(value);
@@ -807,13 +817,13 @@ DdosmitigatorApiImpl::update_ddosmitigator_by_id(const std::string &name, const 
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_list_by_id(const std::vector<DdosmitigatorJsonObject> &value) {
+update_ddosmitigator_list_by_id(const std::vector<DdosmitigatorJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::update_ddosmitigator_list_by_id_get_list(const std::vector<DdosmitigatorJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_list_by_id_get_list(const std::vector<DdosmitigatorJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -831,12 +841,17 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 *
 */
 void
-DdosmitigatorApiImpl::update_ddosmitigator_loglevel_by_id(const std::string &name, const DdosmitigatorLoglevelEnum &value) {
+update_ddosmitigator_loglevel_by_id(const std::string &name, const DdosmitigatorLoglevelEnum &value) {
   auto ddosmitigator = get_cube(name);
 
   ddosmitigator->setLoglevel(value);
 }
 
+
+
+
+
+}
 }
 }
 }

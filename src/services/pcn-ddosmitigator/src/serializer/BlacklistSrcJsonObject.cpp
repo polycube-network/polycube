@@ -22,28 +22,20 @@ namespace swagger {
 namespace server {
 namespace model {
 
-BlacklistSrcJsonObject::BlacklistSrcJsonObject() {
+BlacklistSrcJsonObject::BlacklistSrcJsonObject() : 
+  m_ipIsSet(false),
+  m_dropPktsIsSet(false) { }
 
-  m_ipIsSet = false;
-
-  m_dropPktsIsSet = false;
-}
-
-BlacklistSrcJsonObject::~BlacklistSrcJsonObject() {}
-
-void BlacklistSrcJsonObject::validateKeys() {
-
-  if (!m_ipIsSet) {
-    throw std::runtime_error("Variable ip is required");
+BlacklistSrcJsonObject::BlacklistSrcJsonObject(nlohmann::json &val) : 
+  m_ipIsSet(false),
+  m_dropPktsIsSet(false) { 
+  if (val.count("ip")) {
+    setIp(val.at("ip").get<std::string>());
   }
-}
 
-void BlacklistSrcJsonObject::validateMandatoryFields() {
-
-}
-
-void BlacklistSrcJsonObject::validateParams() {
-
+  if (val.count("drop-pkts")) {
+    setDropPkts(val.at("drop-pkts").get<uint64_t>());
+  }
 }
 
 nlohmann::json BlacklistSrcJsonObject::toJson() const {
@@ -59,25 +51,6 @@ nlohmann::json BlacklistSrcJsonObject::toJson() const {
 
 
   return val;
-}
-
-void BlacklistSrcJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("ip") != val.end()) {
-    setIp(val.at("ip"));
-  }
-
-  if (val.find("drop-pkts") != val.end()) {
-    setDropPkts(val.at("drop-pkts"));
-  }
 }
 
 nlohmann::json BlacklistSrcJsonObject::helpKeys() {
@@ -136,9 +109,7 @@ bool BlacklistSrcJsonObject::ipIsSet() const {
   return m_ipIsSet;
 }
 
-void BlacklistSrcJsonObject::unsetIp() {
-  m_ipIsSet = false;
-}
+
 
 
 

@@ -22,25 +22,20 @@ namespace swagger {
 namespace server {
 namespace model {
 
-StatsJsonObject::StatsJsonObject() {
+StatsJsonObject::StatsJsonObject() : 
+  m_ppsIsSet(false),
+  m_pktsIsSet(false) { }
 
-  m_ppsIsSet = false;
+StatsJsonObject::StatsJsonObject(nlohmann::json &val) : 
+  m_ppsIsSet(false),
+  m_pktsIsSet(false) { 
+  if (val.count("pps")) {
+    setPps(val.at("pps").get<uint64_t>());
+  }
 
-  m_pktsIsSet = false;
-}
-
-StatsJsonObject::~StatsJsonObject() {}
-
-void StatsJsonObject::validateKeys() {
-
-}
-
-void StatsJsonObject::validateMandatoryFields() {
-
-}
-
-void StatsJsonObject::validateParams() {
-
+  if (val.count("pkts")) {
+    setPkts(val.at("pkts").get<uint64_t>());
+  }
 }
 
 nlohmann::json StatsJsonObject::toJson() const {
@@ -56,25 +51,6 @@ nlohmann::json StatsJsonObject::toJson() const {
 
 
   return val;
-}
-
-void StatsJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("pps") != val.end()) {
-    setPps(val.at("pps"));
-  }
-
-  if (val.find("pkts") != val.end()) {
-    setPkts(val.at("pkts"));
-  }
 }
 
 nlohmann::json StatsJsonObject::helpKeys() {

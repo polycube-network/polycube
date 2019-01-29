@@ -36,17 +36,13 @@ namespace model {
 class  StatsJsonObject : public JsonObjectBase {
 public:
   StatsJsonObject();
-  virtual ~StatsJsonObject();
+  StatsJsonObject(nlohmann::json& json);
+  ~StatsJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -73,13 +69,11 @@ public:
   void unsetPkts();
 
 
-protected:
+private:
   uint64_t m_pps;
   bool m_ppsIsSet;
   uint64_t m_pkts;
   bool m_pktsIsSet;
-
-  std::vector<std::string> allowedParameters_{ "pps", "pkts" };
 };
 
 }
