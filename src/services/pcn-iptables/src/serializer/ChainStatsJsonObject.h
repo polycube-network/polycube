@@ -36,17 +36,13 @@ namespace model {
 class  ChainStatsJsonObject : public JsonObjectBase {
 public:
   ChainStatsJsonObject();
-  virtual ~ChainStatsJsonObject();
+  ChainStatsJsonObject(nlohmann::json& json);
+  ~ChainStatsJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -81,24 +77,23 @@ public:
   void unsetBytes();
 
   /// <summary>
-  /// Description of rule
+  /// Description
   /// </summary>
-  std::string getDesc() const;
-  void setDesc(std::string value);
-  bool descIsSet() const;
-  void unsetDesc();
+  std::string getDescription() const;
+  void setDescription(std::string value);
+  bool descriptionIsSet() const;
+  void unsetDescription();
 
-protected:
+
+private:
   uint32_t m_id;
   bool m_idIsSet;
   uint64_t m_pkts;
   bool m_pktsIsSet;
   uint64_t m_bytes;
   bool m_bytesIsSet;
-  std::string m_desc;
-  bool m_descIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id", "pkts", "bytes", "description" };
+  std::string m_description;
+  bool m_descriptionIsSet;
 };
 
 }

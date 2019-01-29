@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "../../../../polycubed/src/extiface_info.h"
 #include "../Iptables.h"
 #include "datapaths/Iptables_ChainForwarder_dp.h"

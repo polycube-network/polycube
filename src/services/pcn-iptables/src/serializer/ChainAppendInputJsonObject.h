@@ -48,17 +48,13 @@ enum class ActionEnum {
 class  ChainAppendInputJsonObject : public JsonObjectBase {
 public:
   ChainAppendInputJsonObject();
-  virtual ~ChainAppendInputJsonObject();
+  ChainAppendInputJsonObject(nlohmann::json& json);
+  ~ChainAppendInputJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -153,7 +149,7 @@ public:
   static ActionEnum string_to_ActionEnum(const std::string &str);
 
 
-protected:
+private:
   std::string m_inIface;
   bool m_inIfaceIsSet;
   std::string m_outIface;
@@ -174,8 +170,6 @@ protected:
   bool m_conntrackIsSet;
   ActionEnum m_action;
   bool m_actionIsSet;
-
-  std::vector<std::string> allowedParameters_{ "in-iface", "out-iface", "src", "dst", "l4proto", "sport", "dport", "tcpflags", "conntrack", "action" };
 };
 
 }

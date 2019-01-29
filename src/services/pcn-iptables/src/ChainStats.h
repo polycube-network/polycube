@@ -59,6 +59,11 @@ class ChainStats : public ChainStatsInterface {
   /// </summary>
   uint32_t getId() override;
 
+  /// <summary>
+  /// Description
+  /// </summary>
+  std::string getDescription() override;
+
  private:
   Chain &parent_;
   uint32_t rule;
