@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "RouterApi.h"
-
 
 #include <memory>
 #include <map>
@@ -42,11 +40,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class RouterApiImpl : public io::swagger::server::api::RouterApi {
-public:
-  RouterApiImpl();
-  ~RouterApiImpl() { };
-
+namespace RouterApiImpl {
   void create_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value);
   void create_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value);
   void create_router_by_id(const std::string &name, const RouterJsonObject &value);
@@ -90,7 +84,7 @@ public:
   std::string read_router_route_interface_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
   std::vector<RouteJsonObject> read_router_route_list_by_id(const std::string &name);
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name);
-  uint32_t read_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
+  int32_t read_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
   CubeType read_router_type_by_id(const std::string &name);
   std::string read_router_uuid_by_id(const std::string &name);
   void replace_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value);
@@ -119,14 +113,8 @@ public:
   void update_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value);
   void update_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const RouteJsonObject &value);
   void update_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value);
-  void update_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const uint32_t &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Router>> cubes;
-  std::shared_ptr<Router> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+  void update_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const int32_t &value);
+}
 }
 }
 }

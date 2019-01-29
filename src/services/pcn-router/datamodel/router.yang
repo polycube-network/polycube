@@ -85,7 +85,8 @@ module router {
 
     leaf interface {
       type string;
-      config false;
+      config true;
+      polycube-base:init-only-config;
       description "Outgoing interface";
       polycube-base:cli-example "port2";
     }

@@ -36,17 +36,13 @@ namespace model {
 class  PortsSecondaryipJsonObject : public JsonObjectBase {
 public:
   PortsSecondaryipJsonObject();
-  virtual ~PortsSecondaryipJsonObject();
+  PortsSecondaryipJsonObject(nlohmann::json& json);
+  ~PortsSecondaryipJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -73,13 +69,11 @@ public:
   void unsetNetmask();
 
 
-protected:
+private:
   std::string m_ip;
   bool m_ipIsSet;
   std::string m_netmask;
   bool m_netmaskIsSet;
-
-  std::vector<std::string> allowedParameters_{ "ip", "netmask" };
 };
 
 }

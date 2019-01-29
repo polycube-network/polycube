@@ -22,9 +22,8 @@
 #define POLYCUBE_SERVICE_NAME "router"
 
 
-#include <polycube/services/http_router.h>
-#include <polycube/services/management_interface.h>
-#include <vector>
+#include "polycube/services/response.h"
+#include "polycube/services/shared_lib_elements.h"
 
 #include "ArpEntryJsonObject.h"
 #include "PortsJsonObject.h"
@@ -33,763 +32,94 @@
 #include "RouterJsonObject.h"
 #include <vector>
 
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
 
-using namespace io::swagger::server::model;
-using namespace polycube::service;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class  RouterApi : public ManagementInterface {
- public:
-  RouterApi();
-  virtual ~RouterApi() {};
+Response create_router_arp_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_arp_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_ports_secondaryip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_ports_secondaryip_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_route_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response delete_router_arp_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_arp_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_ports_secondaryip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_ports_secondaryip_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_route_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_arp_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_arp_entry_interface_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_arp_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_arp_entry_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_netmask_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_secondaryip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_secondaryip_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_route_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_route_interface_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_route_pathcost_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_router_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response replace_router_arp_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_arp_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_ports_secondaryip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_ports_secondaryip_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_route_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_arp_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_arp_entry_interface_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_arp_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_arp_entry_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_netmask_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_secondaryip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_ports_secondaryip_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_route_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_router_route_pathcost_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-  const std::string base = "/" + std::string(POLYCUBE_SERVICE_NAME) + "/";
-
- protected:
-  void setup_routes();
-  void control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) override;
-
-  void create_router_arp_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_arp_entry_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_ports_secondaryip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_ports_secondaryip_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_route_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_router_route_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_arp_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_arp_entry_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_ports_secondaryip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_ports_secondaryip_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_route_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_router_route_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_arp_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_arp_entry_interface_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_arp_entry_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_arp_entry_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_netmask_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_secondaryip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_secondaryip_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_interface_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_pathcost_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_arp_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_arp_entry_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_ports_secondaryip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_ports_secondaryip_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_route_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_router_route_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_arp_entry_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_arp_entry_interface_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_arp_entry_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_arp_entry_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_netmask_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_secondaryip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_ports_secondaryip_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_route_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_route_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_router_route_pathcost_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-
-  void read_router_arp_entry_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_arp_entry_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_secondaryip_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_ports_secondaryip_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_router_route_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
+Response router_arp_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_arp_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_ports_secondaryip_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_ports_secondaryip_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_route_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response router_route_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 
 
-  polycube::service::Rest::Router router;
 
-  /// <summary>
-  /// Create arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void create_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value) = 0;
-  /// <summary>
-  /// Create arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void create_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value) = 0;
-  /// <summary>
-  /// Create router by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: router
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routerbody object</param>
-  virtual void create_router_by_id(const std::string &name, const RouterJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_router_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_router_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Create secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void create_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask, const PortsSecondaryipJsonObject &value) = 0;
-  /// <summary>
-  /// Create secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void create_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) = 0;
-  /// <summary>
-  /// Create route by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  /// <param name="value">routebody object</param>
-  virtual void create_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const RouteJsonObject &value) = 0;
-  /// <summary>
-  /// Create route by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routebody object</param>
-  virtual void create_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value) = 0;
-  /// <summary>
-  /// Delete arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  virtual void delete_router_arp_entry_by_id(const std::string &name, const std::string &address) = 0;
-  /// <summary>
-  /// Delete arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_router_arp_entry_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete router by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: router
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_router_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_router_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_router_ports_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="netmask">ID of netmask</param>
-  virtual void delete_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask) = 0;
-  /// <summary>
-  /// Delete secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete route by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  virtual void delete_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop) = 0;
-  /// <summary>
-  /// Delete route by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_router_route_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  virtual ArpEntryJsonObject read_router_arp_entry_by_id(const std::string &name, const std::string &address) = 0;
-  /// <summary>
-  /// Read interface by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: interface
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  virtual std::string read_router_arp_entry_interface_by_id(const std::string &name, const std::string &address) = 0;
-  /// <summary>
-  /// Read arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<ArpEntryJsonObject> read_router_arp_entry_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_arp_entry_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  virtual std::string read_router_arp_entry_mac_by_id(const std::string &name, const std::string &address) = 0;
-  /// <summary>
-  /// Read router by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: router
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual RouterJsonObject read_router_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read router by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: router
-  /// </remarks>
-  virtual std::vector<RouterJsonObject> read_router_list_by_id() = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_list_by_id_get_list() = 0;
-  /// <summary>
-  /// Read loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual RouterLoglevelEnum read_router_loglevel_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_router_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_router_ports_ip_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_router_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_router_ports_mac_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read netmask by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: netmask
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_router_ports_netmask_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_router_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="netmask">ID of netmask</param>
-  virtual PortsSecondaryipJsonObject read_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask) = 0;
-  /// <summary>
-  /// Read secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::vector<PortsSecondaryipJsonObject> read_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_router_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_router_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read route by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  virtual RouteJsonObject read_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop) = 0;
-  /// <summary>
-  /// Read interface by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: interface
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  virtual std::string read_router_route_interface_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop) = 0;
-  /// <summary>
-  /// Read route by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<RouteJsonObject> read_router_route_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read pathcost by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: pathcost
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  virtual uint32_t read_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual CubeType read_router_type_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_router_uuid_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Replace arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void replace_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value) = 0;
-  /// <summary>
-  /// Replace arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void replace_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace router by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: router
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routerbody object</param>
-  virtual void replace_router_by_id(const std::string &name, const RouterJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_router_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_router_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void replace_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask, const PortsSecondaryipJsonObject &value) = 0;
-  /// <summary>
-  /// Replace secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void replace_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace route by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  /// <param name="value">routebody object</param>
-  virtual void replace_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const RouteJsonObject &value) = 0;
-  /// <summary>
-  /// Replace route by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routebody object</param>
-  virtual void replace_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value) = 0;
-  /// <summary>
-  /// Update arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void update_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value) = 0;
-  /// <summary>
-  /// Update interface by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: interface
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  /// <param name="value">Outgoing interface</param>
-  virtual void update_router_arp_entry_interface_by_id(const std::string &name, const std::string &address, const std::string &value) = 0;
-  /// <summary>
-  /// Update arp-entry by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: arp-entry
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">arp-entrybody object</param>
-  virtual void update_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value) = 0;
-  /// <summary>
-  /// Update mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="address">ID of address</param>
-  /// <param name="value">Destination MAC address</param>
-  virtual void update_router_arp_entry_mac_by_id(const std::string &name, const std::string &address, const std::string &value) = 0;
-  /// <summary>
-  /// Update router by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: router
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routerbody object</param>
-  virtual void update_router_by_id(const std::string &name, const RouterJsonObject &value) = 0;
-  /// <summary>
-  /// Update router by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: router
-  /// </remarks>
-  /// <param name="value">routerbody object</param>
-  virtual void update_router_list_by_id(const std::vector<RouterJsonObject> &value) = 0;
-  /// <summary>
-  /// Update loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)</param>
-  virtual void update_router_loglevel_by_id(const std::string &name, const RouterLoglevelEnum &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_router_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">IP address of the port</param>
-  virtual void update_router_ports_ip_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_router_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">MAC address of the port</param>
-  virtual void update_router_ports_mac_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update netmask by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: netmask
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Netmask of the port</param>
-  virtual void update_router_ports_netmask_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_router_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void update_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask, const PortsSecondaryipJsonObject &value) = 0;
-  /// <summary>
-  /// Update secondaryip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: secondaryip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">secondaryipbody object</param>
-  virtual void update_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) = 0;
-  /// <summary>
-  /// Update route by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  /// <param name="value">routebody object</param>
-  virtual void update_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const RouteJsonObject &value) = 0;
-  /// <summary>
-  /// Update route by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: route
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">routebody object</param>
-  virtual void update_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value) = 0;
-  /// <summary>
-  /// Update pathcost by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: pathcost
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="network">ID of network</param>
-  /// <param name="netmask">ID of netmask</param>
-  /// <param name="nexthop">ID of nexthop</param>
-  /// <param name="value">Cost of this route</param>
-  virtual void update_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const uint32_t &value) = 0;
-};
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

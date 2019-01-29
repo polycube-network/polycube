@@ -22,42 +22,19 @@ namespace swagger {
 namespace server {
 namespace model {
 
-PortsSecondaryipJsonObject::PortsSecondaryipJsonObject() {
+PortsSecondaryipJsonObject::PortsSecondaryipJsonObject() : 
+  m_ipIsSet(false),
+  m_netmaskIsSet(false) { }
 
-  m_ipIsSet = false;
-
-  m_netmaskIsSet = false;
-}
-
-PortsSecondaryipJsonObject::~PortsSecondaryipJsonObject() {}
-
-void PortsSecondaryipJsonObject::validateKeys() {
-
-  if (!m_ipIsSet) {
-    throw std::runtime_error("Variable ip is required");
+PortsSecondaryipJsonObject::PortsSecondaryipJsonObject(nlohmann::json &val) : 
+  m_ipIsSet(false),
+  m_netmaskIsSet(false) { 
+  if (val.count("ip")) {
+    setIp(val.at("ip").get<std::string>());
   }
-  if (!m_netmaskIsSet) {
-    throw std::runtime_error("Variable netmask is required");
-  }
-}
 
-void PortsSecondaryipJsonObject::validateMandatoryFields() {
-
-}
-
-void PortsSecondaryipJsonObject::validateParams() {
-
-  if (m_ipIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(%[\p{N}\p{L}]+)?)PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_ip, e))
-      throw std::runtime_error("Variable ip has not a valid format");
-  }
-  if (m_netmaskIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(%[\p{N}\p{L}]+)?)PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_netmask, e))
-      throw std::runtime_error("Variable netmask has not a valid format");
+  if (val.count("netmask")) {
+    setNetmask(val.at("netmask").get<std::string>());
   }
 }
 
@@ -74,25 +51,6 @@ nlohmann::json PortsSecondaryipJsonObject::toJson() const {
 
 
   return val;
-}
-
-void PortsSecondaryipJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("ip") != val.end()) {
-    setIp(val.at("ip"));
-  }
-
-  if (val.find("netmask") != val.end()) {
-    setNetmask(val.at("netmask"));
-  }
 }
 
 nlohmann::json PortsSecondaryipJsonObject::helpKeys() {
@@ -151,9 +109,7 @@ bool PortsSecondaryipJsonObject::ipIsSet() const {
   return m_ipIsSet;
 }
 
-void PortsSecondaryipJsonObject::unsetIp() {
-  m_ipIsSet = false;
-}
+
 
 
 
@@ -170,9 +126,7 @@ bool PortsSecondaryipJsonObject::netmaskIsSet() const {
   return m_netmaskIsSet;
 }
 
-void PortsSecondaryipJsonObject::unsetNetmask() {
-  m_netmaskIsSet = false;
-}
+
 
 
 
