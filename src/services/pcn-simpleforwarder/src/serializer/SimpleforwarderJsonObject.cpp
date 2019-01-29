@@ -22,44 +22,54 @@ namespace swagger {
 namespace server {
 namespace model {
 
-SimpleforwarderJsonObject::SimpleforwarderJsonObject() {
+SimpleforwarderJsonObject::SimpleforwarderJsonObject() : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_type(CubeType::TC),
+  m_typeIsSet(true),
+  m_loglevel(SimpleforwarderLoglevelEnum::INFO),
+  m_loglevelIsSet(true),
+  m_portsIsSet(false),
+  m_actionsIsSet(false) { }
 
-  m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_type = CubeType::TC;
-  m_typeIsSet = false;
-
-  m_loglevel = SimpleforwarderLoglevelEnum::INFO;
-  m_loglevelIsSet = false;
-
-  m_portsIsSet = false;
-
-  m_actionsIsSet = false;
-}
-
-SimpleforwarderJsonObject::~SimpleforwarderJsonObject() {}
-
-void SimpleforwarderJsonObject::validateKeys() {
-
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+SimpleforwarderJsonObject::SimpleforwarderJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_typeIsSet(false),
+  m_loglevelIsSet(false),
+  m_portsIsSet(false),
+  m_actionsIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void SimpleforwarderJsonObject::validateMandatoryFields() {
-
-}
-
-void SimpleforwarderJsonObject::validateParams() {
-
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  if (val.count("uuid")) {
+    setUuid(val.at("uuid").get<std::string>());
   }
+
+  if (val.count("type")) {
+    setType(string_to_CubeType(val.at("type").get<std::string>()));
+  }
+
+  if (val.count("loglevel")) {
+    setLoglevel(string_to_SimpleforwarderLoglevelEnum(val.at("loglevel").get<std::string>()));
+  }
+
+  m_ports.clear();
+  for (auto& item : val["ports"]) { 
+    PortsJsonObject newItem { item };
+    m_ports.push_back(newItem);
+  }
+  m_portsIsSet = !m_ports.empty();
+  
+
+  m_actions.clear();
+  for (auto& item : val["actions"]) { 
+    ActionsJsonObject newItem { item };
+    m_actions.push_back(newItem);
+  }
+  m_actionsIsSet = !m_actions.empty();
+  
 }
 
 nlohmann::json SimpleforwarderJsonObject::toJson() const {
@@ -86,7 +96,6 @@ nlohmann::json SimpleforwarderJsonObject::toJson() const {
     for (auto& item : m_ports) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["ports"] = jsonArray;
     }
@@ -96,60 +105,12 @@ nlohmann::json SimpleforwarderJsonObject::toJson() const {
     for (auto& item : m_actions) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["actions"] = jsonArray;
     }
   }
 
   return val;
-}
-
-void SimpleforwarderJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_CubeType(val.at("type")));
-  }
-
-  if (val.find("loglevel") != val.end()) {
-    setLoglevel(string_to_SimpleforwarderLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
-
-  m_actions.clear();
-  for (auto& item : val["actions"]) {
-
-    ActionsJsonObject newItem;
-    newItem.fromJson(item);
-    m_actions.push_back(newItem);
-    m_actionsIsSet = true;
-  }
-
 }
 
 nlohmann::json SimpleforwarderJsonObject::helpKeys() {
@@ -240,9 +201,7 @@ bool SimpleforwarderJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void SimpleforwarderJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
+
 
 
 
@@ -285,22 +244,22 @@ void SimpleforwarderJsonObject::unsetType() {
 std::string SimpleforwarderJsonObject::CubeType_to_string(const CubeType &value){
   switch(value){
     case CubeType::TC:
-      return std::string("TC");
+      return std::string("tc");
     case CubeType::XDP_SKB:
-      return std::string("XDP_SKB");
+      return std::string("xdp_skb");
     case CubeType::XDP_DRV:
-      return std::string("XDP_DRV");
+      return std::string("xdp_drv");
     default:
       throw std::runtime_error("Bad Simpleforwarder type");
   }
 }
 
 CubeType SimpleforwarderJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("TC", str))
+  if (JsonObjectBase::iequals("tc", str))
     return CubeType::TC;
-  if (JsonObjectBase::iequals("XDP_SKB", str))
+  if (JsonObjectBase::iequals("xdp_skb", str))
     return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("XDP_DRV", str))
+  if (JsonObjectBase::iequals("xdp_drv", str))
     return CubeType::XDP_DRV;
   throw std::runtime_error("Simpleforwarder type is invalid");
 }

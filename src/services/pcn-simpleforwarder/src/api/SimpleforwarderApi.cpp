@@ -14,1142 +14,1068 @@
 
 
 #include "SimpleforwarderApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "SimpleforwarderApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::SimpleforwarderApiImpl;
 
-SimpleforwarderApi::SimpleforwarderApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void SimpleforwarderApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
-  try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+Response create_simpleforwarder_actions_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
-
-void SimpleforwarderApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::create_simpleforwarder_actions_by_id_handler, this));
-  Routes::Post(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::create_simpleforwarder_actions_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/", Routes::bind(&SimpleforwarderApi::create_simpleforwarder_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::create_simpleforwarder_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::create_simpleforwarder_ports_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::delete_simpleforwarder_actions_by_id_handler, this));
-  Routes::Delete(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::delete_simpleforwarder_actions_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&SimpleforwarderApi::delete_simpleforwarder_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::delete_simpleforwarder_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::delete_simpleforwarder_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/actions/:inport/action/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_action_by_id_handler, this));
-  Routes::Get(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_by_id_handler, this));
-  Routes::Get(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/actions/:inport/outport/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_outport_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::replace_simpleforwarder_actions_by_id_handler, this));
-  Routes::Put(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::replace_simpleforwarder_actions_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&SimpleforwarderApi::replace_simpleforwarder_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::replace_simpleforwarder_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::replace_simpleforwarder_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/actions/:inport/action/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_actions_action_by_id_handler, this));
-  Routes::Patch(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_actions_by_id_handler, this));
-  Routes::Patch(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_actions_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/actions/:inport/outport/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_actions_outport_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&SimpleforwarderApi::update_simpleforwarder_ports_peer_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/actions/:inport/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_by_id_help, this));
-  Routes::Options(router, base + ":name/actions/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_actions_list_by_id_help, this));
-  Routes::Options(router, base + ":name/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&SimpleforwarderApi::read_simpleforwarder_ports_list_by_id_help, this));
-
-}
-
-void SimpleforwarderApi::create_simpleforwarder_actions_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ActionsJsonObject value;
+    ActionsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInport(inport);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simpleforwarder_actions_by_id(name, inport, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setInport(unique_inport);
+    create_simpleforwarder_actions_by_id(unique_name, unique_inport, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::create_simpleforwarder_actions_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_simpleforwarder_actions_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<ActionsJsonObject> value;
+  std::vector<ActionsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ActionsJsonObject> unique_value;
     for (auto &j : request_body) {
-      ActionsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ActionsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_simpleforwarder_actions_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_simpleforwarder_actions_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::create_simpleforwarder_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_simpleforwarder_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    SimpleforwarderJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_simpleforwarder_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_simpleforwarder_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimpleforwarderJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simpleforwarder_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setName(unique_portsName);
+    create_simpleforwarder_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::create_simpleforwarder_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_simpleforwarder_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simpleforwarder_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::create_simpleforwarder_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_simpleforwarder_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_simpleforwarder_ports_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::delete_simpleforwarder_actions_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_simpleforwarder_actions_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    delete_simpleforwarder_actions_by_id(unique_name, unique_inport);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simpleforwarder_actions_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simpleforwarder_actions_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simpleforwarder_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simpleforwarder_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simpleforwarder_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    delete_simpleforwarder_ports_by_id(unique_name, unique_portsName);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simpleforwarder_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simpleforwarder_ports_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_simpleforwarder_actions_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-    delete_simpleforwarder_actions_by_id(name, inport);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::delete_simpleforwarder_actions_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_simpleforwarder_actions_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::delete_simpleforwarder_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_simpleforwarder_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::delete_simpleforwarder_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-    delete_simpleforwarder_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::delete_simpleforwarder_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_simpleforwarder_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::read_simpleforwarder_actions_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_simpleforwarder_actions_action_by_id(name, inport);
+    auto x = read_simpleforwarder_actions_action_by_id(unique_name, unique_inport);
     nlohmann::json response_body;
     response_body = ActionsJsonObject::ActionsActionEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_actions_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_actions_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_actions_by_id(name, inport);
+    auto x = read_simpleforwarder_actions_by_id(unique_name, unique_inport);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_actions_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_actions_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_actions_list_by_id(name);
+    auto x = read_simpleforwarder_actions_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_actions_outport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_actions_outport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_actions_outport_by_id(name, inport);
+    auto x = read_simpleforwarder_actions_outport_by_id(unique_name, unique_inport);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_by_id(name);
+    auto x = read_simpleforwarder_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_simpleforwarder_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_loglevel_by_id(name);
+    auto x = read_simpleforwarder_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = SimpleforwarderJsonObject::SimpleforwarderLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_ports_by_id(name, portsName);
+    auto x = read_simpleforwarder_ports_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_ports_list_by_id(name);
+    auto x = read_simpleforwarder_ports_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_ports_peer_by_id(name, portsName);
+    auto x = read_simpleforwarder_ports_peer_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_ports_status_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_ports_status_by_id(name, portsName);
+    auto x = read_simpleforwarder_ports_status_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simpleforwarder_ports_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simpleforwarder_ports_uuid_by_id(name, portsName);
+    auto x = read_simpleforwarder_ports_uuid_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_type_by_id(name);
+    auto x = read_simpleforwarder_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = SimpleforwarderJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::read_simpleforwarder_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simpleforwarder_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simpleforwarder_uuid_by_id(name);
+    auto x = read_simpleforwarder_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::replace_simpleforwarder_actions_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simpleforwarder_actions_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    ActionsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInport(inport);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simpleforwarder_actions_by_id(name, inport, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::replace_simpleforwarder_actions_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<ActionsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ActionsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
     }
-    replace_simpleforwarder_actions_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void SimpleforwarderApi::replace_simpleforwarder_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimpleforwarderJsonObject value;
+    ActionsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simpleforwarder_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setInport(unique_inport);
+    replace_simpleforwarder_actions_by_id(unique_name, unique_inport, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::replace_simpleforwarder_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simpleforwarder_actions_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simpleforwarder_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::replace_simpleforwarder_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<ActionsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ActionsJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ActionsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_simpleforwarder_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    replace_simpleforwarder_actions_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_actions_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simpleforwarder_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    SimpleforwarderJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    replace_simpleforwarder_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_simpleforwarder_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ActionsActionEnum value_;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = ActionsJsonObject::string_to_ActionsActionEnum(request_body);
-    update_simpleforwarder_actions_action_by_id(name, inport, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    replace_simpleforwarder_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_actions_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simpleforwarder_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    ActionsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInport(inport);
-    value.validateParams();
-    update_simpleforwarder_actions_by_id(name, inport, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::update_simpleforwarder_actions_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<ActionsJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      ActionsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_simpleforwarder_actions_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    replace_simpleforwarder_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_actions_outport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simpleforwarder_actions_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    std::string value;
+    auto request_body = nlohmann::json::parse(std::string { value });
+    ActionsActionEnum unique_value_ = ActionsJsonObject::string_to_ActionsActionEnum(request_body);
+    update_simpleforwarder_actions_action_by_id(unique_name, unique_inport, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+Response update_simpleforwarder_actions_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ActionsJsonObject unique_value { request_body };
+
+    unique_value.setInport(unique_inport);
+    update_simpleforwarder_actions_by_id(unique_name, unique_inport, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simpleforwarder_actions_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<ActionsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ActionsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ActionsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_simpleforwarder_actions_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simpleforwarder_actions_outport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_simpleforwarder_actions_outport_by_id(name, inport, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_simpleforwarder_actions_outport_by_id(unique_name, unique_inport, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_simpleforwarder_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimpleforwarderJsonObject value;
+    SimpleforwarderJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_simpleforwarder_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_name);
+    update_simpleforwarder_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simpleforwarder_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<SimpleforwarderJsonObject> value;
+  std::vector<SimpleforwarderJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<SimpleforwarderJsonObject> unique_value;
     for (auto &j : request_body) {
-      SimpleforwarderJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      SimpleforwarderJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_simpleforwarder_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_simpleforwarder_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simpleforwarder_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    SimpleforwarderLoglevelEnum unique_value_ = SimpleforwarderJsonObject::string_to_SimpleforwarderLoglevelEnum(request_body);
+    update_simpleforwarder_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simpleforwarder_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimpleforwarderLoglevelEnum value_;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = SimpleforwarderJsonObject::string_to_SimpleforwarderLoglevelEnum(request_body);
-    update_simpleforwarder_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    update_simpleforwarder_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simpleforwarder_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_simpleforwarder_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimpleforwarderApi::update_simpleforwarder_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_simpleforwarder_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_simpleforwarder_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimpleforwarderApi::update_simpleforwarder_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simpleforwarder_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_simpleforwarder_ports_peer_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_simpleforwarder_ports_peer_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
 
-void SimpleforwarderApi::read_simpleforwarder_actions_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response simpleforwarder_actions_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto inport = request.param(":inport").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_inport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "inport")) {
+      unique_inport = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ActionsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ActionsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ActionsJsonObject::helpComplexElements();
     val["actions"] = ActionsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimpleforwarderApi::read_simpleforwarder_actions_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simpleforwarder_actions_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = ActionsJsonObject::helpKeys();
     val["optional-params"] = ActionsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimpleforwarderApi::read_simpleforwarder_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simpleforwarder_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SimpleforwarderJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = SimpleforwarderJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = SimpleforwarderJsonObject::helpComplexElements();
     val["actions"] = SimpleforwarderJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimpleforwarderApi::read_simpleforwarder_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simpleforwarder_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SimpleforwarderJsonObject::helpKeys();
     val["elements"] = read_simpleforwarder_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = SimpleforwarderJsonObject::helpKeys();
     val["optional-params"] = SimpleforwarderJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = SimpleforwarderJsonObject::helpKeys();
     val["elements"] = read_simpleforwarder_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = SimpleforwarderJsonObject::helpKeys();
     val["elements"] = read_simpleforwarder_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimpleforwarderApi::read_simpleforwarder_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simpleforwarder_ports_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = PortsJsonObject::helpComplexElements();
     val["actions"] = PortsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimpleforwarderApi::read_simpleforwarder_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simpleforwarder_ports_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = PortsJsonObject::helpKeys();
     val["optional-params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(name);
+    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

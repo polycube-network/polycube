@@ -17,25 +17,27 @@
 #define SERVICE_DESCRIPTION "Simple Forwarder Base Service"
 #define SERVICE_VERSION "2.0"
 #define SERVICE_PYANG_GIT ""
-#define SERVICE_SWAGGER_CODEGEN_GIT "polycube/50b9d4f"
+#define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 #define SERVICE_REQUIRED_KERNEL_VERSION "4.14.0"
+
 const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
 module simpleforwarder {
   yang-version 1.1;
   namespace "http://polycube.network/simpleforwarder";
   prefix "simpleforwarder";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Simple Forwarder service";
 
-  basemodel:service-description "Simple Forwarder Base Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "simpleforwarder";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Simple Forwarder Base Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "simpleforwarder";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
+  uses "polycube-standard-base:standard-base-yang-module";
 
   list actions {
     key "inport";
@@ -63,5 +65,12 @@ module simpleforwarder {
   }
 }
 
+
 )POLYCUBE_DM";
+
+extern "C" const char *data_model() {
+  return SERVICE_DATA_MODEL.c_str();
+}
+
+
 #include <polycube/services/shared_library.h>
