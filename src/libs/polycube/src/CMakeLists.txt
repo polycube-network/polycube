@@ -10,9 +10,6 @@ add_library(polycube STATIC
   transparent_cube.cpp
   port.cpp
   table.cpp
-  http_router.cpp
-  http.cpp
-  http_defs.cpp
   utils.cpp
   guid.cpp
   common.cpp)

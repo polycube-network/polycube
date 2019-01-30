@@ -13,33 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
-#include <map>
-#include <string>
+#include "service_metadata.h"
 
-#include "http.h"
-
-namespace polycube {
-namespace service {
-
-struct ServiceMetadata {
-  std::string description;
-  std::string version;
-  std::string pyangGitRepoId;
-  std::string swaggerCodegenGitRepoId;
-  std::string dataModel;
-  std::string requiredKernelVersion;
-  // Add here additional service metadata
-};
+namespace polycube::service {
 
 class ManagementInterface {
- public:
-  virtual ~ManagementInterface(){};
-  virtual void control_handler(const HttpHandleRequest &request,
-                               HttpHandleResponse &response) = 0;
+ protected:
+  virtual ~ManagementInterface() = default;
 };
-
-}  // namespace service
-}  // namespace polycube
+}  // namespace polycube::service

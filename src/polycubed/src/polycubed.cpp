@@ -32,7 +32,10 @@
 #include "utils.h"
 #include "version.h"
 
-#include <spdlog/spdlog.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
+
+#include "polycubed_core.h"
 
 #define REQUIRED_POLYCUBED_KERNEL ("4.14.0")
 
@@ -55,6 +58,9 @@ void shutdown() {
   static bool done = false;
   if (done)
     return;
+  // Service controllers depend on Rest Server. It is required to remove them
+  // before clearing the rest server in order to avoid segmentation faults.
+  core->clear_servicectrl_list();
   restserver->shutdown();
   logger->debug("rest was shutdown");
   delete core;
@@ -235,8 +241,6 @@ int main(int argc, char *argv[]) {
   }
 
   core = new PolycubedCore();
-  // register services that are shipped with polycube
-  load_services(*core);
 
   // setup rest server
   int thr = 4;
@@ -252,6 +256,9 @@ int main(int argc, char *argv[]) {
                    config.getCertBlacklistPath());
   core->set_rest_server(restserver);
   restserver->start();
+
+  // register services that are shipped with polycube
+  load_services(*core);
 
   // pause the execution of current thread until ctrl+c
   pause();

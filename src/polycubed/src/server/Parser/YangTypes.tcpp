@@ -1,0 +1,273 @@
+/*
+ * Copyright 2018 The Polycube Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "Yang.h"
+
+#include <limits>
+#include <memory>
+#include <string>
+#include <typeindex>
+#include <unordered_map>
+#include <utility>
+
+#include "../Validators/BitsValidator.h"
+#include "../Validators/BoolValidator.h"
+#include "../Validators/EmptyValidator.h"
+#include "../Validators/EnumValidator.h"
+#include "../Validators/LengthValidator.h"
+#include "../Validators/NumberValidators.h"
+#include "../Validators/PatternValidator.h"
+#include "../Validators/UnionValidator.h"
+
+#include "../Types/Decimal64.h"
+#include "../Types/lexical_cast.h"
+#include "../Types/Dummies.h"
+
+namespace polycube::polycubed::Rest::Parser {
+const ValidatorList Yang::GetValidators(const lys_type type) const {
+  bool is_derived = (type.der->type.der != nullptr);
+  if (!is_derived) {
+    return ParseType(type).first;
+  }
+  if (typedef_validators_[type.base].count(type.der->name) == 1) {
+    const auto &validators = typedef_validators_[type.base].at(type.der->name);
+    // move out a copy of the original vector
+    return ValidatorList(validators);
+  }
+  // if it not derived and it is not a typedef, it is a type
+  // without restrictions, thus an empty vector is returned
+  return ValidatorList();
+}
+
+const ValidatorsType Yang::ParseType(const lys_type type) {
+  switch (type.base) {
+  case LY_TYPE_BINARY:
+    return ParseBinary(type.info.binary);
+  case LY_TYPE_BITS:
+    return ParseBits(type.info.bits);
+  case LY_TYPE_BOOL:
+    return ParseBoolean();
+  case LY_TYPE_DEC64:
+    return ParseDecimal64(type.info.dec64);
+  case LY_TYPE_EMPTY:
+    return ParseEmpty();
+  case LY_TYPE_ENUM:
+    return ParseEnum(type.info.enums);
+  case LY_TYPE_IDENT:
+    // TODO mississing (required identity first!)
+  case LY_TYPE_INST:
+    return ParseInstanceIdentifier(type.info.inst, type.parent->module->name);
+  case LY_TYPE_LEAFREF:
+    return ParseLeafRef(type.info.lref);
+  case LY_TYPE_STRING:
+    return ParseString(type.info.str);
+  case LY_TYPE_UNION:
+    return ParseUnion(type.info.uni);
+  case LY_TYPE_INT8:
+    return ParseInteger<std::int8_t>(type.info.num);
+  case LY_TYPE_UINT8:
+    return ParseInteger<std::uint8_t>(type.info.num);
+  case LY_TYPE_INT16:
+    return ParseInteger<std::int16_t>(type.info.num);
+  case LY_TYPE_UINT16:
+    return ParseInteger<std::uint16_t>(type.info.num);
+  case LY_TYPE_INT32:
+    return ParseInteger<std::int32_t>(type.info.num);
+  case LY_TYPE_UINT32:
+    return ParseInteger<std::uint32_t>(type.info.num);
+  case LY_TYPE_INT64:
+    return ParseInteger<std::int64_t>(type.info.num);
+  case LY_TYPE_UINT64:
+    return ParseInteger<std::uint64_t>(type.info.num);
+  default:
+    throw std::runtime_error("Unsupported Type");
+  }
+}
+
+template <typename T>
+const std::unordered_map<T, T> Yang::ParseRange(std::string_view &range) {
+  std::unordered_map<T, T> ranges;
+  std::size_t pipe_pos = 0;
+  do {
+    // split string in '|' separated tokens
+    pipe_pos = range.find('|');
+    std::string_view current = range.substr(0, pipe_pos);
+    if (pipe_pos != std::string_view::npos) {
+      range = range.substr(pipe_pos + 1);
+    }
+    // split token in '..' separated ranges (if any)
+    std::size_t range_pos = current.find("..");
+    if (range_pos == std::string_view::npos) {  // exact value
+      T exact;
+      if (current == "min") {
+        if constexpr (std::is_same<T, Types::Decimal64>::value) {
+          exact = Types::Decimal64::Min(18);
+        } else {
+          exact = std::numeric_limits<T>::min();
+        }
+      } else if (current == "max") {
+        if constexpr (std::is_same<T, Types::Decimal64>::value) {
+          exact = Types::Decimal64::Max(0);
+        } else {
+          exact = std::numeric_limits<T>::max();
+        }
+      } else {
+        exact = Types::lexical_cast<T>(std::string{current.data(), current.length()});
+      }
+      ranges.emplace(exact, exact);
+    } else {  // ranges
+      std::string_view min_ch = current.substr(0, range_pos);
+      std::string_view max_ch = current.substr(range_pos + 2);
+      T min;
+      T max;
+      bool literal_min = false;
+      bool literal_max = false;
+      if (min_ch == "min") {
+        min = std::numeric_limits<T>::min();
+        literal_min = true;
+      } else if (max_ch == "max") {
+        max = std::numeric_limits<T>::max();
+        literal_max = true;
+      }
+
+      if (!literal_min) {
+        min = Types::lexical_cast<T>(std::string{min_ch.data(), min_ch.length()});
+      }
+      if (!literal_max) {
+        max = Types::lexical_cast<T>(std::string{max_ch.data(), max_ch.length()});
+      }
+
+      ranges.emplace(min, max);
+    }
+  } while (pipe_pos != std::string_view::npos);
+  return ranges;
+}
+
+const std::shared_ptr<Validators::LengthValidator> Yang::ParseLength(
+    const lys_restr *length, const bool binary) {
+  auto validator = std::make_shared<Validators::LengthValidator>(binary);
+  std::string_view expression{length->expr};
+  validator->AddRanges(ParseRange<std::uint64_t>(expression));
+  return validator;
+}
+
+const ValidatorsType Yang::ParseEnum(const lys_type_info_enums enums) {
+  auto validator = std::make_shared<Validators::EnumValidator>();
+  for (unsigned i = 0; i < enums.count; ++i) {
+    validator->AddEnum(enums.enm[i].name);
+  }
+  ValidatorList validators = {
+      std::static_pointer_cast<Validators::ValueValidator>(validator)};
+  return {std::move(validators), {std::type_index(typeid(Types::Enum))}};
+}
+
+const ValidatorsType Yang::ParseString(const lys_type_info_str str) {
+  ValidatorList validators;
+  for (unsigned i = 0; i < str.pat_count; ++i) {
+    auto current_pattern = str.patterns[i].expr;
+    bool inverse = true;
+    if (current_pattern[0] == 0x06) {
+      inverse = false;
+    }
+    current_pattern = current_pattern + 1;
+    validators.push_back(std::static_pointer_cast<Validators::ValueValidator>(
+        std::make_shared<Validators::PatternValidator>(current_pattern,
+                                                       inverse)));
+  }
+  if (str.length != nullptr) {
+    validators.push_back(std::static_pointer_cast<Validators::ValueValidator>(
+        ParseLength(str.length, false)));
+  }
+  return {std::move(validators), {std::type_index(typeid(std::string))}};
+}
+
+template <typename T>
+const ValidatorsType Yang::ParseInteger(const lys_type_info_num num) {
+  ValidatorList validators;
+  auto validator = std::make_shared<Validators::NumberValidator<T>>(
+      std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+  if (num.range != nullptr) {
+    std::string_view expression{num.range->expr};
+    validator->AddRanges(ParseRange<T>(expression));
+  }
+  return {std::move(validators), {std::type_index(typeid(T))}};
+}
+
+const ValidatorsType Yang::ParseDecimal64(const lys_type_info_dec64 dec64) {
+  ValidatorList validators;
+  auto validator = std::make_shared<Validators::DecimalValidator>(dec64.dig);
+  if (dec64.range != nullptr) {
+    std::string_view expression{dec64.range->expr};
+    validator->AddRanges(ParseRange<Types::Decimal64>(expression));
+  }
+  return {std::move(validators), {std::type_index(typeid(Types::Decimal64))}};
+}
+
+const ValidatorsType Yang::ParseBits(const lys_type_info_bits bits) {
+  ValidatorList validators;
+  auto validator = std::make_shared<Validators::BitsValidator>();
+  for (unsigned i = 0; i < bits.count; ++i) {
+    auto bit = bits.bit[i];
+    validator->AddBit(bit.pos, bit.name);
+  }
+  return {std::move(validators), {std::type_index(typeid(Types::Bits))}};
+}
+
+const ValidatorsType Yang::ParseBinary(const lys_type_info_binary binary) {
+  ValidatorList validators;
+  if (binary.length != nullptr) {
+    validators.push_back(std::static_pointer_cast<Validators::ValueValidator>(
+        ParseLength(binary.length, false)));
+  }
+  return {std::move(validators), {std::type_index(typeid(Types::Binary))}};
+}
+
+const ValidatorsType Yang::ParseLeafRef(const lys_type_info_lref lref) {
+  // TODO lref contains info about require-instance, missing ATM
+  return ParseType(lref.target->type);
+}
+
+const ValidatorsType Yang::ParseBoolean() {
+  auto validator = std::make_shared<Validators::BoolValidator>();
+  ValidatorList validators{
+      std::static_pointer_cast<Validators::ValueValidator>(validator)};
+  return {std::move(validators), {std::type_index(typeid(bool))}};
+}
+
+const ValidatorsType Yang::ParseEmpty() {
+  ValidatorList validators{std::static_pointer_cast<Validators::ValueValidator>(
+      std::make_shared<Validators::EmptyValidator>())};
+  return {std::move(validators), {std::type_index(typeid(Types::Empty))}};
+}
+
+const ValidatorsType Yang::ParseUnion(const lys_type_info_union yunion) {
+  ValidatorList validators;
+  std::unordered_set<std::type_index> types;
+  auto validator = std::make_shared<Validators::UnionValidator>();
+  for (unsigned i = 0; i < yunion.count; ++i) {
+    const auto &parsed = ParseType(yunion.types[i]);
+    types.insert(std::begin(parsed.second), std::end(parsed.second));
+    for (const auto &type : parsed.second) {
+      validator->AddType(type, parsed.first);
+    }
+  }
+  return {std::move(validators), std::move(types)};
+}
+
+const ValidatorsType Yang::ParseInstanceIdentifier(
+    [[maybe_unused]] const lys_type_info_inst iid, const char *context) {
+  throw std::runtime_error("Instance Identifier is not supported.");
+}
+}  // namespace polycube::polycubed::Rest::Parser

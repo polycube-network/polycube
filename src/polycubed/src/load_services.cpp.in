@@ -5,19 +5,19 @@
 using namespace polycube::polycubed;
 
 void load_services(PolycubedCore &core) {
-
   std::shared_ptr<spdlog::logger> logger = spdlog::get("polycubed");
 
   // tries to load a service, in case of error just print and
   // continue
-  #define try_to_load(_name, _path)                           \
-    do {                                                      \
-      try {                                                   \
-        core.add_servicectrl(_name, _path);                   \
-      } catch (const std::exception &e) {                     \
-        logger->error("Error loading {0}: {1}", _name, e.what());  \
-      };                                                      \
-    } while(0)                                                \
+  #define try_to_load(_name, _path)                                   \
+    do {                                                              \
+      try {                                                           \
+        core.add_servicectrl(_name, ServiceControllerType::LIBRARY,   \
+                            "/polycube/v1/", _path);                  \
+      } catch (const std::exception &e) {                             \
+        logger->error("Error loading {0}: {1}", _name, e.what());     \
+      };                                                              \
+    } while (0)
 
   ${LOAD_SERVICES}
 

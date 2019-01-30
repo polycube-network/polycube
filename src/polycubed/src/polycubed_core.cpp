@@ -38,6 +38,8 @@ std::string PolycubedCore::get_polycubeendpoint() {
 }
 
 void PolycubedCore::add_servicectrl(const std::string &name,
+                                    const ServiceControllerType type,
+                                    const std::string &base_url,
                                     const std::string &path) {
   // logger->debug("PolycubedCore: post servicectrl {0}", name);
   if (servicectrls_map_.count(name) != 0) {
@@ -48,14 +50,14 @@ void PolycubedCore::add_servicectrl(const std::string &name,
   bool inserted;
   std::tie(iter, inserted) = servicectrls_map_.emplace(
       std::piecewise_construct, std::forward_as_tuple(name),
-      std::forward_as_tuple(name, path));
+      std::forward_as_tuple(name, path, base_url, type));
   if (!inserted) {
     throw std::runtime_error("error creating service controller");
   }
 
   ServiceController &s = iter->second;
   try {
-    s.connect(get_polycubeendpoint());
+    s.connect(this);
     logger->info("service {0} loaded using {1}", s.get_name(),
                  s.get_servicecontroller());
   } catch (const std::exception &e) {
@@ -79,6 +81,14 @@ std::string PolycubedCore::get_servicectrl(const std::string &name) {
   return j.dump(4);
 }
 
+const ServiceController &PolycubedCore::get_service_controller(
+    const std::string &name) const {
+  if (servicectrls_map_.count(name) == 0) {
+    throw std::runtime_error("Service Controller does not exist");
+  }
+  return servicectrls_map_.at(name);
+}
+
 std::list<std::string> PolycubedCore::get_servicectrls_names() {
   std::list<std::string> list;
   for (auto &it : servicectrls_map_) {
@@ -94,7 +104,6 @@ std::list<ServiceController const *> PolycubedCore::get_servicectrls_list()
   for (auto &it : servicectrls_map_) {
     list.push_back(&it.second);
   }
-
   return list;
 }
 
@@ -119,6 +128,10 @@ void PolycubedCore::delete_servicectrl(const std::string &name) {
   // is necessary to undeploy them?
   servicectrls_map_.erase(name);
   logger->info("delete service {0}", name);
+}
+
+void PolycubedCore::clear_servicectrl_list() {
+  servicectrls_map_.clear();
 }
 
 std::string PolycubedCore::get_cube(const std::string &name) {

@@ -33,3 +33,5 @@ add_service(transparenthelloworld pcn-transparent-helloworld)
 
 # save string to create code that load the services
 SET_PROPERTY(GLOBAL PROPERTY LOAD_SERVICES_ ${LOAD_SERVICES})
+
+install(DIRECTORY datamodel-common DESTINATION include/polycube)
