@@ -40,7 +40,7 @@ fi
 
 cd $HOME/dev
 
-APT_CMD="apt-get"
+APT_CMD="apt"
 CONFIG_PATH=$HOME/.config/polycube/
 SWAGGER_CODEGEN_CONFIG_FILENAME=swagger_codegen_config.json
 
@@ -70,7 +70,7 @@ if cd pyang-swagger; then
 	git checkout polycube
 	git pull origin polycube
 else
-	git clone https://github.com/polycube-network/pyang-swagger.git -b polycube
+	git clone https://github.com/polycube-network/pyang-swagger.git -b polycube --depth=1
 	cd pyang-swagger
 fi
 
@@ -82,7 +82,7 @@ if cd swagger-codegen; then
 	git checkout polycube
 	git pull origin polycube
 else
-	git clone https://github.com/polycube-network/swagger-codegen.git -b polycube
+	git clone https://github.com/polycube-network/swagger-codegen.git -b polycube --depth=1
 	cd swagger-codegen
 fi
 
