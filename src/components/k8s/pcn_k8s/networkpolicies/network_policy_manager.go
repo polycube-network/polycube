@@ -88,9 +88,10 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	generatedFirewalls := []k8sfirewall.Firewall{}
 
 	var ingress []networking_v1.NetworkPolicyIngressRule
-	var parsedIngressChain k8sfirewall.Chain
 	var egress []networking_v1.NetworkPolicyEgressRule
+	var parsedIngressChain k8sfirewall.Chain
 	var parsedEgressChain k8sfirewall.Chain
+	var namespacesGroup map[string][]polycubepod.Pod
 
 	l.Infof("Network Policy Manager is going to parse the default policy")
 
@@ -117,7 +118,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 
 	//	No pods found?
 	if len(podsAffected) < 1 {
-		l.Infoln("Policy deployed but no pods has been found.")
+		l.Infoln("Policy deployed but no pod has been found.")
 		return []k8sfirewall.Firewall{}, nil
 	}
 
@@ -171,66 +172,90 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	}
 
 	//-------------------------------------
-	//	Parse the ingress rules
+	//	Group pods by their namespace
 	//-------------------------------------
 
-	if ingress != nil {
-		parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, namespace)
-		/*generatedRules := manager.parseDefaultIngressRules(spec.Ingress, namespace)
-		generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
-	}
+	namespacesGroup = make(map[string][]polycubepod.Pod)
 
-	//-------------------------------------
-	//	Parse the egress rules
-	//-------------------------------------
-
-	if egress != nil {
-		parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, namespace)
-		/*generatedRules := manager.parseDefaultEgressRules(spec.Egress, namespace)
-		generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
-	}
-
-	//-------------------------------------
-	//	Put everything together
-	//-------------------------------------
-
+	//	This is important! Some rules specify that the restriction must be applied to the namespace they BELONG, not every single one.
+	//	Example: IPBlock rules don't consider namespaces, but PodSelector (and/or NamespaceSelector) may restrict access based on the
+	//	namespace that particular pod is in (i.e.: only allowing pods from the same namespace they are found).
+	//	But unfortunately, we don't know in advance if the policy only consists of IPBlock-s without parsing it first.
+	//	So, we need to group our found pods by their namespace, in order to do a correct parsing.
 	for _, pod := range podsAffected {
 
-		firewall := k8sfirewall.Firewall{}
+		if _, ok := namespacesGroup[pod.Pod.Namespace]; !ok {
+			namespacesGroup[pod.Pod.Namespace] = []polycubepod.Pod{}
+		}
 
-		//	Insert the ingress rules
+		namespacesGroup[pod.Pod.Namespace] = append(namespacesGroup[pod.Pod.Namespace], pod)
+	}
+
+	//	The parsing must be done for every single namespace found...
+	for currentNamespace, podsInside := range namespacesGroup {
+
+		//-------------------------------------
+		//	Parse the ingress rules
+		//-------------------------------------
+
 		if ingress != nil {
-
-			//	Make a copy to work with, this way we will not iterate through firewall.Chain[i] (we don't know which one is)
-			ingressChain := parsedIngressChain
-
-			//	Complete the ingress rules: insert the dst (this pod)
-			for i := 0; i < len(ingressChain.Rule); i++ {
-				//	Make sure not to target myself
-				if ingressChain.Rule[i].Src != pod.Pod.Status.PodIP {
-					ingressChain.Rule[i].Dst = pod.Pod.Status.PodIP
-				}
-			}
-			firewall.Chain = append(firewall.Chain, ingressChain)
+			parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, currentNamespace)
+			/*generatedRules := manager.parseDefaultIngressRules(spec.Ingress, namespace)
+			generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
 		}
 
-		//	Insert the egress rules
+		//-------------------------------------
+		//	Parse the egress rules
+		//-------------------------------------
+
 		if egress != nil {
-
-			//	Make a copy
-			egressChain := parsedEgressChain
-
-			//	Complete the egress rules: insert the src (this pod)
-			for i := 0; i < len(egressChain.Rule); i++ {
-				//	Make sure not to target myself
-				if egressChain.Rule[i].Dst != pod.Pod.Status.PodIP {
-					egressChain.Rule[i].Src = pod.Pod.Status.PodIP
-				}
-			}
-			firewall.Chain = append(firewall.Chain, egressChain)
+			parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, currentNamespace)
+			/*generatedRules := manager.parseDefaultEgressRules(spec.Egress, namespace)
+			generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
 		}
 
-		generatedFirewalls = append(generatedFirewalls, firewall)
+		//-------------------------------------
+		//	Put everything together
+		//-------------------------------------
+
+		for _, pod := range podsInside {
+
+			firewall := k8sfirewall.Firewall{}
+
+			//	Insert the ingress rules
+			if ingress != nil {
+
+				//	Make a copy to work with, this way we will not iterate through firewall.Chain[i] (we don't know which one is)
+				ingressChain := parsedIngressChain
+
+				//	Complete the ingress rules: insert the dst (this pod)
+				for i := 0; i < len(ingressChain.Rule); i++ {
+					//	Make sure not to target myself
+					if ingressChain.Rule[i].Src != pod.Pod.Status.PodIP {
+						ingressChain.Rule[i].Dst = pod.Pod.Status.PodIP
+					}
+				}
+				firewall.Chain = append(firewall.Chain, ingressChain)
+			}
+
+			//	Insert the egress rules
+			if egress != nil {
+
+				//	Make a copy
+				egressChain := parsedEgressChain
+
+				//	Complete the egress rules: insert the src (this pod)
+				for i := 0; i < len(egressChain.Rule); i++ {
+					//	Make sure not to target myself
+					if egressChain.Rule[i].Dst != pod.Pod.Status.PodIP {
+						egressChain.Rule[i].Src = pod.Pod.Status.PodIP
+					}
+				}
+				firewall.Chain = append(firewall.Chain, egressChain)
+			}
+
+			generatedFirewalls = append(generatedFirewalls, firewall)
+		}
 	}
 
 	//l.Infof("generated firewall: %+v", generatedFirewall)
@@ -331,15 +356,26 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 
 		//	From is [] ?
 		/* UPDATE: quoting from official documentation:
-			"If this field is empty or missing, this rule matches all sources (traffic not restricted by
-			source). If this field is present and contains at least on item, this rule
-			allows traffic only if the traffic matches at least one item in the from list."
-		So I guess that this can't be empty, that's why I removed it. */
+		"If this field is empty or missing, this rule matches all sources (traffic not restricted by
+		source). If this field is present and contains at least on item, this rule
+		allows traffic only if the traffic matches at least one item in the from list."
+		I disabled this because this never verifies, even if you set it as nil, kubernetes instantiate it to an empty array by default. */
 		/*if len(rule.From) < 1 {
-			l.Infoln("len(From) is 0, NO resources are allowed")
-			incompleteRules = append(incompleteRules, k8sfirewall.ChainRule{
-				Action: "drop",
-			})
+			l.Debugln("From has 0 len: NO resources are allowed")
+
+			//	TODO: is this correct?
+			//	If we have at least one port...
+			if len(generatedPorts) > 0 {
+				incompleteRules = append(incompleteRules, k8sfirewall.ChainRule{
+					Action: "drop",
+					//	TODO: check this.
+
+					Src: "0",
+				})
+			} else {
+				//	...	otherwise we need to modify the default behaviour
+				ingressChain.Default_ = "drop"
+			}
 		}*/
 
 		for i := 0; i < len(rule.From) && proceed; i++ {
@@ -471,13 +507,41 @@ func (manager *NetworkPolicyManager) parseDefaultEgressRules(rules []networking_
 
 		//	To is {} ?
 		if rule.To == nil {
-			l.Infoln("To is nil: ALL resources are allowed")
-			incompleteRules = append(incompleteRules, k8sfirewall.ChainRule{
-				Action: "forward",
-				//	TODO: check this.
-				Dst: "0",
-			})
+			l.Debugln("To is nil: ALL resources are allowed")
+
+			//	TODO: is this correct?
+			//	If we have at least one port...
+			if len(generatedPorts) > 0 {
+				incompleteRules = append(incompleteRules, k8sfirewall.ChainRule{
+					Action: "forward",
+					//	TODO: check this.
+					Dst: "0",
+				})
+			} else {
+				//	...	otherwise we need to modify the default behaviour
+				egressChain.Default_ = "forward"
+			}
 		}
+
+		//	To is [] ?
+		//	UPDATE: commented this. Read what I wrote about FROM
+		/*if len(rule.To) < 1 {
+			l.Infoln("To has 0 len: NO resources are allowed")
+
+			//	TODO: is this correct?
+			//	If we have at least one port...
+			if len(generatedPorts) > 0 {
+				incompleteRules = append(incompleteRules, k8sfirewall.ChainRule{
+					Action: "drop",
+					//	TODO: check this.
+
+					Dst: "0",
+				})
+			} else {
+				//	...	otherwise we need to modify the default behaviour
+				egressChain.Default_ = "drop"
+			}
+		}*/
 
 		for i := 0; i < len(rule.To) && proceed; i++ {
 			to := rule.To[i]
