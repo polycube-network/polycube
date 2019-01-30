@@ -328,11 +328,19 @@ void Cube<PortType>::impl::remove_port(const std::string &port_name) {
 
 template <class PortType>
 std::shared_ptr<PortType> Cube<PortType>::impl::get_port(const std::string &port_name) {
+  if (ports_by_name_.count(port_name) == 0) {
+    throw std::runtime_error("Port " + port_name + " does not exist");
+  }
+
   return ports_by_name_.at(port_name);
 }
 
 template <class PortType>
 std::shared_ptr<PortType> Cube<PortType>::impl::get_port(int index) {
+  if (ports_by_id_.count(index) == 0) {
+    throw std::runtime_error("Port id " + std::to_string(index) + " does not exist");
+  }
+
   return ports_by_id_.at(index);
 }
 
