@@ -36,8 +36,8 @@ enum class LogLevel {
 
 std::string logLevelString(polycube::LogLevel l);
 polycube::LogLevel stringLogLevel(const std::string &level);
-/* Log level represantation in polycube and spdlog library could change,
- * so in order to avoid conflicts whis function perform the conversion
+/* Log level representation in polycube and spdlog library could change,
+ * so in order to avoid conflicts with function perform the conversion
  * between the two representations
  */
 spdlog::level::level_enum logLevelToSPDLog(polycube::LogLevel level);
