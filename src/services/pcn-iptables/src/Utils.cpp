@@ -432,7 +432,7 @@ bool Chain::transportProtoFromRulesToMap(
 bool Chain::portFromRulesToMap(
         const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
         const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint16_t> dont_care_rules;
+  std::vector<uint32_t> dont_care_rules;
 
   uint32_t rule_id;
   uint16_t port;
@@ -483,7 +483,7 @@ bool Chain::interfaceFromRulesToMap(
         const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &interfaces,
         const std::vector<std::shared_ptr<ChainRule>> &rules,
         Iptables& iptables) {
-  std::vector<uint16_t> dont_care_rules;
+  std::vector<uint32_t> dont_care_rules;
 
   uint32_t rule_id;
   uint16_t interface;
