@@ -20,20 +20,12 @@
  * A service should define the MANAGER_TYPE macro to the type of the Manager
  * it intends to use
  */
-
 #pragma once
 
 #include "cube_factory.h"
-#include "management_interface.h"
 
 namespace polycube {
 namespace service {
-
-static ManagementInterface *mgmt;
-
-#ifndef MANAGER_TYPE
-#error "MANAGER_TYPE not defined"
-#endif
 
 #ifndef SERVICE_DESCRIPTION
 #define SERVICE_DESCRIPTION ""
@@ -59,35 +51,18 @@ static ManagementInterface *mgmt;
 CubeFactory *factory_;
 std::string logfile_;
 
-extern "C" ServiceMetadata init(CubeFactory *factory, std::string logfile) {
-  ServiceMetadata metadata;
+extern "C" ServiceMetadata init(CubeFactory *factory, const char *logfile) {
+  ServiceMetadata metadata{};
   factory_ = factory;
-  logfile_ = logfile;
-  mgmt = new MANAGER_TYPE();
+  logfile_ = std::string{logfile};
 
   metadata.description = SERVICE_DESCRIPTION;
   metadata.version = SERVICE_VERSION;
   metadata.pyangGitRepoId = SERVICE_PYANG_GIT;
   metadata.swaggerCodegenGitRepoId = SERVICE_SWAGGER_CODEGEN_GIT;
-  metadata.dataModel = std::string(SERVICE_DATA_MODEL);
-  metadata.requiredKernelVersion = std::string(SERVICE_REQUIRED_KERNEL_VERSION);
+  metadata.dataModel = data_model();
+  metadata.requiredKernelVersion = SERVICE_REQUIRED_KERNEL_VERSION;
   return metadata;
 }
-
-extern "C" void control_handler(const HttpHandleRequest &request,
-                                HttpHandleResponse &response) {
-  if (mgmt == nullptr) {
-    return;
-  }
-  mgmt->control_handler(request, response);
-}
-
-extern "C" void uninit() {
-  if (mgmt == nullptr) {
-    return;
-  }
-  delete mgmt;
-}
-
 }  // namespace service
 }  // namespace polycube
