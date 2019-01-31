@@ -1,6 +1,8 @@
 package networkpolicies
 
 import (
+	"sync"
+
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/polycubepod"
 
 	//	TODO-ON-MERGE: change these two to the polycube path
@@ -24,6 +26,8 @@ type NetworkPolicyManager struct {
 	dnpc *controllers.DefaultNetworkPolicyController
 
 	podController controllers.PodController
+
+	fwAPI FirewallAPI
 }
 
 type parsedProtoPort struct {
@@ -52,30 +56,55 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController, p
 		logBy: "Network Policy Manager",
 	}
 
-	//	For use with k8s
+	//	Link the default policy controller
 	if dnpc != nil {
 		manager.dnpc = dnpc
 		//	Let me listen for default network policies deployments
 		dnpc.Subscribe(events.New, manager.ManageDefaultPolicy)
 		//dnpc.Subscribe(events.Update, manager.ParseDefaultPolicy)
 		//dnpc.Subscribe(events.Delete, manager.ParseDefaultPolicy)
+	} else {
+		l.Warningln("Warning: default policy controller is nil, functions involving pods and namespaces may cause errors")
 	}
 
+	//	Link the pod controller
 	if podController != nil {
 		manager.podController = podController
 
 		//podController.Subscribe()
 	} else {
-		l.Warningln("Warning: pod controller is nil, functions involving pods and namespaces won't work")
+		l.Warningln("Warning: pod controller is nil, functions involving pods and namespaces may cause errors")
 	}
+
+	//manager.fwAPI = NewFirewallAPI()
 
 	return manager
 }
 
 func (manager *NetworkPolicyManager) ManageDefaultPolicy(policy *networking_v1.NetworkPolicy) {
 
-	//	Get the firewall instance
-	//firewall, err := manager.ParseDefaultPolicy(policy)
+	var l = log.WithFields(log.Fields{
+		"by":     manager.logBy,
+		"method": "ManageDefaultPolicy()",
+	})
+
+	l.Debugln("Going to manage the default policy")
+
+	//	Does a firewall already exist for this?
+	//	If yes, then we have to update.
+	//	If not, then we have to create a brand new one
+
+	//	Get the firewalls
+	firewalls, err := manager.ParseDefaultPolicy(policy)
+
+	if err != nil {
+		l.Errorln("An error occurred while parsing the default policy!", err)
+		return
+	}
+
+	l.Debugln("count", len(firewalls))
+
+	l.Debugf("first: %+v\n", firewalls[0])
 }
 
 func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) ([]k8sfirewall.Firewall, error) {
@@ -89,9 +118,9 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 
 	var ingress []networking_v1.NetworkPolicyIngressRule
 	var egress []networking_v1.NetworkPolicyEgressRule
-	var parsedIngressChain k8sfirewall.Chain
-	var parsedEgressChain k8sfirewall.Chain
 	var namespacesGroup map[string][]polycubepod.Pod
+	var namespaceWaitGroup sync.WaitGroup
+	var namespaceLock sync.Mutex
 
 	l.Infof("Network Policy Manager is going to parse the default policy")
 
@@ -192,73 +221,136 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	}
 
 	//	The parsing must be done for every single namespace found...
-	for currentNamespace, podsInside := range namespacesGroup {
+	namespaceWaitGroup.Add(len(namespacesGroup))
+	for ns, pods := range namespacesGroup {
 
-		//-------------------------------------
-		//	Parse the ingress rules
-		//-------------------------------------
+		go func(currentNamespace string, podsInside []polycubepod.Pod) {
 
-		if ingress != nil {
-			parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, currentNamespace)
-			/*generatedRules := manager.parseDefaultIngressRules(spec.Ingress, namespace)
-			generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
-		}
+			var parsedIngressChain k8sfirewall.Chain
+			var parsedEgressChain k8sfirewall.Chain
+			var parseWait sync.WaitGroup
+			var parseLen = 0
+			defer namespaceWaitGroup.Done()
 
-		//-------------------------------------
-		//	Parse the egress rules
-		//-------------------------------------
-
-		if egress != nil {
-			parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, currentNamespace)
-			/*generatedRules := manager.parseDefaultEgressRules(spec.Egress, namespace)
-			generatedFirewall.Chain = append(generatedFirewall.Chain, generatedRules)*/
-		}
-
-		//-------------------------------------
-		//	Put everything together
-		//-------------------------------------
-
-		for _, pod := range podsInside {
-
-			firewall := k8sfirewall.Firewall{}
-
-			//	Insert the ingress rules
+			//	To speed things up, we're going to parse Ingress and Egress concurrently.
+			//	But how many routines do I have to wait for? (we may only have one and not both...)
 			if ingress != nil {
-
-				//	Make a copy to work with, this way we will not iterate through firewall.Chain[i] (we don't know which one is)
-				ingressChain := parsedIngressChain
-
-				//	Complete the ingress rules: insert the dst (this pod)
-				for i := 0; i < len(ingressChain.Rule); i++ {
-					//	Make sure not to target myself
-					if ingressChain.Rule[i].Src != pod.Pod.Status.PodIP {
-						ingressChain.Rule[i].Dst = pod.Pod.Status.PodIP
-					}
-				}
-				firewall.Chain = append(firewall.Chain, ingressChain)
+				parseLen++
 			}
-
-			//	Insert the egress rules
 			if egress != nil {
+				parseLen++
+			}
+			parseWait.Add(parseLen)
 
-				//	Make a copy
-				egressChain := parsedEgressChain
+			//-------------------------------------
+			//	Parse the ingress rules
+			//-------------------------------------
 
-				//	Complete the egress rules: insert the src (this pod)
-				for i := 0; i < len(egressChain.Rule); i++ {
-					//	Make sure not to target myself
-					if egressChain.Rule[i].Dst != pod.Pod.Status.PodIP {
-						egressChain.Rule[i].Src = pod.Pod.Status.PodIP
-					}
-				}
-				firewall.Chain = append(firewall.Chain, egressChain)
+			if ingress != nil {
+				go func() {
+					defer parseWait.Done()
+					parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, currentNamespace)
+				}()
 			}
 
-			generatedFirewalls = append(generatedFirewalls, firewall)
-		}
+			//-------------------------------------
+			//	Parse the egress rules
+			//-------------------------------------
+
+			if egress != nil {
+				go func() {
+					defer parseWait.Done()
+					parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, currentNamespace)
+				}()
+			}
+
+			//	Wait for them to finish before doing the rest
+			parseWait.Wait()
+
+			//-------------------------------------
+			//	Put everything together
+			//-------------------------------------
+
+			//	We're going to do this for every pod, concurrently
+			//	(we're reusing parsewait, avoiding creation of another wait group)
+			parseWait.Add(len(podsInside))
+
+			for _, pod := range podsInside {
+
+				go func(currentPod polycubepod.Pod) {
+
+					defer parseWait.Done()
+					var applyWaitGroup sync.WaitGroup
+					var firewallLock sync.Mutex
+					firewall := k8sfirewall.Firewall{}
+
+					//	There may be *a lot* of generated rules, so we're going to do this concurrently as well
+					applyWaitGroup.Add(parseLen)
+
+					//	Insert the ingress rules
+					if ingress != nil {
+
+						go func() {
+							applyWaitGroup.Done()
+							//	Make a copy to work with, this way we will not iterate through firewall.Chain[i] (we don't know which one is)
+							ingressChain := parsedIngressChain
+
+							//	Complete the ingress rules: insert the dst (this pod)
+							for i := 0; i < len(ingressChain.Rule); i++ {
+								//	Make sure not to target myself
+								if ingressChain.Rule[i].Src != currentPod.Pod.Status.PodIP {
+									ingressChain.Rule[i].Dst = currentPod.Pod.Status.PodIP
+								}
+							}
+
+							firewallLock.Lock()
+							firewall.Chain = append(firewall.Chain, ingressChain)
+							firewallLock.Unlock()
+
+						}()
+					}
+
+					//	Insert the egress rules
+					if egress != nil {
+
+						go func() {
+							defer applyWaitGroup.Done()
+							//	Make a copy
+							egressChain := parsedEgressChain
+
+							//	Complete the egress rules: insert the src (this pod)
+							for i := 0; i < len(egressChain.Rule); i++ {
+								//	Make sure not to target myself
+								if egressChain.Rule[i].Dst != currentPod.Pod.Status.PodIP {
+									egressChain.Rule[i].Src = currentPod.Pod.Status.PodIP
+								}
+							}
+
+							firewallLock.Lock()
+							firewall.Chain = append(firewall.Chain, egressChain)
+							firewallLock.Unlock()
+						}()
+					}
+
+					//	Wait for the two goroutines to finish applying and then add the generated firewall in the list
+					applyWaitGroup.Wait()
+
+					namespaceLock.Lock()
+					generatedFirewalls = append(generatedFirewalls, firewall)
+					namespaceLock.Unlock()
+				}(pod)
+
+			}
+
+			//	Wait for all the pods to generate their own firewall
+			parseWait.Wait()
+
+		}(ns, pods)
 	}
 
-	//l.Infof("generated firewall: %+v", generatedFirewall)
+	//	Wait for parsing to finish for all the namespaces
+	namespaceWaitGroup.Wait()
+
 	return generatedFirewalls, nil
 }
 
