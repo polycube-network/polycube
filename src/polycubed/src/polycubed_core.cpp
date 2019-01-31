@@ -36,36 +36,6 @@ std::string PolycubedCore::get_polycubeendpoint() {
   return polycubeendpoint_;
 }
 
-void PolycubedCore::control_handler(const std::string &service,
-                                    const HttpHandleRequest &request,
-                                    HttpHandleResponse &response) {
-  logger->trace("control request for {0}", service);
-  auto iter = servicectrls_map_.find(service);
-  if (iter != servicectrls_map_.end()) {
-    ServiceController &s = iter->second;
-    s.managementInterface->control_handler(request, response);
-  } else {
-    // if there is not a service with that name, it is possible that
-    // the name refers to a cube, check it.
-    std::string actual_service = ServiceController::get_cube_service(service);
-    if (actual_service.empty()) {
-      response.set_code(service::Http::Code::Not_Found);
-      return;
-    }
-
-    // update request, add the actual name of the service on the url
-    std::string new_url = actual_service + "/" + request.resource();
-
-    // FIXME: would it make sense to provide a set_url() method for
-    // HttpHandleRequeest?
-    HttpHandleRequest new_req(request.method(), new_url, request.body(),
-                              request.help_type());
-
-    ServiceController &s = servicectrls_map_.at(actual_service);
-    s.managementInterface->control_handler(new_req, response);
-  }
-}
-
 void PolycubedCore::add_servicectrl(const std::string &name,
                                     const std::string &path) {
   // logger->debug("PolycubedCore: post servicectrl {0}", name);

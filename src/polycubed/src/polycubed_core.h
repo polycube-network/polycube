@@ -42,10 +42,6 @@ class PolycubedCore {
   PolycubedCore();
   ~PolycubedCore();
 
-  void control_handler(const std::string &service,
-                       const HttpHandleRequest &request,
-                       HttpHandleResponse &response);
-
   void add_servicectrl(const std::string &name, const std::string &path);
   std::string get_servicectrl(const std::string &name);
   std::string get_servicectrls();

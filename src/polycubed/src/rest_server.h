@@ -98,9 +98,6 @@ class RestServer {
   void topology_help(const Rest::Request &request,
                      Http::ResponseWriter response);
 
-  void default_handler(const Rest::Request &request,
-                       Http::ResponseWriter response);
-
   void get_version(const Rest::Request &request, Http::ResponseWriter response);
 
   void logRequest(const Rest::Request &request);
