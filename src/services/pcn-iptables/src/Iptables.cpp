@@ -489,11 +489,7 @@ bool Iptables::fibLookupEnabled() {
 }
 
 uint16_t Iptables::interfaceNameToIndex(const std::string &interface_string) {
-  try {
-    auto p = get_port(interface_string);
-    int index = p->index();
-    return index;
-  } catch (std::exception) {
-    throw std::runtime_error("invalid interface name");
-  }
+  auto p = get_port(interface_string);
+  int index = p->index();
+  return index;
 }
