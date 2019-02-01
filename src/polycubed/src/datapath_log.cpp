@@ -199,20 +199,47 @@ void DatapathLog::stop() {
   }
 }
 
+std::string DatapathLog::replace_string(std::string& subject, const std::string& search, const std::string& replace) {
+    size_t start_pos = 0;
+    while((start_pos = subject.find(search, start_pos)) != std::string::npos) {
+        subject.replace(start_pos, search.length(), replace);
+        start_pos += replace.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return subject;
+}
+
 // matches all C++ comments
 // https://stackoverflow.com/questions/36454069/how-to-remove-c-style-comments-from-code
 static std::regex regComments(R"***((?:\/\/(?:\\\n|[^\n])*)|(?:\/\*[\s\S]*?\*\/)|((?:R"([^(\\\s]{0,16})\([^)]*\)\2")|(?:@"[^"]*?")|(?:"(?:\?\?'|\\\\|\\"|\\\n|[^"])*?")|(?:'(?:\\\\|\\'|\\\n|[^'])*?')))***");
 
 // matches all calls to pcn_log(ctx, ...)
-static std::regex regN(R"***(pcn_log\(([\s\S]+?)\)\s*;)***");
+static std::regex regN(R"***(pcn_log\s*\(([\s\S]+?)\)\s*;)***");
+static std::regex regNewLine(R"***(/(\r\n)+|\r+|\n+|\t+/i)***");
+static std::regex regAddSpaces(R"***( +)***");
 
-static std::regex regNPkt(R"***(pcn_pkt_log\(([\s\S]+?)\)\s*;)***");
+static std::regex regNPkt(R"***(pcn_pkt_log\s*\(([\s\S]+?)\)\s*;)***");
+
+std::string DatapathLog::dp_callback(const std::smatch& m) {
+    std::string match = std::regex_replace(m.str(1), regNewLine, "");
+    match = std::regex_replace(match, regAddSpaces, " ");
+    std::string new_string = std::string(REPLACE_BASE);
+    new_string = DatapathLog::replace_string(new_string, "$1", match);
+    return new_string;
+}
+
+std::string DatapathLog::dp_callback_pkt(const std::smatch& m) {
+    std::string match = std::regex_replace(m.str(1), regNewLine, "");
+    match = std::regex_replace(match, regAddSpaces, " ");
+    std::string new_string = std::string(REPLACE_BASE_PKT);
+    new_string = DatapathLog::replace_string(new_string, "$1", match);
+    return new_string;
+}
 
 std::string DatapathLog::parse_log(const std::string &code) {
   // remove all comments from the code before going on
-  auto code1 = regex_replace(code, regComments, "$1");
-  auto code2 = std::regex_replace(code1, regN, REPLACE_BASE);
-  auto code3 = std::regex_replace(code2, regNPkt, REPLACE_BASE_PKT);
+  auto code1 = std::regex_replace(code, regComments, "$1");
+  auto code2 = std::regex_replace_cb(code1, regN, DatapathLog::dp_callback);
+  auto code3 = std::regex_replace_cb(code2, regNPkt, DatapathLog::dp_callback_pkt);
   return BASE_CODE + code3;
 }
 

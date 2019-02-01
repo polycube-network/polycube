@@ -155,7 +155,6 @@ Two special format specifiers are available:
 Please note the the custom specifiers spec the data to be in network byte order while standard specifiers expects it to be in host by order.
 
 Current limitations:
- - The whole call to `pcn_log` should be on the same line
  - Cannot be used inside a macro
  - Maximum 4 arguments are allowed
 
