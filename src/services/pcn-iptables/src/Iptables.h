@@ -179,6 +179,8 @@ class Iptables : public polycube::service::Cube<Ports>,
 
   bool fibLookupEnabled();
 
+  uint16_t interfaceNameToIndex(const std::string &interface_string);
+
   /*==========================
    *ATTRIBUTES DECLARATION
    *==========================*/
@@ -421,6 +423,28 @@ class Iptables : public polycube::service::Cube<Ports>,
       bool wildcard_rule_;
       std::string wildcard_string_;
   };
+
+
+  class InterfaceLookup : public Program {
+  public:
+      InterfaceLookup(const int &index, const ChainNameEnum &chain,
+                   const int &type, Iptables &outer);
+      InterfaceLookup(const int &index, const ChainNameEnum &chain,
+                   const int &type, Iptables &outer,
+                   const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
+
+      ~InterfaceLookup();
+      std::string getCode();
+
+      bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
+      void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
+
+  private:
+      int type_;  // IN or OUT
+      bool wildcard_rule_;
+      std::string wildcard_string_;
+  };
+
 
   class TcpFlagsLookup : public Program {
    public:

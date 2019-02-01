@@ -40,6 +40,7 @@ load_file_as_variable(pcn-iptables datapaths/Iptables_ConntrackTableUpdate_dp.c 
 load_file_as_variable(pcn-iptables datapaths/Iptables_Horus_dp.c iptables_code_horus)
 load_file_as_variable(pcn-iptables datapaths/Iptables_IpLookup_dp.c iptables_code_iplookup)
 load_file_as_variable(pcn-iptables datapaths/Iptables_L4PortLookup_dp.c iptables_code_l4portlookup)
+load_file_as_variable(pcn-iptables datapaths/Iptables_InterfaceLookup_dp.c iptables_code_interfacelookup)
 load_file_as_variable(pcn-iptables datapaths/Iptables_L4ProtocolLookup_dp.c iptables_code_l4protolookup)
 load_file_as_variable(pcn-iptables datapaths/Iptables_Parser_dp.c iptables_code_parser)
 load_file_as_variable(pcn-iptables datapaths/Iptables_TcpFlagsLookup_dp.c iptables_code_tcpflagslookup)

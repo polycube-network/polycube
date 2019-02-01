@@ -147,6 +147,12 @@ class ChainRule : public ChainRuleInterface {
   uint16_t dstPort;
   bool dstPortIsSet = false;
 
+  std::string inIface;
+  bool inIfaceIsSet = false;
+
+  std::string outIface;
+  bool outIfaceIsSet = false;
+
   int l4Proto;
   bool l4ProtoIsSet = false;
 

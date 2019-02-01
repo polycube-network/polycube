@@ -432,7 +432,7 @@ bool Chain::transportProtoFromRulesToMap(
 bool Chain::portFromRulesToMap(
         const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
         const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint16_t> dont_care_rules;
+  std::vector<uint32_t> dont_care_rules;
 
   uint32_t rule_id;
   uint16_t port;
@@ -472,6 +472,61 @@ bool Chain::portFromRulesToMap(
     for (auto const &ruleNumber : dont_care_rules) {
       for (auto &port : ports) {
         SET_BIT((port.second)[ruleNumber / 63], ruleNumber % 63);
+      }
+    }
+    brk = false;
+  }
+  return brk;
+}
+
+bool Chain::interfaceFromRulesToMap(
+        const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &interfaces,
+        const std::vector<std::shared_ptr<ChainRule>> &rules,
+        Iptables& iptables) {
+  std::vector<uint32_t> dont_care_rules;
+
+  uint32_t rule_id;
+  uint16_t interface;
+
+  bool brk = true;
+
+  for (auto const &rule : rules) {
+    try {
+      rule_id = rule->getId();
+      interface = 0;
+      if (type == IN_TYPE) {
+        std::string interface_string = rule->getInIface();
+        interface = iptables.interfaceNameToIndex(interface_string);
+      } else {
+        std::string interface_string = rule->getOutIface();
+        interface = iptables.interfaceNameToIndex(interface_string);
+      }
+    } catch (std::runtime_error re) {
+      // Interface not set: don't care rule.
+      dont_care_rules.push_back(rule_id);
+      continue;
+    }
+
+    auto it = interfaces.find(interface);
+    if (it == interfaces.end()) {
+      // First entry
+      std::vector<uint64_t> bitVector(
+              FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
+      SET_BIT(bitVector[rule_id / 63], rule_id % 63);
+      interfaces.insert(std::pair<uint16_t, std::vector<uint64_t>>(interface, bitVector));
+    } else {
+      SET_BIT((it->second)[rule_id / 63], rule_id % 63);
+    }
+  }
+  // Don't care rules are in all entries. Anyway, this loop is useless if there
+  // are no rules at all requiring matching on this field.
+  if (interfaces.size() != 0 && dont_care_rules.size() != 0) {
+    std::vector<uint64_t> bitVector(
+            FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
+    interfaces.insert(std::pair<uint16_t, std::vector<uint64_t>>(0, bitVector));
+    for (auto const &ruleNumber : dont_care_rules) {
+      for (auto &interface : interfaces) {
+        SET_BIT((interface.second)[ruleNumber / 63], ruleNumber % 63);
       }
     }
     brk = false;

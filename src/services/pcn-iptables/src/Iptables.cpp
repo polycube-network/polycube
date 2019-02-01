@@ -487,3 +487,9 @@ bool Iptables::fibLookupEnabled() {
 
   return fib_lookup_enabled_;
 }
+
+uint16_t Iptables::interfaceNameToIndex(const std::string &interface_string) {
+  auto p = get_port(interface_string);
+  int index = p->index();
+  return index;
+}

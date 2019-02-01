@@ -23,7 +23,7 @@ using namespace polycube::service;
 namespace ModulesConstants {
 
 // # of modules for each filtering pipeline
-const uint8_t NR_MODULES = 9;
+const uint8_t NR_MODULES = 10;
 // # of initial modules, common across pipelines
 const uint8_t NR_INITIAL_MODULES = 7;
 
@@ -54,9 +54,10 @@ const uint8_t IPDESTINATION = 2;
 const uint8_t L4PROTO = 3;
 const uint8_t PORTSOURCE = 4;
 const uint8_t PORTDESTINATION = 5;
-const uint8_t TCPFLAGS = 6;
-const uint8_t BITSCAN = 7;
-const uint8_t ACTION = 8;
+const uint8_t INTERFACE = 6;
+const uint8_t TCPFLAGS = 7;
+const uint8_t BITSCAN = 8;
+const uint8_t ACTION = 9;
 }
 
 namespace ConntrackModes {
@@ -69,7 +70,7 @@ const uint8_t ON = 1;
 const uint8_t OFF = 2;
 }
 
-enum Type { SOURCE_TYPE = 0, DESTINATION_TYPE = 1, INVALID_TYPE = 2 };
+enum Type { SOURCE_TYPE = 0, DESTINATION_TYPE = 1, IN_TYPE = 2, OUT_TYPE = 3, INVALID_TYPE = 4 };
 typedef enum Type Type;
 enum ActionsInt { DROP_ACTION = 0, ACCEPT_ACTION = 1, INVALID_ACTION = 2 };
 typedef enum ActionsInt ActionsInt;
