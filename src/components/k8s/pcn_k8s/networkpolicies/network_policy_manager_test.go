@@ -141,7 +141,7 @@ func TestNoSpec(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(ingress)
+	result, err := manager.ParseDefaultPolicy(ingress, 1, 1)
 
 	CommonTest(t, err, result)
 
@@ -175,7 +175,7 @@ func TestIngressLenIsZero(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -224,7 +224,7 @@ func TestIngressLenIsZeroWithPort(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -267,7 +267,7 @@ func TestFromIsEmpty(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -305,7 +305,7 @@ func TestSingleRuleIPBlockNoExceptions(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -318,6 +318,7 @@ func TestSingleRuleIPBlockNoExceptions(t *testing.T) {
 
 		assert.Equal(t, fw.Chain[0].Rule[0].Action, "forward")
 		assert.Equal(t, fw.Chain[0].Rule[0].Src, "192.168.1.20/32")
+		assert.Equal(t, int32(1), fw.Chain[0].Rule[0].Id)
 
 		if fw.Chain[0].Rule[0].Dst != GlobalPodsFound1[0].Pod.Status.PodIP && fw.Chain[0].Rule[0].Dst != GlobalPodsFound1[1].Pod.Status.PodIP {
 			assert.Fail(t, "unrecognized ip:", fw.Chain[0].Rule[0].Dst)
@@ -355,7 +356,7 @@ func TestSingleRuleIPBlockMultipleExceptions(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -368,7 +369,9 @@ func TestSingleRuleIPBlockMultipleExceptions(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 4)
 
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 4 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, rule.Action, "forward")
@@ -426,7 +429,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolNoPort(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -439,7 +442,9 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolNoPort(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 4)
 
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 4 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, "forward", rule.Action, rule.Action)
@@ -503,7 +508,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolAndPort(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -516,7 +521,9 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolAndPort(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 4)
 
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 4 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, "forward", rule.Action)
@@ -585,7 +592,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -599,7 +606,9 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 
 		allValues := make(map[string]int)
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 8 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, rule.Action, "forward")
@@ -674,7 +683,7 @@ func TestUnsupportedProtocolWithSupported(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -687,7 +696,9 @@ func TestUnsupportedProtocolWithSupported(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 4)
 
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 4 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, "forward", rule.Action)
@@ -753,14 +764,13 @@ func TestOnlyUnsupportedProtocol(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
 
 	for _, fw := range result {
 		assert.Len(t, fw.Chain, 1)
-
 		assert.Equal(t, "ingress", fw.Chain[0].Name)
 		assert.Equal(t, "drop", fw.Chain[0].Default_)
 		assert.Len(t, fw.Chain[0].Rule, 0)
@@ -806,7 +816,7 @@ func TestProtocolIsNil(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -820,7 +830,9 @@ func TestProtocolIsNil(t *testing.T) {
 
 		allValues := make(map[string]int)
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 8 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "192.168.0.0/16":
 				assert.Equal(t, "forward", rule.Action)
@@ -914,7 +926,7 @@ func TestPodSelectorWithProtocol(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -927,6 +939,9 @@ func TestPodSelectorWithProtocol(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 1)
 
 		for _, rule := range fw.Chain[0].Rule {
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			assert.Equal(t, "forward", rule.Action)
 			assert.Equal(t, podsFound[0].Pod.Status.PodIP, rule.Src)
 			assert.Equal(t, "TCP", rule.L4proto)
@@ -993,7 +1008,7 @@ func TestPodSelectorNoPodsFound(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1079,7 +1094,7 @@ func TestPodSelectorMultiplePodsFound(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1090,7 +1105,9 @@ func TestPodSelectorMultiplePodsFound(t *testing.T) {
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.25.153.77", "172.10.30.30":
 				found++
@@ -1153,7 +1170,7 @@ func TestPodMatchExpressionReturnsNoRules(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1241,7 +1258,7 @@ func TestEmptyPodSelectorSelectsAllPodsInSameNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1254,7 +1271,9 @@ func TestEmptyPodSelectorSelectsAllPodsInSameNamespace(t *testing.T) {
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.25.153.77", "172.10.30.30":
 				found++
@@ -1323,7 +1342,7 @@ func TestEmptyPodSelectorSelectsAllPodsInSameNamespaceIpsAreDifferent(t *testing
 		},
 	}).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1336,7 +1355,9 @@ func TestEmptyPodSelectorSelectsAllPodsInSameNamespaceIpsAreDifferent(t *testing
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case GlobalPodsFound1[0].Pod.Status.PodIP, GlobalPodsFound1[1].Pod.Status.PodIP:
 				found++
@@ -1429,7 +1450,7 @@ func TestNilLabelSelectorBlocksAllPodsInSameNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1442,7 +1463,9 @@ func TestNilLabelSelectorBlocksAllPodsInSameNamespace(t *testing.T) {
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.25.153.77", "172.10.30.30":
 				found++
@@ -1537,7 +1560,7 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1550,7 +1573,9 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.10.30.30", "172.25.153.77":
 				found++
@@ -1648,7 +1673,7 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1661,7 +1686,9 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 
 		var found int
 		for _, rule := range fw.Chain[0].Rule {
-
+			if rule.Id < 1 || rule.Id > 2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.10.30.30", "172.25.153.77":
 				found++
@@ -1908,7 +1935,7 @@ func TestIngressComplexPolicy(t *testing.T) {
 		},
 	}).Return(secondPodsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -1918,6 +1945,9 @@ func TestIngressComplexPolicy(t *testing.T) {
 		assert.Equal(t, "ingress", fw.Chain[0].Name)
 		assert.Len(t, fw.Chain[0].Rule, 14+12+2)
 		for _, rule := range fw.Chain[0].Rule {
+			if rule.Id < 1 || rule.Id > 14+12+2 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			switch rule.Src {
 			case "172.20.20.20", "172.30.30.30", "172.40.40.40", "192.168.2.0/24", "192.168.5.0/24", "192.168.100.20/32":
 				switch rule.Sport {
@@ -2059,7 +2089,7 @@ func TestEgressDoesNotExist(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2161,7 +2191,7 @@ func TestOnlyEgress(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2172,6 +2202,9 @@ func TestOnlyEgress(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 4)
 
 		for _, rule := range fw.Chain[0].Rule {
+			if rule.Id < 1 || rule.Id > 4 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			if rule.Dst != "172.30.30.30" && rule.Dst != "172.20.20.20" {
 				assert.Fail(t, "unrecognized ip")
 			}
@@ -2292,7 +2325,7 @@ func TestEgressBlockPodsFromSpecificNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2303,6 +2336,9 @@ func TestEgressBlockPodsFromSpecificNamespace(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 6)
 
 		for _, rule := range fw.Chain[0].Rule {
+			if rule.Id < 1 || rule.Id > 6 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			if rule.Dst != "172.50.50.50" && rule.Dst != "172.60.60.60" && rule.Dst != "172.70.70.70" {
 				assert.Fail(t, "unrecognized ip")
 			}
@@ -2416,7 +2452,7 @@ func TestEgressAllowSameNamespace(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2427,6 +2463,9 @@ func TestEgressAllowSameNamespace(t *testing.T) {
 		assert.Len(t, fw.Chain[0].Rule, 6)
 
 		for _, rule := range fw.Chain[0].Rule {
+			if rule.Id < 1 || rule.Id > 6 {
+				assert.Fail(t, "id is not correct:", rule.Id)
+			}
 			if rule.Dst != "172.50.50.50" && rule.Dst != "172.60.60.60" && rule.Dst != "172.70.70.70" {
 				assert.Fail(t, "unrecognized ip")
 			}
@@ -2504,7 +2543,7 @@ func TestEgressNothingFound(t *testing.T) {
 		},
 	}).Return([]polycube_pod.Pod{}, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2577,7 +2616,7 @@ func TestEgressPolicyTypesEmptyIsIncorrectlyParsed(t *testing.T) {
 		},
 	}).Return([]polycube_pod.Pod{}, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2610,7 +2649,7 @@ func TestEmptyEgressBlocksEverything(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2662,7 +2701,7 @@ func TestEgressBlockEverythingWithPort(t *testing.T) {
 	testObj := new(MockPodController)
 	testObj.On("GetPods", GlobalQuery1).Return(GlobalPodsFound1, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2921,7 +2960,7 @@ func TestIngressEgressComplexPolicy(t *testing.T) {
 		},
 	}).Return(secondPodsFound, nil)
 	manager := Init(testObj)
-	result, err := manager.ParseDefaultPolicy(policy)
+	result, err := manager.ParseDefaultPolicy(policy, 1, 1)
 	CommonTest(t, err, result)
 
 	assert.Len(t, result, 2)
@@ -2936,6 +2975,9 @@ func TestIngressEgressComplexPolicy(t *testing.T) {
 				assert.Equal(t, "drop", chain.Default_)
 
 				for _, rule := range chain.Rule {
+					if rule.Id < 1 || rule.Id > 14 {
+						assert.Fail(t, "id is not correct:", rule.Id)
+					}
 					switch rule.Src {
 					case "172.20.20.20", "172.30.30.30", "172.40.40.40", "192.168.0.0/16":
 						assert.Equal(t, "forward", rule.Action)
@@ -2965,6 +3007,9 @@ func TestIngressEgressComplexPolicy(t *testing.T) {
 				assert.Equal(t, "drop", chain.Default_)
 
 				for _, rule := range chain.Rule {
+					if rule.Id < 1 || rule.Id > 14 {
+						assert.Fail(t, "id is not correct:", rule.Id)
+					}
 					switch rule.Dst {
 					case "172.20.20.20", "172.30.30.30", "192.169.0.0/16":
 						assert.Equal(t, "forward", rule.Action)

@@ -27,7 +27,7 @@ type NetworkPolicyManager struct {
 
 	podController controllers.PodController
 
-	fwAPI FirewallAPI
+	fwAPI *FirewallAPI
 }
 
 type parsedProtoPort struct {
@@ -42,12 +42,14 @@ const (
 	//supportedProtocols = "TCP,UDP,ICMP"
 )
 
-func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController, podController controllers.PodController) *NetworkPolicyManager {
+func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController, podController controllers.PodController, basePath string) *NetworkPolicyManager {
 
 	var l = log.WithFields(log.Fields{
 		"by":     "Network Policy Manager",
 		"method": "ParseDefaultPolicy()",
 	})
+
+	l.Infoln("Network Policy Manager starting...")
 
 	//https://play.golang.org/p/0AaBhB1MHBc
 
@@ -76,7 +78,7 @@ func NewNetworkPolicyManager(dnpc *controllers.DefaultNetworkPolicyController, p
 		l.Warningln("Warning: pod controller is nil, functions involving pods and namespaces may cause errors")
 	}
 
-	//manager.fwAPI = NewFirewallAPI()
+	manager.fwAPI = NewFirewallAPI(basePath)
 
 	return manager
 }
@@ -94,20 +96,21 @@ func (manager *NetworkPolicyManager) ManageDefaultPolicy(policy *networking_v1.N
 	//	If yes, then we have to update.
 	//	If not, then we have to create a brand new one
 
+	//	If firewall does not exist, then ingress rules must start from Id 1, same with egress. (not from 0 because there seems to be a bug which doesn't send the id if it is 0)
+	/*var startingIngressId int32 = 0
+	var startingEgressId int32 = 0*/
+
 	//	Get the firewalls
-	firewalls, err := manager.ParseDefaultPolicy(policy)
+	/*firewalls, err := manager.ParseDefaultPolicy(policy, startingEgressId, startingIngressId)
 
 	if err != nil {
 		l.Errorln("An error occurred while parsing the default policy!", err)
 		return
-	}
+	}*/
 
-	l.Debugln("count", len(firewalls))
-
-	l.Debugf("first: %+v\n", firewalls[0])
 }
 
-func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy) ([]k8sfirewall.Firewall, error) {
+func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.NetworkPolicy, iId, eId int32) ([]k8sfirewall.Firewall, error) {
 
 	var l = log.WithFields(log.Fields{
 		"by":     manager.logBy,
@@ -249,7 +252,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 			if ingress != nil {
 				go func() {
 					defer parseWait.Done()
-					parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, currentNamespace)
+					parsedIngressChain = manager.parseDefaultIngressRules(spec.Ingress, currentNamespace, iId)
 				}()
 			}
 
@@ -260,7 +263,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 			if egress != nil {
 				go func() {
 					defer parseWait.Done()
-					parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, currentNamespace)
+					parsedEgressChain = manager.parseDefaultEgressRules(spec.Egress, currentNamespace, eId)
 				}()
 			}
 
@@ -354,7 +357,7 @@ func (manager *NetworkPolicyManager) ParseDefaultPolicy(policy *networking_v1.Ne
 	return generatedFirewalls, nil
 }
 
-func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule, namespace string) k8sfirewall.Chain {
+func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking_v1.NetworkPolicyIngressRule, namespace string, startingID int32) k8sfirewall.Chain {
 
 	//-------------------------------------
 	//	Init
@@ -369,6 +372,7 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 		Default_: "drop",
 		Rule:     []k8sfirewall.ChainRule{},
 	}
+	var id = startingID
 
 	l.Debugln("Network Policy Manager is going to parse the ingress rules")
 
@@ -502,24 +506,32 @@ func (manager *NetworkPolicyManager) parseDefaultIngressRules(rules []networking
 			for _, generatedPort := range generatedPorts {
 
 				ingressChain.Rule = append(ingressChain.Rule, k8sfirewall.ChainRule{
+					Id:      id,
 					Src:     rule.Src,
 					L4proto: generatedPort.protocol,
 					Sport:   generatedPort.port,
 					Action:  rule.Action,
 				})
+				id++
 			}
 		}
 
 		//	No ports in this? Then just append the rules with ports 0
 		if len(generatedPorts) < 1 {
-			ingressChain.Rule = append(ingressChain.Rule, incompleteRules...)
+			//	UPDATE, we need to create an ID, so we must do that before appending
+			//ingressChain.Rule = append(ingressChain.Rule, incompleteRules...)
+			for i := 0; i < len(incompleteRules); i++ {
+				incompleteRules[i].Id = id
+				id++
+				ingressChain.Rule = append(ingressChain.Rule, incompleteRules[i])
+			}
 		}
 	}
 
 	return ingressChain
 }
 
-func (manager *NetworkPolicyManager) parseDefaultEgressRules(rules []networking_v1.NetworkPolicyEgressRule, namespace string) k8sfirewall.Chain {
+func (manager *NetworkPolicyManager) parseDefaultEgressRules(rules []networking_v1.NetworkPolicyEgressRule, namespace string, startingID int32) k8sfirewall.Chain {
 
 	//-------------------------------------
 	//	Init
@@ -534,6 +546,7 @@ func (manager *NetworkPolicyManager) parseDefaultEgressRules(rules []networking_
 		Default_: "drop",
 		Rule:     []k8sfirewall.ChainRule{},
 	}
+	var id = startingID
 
 	l.Debugln("Network Policy Manager is going to parse the egress rules")
 
@@ -666,17 +679,26 @@ func (manager *NetworkPolicyManager) parseDefaultEgressRules(rules []networking_
 			rule := incompleteRules[i]
 			for _, generatedPort := range generatedPorts {
 				egressChain.Rule = append(egressChain.Rule, k8sfirewall.ChainRule{
+					Id:      id,
 					Dst:     rule.Dst,
 					L4proto: generatedPort.protocol,
 					Dport:   generatedPort.port,
 					Action:  rule.Action,
 				})
+				id++
 			}
 		}
 
 		//	No ports in this? Then just append the rules with ports 0
 		if len(generatedPorts) < 1 {
-			egressChain.Rule = append(egressChain.Rule, incompleteRules...)
+			//	UPDATE: read above for ingress
+			//egressChain.Rule = append(egressChain.Rule, incompleteRules...)
+
+			for i := 0; i < len(incompleteRules); i++ {
+				incompleteRules[i].Id = id
+				id++
+				egressChain.Rule = append(egressChain.Rule, incompleteRules[i])
+			}
 		}
 	}
 
