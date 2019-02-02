@@ -72,20 +72,25 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   __be64 src_key = eth->src;
   u32 now = time_get_sec();
 
-  struct fwd_entry e; // used to update the entry in the fdb
+  struct fwd_entry *entry = fwdtable.lookup(&src_key);
 
-  e.timestamp = now;
-  e.port = in_ifc;
+  if (!entry) {
+     struct fwd_entry e; // used to update the entry in the fdb
 
-  // Updating the timestamp associated to this entry in the fdb
-  fwdtable.update(&src_key, &e);
+     e.timestamp = now;
+     e.port = in_ifc;
 
-  pcn_log(ctx, LOG_TRACE, "MAC: %M learned (or timestamp updated)", src_key);
+     fwdtable.update(&src_key, &e);
+     pcn_log(ctx, LOG_TRACE, "MAC: %M learned", src_key);
+  } else {
+    entry->port = in_ifc;
+    entry->timestamp = now;
+  }
 
   // FORWARDING PHASE: select interface(s) to send the packet
   __be64 dst_mac = eth->dst;
   // lookup in forwarding table fwdtable
-  struct fwd_entry *entry = fwdtable.lookup(&dst_mac);
+  entry = fwdtable.lookup(&dst_mac);
   if (!entry) {
     pcn_log(ctx, LOG_DEBUG, "Entry not found for dst-mac: %M", dst_mac);
     goto DO_FLOODING;
