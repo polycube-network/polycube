@@ -1,4 +1,4 @@
-package podquery
+package types
 
 type QueryObject struct {
 	By     string
