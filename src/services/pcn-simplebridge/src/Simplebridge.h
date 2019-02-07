@@ -25,6 +25,7 @@
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
+#include <thread>
 
 #include "Fdb.h"
 #include "Ports.h"
@@ -95,6 +96,13 @@ public:
 private:
   std::unordered_map<std::string, Ports> ports_;
   std::shared_ptr<Fdb> fdb_ = nullptr;
+
+  void updateTimestamp();
+  void updateTimestampTimer();
+  void quitAndJoin();
+
+  std::thread timestamp_update_thread_;
+  std::atomic<bool> quit_thread_;
 
   void flood_packet(Port &port, PacketInMetadata &md, const std::vector<uint8_t> &packet);
   std::mutex ports_mutex_;

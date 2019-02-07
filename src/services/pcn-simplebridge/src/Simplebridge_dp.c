@@ -32,17 +32,27 @@
 #define REASON_FLOODING 0x01
 
 struct fwd_entry {
-  u64 timestamp;
+  u32 timestamp;
   u32 port;
-} __attribute__((packed));
+} __attribute__((packed, aligned(8)));
 
 BPF_TABLE("hash", __be64, struct fwd_entry, fwdtable, 1024);
+BPF_TABLE("array", int, uint32_t, timestamp, 1);
 
 struct eth_hdr {
   __be64   dst:48;
   __be64   src:48;
   __be16   proto;
 } __attribute__((packed));
+
+static __always_inline u32 time_get_sec() {
+  int key = 0;
+  u32 *ts = timestamp.lookup(&key);
+  if (ts)
+    return *ts;
+
+  return 0;
+}
 
 static __always_inline
 int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
@@ -60,22 +70,27 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   // LEARNING PHASE
   __be64 src_key = eth->src;
-  u64 now = bpf_ktime_get_ns();
+  u32 now = time_get_sec();
 
-  struct fwd_entry e; // used to update the entry in the fdb
+  struct fwd_entry *entry = fwdtable.lookup(&src_key);
 
-  e.timestamp = now;
-  e.port = in_ifc;
+  if (!entry) {
+     struct fwd_entry e; // used to update the entry in the fdb
 
-  // Updating the timestamp associated to this entry in the fdb
-  fwdtable.update(&src_key, &e);
+     e.timestamp = now;
+     e.port = in_ifc;
 
-  pcn_log(ctx, LOG_TRACE, "MAC: %M learned (or timestamp updated)", src_key);
+     fwdtable.update(&src_key, &e);
+     pcn_log(ctx, LOG_TRACE, "MAC: %M learned", src_key);
+  } else {
+    entry->port = in_ifc;
+    entry->timestamp = now;
+  }
 
   // FORWARDING PHASE: select interface(s) to send the packet
   __be64 dst_mac = eth->dst;
   // lookup in forwarding table fwdtable
-  struct fwd_entry *entry = fwdtable.lookup(&dst_mac);
+  entry = fwdtable.lookup(&dst_mac);
   if (!entry) {
     pcn_log(ctx, LOG_DEBUG, "Entry not found for dst-mac: %M", dst_mac);
     goto DO_FLOODING;
@@ -84,15 +99,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   u64 timestamp = entry->timestamp;
 
   // Check if the entry is still valid (not too old)
-  // Warning: the bpf_ktime_get_ns() used before is not monotonic and it may return
-  //  a value that is older than a previously returned value. So, we have to add
-  //  the very strange check 'now < timestamp' to handle this special case
-  if (now < timestamp) {
-    pcn_log(ctx, LOG_TRACE, "Entry is valid (but 'now < timestamp'). FORWARDING");
-    goto FORWARD;
-  }
-
-  if ((now - timestamp) > FDB_TIMEOUT*1000000000ULL) {
+  if ((now - timestamp) > FDB_TIMEOUT) {
     pcn_log(ctx, LOG_TRACE, "Entry is too old. FLOODING");
     fwdtable.delete(&dst_mac);
     goto DO_FLOODING;

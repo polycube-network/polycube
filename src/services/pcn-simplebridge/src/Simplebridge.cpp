@@ -23,21 +23,55 @@
 
 #include <tins/ethernetII.h>
 #include <tins/tins.h>
+#include <thread>
 
 using namespace Tins;
 
 Simplebridge::Simplebridge(const std::string name, const SimplebridgeJsonObject &conf, CubeType type)
-                             : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+                             : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()),
+                             quit_thread_(false) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simplebridge] [%n] [%l] %v");
   logger()->info("Creating Simplebridge instance");
 
   addFdb(conf.getFdb());
   addPortsList(conf.getPorts());
+
+  timestamp_update_thread_ = std::thread(&Simplebridge::updateTimestampTimer, this);
 }
 
 Simplebridge::~Simplebridge() {
   // we are destroying this service, prepare for it.
+  quitAndJoin();
   Cube::dismount();
+}
+
+void Simplebridge::quitAndJoin() {
+  quit_thread_ = true;
+  timestamp_update_thread_.join();
+}
+
+void Simplebridge::updateTimestampTimer() {
+  do {
+    sleep(1);
+    updateTimestamp();
+  } while (!quit_thread_);
+}
+
+/*
+ * This method is in charge of updating the timestamp table
+ * that is used in the dataplane to avoid calling the bpf_ktime helper
+ * that introduces a non-negligible overhead to the eBPF program.
+ */
+void Simplebridge::updateTimestamp() {
+  try {
+    // get timestamp from system
+    struct timespec now_timespec;
+    clock_gettime(CLOCK_MONOTONIC, &now_timespec);
+    auto timestamp_table = get_array_table<uint32_t>("timestamp");
+    timestamp_table.set(0, now_timespec.tv_sec);
+  } catch (...) {
+    logger()->error("Error while updating the timestamp table");
+  }
 }
 
 void Simplebridge::update(const SimplebridgeJsonObject &conf) {
@@ -131,7 +165,6 @@ void Simplebridge::reloadCodeWithAgingtime(uint32_t aging_time) {
 
   logger()->trace("New bridge code reloaded");
 }
-
 
 
 
