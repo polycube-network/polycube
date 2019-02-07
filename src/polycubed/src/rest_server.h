@@ -60,7 +60,7 @@ class RestServer {
  private:
   void setup_routes();
   // this function has to be static because has to be passed as a callback.
-  static int client_verify_callback(int preverify_ok, X509_STORE_CTX *ctx);
+  static int client_verify_callback(int preverify_ok, void *ctx);
 
   void root_handler(const Rest::Request &request,
                     Http::ResponseWriter response);

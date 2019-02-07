@@ -40,10 +40,10 @@ static X509_STORE_CTX *load_certificates(const char *path) {
   X509_STORE_CTX *ctx;
 
   store = X509_STORE_new();
-  X509_STORE_load_locations(store, NULL, path);
+  X509_STORE_load_locations(store, nullptr, path);
 
   ctx = X509_STORE_CTX_new();
-  X509_STORE_CTX_init(ctx, store, NULL, NULL);
+  X509_STORE_CTX_init(ctx, store, nullptr, nullptr);
 
   return ctx;
 }
@@ -53,13 +53,13 @@ static X509_STORE_CTX *load_certificates(const char *path) {
 #endif
 
 static bool lookup_cert_match(X509_STORE_CTX *ctx, X509 *x) {
-  STACK_OF(X509) *certs;
-  X509 *xtmp = NULL;
+  STACK_OF(X509) * certs;
+  X509 *xtmp = nullptr;
   int i;
   bool found = false;
   /* Lookup all certs with matching subject name */
   certs = X509_STORE_get1_cert(ctx, X509_get_subject_name(x));
-  if (certs == NULL)
+  if (certs == nullptr)
     return found;
   /* Look for exact match */
   for (i = 0; i < sk_X509_num(certs); i++) {
@@ -73,15 +73,16 @@ static bool lookup_cert_match(X509_STORE_CTX *ctx, X509 *x) {
   return found;
 }
 
-int RestServer::client_verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
-  int depth = X509_STORE_CTX_get_error_depth(ctx);
+int RestServer::client_verify_callback(int preverify_ok, void *ctx) {
+  X509_STORE_CTX *x509_ctx = (X509_STORE_CTX *)ctx;
+  int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
   if (depth == 0) {
-    X509* cert = X509_STORE_CTX_get_current_cert(ctx);
+    X509 *cert = X509_STORE_CTX_get_current_cert(x509_ctx);
     X509_STORE_CTX *list;
 
     // if certificate is on white list we don't care about preverify
-    if (!whitelist_cert_path.empty()) {
-      list = load_certificates(whitelist_cert_path.c_str());
+    if (!RestServer::whitelist_cert_path.empty()) {
+      list = load_certificates(RestServer::whitelist_cert_path.c_str());
       return lookup_cert_match(list, cert);
     }
 
@@ -90,8 +91,8 @@ int RestServer::client_verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
       return preverify_ok;
 
     // test that the certificate is not on a black list
-    if (!blacklist_cert_path.empty()) {
-      list = load_certificates(blacklist_cert_path.c_str());
+    if (!RestServer::blacklist_cert_path.empty()) {
+      list = load_certificates(RestServer::blacklist_cert_path.c_str());
       return !lookup_cert_match(list, cert);
     }
   }
@@ -118,8 +119,8 @@ void RestServer::init(size_t thr,
     httpEndpoint->useSSLAuth(root_ca_cert, "", client_verify_callback);
   }
 
-  whitelist_cert_path = whitelist_cert_path_;
-  blacklist_cert_path = blacklist_cert_path_;
+  RestServer::whitelist_cert_path = whitelist_cert_path_;
+  RestServer::blacklist_cert_path = blacklist_cert_path_;
 
   setup_routes();
 }

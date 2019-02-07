@@ -1,5 +1,10 @@
 find_package(PkgConfig REQUIRED)
 
+find_package(Pistache CONFIG REQUIRED)
+
+find_package(OpenSSL REQUIRED)
+include_directories(OPENSSL_INCLUDE_DIR)
+
 pkg_check_modules(NL3 libnl-3.0)
 pkg_check_modules(NL3GENL libnl-genl-3.0)
 pkg_check_modules(NL3ROUTE libnl-route-3.0)
@@ -62,8 +67,7 @@ set(polycubed_libraries
   pistache
   pthread
   bcc-static
-  ssl
-  crypto
+  ${OPENSSL_LIBRARIES}
   ${NL3_LIBRARIES}
   ${NL3ROUTE_LIBRARIES}
   ${NL3GENL_LIBRARIES}
