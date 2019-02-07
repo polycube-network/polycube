@@ -37,6 +37,8 @@ using polycube::service::HttpHandleResponse;
 namespace polycube {
 namespace polycubed {
 
+class RestServer;
+
 class PolycubedCore {
  public:
   PolycubedCore();
@@ -73,12 +75,16 @@ class PolycubedCore {
                                  const std::string &parameter,
                                  const std::string &value);
 
+  void set_rest_server(RestServer *rest_server);
+  RestServer *get_rest_server();
+
  private:
   bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
 
   std::unordered_map<std::string, ServiceController> servicectrls_map_;
   std::string polycubeendpoint_;
   std::shared_ptr<spdlog::logger> logger;
+  RestServer *rest_server_;
 };
 
 }  // namespace polycubed

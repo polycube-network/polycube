@@ -15,6 +15,7 @@
  */
 
 #include "polycubed_core.h"
+#include "rest_server.h"
 
 #include <regex>
 
@@ -448,6 +449,14 @@ std::string PolycubedCore::set_cube_parameter(const std::string &cube,
   if (res.code() != polycube::service::Http::Code::Ok) {
     throw std::runtime_error("Error setting cube parameter: " + res.body());
   }
+}
+
+void PolycubedCore::set_rest_server(RestServer *rest_server) {
+  rest_server_ = rest_server;
+}
+
+RestServer *PolycubedCore::get_rest_server() {
+  return rest_server_;
 }
 
 }  // namespace polycubed

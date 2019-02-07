@@ -38,7 +38,7 @@
 #endif
 
 using json = nlohmann::json;
-using namespace Pistache;
+using Pistache::Rest::Request;
 
 namespace polycube {
 namespace polycubed {
@@ -46,66 +46,83 @@ namespace polycubed {
 class RestServer {
  public:
   // RestServer(Net::Address addr);
-  RestServer(Address addr, PolycubedCore &core);
+  RestServer(Pistache::Address addr, PolycubedCore &core);
+
+  std::shared_ptr<Pistache::Rest::Router> get_router();
+
+  const std::string base = "/polycube/v1/";
+
   void init(size_t thr = 1, const std::string &server_cert = "",
             const std::string &server_key = "",
             const std::string &root_ca_cert = "",
             const std::string &white_cert_list_path = "",
             const std::string &black_cert_list_path = "");
+
   void start();
   void shutdown();
-
-  const std::string base = "/polycube/v1";
 
  private:
   void setup_routes();
   // this function has to be static because has to be passed as a callback.
   static int client_verify_callback(int preverify_ok, void *ctx);
 
-  void root_handler(const Rest::Request &request,
-                    Http::ResponseWriter response);
+  void root_handler(const Pistache::Rest::Request &request,
+                    Pistache::Http::ResponseWriter response);
 
-  void post_servicectrl(const Rest::Request &request,
-                        Http::ResponseWriter response);
-  void get_servicectrls(const Rest::Request &request,
-                        Http::ResponseWriter response);
-  void get_servicectrl(const Rest::Request &request,
-                       Http::ResponseWriter response);
-  void delete_servicectrl(const Rest::Request &request,
-                          Http::ResponseWriter response);
+  void post_servicectrl(const Pistache::Rest::Request &request,
+                        Pistache::Http::ResponseWriter response);
+  void get_servicectrls(const Pistache::Rest::Request &request,
+                        Pistache::Http::ResponseWriter response);
+  void get_servicectrl(const Pistache::Rest::Request &request,
+                       Pistache::Http::ResponseWriter response);
+  void delete_servicectrl(const Pistache::Rest::Request &request,
+                          Pistache::Http::ResponseWriter response);
 
-  void get_cubes(const Rest::Request &request, Http::ResponseWriter response);
-  void get_cube(const Rest::Request &request, Http::ResponseWriter response);
+  void get_cubes(const Pistache::Rest::Request &request,
+                 Pistache::Http::ResponseWriter response);
+  void get_cube(const Pistache::Rest::Request &request,
+                Pistache::Http::ResponseWriter response);
 
-  void cubes_help(const Rest::Request &request, Http::ResponseWriter response);
+  void cubes_help(const Pistache::Rest::Request &request,
+                  Pistache::Http::ResponseWriter response);
 
-  void cube_help(const Rest::Request &request, Http::ResponseWriter response);
+  void cube_help(const Pistache::Rest::Request &request,
+                 Pistache::Http::ResponseWriter response);
 
-  void get_netdevs(const Rest::Request &request, Http::ResponseWriter response);
-  void get_netdev(const Rest::Request &request, Http::ResponseWriter response);
+  void get_netdevs(const Pistache::Rest::Request &request,
+                   Pistache::Http::ResponseWriter response);
+  void get_netdev(const Pistache::Rest::Request &request,
+                  Pistache::Http::ResponseWriter response);
 
-  void netdevs_help(const Rest::Request &request,
-                    Http::ResponseWriter response);
+  void netdevs_help(const Pistache::Rest::Request &request,
+                    Pistache::Http::ResponseWriter response);
 
-  void netdev_help(const Rest::Request &request, Http::ResponseWriter response);
+  void netdev_help(const Pistache::Rest::Request &request,
+                   Pistache::Http::ResponseWriter response);
 
-  void connect(const Rest::Request &request, Http::ResponseWriter response);
-  void disconnect(const Rest::Request &request, Http::ResponseWriter response);
+  void connect(const Pistache::Rest::Request &request,
+               Pistache::Http::ResponseWriter response);
+  void disconnect(const Pistache::Rest::Request &request,
+                  Pistache::Http::ResponseWriter response);
 
-  void attach(const Rest::Request &request, Http::ResponseWriter response);
-  void detach(const Rest::Request &request, Http::ResponseWriter response);
-  void topology(const Rest::Request &request, Http::ResponseWriter response);
-  void topology_help(const Rest::Request &request,
-                     Http::ResponseWriter response);
+  void attach(const Pistache::Rest::Request &request,
+              Pistache::Http::ResponseWriter response);
+  void detach(const Pistache::Rest::Request &request,
+              Pistache::Http::ResponseWriter response);
+  void topology(const Pistache::Rest::Request &request,
+                Pistache::Http::ResponseWriter response);
+  void topology_help(const Pistache::Rest::Request &request,
+                     Pistache::Http::ResponseWriter response);
 
-  void get_version(const Rest::Request &request, Http::ResponseWriter response);
+  void get_version(const Pistache::Rest::Request &request,
+                   Pistache::Http::ResponseWriter response);
 
-  void logRequest(const Rest::Request &request);
+  void logRequest(const Pistache::Rest::Request &request);
   void logJson(json j);
 
   PolycubedCore &core;
-  std::shared_ptr<Http::Endpoint> httpEndpoint;
-  Rest::Router router;
+  std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
+  std::shared_ptr<Pistache::Rest::Router> router_;
 
   static std::string whitelist_cert_path;
   static std::string blacklist_cert_path;

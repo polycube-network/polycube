@@ -250,6 +250,7 @@ int main(int argc, char *argv[]) {
   restserver->init(thr, config.getCertPath(), config.getKeyPath(),
                    config.getCACertPath(), config.getCertWhitelistPath(),
                    config.getCertBlacklistPath());
+  core->set_rest_server(restserver);
   restserver->start();
 
   // pause the execution of current thread until ctrl+c
