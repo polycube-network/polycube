@@ -85,7 +85,7 @@ echo "Install pistache"
 cd $WORKDIR
 set +e
 if [ ! -d pistache ]; then
-  git clone https://github.com/mauriciovasquezbernal/pistache.git
+  git clone https://github.com/oktal/pistache.git --depth=1
 fi
 
 cd pistache

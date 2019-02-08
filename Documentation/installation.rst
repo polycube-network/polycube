@@ -103,8 +103,7 @@ Install pistache
 ::
 
     # Install Pistache (a library to create web servers that is used in polycubed)
-    # we use a custom version until security is added in main repo
-    git clone https://github.com/mauriciovasquezbernal/pistache.git
+    git clone https://github.com/oktal/pistache.git
     cd pistache
     git submodule update --init
     mkdir build &&  cd build
