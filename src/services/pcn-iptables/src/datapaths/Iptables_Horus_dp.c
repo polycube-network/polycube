@@ -56,12 +56,15 @@ struct horusValue {
 } __attribute__((packed));
 
 enum {
-  INPUT_LABELING,   // goto input chain and label packet
-  FORWARD_LABELING, // goto forward chain and label packet
-  OUTPUT_LABELING,  // goto output chain and label packet
-  PASS_LABELING,    // one chain is hit (IN/PUT/FWD) but there are no rules and default action is accept. Label packet and let it pass.
-  PASS_NO_LABELING, // OUTPUT chain is not hit, let the packet pass without labeling //NEVER HIT
-  DROP_NO_LABELING  // one chain is hit (IN/PUT/FWD) but there are no rules and default action is DROP. //NEVER HIT
+  INPUT_LABELING,    // goto input chain and label packet
+  FORWARD_LABELING,  // goto forward chain and label packet
+  OUTPUT_LABELING,   // goto output chain and label packet
+  PASS_LABELING,     // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is accept. Label packet and let it pass.
+  PASS_NO_LABELING,  // OUTPUT chain is not hit, let the packet pass without
+                     // labeling //NEVER HIT
+  DROP_NO_LABELING   // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is DROP. //NEVER HIT
 };
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
@@ -110,28 +113,28 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // build key
   struct horusKey key;
 
-  #if _SRCIP
+#if _SRCIP
   key.srcIp = pkt->srcIp;
-  #endif
-  #if _DSTIP
+#endif
+#if _DSTIP
   key.dstIp = pkt->dstIp;
-  #endif
-  #if _SRCPORT
+#endif
+#if _SRCPORT
   key.srcPort = pkt->srcPort;
-  #endif
-  #if _DSTPORT
+#endif
+#if _DSTPORT
   key.dstPort = pkt->dstPort;
-  #endif
-  #if _L4PROTO
+#endif
+#if _L4PROTO
   key.l4proto = pkt->l4proto;
-  #endif
+#endif
 
   // lookup key
-  struct horusValue* value;
+  struct horusValue *value;
   value = horusTable.lookup(&key);
 
   pcn_log(ctx, LOG_DEBUG, "HORUS key: %x. pkt: %x", key.srcIp, pkt->srcIp);
-  if (value == NULL){
+  if (value == NULL) {
     // Miss, goto pipleline
     goto PIPELINE;
   } else {
@@ -145,12 +148,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       goto PIPELINE;
     }
 
-    if (value->action == 0){
+    if (value->action == 0) {
       pcn_log(ctx, LOG_DEBUG, "HORUS ACTION=DROP. Drop the packet. ");
       return RX_DROP;
     }
-    if (value->action == 1){
-      //goto PASS
+    if (value->action == 1) {
+      // goto PASS
       pcn_log(ctx, LOG_DEBUG, "HORUS ACTION=ACCEPT. Tag with PASS_LABELING. ");
       updateForwardingDecision(PASS_LABELING);
       call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
@@ -158,7 +161,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     goto PIPELINE;
   }
 
-  PIPELINE:;
+PIPELINE:;
   pcn_log(ctx, LOG_DEBUG, "HORUS Lookup MISS. Goto PIPELINE. ");
   call_bpf_program(ctx, _CHAINSELECTOR);
   return RX_DROP;

@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "RuleDnatEntry.h"
 #include "Nat.h"
 
 using namespace polycube::service;
 
-RuleDnatEntry::RuleDnatEntry(RuleDnat &parent, const RuleDnatEntryJsonObject &conf): parent_(parent) {
-  logger()->info("Creating RuleDnatEntry instance: {0} -> {1}", conf.getExternalIp(), conf.getInternalIp());
+RuleDnatEntry::RuleDnatEntry(RuleDnat &parent,
+                             const RuleDnatEntryJsonObject &conf)
+    : parent_(parent) {
+  logger()->info("Creating RuleDnatEntry instance: {0} -> {1}",
+                 conf.getExternalIp(), conf.getInternalIp());
   update(conf);
 }
 
-RuleDnatEntry::~RuleDnatEntry() { }
+RuleDnatEntry::~RuleDnatEntry() {}
 
 void RuleDnatEntry::update(const RuleDnatEntryJsonObject &conf) {
-  // This method updates all the object/parameter in RuleDnatEntry object specified in the conf JsonObject.
+  // This method updates all the object/parameter in RuleDnatEntry object
+  // specified in the conf JsonObject.
   // You can modify this implementation.
   if (conf.externalIpIsSet()) {
     setExternalIp(conf.getExternalIp());
@@ -41,7 +43,7 @@ void RuleDnatEntry::update(const RuleDnatEntryJsonObject &conf) {
   }
 }
 
-RuleDnatEntryJsonObject RuleDnatEntry::toJsonObject(){
+RuleDnatEntryJsonObject RuleDnatEntry::toJsonObject() {
   RuleDnatEntryJsonObject conf;
   conf.setId(getId());
   conf.setExternalIp(getExternalIp());
@@ -49,15 +51,16 @@ RuleDnatEntryJsonObject RuleDnatEntry::toJsonObject(){
   return conf;
 }
 
-
-void RuleDnatEntry::create(RuleDnat &parent, const uint32_t &id, const RuleDnatEntryJsonObject &conf){
-
+void RuleDnatEntry::create(RuleDnat &parent, const uint32_t &id,
+                           const RuleDnatEntryJsonObject &conf) {
   // This method creates the actual RuleDnatEntry object given thee key param.
-  // Please remember to call here the create static method for all sub-objects of RuleDnatEntry.
+  // Please remember to call here the create static method for all sub-objects
+  // of RuleDnatEntry.
 
   auto newRule = new RuleDnatEntry(parent, conf);
   if (newRule == nullptr) {
-    //Totally useless, but it is needed to avoid the compiler making wrong assumptions and reordering
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
     throw std::runtime_error("I won't be thrown");
   }
 
@@ -77,8 +80,10 @@ void RuleDnatEntry::create(RuleDnat &parent, const uint32_t &id, const RuleDnatE
   newRule->injectToDatapath();
 }
 
-std::shared_ptr<RuleDnatEntry> RuleDnatEntry::getEntry(RuleDnat &parent, const uint32_t &id){
-  // This method retrieves the pointer to RuleDnatEntry object specified by its keys.
+std::shared_ptr<RuleDnatEntry> RuleDnatEntry::getEntry(RuleDnat &parent,
+                                                       const uint32_t &id) {
+  // This method retrieves the pointer to RuleDnatEntry object specified by its
+  // keys.
   for (int i = 0; i < parent.rules_.size(); i++) {
     if (parent.rules_[i]->id == id) {
       return parent.rules_[i];
@@ -87,9 +92,10 @@ std::shared_ptr<RuleDnatEntry> RuleDnatEntry::getEntry(RuleDnat &parent, const u
   throw std::runtime_error("There is no rule " + id);
 }
 
-void RuleDnatEntry::removeEntry(RuleDnat &parent, const uint32_t &id){
+void RuleDnatEntry::removeEntry(RuleDnat &parent, const uint32_t &id) {
   // This method removes the single RuleDnatEntry object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of RuleDnatEntry.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RuleDnatEntry.
   if (parent.rules_.size() < id || !parent.rules_[id]) {
     throw std::runtime_error("There is no rule " + id);
   }
@@ -108,7 +114,8 @@ void RuleDnatEntry::removeEntry(RuleDnat &parent, const uint32_t &id){
   parent.logger()->info("Removed DNAT entry {0}", id);
 }
 
-std::vector<std::shared_ptr<RuleDnatEntry>> RuleDnatEntry::get(RuleDnat &parent){
+std::vector<std::shared_ptr<RuleDnatEntry>> RuleDnatEntry::get(
+    RuleDnat &parent) {
   // This methods get the pointers to all the RuleDnatEntry objects in RuleDnat.
   std::vector<std::shared_ptr<RuleDnatEntry>> rules;
   for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
@@ -119,39 +126,38 @@ std::vector<std::shared_ptr<RuleDnatEntry>> RuleDnatEntry::get(RuleDnat &parent)
   return rules;
 }
 
-void RuleDnatEntry::remove(RuleDnat &parent){
+void RuleDnatEntry::remove(RuleDnat &parent) {
   // This method removes all RuleDnatEntry objects in RuleDnat.
-  // Remember to call here the remove static method for all-sub-objects of RuleDnatEntry.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RuleDnatEntry.
   RuleDnat::removeEntry(parent.parent_);
 }
 
-uint32_t RuleDnatEntry::getId(){
+uint32_t RuleDnatEntry::getId() {
   // This method retrieves the id value.
   return id;
 }
 
-
-std::string RuleDnatEntry::getExternalIp(){
+std::string RuleDnatEntry::getExternalIp() {
   // This method retrieves the externalIp value.
   struct IpAddr addr = {externalIp, 32};
   return addr.toString();
 }
 
-void RuleDnatEntry::setExternalIp(const std::string &value){
+void RuleDnatEntry::setExternalIp(const std::string &value) {
   // This method set the externalIp value.
   struct IpAddr addr;
   addr.fromString(value);
   this->externalIp = addr.ip;
 }
 
-
-std::string RuleDnatEntry::getInternalIp(){
+std::string RuleDnatEntry::getInternalIp() {
   // This method retrieves the internalIp value.
   struct IpAddr addr = {internalIp, 32};
   return addr.toString();
 }
 
-void RuleDnatEntry::setInternalIp(const std::string &value){
+void RuleDnatEntry::setInternalIp(const std::string &value) {
   // This method set the internalIp value.
   struct IpAddr addr;
   addr.fromString(value);
@@ -163,32 +169,28 @@ std::shared_ptr<spdlog::logger> RuleDnatEntry::logger() {
 }
 
 void RuleDnatEntry::injectToDatapath() {
-  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules =
+      parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
 
-  dp_k key {
-    .mask = 32,
-    .external_ip = externalIp,
-    .external_port = 0,
-    .proto = 0,
+  dp_k key{
+      .mask = 32, .external_ip = externalIp, .external_port = 0, .proto = 0,
   };
 
-  dp_v value {
-    .internal_ip = internalIp,
-    .internal_port = 0,
-    .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::DNAT,
+  dp_v value{
+      .internal_ip = internalIp,
+      .internal_port = 0,
+      .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::DNAT,
   };
 
   dp_rules.set(key, value);
 }
 
 void RuleDnatEntry::removeFromDatapath() {
-  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules =
+      parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
 
-  dp_k key {
-    .mask = 32,
-    .external_ip = externalIp,
-    .external_port = 0,
-    .proto = 0,
+  dp_k key{
+      .mask = 32, .external_ip = externalIp, .external_port = 0, .proto = 0,
   };
 
   dp_rules.remove(key);

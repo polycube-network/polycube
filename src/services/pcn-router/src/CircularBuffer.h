@@ -27,17 +27,19 @@ using namespace std;
 using namespace std::chrono;
 
 class CircularBuffer {
-private:
+ private:
   std::vector<uint8_t> items[SIZE];
   int front, rear;
   milliseconds last_access;
 
-public:
+ public:
   CircularBuffer();
   bool isFull();
   bool isEmpty();
   void enQueue(std::vector<uint8_t> element);
   std::vector<uint8_t> deQueue();
   std::vector<std::vector<uint8_t>> get_elements();
-  milliseconds get_last_access() { return last_access; };
+  milliseconds get_last_access() {
+    return last_access;
+  };
 };

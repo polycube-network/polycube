@@ -76,32 +76,32 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct elements *ele = getBitVect(&proto);
 
   if (ele == NULL) {
-    proto=0;
+    proto = 0;
     ele = getBitVect(&proto);
-    if(ele==NULL){
+    if (ele == NULL) {
       pcn_log(ctx, LOG_DEBUG, "No match, dropping. proto %d .", proto);
       _DEFAULTACTION
     }
   }
-    key = 0;
-    struct elements *result = getShared();
-    if (result == NULL) {
-      /*Can't happen. The PERCPU is preallocated.*/
-      return RX_DROP;
-    } else {
+  key = 0;
+  struct elements *result = getShared();
+  if (result == NULL) {
+    /*Can't happen. The PERCPU is preallocated.*/
+    return RX_DROP;
+  } else {
 /*#pragma unroll does not accept a loop with a single iteration, so we need to
  * distinguish cases to avoid a verifier error.*/
 #if _NR_ELEMENTS == 1
-      (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
+    (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
 #else
-      int i = 0;
+    int i = 0;
 #pragma unroll
-      for (i = 0; i < _NR_ELEMENTS; ++i) {
-        (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
-      }
+    for (i = 0; i < _NR_ELEMENTS; ++i) {
+      (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
+    }
 
 #endif
-    }  // if result == NULL
+  }  // if result == NULL
 
   call_ingress_program(ctx, _NEXT_HOP_1);
 #else

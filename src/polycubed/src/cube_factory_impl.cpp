@@ -30,22 +30,20 @@ CubeFactoryImpl::CubeFactoryImpl(const std::string &service_name)
     : service_name_(service_name),
       controller_tc_(Controller::get_tc_instance()),
       controller_xdp_(Controller::get_xdp_instance()),
-      datapathlog_(DatapathLog::get_instance()) { }
+      datapathlog_(DatapathLog::get_instance()) {}
 
 CubeFactoryImpl::~CubeFactoryImpl() {}
 
-std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(const std::string &name,
-                                        const std::vector<std::string> &ingress_code,
-                                        const std::vector<std::string> &egress_code,
-                                        const log_msg_cb &log_msg,
-                                        const CubeType type,
-                                        const packet_in_cb &cb,
-                                        LogLevel level) {
+std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
+    const std::string &name, const std::vector<std::string> &ingress_code,
+    const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+    const CubeType type, const packet_in_cb &cb, LogLevel level) {
   std::shared_ptr<CubeIface> cube;
-  typename std::unordered_map<std::string, std::shared_ptr<CubeIface>>::iterator iter;
+  typename std::unordered_map<std::string, std::shared_ptr<CubeIface>>::iterator
+      iter;
   bool inserted;
 
-  switch(type) {
+  switch (type) {
   case CubeType::XDP_SKB:
   case CubeType::XDP_DRV:
     cube = std::make_shared<CubeXDP>(name, service_name_, ingress_code,
@@ -68,7 +66,7 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(const std::string &name,
   ServiceController::register_cube(m, service_name_);
   datapathlog_.register_cb(m->get_id(), log_msg);
   if (cb) {
-    switch(type) {
+    switch (type) {
     case CubeType::XDP_SKB:
     case CubeType::XDP_DRV:
       controller_xdp_.register_cb(m->get_id(), cb);
@@ -82,7 +80,6 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(const std::string &name,
 }
 
 void CubeFactoryImpl::destroy_cube(const std::string &name) {
-
   auto cube = cubes_.find(name);
   if (cube == cubes_.end()) {
     return;
@@ -90,7 +87,7 @@ void CubeFactoryImpl::destroy_cube(const std::string &name) {
 
   uint32_t id = cube->second->get_id();
 
-  switch(cube->second->get_type()) {
+  switch (cube->second->get_type()) {
   case CubeType::XDP_SKB:
   case CubeType::XDP_DRV:
     controller_xdp_.unregister_cb(id);
@@ -109,7 +106,7 @@ std::vector<std::shared_ptr<CubeIface>> CubeFactoryImpl::get_cubes() {
   std::vector<std::shared_ptr<CubeIface>> r;
   r.reserve(cubes_.size());
 
-  for (auto && i: cubes_) {
+  for (auto &&i : cubes_) {
     r.push_back(i.second);
   }
 

@@ -42,34 +42,34 @@ class RawTable::impl {
 
 RawTable::impl::~impl() {}
 
-RawTable::impl::impl(void *op): fd_(*(int*)op) {}
+RawTable::impl::impl(void *op) : fd_(*(int *)op) {}
 
 void RawTable::impl::get(const void *key, void *value) {
   if (bpf_lookup_elem(fd_, const_cast<void *>(key),
                       const_cast<void *>(value))) {
     throw std::runtime_error("Table get error: " +
-      std::string(std::strerror(errno)));
+                             std::string(std::strerror(errno)));
   }
 }
 
 void RawTable::impl::set(const void *key, const void *value) {
-  if (bpf_update_elem(fd_, const_cast<void *>(key),
-                      const_cast<void *>(value), 0)) {
+  if (bpf_update_elem(fd_, const_cast<void *>(key), const_cast<void *>(value),
+                      0)) {
     throw std::runtime_error("Table set error: " +
-      std::string(std::strerror(errno)));
+                             std::string(std::strerror(errno)));
   }
 }
 
 void RawTable::impl::remove(const void *key) {
   if (bpf_delete_elem(fd_, const_cast<void *>(key))) {
     throw std::runtime_error("Table remove error: " +
-      std::string(std::strerror(errno)));
+                             std::string(std::strerror(errno)));
   }
 }
 
 int RawTable::impl::first(void *key) {
   /* TODO: where to get key size from? */
-  return bpf_get_first_key(fd_, key, 32/*sizeof(first)*/);
+  return bpf_get_first_key(fd_, key, 32 /*sizeof(first)*/);
 }
 
 int RawTable::impl::next(const void *key, void *next) {
@@ -79,7 +79,7 @@ int RawTable::impl::next(const void *key, void *next) {
 // PIMPL
 RawTable::~RawTable() {}
 
-RawTable::RawTable(void *op): pimpl_(new impl(op)) {}
+RawTable::RawTable(void *op) : pimpl_(new impl(op)) {}
 
 void RawTable::get(const void *key, void *value) {
   return pimpl_->get(key, value);

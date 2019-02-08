@@ -18,8 +18,8 @@
 #include "datapaths/Iptables_InterfaceLookup_dp.h"
 
 Iptables::InterfaceLookup::InterfaceLookup(const int &index,
-                                     const ChainNameEnum &chain,
-                                     const int &type, Iptables &outer)
+                                           const ChainNameEnum &chain,
+                                           const int &type, Iptables &outer)
     : Iptables::Program(iptables_code_interfacelookup, index, chain, outer,
                         (chain == ChainNameEnum::OUTPUT)
                             ? ProgramType::EGRESS
@@ -48,8 +48,8 @@ Iptables::InterfaceLookup::InterfaceLookup(
     // std::cout << "-- wildcard NO --+" << std::endl;
   } else {
     wildcard_rule_ = true;
-    wildcard_string_ = fromContainerToMapString(it->second.begin(),
-                                              it->second.end(), "{", "}", ",");
+    wildcard_string_ = fromContainerToMapString(
+        it->second.begin(), it->second.end(), "{", "}", ",");
     // std::cout << "-- wildcard YES --+" << std::endl;
     // std::cout << wildcardString << std::endl;
   }

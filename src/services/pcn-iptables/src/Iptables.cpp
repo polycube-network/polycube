@@ -137,13 +137,13 @@ Iptables::Iptables(const std::string name, const IptablesJsonObject &conf,
 Iptables::~Iptables() {
   Iptables::Program *pr =
       programs_[std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)];
+                               ChainNameEnum::INVALID_INGRESS)];
   Iptables::ConntrackTableUpdate *ctu =
       static_cast<Iptables::ConntrackTableUpdate *>(pr);
   ctu->quitAndJoin();
 
-  netlink_instance_iptables_.unregisterObserver(polycube::polycubed::Netlink::Event::ALL,
-                                      netlink_notification_index_);
+  netlink_instance_iptables_.unregisterObserver(
+      polycube::polycubed::Netlink::Event::ALL, netlink_notification_index_);
 
   logger()->info("[{0}] Destroying iptables...", get_name());
   // cleanup chains struct contained in control plane
@@ -367,7 +367,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_input_ = true;
       conntrack_mode_input_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
     break;
@@ -380,7 +380,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_forward_ = true;
       conntrack_mode_forward_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
     break;
@@ -393,7 +393,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_output_ = true;
       conntrack_mode_output_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_EGRESS,
-                              ChainNameEnum::INVALID_EGRESS)]
+                               ChainNameEnum::INVALID_EGRESS)]
           ->reload();
     }
   }
@@ -414,8 +414,6 @@ void Iptables::setHorus(const IptablesHorusEnum &value) {
   }
 }
 
-
-
 void Iptables::disableAcceptEstablished(Chain &chain) {
   switch (chain.getName()) {
   case ChainNameEnum::INPUT:
@@ -427,7 +425,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_input_ = false;
       conntrack_mode_input_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   case ChainNameEnum::FORWARD:
@@ -439,7 +437,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_forward_ = false;
       conntrack_mode_forward_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   case ChainNameEnum::OUTPUT:
@@ -451,7 +449,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_output_ = false;
       conntrack_mode_output_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_EGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   }

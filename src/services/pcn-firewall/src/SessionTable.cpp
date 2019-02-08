@@ -157,8 +157,7 @@ std::string SessionTable::state_from_number_to_string(int state) {
   throw std::runtime_error("[SessionTable]: Error!");
 }
 
-uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl,
-                                       uint16_t state,
+uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl, uint16_t state,
                                        uint16_t l4proto) {
   if (state == WILDCARD) {
     return -1;

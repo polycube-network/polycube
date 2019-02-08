@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "polycube/services/guid.h"
-#include "node.h"
 #include "cube.h"
+#include "node.h"
+#include "polycube/services/guid.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
@@ -41,11 +41,9 @@ class CubeTC : public Cube {
   friend class CubeXDP;
 
  public:
-  explicit CubeTC(const std::string &name,
-                  const std::string &service_name,
+  explicit CubeTC(const std::string &name, const std::string &service_name,
                   const std::vector<std::string> &ingres_code,
-                  const std::vector<std::string> &egress_code,
-                  LogLevel level);
+                  const std::vector<std::string> &egress_code, LogLevel level);
   virtual ~CubeTC();
 
  protected:
@@ -54,7 +52,8 @@ class CubeTC : public Cube {
   static int do_load(ebpf::BPF &bpf);
   static void do_unload(ebpf::BPF &bpf);
 
-  void compile(ebpf::BPF &bpf, const std::string &code, int index, ProgramType type);
+  void compile(ebpf::BPF &bpf, const std::string &code, int index,
+               ProgramType type);
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 

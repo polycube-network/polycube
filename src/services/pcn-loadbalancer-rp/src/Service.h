@@ -16,9 +16,7 @@
 
 #pragma once
 
-
 #include "../interface/ServiceInterface.h"
-
 
 #include <spdlog/spdlog.h>
 #include "ServiceBackend.h"
@@ -32,7 +30,7 @@ struct vip {
   uint32_t ip;
   uint16_t port;
   uint16_t proto;
-  uint16_t index;  //refers to backend's index for that Service(vip)
+  uint16_t index;  // refers to backend's index for that Service(vip)
 } __attribute__((packed));
 
 struct backend {
@@ -43,13 +41,19 @@ struct backend {
 
 class Service : public ServiceInterface {
   friend class ServiceBackend;
-public:
+
+ public:
   Service(Lbrp &parent, const ServiceJsonObject &conf);
   virtual ~Service();
 
-  static void create(Lbrp &parent, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &conf);
-  static std::shared_ptr<Service> getEntry(Lbrp &parent, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
-  static void removeEntry(Lbrp &parent, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
+  static void create(Lbrp &parent, const std::string &vip,
+                     const uint16_t &vport, const ServiceProtoEnum &proto,
+                     const ServiceJsonObject &conf);
+  static std::shared_ptr<Service> getEntry(Lbrp &parent, const std::string &vip,
+                                           const uint16_t &vport,
+                                           const ServiceProtoEnum &proto);
+  static void removeEntry(Lbrp &parent, const std::string &vip,
+                          const uint16_t &vport, const ServiceProtoEnum &proto);
   static std::vector<std::shared_ptr<Service>> get(Lbrp &parent);
   static void remove(Lbrp &parent);
   nlohmann::fifo_map<std::string, std::string> getKeys();
@@ -83,15 +87,18 @@ public:
   /// </summary>
   std::shared_ptr<ServiceBackend> getBackend(const std::string &ip) override;
   std::vector<std::shared_ptr<ServiceBackend>> getBackendList() override;
-  void addBackend(const std::string &ip, const ServiceBackendJsonObject &conf) override;
-  void addBackendList(const std::vector<ServiceBackendJsonObject> &conf) override;
-  void replaceBackend(const std::string &ip, const ServiceBackendJsonObject &conf) override;
+  void addBackend(const std::string &ip,
+                  const ServiceBackendJsonObject &conf) override;
+  void addBackendList(
+      const std::vector<ServiceBackendJsonObject> &conf) override;
+  void replaceBackend(const std::string &ip,
+                      const ServiceBackendJsonObject &conf) override;
   void delBackend(const std::string &ip) override;
   void delBackendList() override;
 
   typedef std::tuple<std::string, uint16_t, uint8_t> ServiceKey;
 
-private:
+ private:
   Lbrp &parent_;
   std::unordered_map<std::string, ServiceBackend> service_backends_;
   std::map<std::string, std::vector<int>> backend_matrix_;
@@ -118,6 +125,5 @@ private:
   std::vector<int> getRandomIntVector(int vect_size);
   std::vector<int> getEmptyIntVector(int vect_size);
   void removeServiceFromKernelMap();
-  std::map<std::string,int> get_weight_backend();
+  std::map<std::string, int> get_weight_backend();
 };
-

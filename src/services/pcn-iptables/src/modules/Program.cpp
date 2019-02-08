@@ -76,7 +76,7 @@ bool Iptables::Program::load() {
   return true;
 }
 
-//Iptables::Program *Iptables::Program::getHop(std::string hopName) {
+// Iptables::Program *Iptables::Program::getHop(std::string hopName) {
 //  auto it = hops_.find(hopName);
 //  if (it != hops_.end()) {
 //    return it->second;

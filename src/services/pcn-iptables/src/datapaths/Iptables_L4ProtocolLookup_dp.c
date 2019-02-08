@@ -93,42 +93,45 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct elements *ele = getBitVect(&proto);
 
   if (ele == NULL) {
-    proto=0;
+    proto = 0;
     ele = getBitVect(&proto);
-    if(ele==NULL){
+    if (ele == NULL) {
       pcn_log(ctx, LOG_DEBUG, "No match, dropping. proto %d .", proto);
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
     }
   }
-    key = 0;
-    struct elements *result = getShared();
-    if (result == NULL) {
-      /*Can't happen. The PERCPU is preallocated.*/
-      return RX_DROP;
-    } else {
-      bool isAllZero = true;
+  key = 0;
+  struct elements *result = getShared();
+  if (result == NULL) {
+    /*Can't happen. The PERCPU is preallocated.*/
+    return RX_DROP;
+  } else {
+    bool isAllZero = true;
 /*#pragma unroll does not accept a loop with a single iteration, so we need to
  * distinguish cases to avoid a verifier error.*/
 #if _NR_ELEMENTS == 1
-      (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
-      if (result->bits[0]) isAllZero = false;
+    (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
+    if (result->bits[0])
+      isAllZero = false;
 #else
-      int i = 0;
+    int i = 0;
 #pragma unroll
-      for (i = 0; i < _NR_ELEMENTS; ++i) {
-        (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
+    for (i = 0; i < _NR_ELEMENTS; ++i) {
+      (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
 
-        if (result->bits[i]) isAllZero = false;
-      }
+      if (result->bits[i])
+        isAllZero = false;
+    }
 
 #endif
-      if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG, "Bitvector is all zero. Break pipeline for l4proto_DIRECTION");
-        incrementDefaultCounters_DIRECTION(md->packet_len);
-        _DEFAULTACTION
-      }
-    }  // if result == NULL
+    if (isAllZero) {
+      pcn_log(ctx, LOG_DEBUG,
+              "Bitvector is all zero. Break pipeline for l4proto_DIRECTION");
+      incrementDefaultCounters_DIRECTION(md->packet_len);
+      _DEFAULTACTION
+    }
+  }  // if result == NULL
 
   call_bpf_program(ctx, _NEXT_HOP_1);
 #else

@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
+#include <linux/jhash.h>
 #include <uapi/linux/if_arp.h>
 #include <uapi/linux/ip.h>
 #include <uapi/linux/tcp.h>
 #include <uapi/linux/udp.h>
-#include <linux/jhash.h>
 
 #define SERVICES_MAP_DIM 65536
 #define NODEPORT_SESSION_DIM 65536
 
 #define IP_CSUM_OFFSET (sizeof(struct eth_hdr) + offsetof(struct iphdr, check))
-#define TCP_CSUM_OFFSET (sizeof(struct eth_hdr) + sizeof(struct iphdr) + offsetof(struct tcphdr, check))
-#define UDP_CSUM_OFFSET (sizeof(struct eth_hdr) + sizeof(struct iphdr) + offsetof(struct udphdr, check))
+#define TCP_CSUM_OFFSET                            \
+  (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
+   offsetof(struct tcphdr, check))
+#define UDP_CSUM_OFFSET                            \
+  (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
+   offsetof(struct udphdr, check))
 #define IS_PSEUDO 0x10
-
 
 #ifndef NODEPORT_PORT
 #define NODEPORT_PORT 0xFFFF
@@ -46,8 +49,8 @@
 #endif
 
 #ifndef CLUSTER_IP_SUBNET
-#define CLUSTER_IP_SUBNET bpf_htonl(0x0a600000UL)    // 10.96.0.0/12
-#define CLUSTER_IP_MASK bpf_htonl(0xfff00000UL)   // /12 -> 255.240.0.0
+#define CLUSTER_IP_SUBNET bpf_htonl(0x0a600000UL)  // 10.96.0.0/12
+#define CLUSTER_IP_MASK bpf_htonl(0xfff00000UL)    // /12 -> 255.240.0.0
 #endif
 
 #define KUBE_PROXY_FLAG (65535U)
@@ -93,7 +96,7 @@ struct vip {
   __be16 port;
   __be16 proto;
 
-  __be16 index;  //refers to backend's index for that Service(vip)
+  __be16 index;  // refers to backend's index for that Service(vip)
   u16 pad0;
   u16 pad1;
   u16 pad2;
@@ -106,7 +109,8 @@ struct backend {
 } __attribute__((packed));
 
 /*
- * This table contains multiple entries for each virtual service (i.e., virtual IP / protocol / port).
+ * This table contains multiple entries for each virtual service (i.e., virtual
+ * IP / protocol / port).
  * When 'index' = 0, the value in the hash map is actually not a couple
  *   IP address / port but the number of backends (also called 'pool size')
  *   associated to that virtual service.
@@ -143,7 +147,8 @@ struct backend {
 BPF_TABLE("hash", struct vip, struct backend, services, SERVICES_MAP_DIM);
 
 // reverse map to get virtual IP and Vport from real backend
-BPF_TABLE("hash", struct backend, struct vip, cluster_ip_reverse, SERVICES_MAP_DIM);
+BPF_TABLE("hash", struct backend, struct vip, cluster_ip_reverse,
+          SERVICES_MAP_DIM);
 
 struct nodeport_session_in {
   __be32 ip_src;
@@ -155,8 +160,8 @@ struct nodeport_session_in {
 } __attribute__((packed));
 
 struct nodeport_session_out {
-  __be64 mac_dst; // : 48;
-  __be64 mac_src; // : 48;
+  __be64 mac_dst;  // : 48;
+  __be64 mac_src;  // : 48;
   __be32 ip_src;
   __be32 ip_dst;
   __be16 port_src;
@@ -164,8 +169,10 @@ struct nodeport_session_out {
   __be16 proto;
   u64 timestamp;
 } __attribute__((packed));
-BPF_TABLE("hash", struct nodeport_session_in, struct nodeport_session_out, nodeport_session_out, NODEPORT_SESSION_DIM);
-BPF_TABLE("hash", struct nodeport_session_out, struct nodeport_session_in, nodeport_session_in, NODEPORT_SESSION_DIM);
+BPF_TABLE("hash", struct nodeport_session_in, struct nodeport_session_out,
+          nodeport_session_out, NODEPORT_SESSION_DIM);
+BPF_TABLE("hash", struct nodeport_session_out, struct nodeport_session_in,
+          nodeport_session_in, NODEPORT_SESSION_DIM);
 
 // Saves IP to MAC assosiation for pods running in the local node
 struct pod {
@@ -186,17 +193,17 @@ struct cb_control {
 BPF_TABLE("array", u32, struct cb_control, free_ports_cb, 1024);
 
 // allocates and returns a free port to create a new session
-static __always_inline
-__be16 get_free_port(struct CTXTYPE *ctx) {
+static __always_inline __be16 get_free_port(struct CTXTYPE *ctx) {
   u32 cpu_index = bpf_get_smp_processor_id();
-  //pcn_log(ctx, LOG_TRACE, "get port on core %u", cpu_index);
+  // pcn_log(ctx, LOG_TRACE, "get port on core %u", cpu_index);
   struct cb_control *ctrl = free_ports_cb.lookup(&cpu_index);
   if (!ctrl) {
     pcn_log(ctx, LOG_ERR, "Ctrl structure not found");
     return 0;
   }
 
-  //pcn_log(ctx, LOG_TRACE, "reader: %u, writer: %u, size: %u", ctrl->reader, ctrl->writer, ctrl->size);
+  // pcn_log(ctx, LOG_TRACE, "reader: %u, writer: %u, size: %u", ctrl->reader,
+  // ctrl->writer, ctrl->size);
 
   if (ctrl->reader == ctrl->writer) {
     pcn_log(ctx, LOG_ERR, "There are not free ports for this core");
@@ -218,21 +225,12 @@ __be16 get_free_port(struct CTXTYPE *ctx) {
 }
 
 // get real IP and port for a clusterIP service
-static __always_inline
-struct backend *get_cluster_ip_backend(struct CTXTYPE *ctx,
-                              __be32 ip_src,
-                              __be32 ip_dst,
-                              __be16 port_src,
-                              __be16 port_dst,
-                              __be16 proto,
-                              u16 *action) {
-
+static __always_inline struct backend *get_cluster_ip_backend(
+    struct CTXTYPE *ctx, __be32 ip_src, __be32 ip_dst, __be16 port_src,
+    __be16 port_dst, __be16 proto, u16 *action) {
   // check if there is a service for this
   struct vip v_key = {
-    .ip = ip_dst,
-    .port = port_dst,
-    .proto = proto,
-    .index = 0,
+      .ip = ip_dst, .port = port_dst, .proto = proto, .index = 0,
   };
 
   struct backend *backend_value = services.lookup(&v_key);
@@ -254,17 +252,19 @@ struct backend *get_cluster_ip_backend(struct CTXTYPE *ctx,
   }
 
   struct session sessions_key = {
-    .ip_src = ip_src,
-    .ip_dst = ip_dst,
-    .port_src = port_src,
-    .port_dst = port_dst,
-    .proto = proto,
+      .ip_src = ip_src,
+      .ip_dst = ip_dst,
+      .port_src = port_src,
+      .port_dst = port_dst,
+      .proto = proto,
   };
 
-  u32 check = jhash((const void *)&sessions_key, sizeof(struct session),
-                    JHASH_INITVAL);
+  u32 check =
+      jhash((const void *)&sessions_key, sizeof(struct session), JHASH_INITVAL);
   u32 id = check % pool_size + 1;
-  pcn_log(ctx, LOG_TRACE, "Backend lookup ip: %I, port: %P, proto: 0x%04x, id: %d", ip_dst, port_dst, proto, id);
+  pcn_log(ctx, LOG_TRACE,
+          "Backend lookup ip: %I, port: %P, proto: 0x%04x, id: %d", ip_dst,
+          port_dst, proto, id);
 
   v_key.index = id;
 
@@ -272,8 +272,8 @@ struct backend *get_cluster_ip_backend(struct CTXTYPE *ctx,
   return services.lookup(&v_key);
 }
 
-static __always_inline
-int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
+static __always_inline int handle_rx(struct CTXTYPE *ctx,
+                                     struct pkt_metadata *md) {
   u8 type = 0;
   u8 outport;
   u16 action = 0;
@@ -282,7 +282,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   __be32 l4csum_offset = 0;
   __be16 *dport;
   __be16 *sport;
-  struct backend* bck_value;
+  struct backend *bck_value;
 
   __be32 l3sum = 0;
   __be32 l4sum = 0;
@@ -309,18 +309,22 @@ IP:;
     goto DROP;
 
   // Where is the packet going to?
-  if ((ip->daddr & CLUSTER_IP_MASK) == CLUSTER_IP_SUBNET) {  // a clusterIP service?
+  if ((ip->daddr & CLUSTER_IP_MASK) ==
+      CLUSTER_IP_SUBNET) {  // a clusterIP service?
     pcn_log(ctx, LOG_TRACE, "Packet going to a ClusterIP service");
     type = CLUSTER_IP_IN;
-  } else if ((ip->daddr & CLIENT_SUBNET_MASK) == VIRTUAL_CLIENT_SUBNET) { // a local pod's rewritten IP?
-    if ((ip->daddr & ~CLIENT_SUBNET_MASK) == bpf_htonl(0x2UL)) { // is this a response for a NodePort?
+  } else if ((ip->daddr & CLIENT_SUBNET_MASK) ==
+             VIRTUAL_CLIENT_SUBNET) {  // a local pod's rewritten IP?
+    if ((ip->daddr & ~CLIENT_SUBNET_MASK) ==
+        bpf_htonl(0x2UL)) {  // is this a response for a NodePort?
       pcn_log(ctx, LOG_TRACE, "Packet comming from a NodePort service");
       type = FROM_NODE_PORT_SERVICE;
     } else {
       pcn_log(ctx, LOG_TRACE, "Packet comming from a ClusterIP service");
       type = FROM_CLUSTER_IP_SERVICE;
     }
-  } else if (md->in_port == NODEPORT_PORT) { // packet going to a node port service
+  } else if (md->in_port ==
+             NODEPORT_PORT) {  // packet going to a node port service
     pcn_log(ctx, LOG_TRACE, "Packet going to a NodePort service");
     type = NODE_PORT_IN;
   } else {  // anywhere else?
@@ -328,12 +332,13 @@ IP:;
   }
 
   switch (ip->protocol) {
-  case IPPROTO_UDP: ;
+  case IPPROTO_UDP:;
     struct udphdr *udp = data + sizeof(struct eth_hdr) + sizeof(struct iphdr);
     if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*udp) > data_end)
       goto DROP;
 
-    pcn_log(ctx, LOG_TRACE, "received UDP: %I:%P --> %I:%P", ip->saddr, udp->source, ip->daddr, udp->dest);
+    pcn_log(ctx, LOG_TRACE, "received UDP: %I:%P --> %I:%P", ip->saddr,
+            udp->source, ip->daddr, udp->dest);
 
     dport = &udp->dest;
     sport = &udp->source;
@@ -342,12 +347,13 @@ IP:;
     l4csum_offset = UDP_CSUM_OFFSET;
     break;
 
-  case IPPROTO_TCP: ;
+  case IPPROTO_TCP:;
     struct tcphdr *tcp = data + sizeof(struct eth_hdr) + sizeof(struct iphdr);
     if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
       goto DROP;
 
-    pcn_log(ctx, LOG_TRACE, "received TCP: %I:%P --> %I:%P", ip->saddr, tcp->source, ip->daddr, tcp->dest);
+    pcn_log(ctx, LOG_TRACE, "received TCP: %I:%P --> %I:%P", ip->saddr,
+            tcp->source, ip->daddr, tcp->dest);
 
     dport = &tcp->dest;
     sport = &tcp->source;
@@ -362,18 +368,20 @@ IP:;
 
   switch (type) {
   case CLUSTER_IP_IN: {
-    bck_value = get_cluster_ip_backend(ctx,
-      ip->saddr, ip->daddr, *sport, *dport, ip_proto, &action);
+    bck_value = get_cluster_ip_backend(ctx, ip->saddr, ip->daddr, *sport,
+                                       *dport, ip_proto, &action);
 
     if (!bck_value) {
       if (action == KUBE_PROXY_SERVICE) {
-        pcn_log(ctx, LOG_TRACE, "Service managed by kube-proxy, forwarding packet");
+        pcn_log(ctx, LOG_TRACE,
+                "Service managed by kube-proxy, forwarding packet");
         goto FORWARD;
       }
       goto DROP;
     }
 
-    pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P", bck_value->ip, bck_value->port);
+    pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P",
+            bck_value->ip, bck_value->port);
 
     // change destination IP for backend
     l3sum = pcn_csum_diff(&ip->daddr, 4, &bck_value->ip, 4, l3sum);
@@ -390,7 +398,8 @@ IP:;
     __be32 new_port = bck_value->port;
     *dport = bck_value->port;
     l4sum = pcn_csum_diff(&old_port, 4, &new_port, 4, l4sum);
-    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport, ip->daddr, *dport);
+    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport,
+            ip->daddr, *dport);
     goto FORWARD_CSUM;
   }
 
@@ -398,11 +407,9 @@ IP:;
     // The packet is comming from a service
     // -> change the destination IP to the client one
     // -> change the source IP and port to the VIP
-    struct backend key = {.ip = ip->saddr,
-                          .port = *sport,
-                          .proto = ip_proto};
+    struct backend key = {.ip = ip->saddr, .port = *sport, .proto = ip_proto};
 
-    struct vip* vip_v = cluster_ip_reverse.lookup(&key);
+    struct vip *vip_v = cluster_ip_reverse.lookup(&key);
     if (!vip_v) {
       pcn_log(ctx, LOG_ERR, "Reverse backend lookup failed");
       goto DROP;
@@ -425,40 +432,43 @@ IP:;
     __be32 new_port = vip_v->port;
     *sport = vip_v->port;
     l4sum = pcn_csum_diff(&old_port, 4, &new_port, 4, l4sum);
-    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport, ip->daddr, *dport);
+    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport,
+            ip->daddr, *dport);
     goto FORWARD_CSUM;
   }
 
   case NODE_PORT_IN: {
     // original values of the packet
     struct nodeport_session_out value = {
-      .mac_dst = eth->dst,
-      .mac_src = eth->src,
-      .ip_src = ip->saddr,
-      .ip_dst = ip->daddr,
-      .port_src = *sport,
-      .port_dst = *dport,
-      .proto = ip_proto,
-      .timestamp = 0LL,
+        .mac_dst = eth->dst,
+        .mac_src = eth->src,
+        .ip_src = ip->saddr,
+        .ip_dst = ip->daddr,
+        .port_src = *sport,
+        .port_dst = *dport,
+        .proto = ip_proto,
+        .timestamp = 0LL,
     };
 
     // is there a session entry for this packet?
     struct nodeport_session_in *session = nodeport_session_in.lookup(&value);
     if (!session) {
       // no, try to choose a backend
-      bck_value = get_cluster_ip_backend(ctx,
-        ip->saddr, ip->daddr, *sport, *dport, ip_proto, &action);
+      bck_value = get_cluster_ip_backend(ctx, ip->saddr, ip->daddr, *sport,
+                                         *dport, ip_proto, &action);
 
       if (!bck_value) {
         if (action == KUBE_PROXY_SERVICE) {
-          pcn_log(ctx, LOG_TRACE, "Service managed by kube-proxy, forwarding packet");
+          pcn_log(ctx, LOG_TRACE,
+                  "Service managed by kube-proxy, forwarding packet");
           return RX_OK;
         }
 
         return RX_OK;
       }
 
-      pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P", bck_value->ip, bck_value->port);
+      pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P",
+              bck_value->ip, bck_value->port);
 
       // change destination IP for backend
       l3sum = pcn_csum_diff(&ip->daddr, 4, &bck_value->ip, 4, l3sum);
@@ -488,12 +498,12 @@ IP:;
 
       // new values of the packet, will be used in the reverse direction
       struct nodeport_session_in key = {
-        .ip_src = ip->saddr,
-        .ip_dst = ip->daddr,
-        .port_src = *sport,
-        .port_dst = *dport,
-        .proto = ip_proto,
-        .timestamp = 0LL,
+          .ip_src = ip->saddr,
+          .ip_dst = ip->daddr,
+          .port_src = *sport,
+          .port_dst = *dport,
+          .proto = ip_proto,
+          .timestamp = 0LL,
       };
 
       // create incommming entry
@@ -533,7 +543,8 @@ IP:;
       session->timestamp = bpf_ktime_get_ns();
     }
 
-    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport, ip->daddr, *dport);
+    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport,
+            ip->daddr, *dport);
     goto FORWARD_CSUM;
   }
 
@@ -542,12 +553,12 @@ IP:;
   case FROM_NODE_PORT_SERVICE: {
     // lookup in session table, notice that source and destination are exchanged
     struct nodeport_session_in key = {
-      .ip_src = ip->daddr,
-      .ip_dst = ip->saddr,
-      .port_src = *dport,
-      .port_dst = *sport,
-      .proto = ip_proto,
-      .timestamp = 0LL,
+        .ip_src = ip->daddr,
+        .ip_dst = ip->saddr,
+        .port_src = *dport,
+        .port_dst = *sport,
+        .proto = ip_proto,
+        .timestamp = 0LL,
     };
 
     struct nodeport_session_out *value = nodeport_session_out.lookup(&key);
@@ -580,55 +591,55 @@ IP:;
     eth->dst = value->mac_src;
     eth->src = value->mac_dst;
 
-    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport, ip->daddr, *dport);
+    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, *sport,
+            ip->daddr, *dport);
 
     pcn_l4_csum_replace(ctx, l4csum_offset, 0, l3sum, IS_PSEUDO | 0);
     pcn_l4_csum_replace(ctx, l4csum_offset, 0, l4sum, 0);
-    pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET , 0, l3sum, 0);
+    pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET, 0, l3sum, 0);
 
     return pcn_pkt_redirect(ctx, md, NODEPORT_PORT);
-  }
-  break;
+  } break;
 
   default:
     goto DROP;
   }
 
-FORWARD:  {
-    // change destination mac in case pod is local
-    __be32 dst_ip = 0;  // 0 means GW
-    if ((ip->daddr & CLIENT_SUBNET_MASK) == CLIENT_SUBNET) {
-      dst_ip = bpf_htonl(ip->daddr & ~CLIENT_SUBNET_MASK);
-    }
-    struct pod *p = fwd_table.lookup(&dst_ip);
-    if (!p) {
-      pcn_log(ctx, LOG_ERR, "mac not found for %u", dst_ip);
-      goto DROP;
-    }
-    eth->dst = p->mac;
-    return pcn_pkt_redirect(ctx, md, p->port);
+FORWARD : {
+  // change destination mac in case pod is local
+  __be32 dst_ip = 0;  // 0 means GW
+  if ((ip->daddr & CLIENT_SUBNET_MASK) == CLIENT_SUBNET) {
+    dst_ip = bpf_htonl(ip->daddr & ~CLIENT_SUBNET_MASK);
   }
-
-FORWARD_CSUM: {
-    // change destination mac in case pod is local
-    __be32 dst_ip = 0;  // 0 means GW
-    if ((ip->daddr & CLIENT_SUBNET_MASK) == CLIENT_SUBNET) {
-      dst_ip = bpf_htonl(ip->daddr & ~CLIENT_SUBNET_MASK);
-    }
-    struct pod *p = fwd_table.lookup(&dst_ip);
-    if (!p) {
-      pcn_log(ctx, LOG_ERR, "mac not found for %u", dst_ip);
-      goto DROP;
-    }
-    eth->dst = p->mac;
-
-    pcn_l4_csum_replace(ctx, l4csum_offset, 0, l3sum, IS_PSEUDO | 0);
-    pcn_l4_csum_replace(ctx, l4csum_offset, 0, l4sum, 0);
-    pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET , 0, l3sum, 0);
-
-    // TODO: Change source?
-    return pcn_pkt_redirect(ctx, md, p->port);
+  struct pod *p = fwd_table.lookup(&dst_ip);
+  if (!p) {
+    pcn_log(ctx, LOG_ERR, "mac not found for %u", dst_ip);
+    goto DROP;
   }
+  eth->dst = p->mac;
+  return pcn_pkt_redirect(ctx, md, p->port);
+}
+
+FORWARD_CSUM : {
+  // change destination mac in case pod is local
+  __be32 dst_ip = 0;  // 0 means GW
+  if ((ip->daddr & CLIENT_SUBNET_MASK) == CLIENT_SUBNET) {
+    dst_ip = bpf_htonl(ip->daddr & ~CLIENT_SUBNET_MASK);
+  }
+  struct pod *p = fwd_table.lookup(&dst_ip);
+  if (!p) {
+    pcn_log(ctx, LOG_ERR, "mac not found for %u", dst_ip);
+    goto DROP;
+  }
+  eth->dst = p->mac;
+
+  pcn_l4_csum_replace(ctx, l4csum_offset, 0, l3sum, IS_PSEUDO | 0);
+  pcn_l4_csum_replace(ctx, l4csum_offset, 0, l4sum, 0);
+  pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET, 0, l3sum, 0);
+
+  // TODO: Change source?
+  return pcn_pkt_redirect(ctx, md, p->port);
+}
 
 DROP:
   pcn_log(ctx, LOG_TRACE, "DROP packet (port = %d)", md->in_port);

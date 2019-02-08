@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/FdbInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -31,7 +28,8 @@ using namespace io::swagger::server::model;
 
 class Fdb : public FdbInterface {
   friend class FdbEntry;
-public:
+
+ public:
   Fdb(Simplebridge &parent, const FdbJsonObject &conf);
   Fdb(Simplebridge &parent);
   virtual ~Fdb();
@@ -48,9 +46,11 @@ public:
   /// </summary>
   std::shared_ptr<FdbEntry> getEntry(const std::string &address) override;
   std::vector<std::shared_ptr<FdbEntry>> getEntryList() override;
-  void addEntry(const std::string &address, const FdbEntryJsonObject &conf) override;
+  void addEntry(const std::string &address,
+                const FdbEntryJsonObject &conf) override;
   void addEntryList(const std::vector<FdbEntryJsonObject> &conf) override;
-  void replaceEntry(const std::string &address, const FdbEntryJsonObject &conf) override;
+  void replaceEntry(const std::string &address,
+                    const FdbEntryJsonObject &conf) override;
   void delEntry(const std::string &address) override;
   void delEntryList() override;
 
@@ -61,10 +61,9 @@ public:
   void setAgingTime(const uint32_t &value) override;
 
   FdbFlushOutputJsonObject flush() override;
-private:
+
+ private:
   Simplebridge &parent_;
-  //Default value for agingTime
+  // Default value for agingTime
   uint32_t agingTime_ = 300;
-
 };
-

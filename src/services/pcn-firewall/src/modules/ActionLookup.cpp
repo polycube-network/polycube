@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "polycube/common.h"
 #include "../Firewall.h"
 #include "datapaths/Firewall_ActionLookup_dp.h"
+#include "polycube/common.h"
 
 Firewall::ActionLookup::ActionLookup(const int &index,
                                      const ChainNameEnum &direction,
@@ -86,7 +86,8 @@ uint64_t Firewall::ActionLookup::getBytesCount(int ruleNumber) {
 
   try {
     uint64_t bytes = 0;
-    auto bytesTable = firewall.get_percpuarray_table<uint64_t>(tableName, index);
+    auto bytesTable =
+        firewall.get_percpuarray_table<uint64_t>(tableName, index);
     auto values = bytesTable.get(ruleNumber);
 
     return std::accumulate(values.begin(), values.end(), bytes);
@@ -108,8 +109,10 @@ void Firewall::ActionLookup::flushCounters(int ruleNumber) {
   }
 
   try {
-    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
-    auto bytesTable = firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
+    auto pktsTable =
+        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
+    auto bytesTable =
+        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
 
     pktsTable.set(ruleNumber, 0);
     bytesTable.set(ruleNumber, 0);

@@ -90,7 +90,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     // Not possible
     return RX_DROP;
   }
-  if( pkt->l4proto != IPPROTO_TCP){
+  if (pkt->l4proto != IPPROTO_TCP) {
     pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION ignoring packet. ");
     call_bpf_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
@@ -111,25 +111,32 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       /*Can't happen. The PERCPU is preallocated.*/
       return RX_DROP;
     } else {
-/*#pragma unroll does not accept a loop with a single iteration, so we need to
- * distinguish cases to avoid a verifier error.*/
+      /*#pragma unroll does not accept a loop with a single iteration, so we
+       * need to
+       * distinguish cases to avoid a verifier error.*/
       bool isAllZero = true;
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
-      if (result->bits[0]) isAllZero = false;
-      pcn_log(ctx, LOG_DEBUG, "Code TcpFlags_DIRECTION  Match found. Bitvec: %llu, result %llu. ", (ele->bits)[0], (result->bits)[0]);
+      if (result->bits[0])
+        isAllZero = false;
+      pcn_log(
+          ctx, LOG_DEBUG,
+          "Code TcpFlags_DIRECTION  Match found. Bitvec: %llu, result %llu. ",
+          (ele->bits)[0], (result->bits)[0]);
 #else
       int i = 0;
 #pragma unroll
       for (i = 0; i < _NR_ELEMENTS; ++i) {
         (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
 
-        if (result->bits[i]) isAllZero = false;
+        if (result->bits[i])
+          isAllZero = false;
       }
 
 #endif
       if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG, "Bitvector is all zero. Break pipeline for TcpFlags_DIRECTION");
+        pcn_log(ctx, LOG_DEBUG,
+                "Bitvector is all zero. Break pipeline for TcpFlags_DIRECTION");
         incrementDefaultCounters_DIRECTION(md->packet_len);
         _DEFAULTACTION
       }

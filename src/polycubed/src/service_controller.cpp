@@ -19,8 +19,8 @@
 
 #include "config.h"
 #include "cube_factory_impl.h"
-#include "port_xdp.h"
 #include "netlink.h"
+#include "port_xdp.h"
 
 #include <regex>
 
@@ -35,15 +35,19 @@ std::mutex ServiceController::service_ctrl_mutex_;
 // FIXME: to be defined somewhere else
 const static std::string HOST_PEER(":host");
 
-std::unordered_map<std::string, std::shared_ptr<CubeIface>> ServiceController::cubes;
-std::unordered_map<Guid, std::unique_ptr<Node>> ServiceController::ports_to_ifaces;
+std::unordered_map<std::string, std::shared_ptr<CubeIface>>
+    ServiceController::cubes;
+std::unordered_map<Guid, std::unique_ptr<Node>>
+    ServiceController::ports_to_ifaces;
 std::unordered_map<std::string, std::string> ServiceController::ports_to_ports;
 std::unordered_map<std::string, std::string> ServiceController::cubes_x_service;
 
 ServiceController::ServiceController(const std::string &name,
                                      const std::string &path)
-    : l(spdlog::get("polycubed")), name_(name), servicecontroller_(path), factory_(name) {
-
+    : l(spdlog::get("polycubed")),
+      name_(name),
+      servicecontroller_(path),
+      factory_(name) {
   // TODO improve validation format
   std::size_t found;
   found = servicecontroller_.find(":");
@@ -59,9 +63,9 @@ ServiceController::ServiceController(const std::string &name,
 
 ServiceController::~ServiceController() {
   // TODO: destroy all cubes created by this service
-  switch(type_) {
-    case ServiceControllerType::LIBRARY:
-      managementInterface.reset();
+  switch (type_) {
+  case ServiceControllerType::LIBRARY:
+    managementInterface.reset();
     break;
   }
 }
@@ -70,9 +74,8 @@ ServiceControllerType ServiceController::get_type() const {
   return type_;
 }
 
-std::string ServiceController::get_description() const
-{
-  if(!service_md_.description.empty())
+std::string ServiceController::get_description() const {
+  if (!service_md_.description.empty())
     return service_md_.description;
   else {
     std::string upper_service_name = get_name();
@@ -81,36 +84,32 @@ std::string ServiceController::get_description() const
   }
 }
 
-std::string ServiceController::get_version() const
-{
-  if(!service_md_.version.empty())
+std::string ServiceController::get_version() const {
+  if (!service_md_.version.empty())
     return service_md_.version;
 
   return "Unknown";
 }
 
-std::string ServiceController::get_pyang_git_repo_id() const
-{
-  if(!service_md_.pyangGitRepoId.empty())
+std::string ServiceController::get_pyang_git_repo_id() const {
+  if (!service_md_.pyangGitRepoId.empty())
     return service_md_.pyangGitRepoId;
 
   return "Unknown";
 }
 
-std::string ServiceController::get_swagger_codegen_git_repo_id() const
-{
-  if(!service_md_.swaggerCodegenGitRepoId.empty())
+std::string ServiceController::get_swagger_codegen_git_repo_id() const {
+  if (!service_md_.swaggerCodegenGitRepoId.empty())
     return service_md_.swaggerCodegenGitRepoId;
 
   return "Unknown";
 }
 
-
 void ServiceController::connect(std::string polycubeEndpoint) {
-  switch(type_) {
+  switch (type_) {
   case ServiceControllerType::DAEMON:
     throw std::runtime_error("GRPC support has not been compiled");
-  break;
+    break;
 
   case ServiceControllerType::LIBRARY:
     managementInterface =
@@ -127,7 +126,8 @@ void ServiceController::connect(std::string polycubeEndpoint) {
 
     if (!service_md_.requiredKernelVersion.empty()) {
       if (!utils::check_kernel_version(service_md_.requiredKernelVersion)) {
-        throw std::runtime_error("kernel version does not satisfy service requirement");
+        throw std::runtime_error(
+            "kernel version does not satisfy service requirement");
       }
     }
 
@@ -138,11 +138,10 @@ void ServiceController::connect(std::string polycubeEndpoint) {
 json ServiceController::to_json() const {
   json j = {{"name", get_name()},
             {"servicecontroller", get_servicecontroller()},
-	    {"description", get_description()},
-	    {"version", get_version()},
-	    {"pyang_repo_id", get_pyang_git_repo_id()},
-	    {"swagger_codegen_repo_id", get_swagger_codegen_git_repo_id()}
-  };
+            {"description", get_description()},
+            {"version", get_version()},
+            {"pyang_repo_id", get_pyang_git_repo_id()},
+            {"swagger_codegen_repo_id", get_swagger_codegen_git_repo_id()}};
   return j;
 }
 
@@ -175,7 +174,8 @@ std::string ServiceController::get_datamodel() const {
   return datamodel_;
 }
 
-std::shared_ptr<CubeIface> ServiceController::get_cube(const std::string &name) {
+std::shared_ptr<CubeIface> ServiceController::get_cube(
+    const std::string &name) {
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
   try {
     return cubes.at(name);
@@ -195,7 +195,7 @@ std::vector<std::shared_ptr<CubeIface>> ServiceController::get_all_cubes() {
   r.reserve(cubes.size());
 
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
-  for (auto && i: cubes) {
+  for (auto &&i : cubes) {
     r.push_back(i.second);
   }
 
@@ -244,7 +244,7 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
 
   std::unique_ptr<Node> iface;
-  std::string cube_name, port_name; // used if peer is cube:port syntax
+  std::string cube_name, port_name;  // used if peer is cube:port syntax
 
   if (peer_name == HOST_PEER) {
     iface.reset(new PortHost(p.get_type()));
@@ -253,21 +253,21 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
                             std::forward_as_tuple(std::move(iface)));
     p.logger->info("connecting port {0} to host networking", p.name());
     Port::connect(p, *ports_to_ifaces.at(p.uuid()));
-  } else if (Netlink::getInstance().get_available_ifaces().count(peer_name) != 0) {
-
+  } else if (Netlink::getInstance().get_available_ifaces().count(peer_name) !=
+             0) {
     switch (p.get_type()) {
     case PortType::TC:
-      iface.reset(new ExtIfaceTC(peer_name, static_cast<PortTC&>(p)));
+      iface.reset(new ExtIfaceTC(peer_name, static_cast<PortTC &>(p)));
       break;
     case PortType::XDP:
-      iface.reset(new ExtIfaceXDP(peer_name, static_cast<PortXDP&>(p)));
+      iface.reset(new ExtIfaceXDP(peer_name, static_cast<PortXDP &>(p)));
       break;
     }
     ports_to_ifaces.emplace(std::piecewise_construct,
                             std::forward_as_tuple(p.uuid()),
                             std::forward_as_tuple(std::move(iface)));
     Port::connect(p, *ports_to_ifaces.at(p.uuid()));
-  }  else if (parse_peer_name(peer_name, cube_name, port_name)) {
+  } else if (parse_peer_name(peer_name, cube_name, port_name)) {
     auto iter = cubes.find(cube_name);
     if (iter == cubes.end()) {
       throw std::runtime_error("Cube " + cube_name + " does not exist");
@@ -276,7 +276,8 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
     auto port_peer = cube->get_port(port_name);
 
     if (p.get_type() != port_peer->get_type()) {
-      throw std::runtime_error("It is not possible to connect TC and XDP ports");
+      throw std::runtime_error(
+          "It is not possible to connect TC and XDP ports");
     }
 
     // p -> p_peer
@@ -286,17 +287,17 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
     auto peer_iter = ports_to_ports.find(peer_name);
     if (peer_iter != ports_to_ports.end()) {
       if (p.get_path() == peer_iter->second) {
-        Port::connect(p, static_cast<Port&>(*port_peer.get()));
+        Port::connect(p, static_cast<Port &>(*port_peer.get()));
       }
     }
   } else {
-    throw std::runtime_error("Interface  " + peer_name + " does not exist or is down");
+    throw std::runtime_error("Interface  " + peer_name +
+                             " does not exist or is down");
   }
 }
 
 bool ServiceController::parse_peer_name(const std::string &peer,
-                                        std::string &cube,
-                                        std::string &port) {
+                                        std::string &cube, std::string &port) {
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");
   if (!std::regex_match(peer, match, rule)) {

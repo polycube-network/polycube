@@ -22,12 +22,12 @@
 #include "polycube/services/utils.h"
 
 #include "BridgeSTP.h"
-#include "Bridge_dp_stp.h"
 #include "Bridge_dp_no_stp.h"
+#include "Bridge_dp_stp.h"
 
-#include <tins/tins.h>
-#include <tins/ethernetII.h>
 #include <tins/dot1q.h>
+#include <tins/ethernetII.h>
+#include <tins/tins.h>
 
 using namespace io::swagger::server::model;
 
@@ -70,7 +70,7 @@ struct fwd_entry {
 
 class BridgePort : public polycube::service::Port {
  public:
-  //BridgePort(Bridge &parent, Port &p);
+  // BridgePort(Bridge &parent, Port &p);
   BridgePort(polycube::service::Cube<BridgePort> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsSchema &conf);
@@ -91,10 +91,11 @@ class BridgePort : public polycube::service::Port {
    * untagged if required. Packet is dropped is port status does not allow to
    * send packets of if the vlan is not allowed.
    */
-  void send_packet_out(const std::vector<uint8_t> &packet, bool tagged, uint16_t vlan);
+  void send_packet_out(const std::vector<uint8_t> &packet, bool tagged,
+                       uint16_t vlan);
 
-  BridgePort & operator=(const BridgePort&) = delete;
-  BridgePort(const BridgePort&) = delete;
+  BridgePort &operator=(const BridgePort &) = delete;
+  BridgePort(const BridgePort &) = delete;
 
  private:
   Bridge &parent;
@@ -109,10 +110,12 @@ class BridgePort : public polycube::service::Port {
 };
 
 class Bridge : public polycube::service::Cube<BridgePort> {
-friend class BridgeSTP;
-friend class BridgePort;
+  friend class BridgeSTP;
+  friend class BridgePort;
+
  public:
-  Bridge(const std::string &name, BridgeSchema &conf, CubeType type = CubeType::TC, const std::string &code = bridge_code);
+  Bridge(const std::string &name, BridgeSchema &conf,
+         CubeType type = CubeType::TC, const std::string &code = bridge_code);
   ~Bridge();
 
   PortsSchema add_port(const std::string &port_name, const PortsSchema &port);
@@ -121,48 +124,82 @@ friend class BridgePort;
   void packet_in(BridgePort &port, PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
-   // TODO: comment about these functions
-  FilteringdatabaseSchema create_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address, const FilteringdatabaseSchema &filteringdatabase);
-  std::vector<FilteringdatabaseSchema> create_bridge_filteringdatabase_list_by_id(const std::vector<FilteringdatabaseSchema> &filteringdatabase);
-  PortsAccessSchema create_bridge_ports_access_by_id(const std::string &portsName, const PortsAccessSchema &access);
-  PortsStpSchema create_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan, const PortsStpSchema &stp);
-  std::vector<PortsStpSchema> create_bridge_ports_stp_list_by_id(const std::string &portsName, const std::vector<PortsStpSchema> &stp);
-  PortsTrunkAllowedSchema create_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid, const PortsTrunkAllowedSchema &allowed);
-  std::vector<PortsTrunkAllowedSchema> create_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName, const std::vector<PortsTrunkAllowedSchema> &allowed);
-  PortsTrunkSchema create_bridge_ports_trunk_by_id(const std::string &portsName, const PortsTrunkSchema &trunk);
-  StpSchema create_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp);
-  std::vector<StpSchema> create_bridge_stp_list_by_id(const std::vector<StpSchema> &stp);
-  void delete_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address);
+  // TODO: comment about these functions
+  FilteringdatabaseSchema create_bridge_filteringdatabase_by_id(
+      const std::string &vlan, const std::string &address,
+      const FilteringdatabaseSchema &filteringdatabase);
+  std::vector<FilteringdatabaseSchema>
+  create_bridge_filteringdatabase_list_by_id(
+      const std::vector<FilteringdatabaseSchema> &filteringdatabase);
+  PortsAccessSchema create_bridge_ports_access_by_id(
+      const std::string &portsName, const PortsAccessSchema &access);
+  PortsStpSchema create_bridge_ports_stp_by_id(const std::string &portsName,
+                                               const std::string &vlan,
+                                               const PortsStpSchema &stp);
+  std::vector<PortsStpSchema> create_bridge_ports_stp_list_by_id(
+      const std::string &portsName, const std::vector<PortsStpSchema> &stp);
+  PortsTrunkAllowedSchema create_bridge_ports_trunk_allowed_by_id(
+      const std::string &portsName, const std::string &vlanid,
+      const PortsTrunkAllowedSchema &allowed);
+  std::vector<PortsTrunkAllowedSchema>
+  create_bridge_ports_trunk_allowed_list_by_id(
+      const std::string &portsName,
+      const std::vector<PortsTrunkAllowedSchema> &allowed);
+  PortsTrunkSchema create_bridge_ports_trunk_by_id(
+      const std::string &portsName, const PortsTrunkSchema &trunk);
+  StpSchema create_bridge_stp_by_id(const std::string &vlan,
+                                    const StpSchema &stp);
+  std::vector<StpSchema> create_bridge_stp_list_by_id(
+      const std::vector<StpSchema> &stp);
+  void delete_bridge_filteringdatabase_by_id(const std::string &vlan,
+                                             const std::string &address);
   void delete_bridge_filteringdatabase_list_by_id();
   void delete_bridge_ports_access_by_id(const std::string &portsName);
-  void delete_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan);
+  void delete_bridge_ports_stp_by_id(const std::string &portsName,
+                                     const std::string &vlan);
   void delete_bridge_ports_stp_list_by_id(const std::string &portsName);
-  void delete_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid);
-  void delete_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName);
+  void delete_bridge_ports_trunk_allowed_by_id(const std::string &portsName,
+                                               const std::string &vlanid);
+  void delete_bridge_ports_trunk_allowed_list_by_id(
+      const std::string &portsName);
   void delete_bridge_ports_trunk_by_id(const std::string &portsName);
   void delete_bridge_stp_by_id(const std::string &vlan);
   void delete_bridge_stp_list_by_id();
   int32_t read_bridge_agingtime_by_id();
   BridgeSchema read_bridge_by_id();
-  int32_t read_bridge_filteringdatabase_age_by_id(const std::string &vlan, const std::string &address);
-  FilteringdatabaseSchema read_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address);
-  std::string read_bridge_filteringdatabase_entrytype_by_id(const std::string &vlan, const std::string &address);
-  std::vector<FilteringdatabaseSchema> read_bridge_filteringdatabase_list_by_id();
-  std::string read_bridge_filteringdatabase_port_by_id(const std::string &vlan, const std::string &address);
-  PortsAccessSchema read_bridge_ports_access_by_id(const std::string &portsName);
+  int32_t read_bridge_filteringdatabase_age_by_id(const std::string &vlan,
+                                                  const std::string &address);
+  FilteringdatabaseSchema read_bridge_filteringdatabase_by_id(
+      const std::string &vlan, const std::string &address);
+  std::string read_bridge_filteringdatabase_entrytype_by_id(
+      const std::string &vlan, const std::string &address);
+  std::vector<FilteringdatabaseSchema>
+  read_bridge_filteringdatabase_list_by_id();
+  std::string read_bridge_filteringdatabase_port_by_id(
+      const std::string &vlan, const std::string &address);
+  PortsAccessSchema read_bridge_ports_access_by_id(
+      const std::string &portsName);
   int32_t read_bridge_ports_access_vlanid_by_id(const std::string &portsName);
   std::string read_bridge_ports_address_by_id(const std::string &portsName);
   PortsSchema read_bridge_ports_by_id(const std::string &portsName);
   std::string read_bridge_ports_mode_by_id(const std::string &portsName);
-  PortsStpSchema read_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan);
-  std::vector<PortsStpSchema> read_bridge_ports_stp_list_by_id(const std::string &portsName);
-  int32_t read_bridge_ports_stp_pathcost_by_id(const std::string &portsName, const std::string &vlan);
-  int32_t read_bridge_ports_stp_portpriority_by_id(const std::string &portsName, const std::string &vlan);
-  std::string read_bridge_ports_stp_state_by_id(const std::string &portsName, const std::string &vlan);
-  PortsTrunkAllowedSchema read_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid);
-  std::vector<PortsTrunkAllowedSchema> read_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName);
+  PortsStpSchema read_bridge_ports_stp_by_id(const std::string &portsName,
+                                             const std::string &vlan);
+  std::vector<PortsStpSchema> read_bridge_ports_stp_list_by_id(
+      const std::string &portsName);
+  int32_t read_bridge_ports_stp_pathcost_by_id(const std::string &portsName,
+                                               const std::string &vlan);
+  int32_t read_bridge_ports_stp_portpriority_by_id(const std::string &portsName,
+                                                   const std::string &vlan);
+  std::string read_bridge_ports_stp_state_by_id(const std::string &portsName,
+                                                const std::string &vlan);
+  PortsTrunkAllowedSchema read_bridge_ports_trunk_allowed_by_id(
+      const std::string &portsName, const std::string &vlanid);
+  std::vector<PortsTrunkAllowedSchema>
+  read_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName);
   PortsTrunkSchema read_bridge_ports_trunk_by_id(const std::string &portsName);
-  int32_t read_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName);
+  int32_t read_bridge_ports_trunk_nativevlan_by_id(
+      const std::string &portsName);
   std::string read_bridge_stp_address_by_id(const std::string &vlan);
   StpSchema read_bridge_stp_by_id(const std::string &vlan);
   int32_t read_bridge_stp_forwarddelay_by_id(const std::string &vlan);
@@ -174,40 +211,71 @@ friend class BridgePort;
   std::string read_bridge_type_by_id();
   void update_bridge_agingtime_by_id(const int32_t &agingtime);
   void update_bridge_by_id(const BridgeSchema &bridge);
-  void update_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address, const FilteringdatabaseSchema &filteringdatabase);
-  void update_bridge_filteringdatabase_entrytype_by_id(const std::string &vlan, const std::string &address, const std::string &entrytype);
-  void update_bridge_filteringdatabase_list_by_id(const std::vector<FilteringdatabaseSchema> &filteringdatabase);
-  void update_bridge_filteringdatabase_port_by_id(const std::string &vlan, const std::string &address, const std::string &port);
-  void update_bridge_ports_access_by_id(const std::string &portsName, const PortsAccessSchema &access);
-  void update_bridge_ports_access_vlanid_by_id(const std::string &portsName, const int32_t &vlanid);
-  void update_bridge_ports_address_by_id(const std::string &portsName, const std::string &address);
-  void update_bridge_ports_mode_by_id(const std::string &portsName, const std::string &mode);
-  void update_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan, const PortsStpSchema &stp);
-  void update_bridge_ports_stp_list_by_id(const std::string &portsName, const std::vector<PortsStpSchema> &stp);
-  void update_bridge_ports_stp_pathcost_by_id(const std::string &portsName, const std::string &vlan, const int32_t &pathcost);
-  void update_bridge_ports_stp_portpriority_by_id(const std::string &portsName, const std::string &vlan, const int32_t &portpriority);
-  void update_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid, const PortsTrunkAllowedSchema &allowed);
-  void update_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName, const std::vector<PortsTrunkAllowedSchema> &allowed);
-  void update_bridge_ports_trunk_by_id(const std::string &portsName, const PortsTrunkSchema &trunk);
-  void update_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName, const int32_t &nativevlan);
-  void update_bridge_stp_address_by_id(const std::string &vlan, const std::string &address);
+  void update_bridge_filteringdatabase_by_id(
+      const std::string &vlan, const std::string &address,
+      const FilteringdatabaseSchema &filteringdatabase);
+  void update_bridge_filteringdatabase_entrytype_by_id(
+      const std::string &vlan, const std::string &address,
+      const std::string &entrytype);
+  void update_bridge_filteringdatabase_list_by_id(
+      const std::vector<FilteringdatabaseSchema> &filteringdatabase);
+  void update_bridge_filteringdatabase_port_by_id(const std::string &vlan,
+                                                  const std::string &address,
+                                                  const std::string &port);
+  void update_bridge_ports_access_by_id(const std::string &portsName,
+                                        const PortsAccessSchema &access);
+  void update_bridge_ports_access_vlanid_by_id(const std::string &portsName,
+                                               const int32_t &vlanid);
+  void update_bridge_ports_address_by_id(const std::string &portsName,
+                                         const std::string &address);
+  void update_bridge_ports_mode_by_id(const std::string &portsName,
+                                      const std::string &mode);
+  void update_bridge_ports_stp_by_id(const std::string &portsName,
+                                     const std::string &vlan,
+                                     const PortsStpSchema &stp);
+  void update_bridge_ports_stp_list_by_id(
+      const std::string &portsName, const std::vector<PortsStpSchema> &stp);
+  void update_bridge_ports_stp_pathcost_by_id(const std::string &portsName,
+                                              const std::string &vlan,
+                                              const int32_t &pathcost);
+  void update_bridge_ports_stp_portpriority_by_id(const std::string &portsName,
+                                                  const std::string &vlan,
+                                                  const int32_t &portpriority);
+  void update_bridge_ports_trunk_allowed_by_id(
+      const std::string &portsName, const std::string &vlanid,
+      const PortsTrunkAllowedSchema &allowed);
+  void update_bridge_ports_trunk_allowed_list_by_id(
+      const std::string &portsName,
+      const std::vector<PortsTrunkAllowedSchema> &allowed);
+  void update_bridge_ports_trunk_by_id(const std::string &portsName,
+                                       const PortsTrunkSchema &trunk);
+  void update_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName,
+                                                  const int32_t &nativevlan);
+  void update_bridge_stp_address_by_id(const std::string &vlan,
+                                       const std::string &address);
   void update_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp);
-  void update_bridge_stp_forwarddelay_by_id(const std::string &vlan, const int32_t &forwarddelay);
-  void update_bridge_stp_hellotime_by_id(const std::string &vlan, const int32_t &hellotime);
+  void update_bridge_stp_forwarddelay_by_id(const std::string &vlan,
+                                            const int32_t &forwarddelay);
+  void update_bridge_stp_hellotime_by_id(const std::string &vlan,
+                                         const int32_t &hellotime);
   void update_bridge_stp_list_by_id(const std::vector<StpSchema> &stp);
-  void update_bridge_stp_maxmessageage_by_id(const std::string &vlan, const int32_t &maxmessageage);
-  void update_bridge_stp_priority_by_id(const std::string &vlan, const int32_t &priority);
+  void update_bridge_stp_maxmessageage_by_id(const std::string &vlan,
+                                             const int32_t &maxmessageage);
+  void update_bridge_stp_priority_by_id(const std::string &vlan,
+                                        const int32_t &priority);
   void update_bridge_stpenabled_by_id(const bool &stpenabled);
   void update_bridge_type_by_id(const std::string &type);
 
   bool isStpEnabled();
 
-private:
+ private:
   std::string generate_code(bool stp_enabled);
   // internal control API
 
-  void broadcast_packet(Port &port, PacketInMetadata &md, const std::vector<uint8_t> &packet);
-  void process_bpdu(Port &port, PacketInMetadata &md, const std::vector<uint8_t> &packet);
+  void broadcast_packet(Port &port, PacketInMetadata &md,
+                        const std::vector<uint8_t> &packet);
+  void process_bpdu(Port &port, PacketInMetadata &md,
+                    const std::vector<uint8_t> &packet);
   BridgePort &get_bridge_port(const std::string &name);
   BridgePort &get_bridge_port(int port_id);
   BridgeSTP &get_stp_instance(uint16_t vlan_id, bool create = false);

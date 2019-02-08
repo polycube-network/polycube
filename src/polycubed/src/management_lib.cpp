@@ -63,7 +63,8 @@ bool ManagementLib::loadFunctions() {
   if (init_f == NULL)
     isloaded = false;
 
-  control_handler_f = (control_handler_t)library.loadFunction("control_handler");
+  control_handler_f =
+      (control_handler_t)library.loadFunction("control_handler");
   if (control_handler_f == NULL)
     isloaded = false;
 
@@ -84,7 +85,7 @@ ServiceMetadata ManagementLib::init(CubeFactory *factory, std::string logfile) {
 }
 
 void ManagementLib::control_handler(const HttpHandleRequest &request,
-                                HttpHandleResponse &response) {
+                                    HttpHandleResponse &response) {
   if (!loaded())
     throw std::runtime_error("library not loaded");
   control_handler_f(request, response);

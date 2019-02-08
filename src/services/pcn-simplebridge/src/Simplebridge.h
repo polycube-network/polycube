@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/SimplebridgeInterface.h"
 
@@ -30,24 +28,26 @@
 #include "Fdb.h"
 #include "Ports.h"
 
-
 using namespace io::swagger::server::model;
 using namespace polycube::service;
 using polycube::service::CubeType;
 
 enum class SlowPathReason { FLOODING = 1 };
 
-class Simplebridge : public polycube::service::Cube<Ports>, public SimplebridgeInterface {
+class Simplebridge : public polycube::service::Cube<Ports>,
+                     public SimplebridgeInterface {
   friend class Ports;
   friend class Fdb;
   friend class FdbEntry;
-public:
+
+ public:
   Simplebridge(const std::string name, const SimplebridgeJsonObject &conf,
-    CubeType type = CubeType::TC);
+               CubeType type = CubeType::TC);
   virtual ~Simplebridge();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const SimplebridgeJsonObject &conf) override;
   SimplebridgeJsonObject toJsonObject() override;
@@ -66,7 +66,8 @@ public:
   std::string getUuid() override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: OFF
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE). Default: OFF
   /// </summary>
   SimplebridgeLoglevelEnum getLoglevel() override;
   void setLoglevel(const SimplebridgeLoglevelEnum &value) override;
@@ -83,7 +84,8 @@ public:
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
@@ -93,7 +95,7 @@ public:
   std::string getName() override;
   void reloadCodeWithAgingtime(uint32_t value);
 
-private:
+ private:
   std::unordered_map<std::string, Ports> ports_;
   std::shared_ptr<Fdb> fdb_ = nullptr;
 
@@ -104,7 +106,7 @@ private:
   std::thread timestamp_update_thread_;
   std::atomic<bool> quit_thread_;
 
-  void flood_packet(Port &port, PacketInMetadata &md, const std::vector<uint8_t> &packet);
+  void flood_packet(Port &port, PacketInMetadata &md,
+                    const std::vector<uint8_t> &packet);
   std::mutex ports_mutex_;
 };
-

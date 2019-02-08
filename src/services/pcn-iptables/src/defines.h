@@ -61,16 +61,22 @@ const uint8_t ACTION = 9;
 }
 
 namespace ConntrackModes {
-  //TODO implement the possibility of disabling conntrack modules
-  // disable conntrack module
+// TODO implement the possibility of disabling conntrack modules
+// disable conntrack module
 const uint8_t DISABLED = 0;
-  // enable accept established optimization
+// enable accept established optimization
 const uint8_t ON = 1;
-  // disable accept established optimization
+// disable accept established optimization
 const uint8_t OFF = 2;
 }
 
-enum Type { SOURCE_TYPE = 0, DESTINATION_TYPE = 1, IN_TYPE = 2, OUT_TYPE = 3, INVALID_TYPE = 4 };
+enum Type {
+  SOURCE_TYPE = 0,
+  DESTINATION_TYPE = 1,
+  IN_TYPE = 2,
+  OUT_TYPE = 3,
+  INVALID_TYPE = 4
+};
 typedef enum Type Type;
 enum ActionsInt { DROP_ACTION = 0, ACCEPT_ACTION = 1, INVALID_ACTION = 2 };
 typedef enum ActionsInt ActionsInt;
@@ -120,10 +126,12 @@ const uint8_t DSTPORT = 4;
 const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
 const uint8_t MAX_RULE_SIZE_FOR_HORUS = -1;  // not used
 
-  // Enable Horus optimization
-  // We want to disable Horus by default while we decide a policy to apply it or not.
-  // The problem of incompatibility is semantic, this function could break iptables compatibility in INPUT/FORWARD chain
-  // const uint8_t ENABLE_HORUS = 0;
+// Enable Horus optimization
+// We want to disable Horus by default while we decide a policy to apply it or
+// not.
+// The problem of incompatibility is semantic, this function could break
+// iptables compatibility in INPUT/FORWARD chain
+// const uint8_t ENABLE_HORUS = 0;
 }
 
 struct HorusRule {

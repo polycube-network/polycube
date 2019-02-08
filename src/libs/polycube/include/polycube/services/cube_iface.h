@@ -17,9 +17,9 @@
 #pragma once
 
 #include "polycube/services/cube_factory.h"
-#include "polycube/services/table.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/port_iface.h"
+#include "polycube/services/table.h"
 
 #include <map>
 #include <string>
@@ -45,10 +45,10 @@ enum class CubeType {
 };
 
 class CubeIface {
-
-public:
+ public:
   virtual void reload(const std::string &code, int index, ProgramType type) = 0;
-  virtual int add_program(const std::string &code, int inde, ProgramType type) = 0;
+  virtual int add_program(const std::string &code, int inde,
+                          ProgramType type) = 0;
   virtual void del_program(int index, ProgramType type) = 0;
 
   virtual std::shared_ptr<PortIface> add_port(const std::string &name) = 0;
@@ -66,7 +66,7 @@ public:
   virtual void update_forwarding_table(int index, int value) = 0;
 
   virtual int get_table_fd(const std::string &table_name, int index,
-                             ProgramType type) = 0;
+                           ProgramType type) = 0;
 
   virtual void set_log_level(LogLevel level) = 0;
   virtual LogLevel get_log_level() const = 0;
@@ -76,6 +76,5 @@ public:
 
   virtual json toJson(bool include_ports = false) const = 0;
 };
-
 }
 }

@@ -18,10 +18,10 @@
 #define COMPILER_H 1
 
 #ifndef __has_feature
-  #define __has_feature(x) 0
+#define __has_feature(x) 0
 #endif
 #ifndef __has_extension
-  #define __has_extension(x) 0
+#define __has_extension(x) 0
 #endif
 
 #if __GNUC__ && !__CHECKER__
@@ -114,28 +114,25 @@
 #define OVS_REQ_RDLOCK(...) __attribute__((shared_locks_required(__VA_ARGS__)))
 #define OVS_ACQ_RDLOCK(...) __attribute__((shared_lock_function(__VA_ARGS__)))
 #define OVS_REQ_WRLOCK(...) \
-    __attribute__((exclusive_locks_required(__VA_ARGS__)))
+  __attribute__((exclusive_locks_required(__VA_ARGS__)))
 #define OVS_ACQ_WRLOCK(...) \
-    __attribute__((exclusive_lock_function(__VA_ARGS__)))
-#define OVS_REQUIRES(...) \
-    __attribute__((exclusive_locks_required(__VA_ARGS__)))
-#define OVS_ACQUIRES(...) \
-    __attribute__((exclusive_lock_function(__VA_ARGS__)))
-#define OVS_TRY_WRLOCK(RETVAL, ...)                              \
-    __attribute__((exclusive_trylock_function(RETVAL, __VA_ARGS__)))
-#define OVS_TRY_RDLOCK(RETVAL, ...)                          \
-    __attribute__((shared_trylock_function(RETVAL, __VA_ARGS__)))
-#define OVS_TRY_LOCK(RETVAL, ...)                                \
-    __attribute__((exclusive_trylock_function(RETVAL, __VA_ARGS__)))
+  __attribute__((exclusive_lock_function(__VA_ARGS__)))
+#define OVS_REQUIRES(...) __attribute__((exclusive_locks_required(__VA_ARGS__)))
+#define OVS_ACQUIRES(...) __attribute__((exclusive_lock_function(__VA_ARGS__)))
+#define OVS_TRY_WRLOCK(RETVAL, ...) \
+  __attribute__((exclusive_trylock_function(RETVAL, __VA_ARGS__)))
+#define OVS_TRY_RDLOCK(RETVAL, ...) \
+  __attribute__((shared_trylock_function(RETVAL, __VA_ARGS__)))
+#define OVS_TRY_LOCK(RETVAL, ...) \
+  __attribute__((exclusive_trylock_function(RETVAL, __VA_ARGS__)))
 #define OVS_GUARDED __attribute__((guarded_var))
 #define OVS_GUARDED_BY(...) __attribute__((guarded_by(__VA_ARGS__)))
 #define OVS_RELEASES(...) __attribute__((unlock_function(__VA_ARGS__)))
 #define OVS_EXCLUDED(...) __attribute__((locks_excluded(__VA_ARGS__)))
 #define OVS_ACQ_BEFORE(...) __attribute__((acquired_before(__VA_ARGS__)))
 #define OVS_ACQ_AFTER(...) __attribute__((acquired_after(__VA_ARGS__)))
-#define OVS_NO_THREAD_SAFETY_ANALYSIS \
-    __attribute__((no_thread_safety_analysis))
-#else  /* not Clang */
+#define OVS_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
+#else /* not Clang */
 #define OVS_LOCKABLE
 #define OVS_REQ_RDLOCK(...)
 #define OVS_ACQ_RDLOCK(...)
@@ -196,15 +193,15 @@
 
 #ifdef _MSC_VER
 #define CCALL __cdecl
-#pragma section(".CRT$XCU",read)
-#define OVS_CONSTRUCTOR(f) \
-    static void __cdecl f(void); \
-    __declspec(allocate(".CRT$XCU")) void (__cdecl*f##_)(void) = f; \
-    static void __cdecl f(void)
+#pragma section(".CRT$XCU", read)
+#define OVS_CONSTRUCTOR(f)                                         \
+  static void __cdecl f(void);                                     \
+  __declspec(allocate(".CRT$XCU")) void(__cdecl * f##_)(void) = f; \
+  static void __cdecl f(void)
 #else
-#define OVS_CONSTRUCTOR(f) \
-    static void f(void) __attribute__((constructor)); \
-    static void f(void)
+#define OVS_CONSTRUCTOR(f)                          \
+  static void f(void) __attribute__((constructor)); \
+  static void f(void)
 #endif
 
 /* OVS_PREFETCH() can be used to instruct the CPU to fetch the cache
@@ -225,8 +222,7 @@
  * compilation process */
 #if HAVE_PRAGMA_MESSAGE
 #define DO_PRAGMA(x) _Pragma(#x)
-#define BUILD_MESSAGE(x) \
-    DO_PRAGMA(message(x))
+#define BUILD_MESSAGE(x) DO_PRAGMA(message(x))
 #else
 #define BUILD_MESSAGE(x)
 #endif

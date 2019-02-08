@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
 #include <vector>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #pragma once
 
@@ -40,7 +40,8 @@ std::string be_uint_to_mac_string(uint64_t mac);
 /* deprecated */
 std::string ip_string_to_hexbe_string(const std::string &ip);
 
-/* transforms a MAC address (such as "aa:bb:cc:dd:ee:ff") into an hexadecimal big endian */
+/* transforms a MAC address (such as "aa:bb:cc:dd:ee:ff") into an hexadecimal
+ * big endian */
 /* deprecated */
 std::string mac_string_to_hexbe_string(const std::string &mac);
 
@@ -50,11 +51,13 @@ uint64_t hex_string_to_uint(const std::string &str);
 /* Creates a random MAC address */
 std::string get_random_mac();
 
-/* Take in ingress a string like 192.168.0.1/24 and return only the ip 192.168.0.1 */
-std::string get_ip_from_string(const std::string& ipv_net);
+/* Take in ingress a string like 192.168.0.1/24 and return only the ip
+ * 192.168.0.1 */
+std::string get_ip_from_string(const std::string &ipv_net);
 
-/* Take in ingress a string like 192.168.0.1/24 and return only the "prefix length" -> 24 in this case */
-std::string get_netmask_from_string(const std::string& ipv_net);
+/* Take in ingress a string like 192.168.0.1/24 and return only the "prefix
+ * length" -> 24 in this case */
+std::string get_netmask_from_string(const std::string &ipv_net);
 
 /*
  * formats a debug string, custom specifiers are evaluated by a
@@ -66,6 +69,6 @@ std::string format_debug_string(std::string str, const uint64_t args[4]);
 void print_packet(const uint8_t *pkt, uint32_t len);
 #endif
 
-}// namespace utils
+}  // namespace utils
 }  // namespace service
 }  // namespace polycube

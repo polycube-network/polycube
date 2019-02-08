@@ -21,13 +21,13 @@
 // TODO: probably this include should not exist
 #include "polycube/services/cube_factory.h"
 #include "polycube/services/cube_iface.h"
-#include "polycube/services/port_iface.h"
 #include "polycube/services/guid.h"
+#include "polycube/services/port_iface.h"
 
 #include <cstdint>
 #include <functional>
-#include <string>
 #include <mutex>
+#include <string>
 
 using polycube::service::CubeIface;
 using polycube::service::Direction;
@@ -41,6 +41,7 @@ class ServiceController;
 
 class Port : public polycube::service::PortIface {
   friend class ServiceController;
+
  public:
   Port(CubeIface &parent, const std::string &name, uint16_t index);
   ~Port();

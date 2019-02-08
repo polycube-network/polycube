@@ -81,9 +81,9 @@ void SessionTable::removeEntry(Iptables &parent, const std::string &src,
 std::vector<std::shared_ptr<SessionTable>> SessionTable::get(Iptables &parent) {
   std::vector<std::pair<ct_k, ct_v>> connections =
       dynamic_cast<Iptables::ConntrackLabel *>(
-          parent
-              .programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                                       ChainNameEnum::INVALID_INGRESS)])
+          parent.programs_[std::make_pair(
+              ModulesConstants::CONNTRACKLABEL_INGRESS,
+              ChainNameEnum::INVALID_INGRESS)])
           ->getMap();
 
   std::vector<std::shared_ptr<SessionTable>> session_table;

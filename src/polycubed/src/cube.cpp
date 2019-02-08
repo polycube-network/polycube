@@ -7,21 +7,23 @@ namespace polycube {
 namespace polycubed {
 
 #ifdef LOG_COMPILEED_CODE
-void Cube::log_compileed_code(std::string& code){
-
+void Cube::log_compileed_code(std::string &code) {
   int i = 0;
   int lines_not_empty = 0;
 
   std::string well_formatted_code;
   std::istringstream iss(code);
-  for (std::string line; std::getline(iss, line); ++i){
+  for (std::string line; std::getline(iss, line); ++i) {
     well_formatted_code += std::to_string(i) + ": " + line + "\n";
     if (line != "")
       lines_not_empty++;
   }
 
   logger->info("C code compileed\n");
-  logger->info("\n--------------------------------------\n{0}\n---------------------------------\n", well_formatted_code);
+  logger->info(
+      "\n--------------------------------------\n{0}\n-------------------------"
+      "--------\n",
+      well_formatted_code);
 
   logger->info("+Lines of C code: {0}", i);
   logger->info("+Lines of C code (not empty): {0}", lines_not_empty);
@@ -29,37 +31,44 @@ void Cube::log_compileed_code(std::string& code){
 #endif
 
 std::vector<std::string> Cube::cflags = {
-    std::string("-D_POLYCUBE_MAX_NODES=") + std::to_string(Node::_POLYCUBE_MAX_NODES),
+    std::string("-D_POLYCUBE_MAX_NODES=") +
+        std::to_string(Node::_POLYCUBE_MAX_NODES),
     std::string("-D_POLYCUBE_MAX_PORTS=") + std::to_string(_POLYCUBE_MAX_PORTS),
-    std::string("-D_POLYCUBE_MAX_BPF_PROGRAMS=") + std::to_string(_POLYCUBE_MAX_BPF_PROGRAMS),
+    std::string("-D_POLYCUBE_MAX_BPF_PROGRAMS=") +
+        std::to_string(_POLYCUBE_MAX_BPF_PROGRAMS),
 };
 
-Cube::Cube(const std::string &name,
-           const std::string &service_name,
-           PatchPanel &patch_panel_ingress,
-           PatchPanel &patch_panel_egress,
+Cube::Cube(const std::string &name, const std::string &service_name,
+           PatchPanel &patch_panel_ingress, PatchPanel &patch_panel_egress,
            LogLevel level, CubeType type)
-    : name_(name), service_name_(service_name),
-    logger(spdlog::get("polycubed")),
-    uuid_(GuidGenerator().newGuid()),
-    patch_panel_ingress_(patch_panel_ingress),
-    patch_panel_egress_(patch_panel_egress),
-    ingress_fd_(0), egress_fd_(0), ingress_index_(0), egress_index_(0),
-    level_(level), type_(type), id_(id_generator_.acquire()) {
+    : name_(name),
+      service_name_(service_name),
+      logger(spdlog::get("polycubed")),
+      uuid_(GuidGenerator().newGuid()),
+      patch_panel_ingress_(patch_panel_ingress),
+      patch_panel_egress_(patch_panel_egress),
+      ingress_fd_(0),
+      egress_fd_(0),
+      ingress_index_(0),
+      egress_index_(0),
+      level_(level),
+      type_(type),
+      id_(id_generator_.acquire()) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   // create master program that contains some maps definitions
-  master_program_ = std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
+  master_program_ =
+      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
   master_program_->init(MASTER_CODE, cflags);
 
   // get references to those maps
   auto ingress_ = master_program_->get_prog_table("ingress_programs");
-  ingress_programs_table_ = std::unique_ptr<ebpf::BPFProgTable>(
-      new ebpf::BPFProgTable(ingress_));
+  ingress_programs_table_ =
+      std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(ingress_));
 
   auto egress_ = master_program_->get_prog_table("egress_programs");
-  egress_programs_table_ = std::unique_ptr<ebpf::BPFProgTable>(
-      new ebpf::BPFProgTable(egress_));
+  egress_programs_table_ =
+      std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(egress_));
 
   auto forward_ = master_program_->get_array_table<uint32_t>("forward_chain_");
   forward_chain_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
@@ -194,7 +203,7 @@ CubeType Cube::get_type() const {
 
 void Cube::update_forwarding_table(int index, int value) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
-  if (forward_chain_) // is the forward chain still active?
+  if (forward_chain_)  // is the forward chain still active?
     forward_chain_->update_value(index, value);
 }
 
@@ -255,7 +264,7 @@ void Cube::do_reload(const std::string &code, int index, ProgramType type) {
   // create new ebpf program, telling to steal the maps of this program
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
-    new ebpf::BPF(0, nullptr, false, name_, &*programs->at(index)));
+      new ebpf::BPF(0, nullptr, false, name_, &*programs->at(index)));
 
   bcc_guard.unlock();
   compile(*new_bpf_program, code, index, type);
@@ -337,40 +346,41 @@ int Cube::add_program(const std::string &code, int index, ProgramType type) {
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   // load and add this program to the list
   int fd_;
-  (*programs)[index] = std::unique_ptr<ebpf::BPF>(
-    new ebpf::BPF(0, nullptr, false, name_));
+  (*programs)[index] =
+      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name_));
 
   bcc_guard.unlock();
   compile(*programs->at(index), code, index, type);
   fd_ = load(*programs->at(index), type);
   bcc_guard.lock();
 
-  // TODO: this switch could also be removed creating variables in the switch above
+  // TODO: this switch could also be removed creating variables in the switch
+  // above
   switch (type) {
-    case ProgramType::INGRESS:
-      ingress_programs_table_->update_value(index, fd_);
-      if (index == 0) {
-        ingress_fd_ = fd_;
-        if (ingress_index_) {
-          // already registed in patch panel, just update
-          patch_panel_ingress_.update(ingress_index_, ingress_fd_);
-        } else {
-          // register in patch panel
-          ingress_index_ = patch_panel_ingress_.add(ingress_fd_);
-        }
+  case ProgramType::INGRESS:
+    ingress_programs_table_->update_value(index, fd_);
+    if (index == 0) {
+      ingress_fd_ = fd_;
+      if (ingress_index_) {
+        // already registed in patch panel, just update
+        patch_panel_ingress_.update(ingress_index_, ingress_fd_);
+      } else {
+        // register in patch panel
+        ingress_index_ = patch_panel_ingress_.add(ingress_fd_);
       }
-      break;
-    case ProgramType::EGRESS:
-      egress_programs_table_->update_value(index, fd_);
-      if (index == 0) {
-        egress_fd_ = fd_;
-        if (egress_index_) {
-          // already registed in patch panel, just update
-          patch_panel_egress_.update(egress_index_, egress_fd_);
-        } else {
-          // register in patch panel
-          egress_index_ = patch_panel_egress_.add(egress_fd_);
-        }
+    }
+    break;
+  case ProgramType::EGRESS:
+    egress_programs_table_->update_value(index, fd_);
+    if (index == 0) {
+      egress_fd_ = fd_;
+      if (egress_index_) {
+        // already registed in patch panel, just update
+        patch_panel_egress_.update(egress_index_, egress_fd_);
+      } else {
+        // register in patch panel
+        egress_index_ = patch_panel_egress_.add(egress_fd_);
+      }
       break;
     }
   }
@@ -391,12 +401,12 @@ void Cube::del_program(int index, ProgramType type) {
   case ProgramType::INGRESS:
     programs = &ingress_programs_;
     code_ = &ingress_code_;
-    programs_table = ingress_programs_table_.get(); // TODO: is this valid?
+    programs_table = ingress_programs_table_.get();  // TODO: is this valid?
     break;
   case ProgramType::EGRESS:
     programs = &egress_programs_;
     code_ = &egress_code_;
-    programs_table = egress_programs_table_.get(); // TODO: is this valid?
+    programs_table = egress_programs_table_.get();  // TODO: is this valid?
     break;
   default:
     throw std::runtime_error("Bad program type");
@@ -414,7 +424,7 @@ void Cube::del_program(int index, ProgramType type) {
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   programs_table->remove_value(index);
   bcc_mutex.unlock();
-  unload( *programs->at(index), type);
+  unload(*programs->at(index), type);
   bcc_guard.unlock();
   (*programs)[index] = nullptr;
   code_->at(index).clear();
@@ -445,9 +455,7 @@ LogLevel Cube::get_log_level() const {
 
 json Cube::toJson(bool include_ports) const {
   json j = {
-      {"name", name_},
-      {"uuid", uuid_.str()},
-      {"service", service_name_},
+      {"name", name_}, {"uuid", uuid_.str()}, {"service", service_name_},
       //{"type", type_},
   };
 
@@ -487,8 +495,8 @@ BPF_TABLE_SHARED("prog", int, int, egress_programs, _POLYCUBE_MAX_BPF_PROGRAMS);
 
 const std::string Cube::CUBE_H = R"(
 #define KBUILD_MODNAME "MOD_NAME"
-#include <bcc/proto.h>
 #include <bcc/helpers.h>
+#include <bcc/proto.h>
 #include <uapi/linux/pkt_cls.h>
 
 #include <uapi/linux/bpf.h>

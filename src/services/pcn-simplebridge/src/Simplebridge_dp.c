@@ -40,9 +40,9 @@ BPF_TABLE("hash", __be64, struct fwd_entry, fwdtable, 1024);
 BPF_TABLE("array", int, uint32_t, timestamp, 1);
 
 struct eth_hdr {
-  __be64   dst:48;
-  __be64   src:48;
-  __be16   proto;
+  __be64 dst : 48;
+  __be64 src : 48;
+  __be16 proto;
 } __attribute__((packed));
 
 static __always_inline u32 time_get_sec() {
@@ -54,8 +54,8 @@ static __always_inline u32 time_get_sec() {
   return 0;
 }
 
-static __always_inline
-int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
+static __always_inline int handle_rx(struct CTXTYPE *ctx,
+                                     struct pkt_metadata *md) {
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   struct eth_hdr *eth = data;
@@ -75,13 +75,13 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct fwd_entry *entry = fwdtable.lookup(&src_key);
 
   if (!entry) {
-     struct fwd_entry e; // used to update the entry in the fdb
+    struct fwd_entry e;  // used to update the entry in the fdb
 
-     e.timestamp = now;
-     e.port = in_ifc;
+    e.timestamp = now;
+    e.port = in_ifc;
 
-     fwdtable.update(&src_key, &e);
-     pcn_log(ctx, LOG_TRACE, "MAC: %M learned", src_key);
+    fwdtable.update(&src_key, &e);
+    pcn_log(ctx, LOG_TRACE, "MAC: %M learned", src_key);
   } else {
     entry->port = in_ifc;
     entry->timestamp = now;
@@ -107,8 +107,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   pcn_log(ctx, LOG_TRACE, "Entry is valid. FORWARDING");
 
-
-FORWARD: ;
+FORWARD:;
   u32 dst_interface = entry->port;  // workaround for verifier
 
   // HIT in forwarding table
@@ -116,7 +115,9 @@ FORWARD: ;
 
   /* do not send packet back on the ingress interface */
   if (dst_interface == in_ifc) {
-    pcn_log(ctx, LOG_TRACE, "Destination interface is equals to the input interface. DROP packet");
+    pcn_log(
+        ctx, LOG_TRACE,
+        "Destination interface is equals to the input interface. DROP packet");
     return RX_DROP;
   }
 

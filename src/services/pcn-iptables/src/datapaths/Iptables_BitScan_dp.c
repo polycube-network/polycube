@@ -42,17 +42,17 @@ static __always_inline struct elements *getShared() {
 BPF_TABLE("extern", int, u64, pkts_default__DIRECTION, 1);
 BPF_TABLE("extern", int, u64, bytes_default__DIRECTION, 1);
 static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
-	u64 *value;
-	int zero = 0;
-	value= pkts_default__DIRECTION.lookup(&zero);
-	if(value){
-		*value+=1;
-	}
+  u64 *value;
+  int zero = 0;
+  value = pkts_default__DIRECTION.lookup(&zero);
+  if (value) {
+    *value += 1;
+  }
 
-	value=bytes_default__DIRECTION.lookup(&zero);
-	if(value){
-		*value+=bytes;
-	}
+  value = bytes_default__DIRECTION.lookup(&zero);
+  if (value) {
+    *value += bytes;
+  }
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
@@ -79,7 +79,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     (ele->bits)[0] = *matchingResult;
-    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ", *matchingResult);
+    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ",
+            *matchingResult);
     call_bpf_program(ctx, _NEXT_HOP_1);
   }
 
@@ -98,18 +99,19 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       int globalBit = *matchingResult + i * 63;
-      pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element %d offset %d. ", i, *matchingResult);
+      pcn_log(ctx, LOG_DEBUG,
+              "Bitscan _DIRECTION Matching element %d offset %d. ", i,
+              *matchingResult);
       (ele->bits)[0] = globalBit;
       call_bpf_program(ctx, _NEXT_HOP_1);
-
 
     }  // ele->bits[i] != 0
   }    // end loop
 #endif
 
 #endif
-// DEFAULT ACTION (?)
-pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
+  // DEFAULT ACTION (?)
+  pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
   incrementDefaultCounters_DIRECTION(md->packet_len);
   _DEFAULTACTION;
 }

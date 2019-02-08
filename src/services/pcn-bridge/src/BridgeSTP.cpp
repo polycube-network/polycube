@@ -18,9 +18,8 @@
 #include "BridgeSTP.h"
 
 // Spanning tree related methods
-BridgeSTP::BridgeSTP(Bridge &parent, uint16_t vlan_id) :
-    parent(parent), vlan_id(vlan_id), l(spdlog::get("pcn-bridge")) {
-
+BridgeSTP::BridgeSTP(Bridge &parent, uint16_t vlan_id)
+    : parent(parent), vlan_id(vlan_id), l(spdlog::get("pcn-bridge")) {
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<uint64_t> dist(1, UINT64_MAX);
@@ -37,7 +36,8 @@ BridgeSTP::BridgeSTP(Bridge &parent, uint16_t vlan_id) :
   }
 
   l->info("{0} mac is {1}", parent.get_name(), mac_to_string(mac));
-  stp = stp_create(parent.get_name().c_str(), bridge_mac, send_bpdu_proxy, this);
+  stp =
+      stp_create(parent.get_name().c_str(), bridge_mac, send_bpdu_proxy, this);
   if (!stp) {
     throw std::runtime_error("failed to create stp instance");
   }
@@ -103,7 +103,7 @@ void BridgeSTP::process_bpdu(int port_id, const std::vector<uint8_t> &packet) {
 }
 
 void BridgeSTP::send_bpdu(struct ofpbuf *bpdu, int port_no, void *aux) {
-  //l->debug("Sending BPDU");
+  // l->debug("Sending BPDU");
   struct stp_port *sp = stp_get_port(stp, port_no);
   if (!stp_should_forward_bpdu(stp_port_get_state(sp))) {
     l->debug("Port should not forward BDPU");
@@ -121,11 +121,11 @@ void BridgeSTP::send_bpdu(struct ofpbuf *bpdu, int port_no, void *aux) {
   EthernetII packet(buf, ofpbuf_size(bpdu));
   ofpbuf_free(bpdu);
 
-  switch(port.mode()) {
+  switch (port.mode()) {
   case PortMode::ACCESS:
     if (port.access_vlan() != vlan_id) {
-      l->info("[{0}]: impossible to send bpdu on access port {0}", parent.get_name(),
-        port.name());
+      l->info("[{0}]: impossible to send bpdu on access port {0}",
+              parent.get_name(), port.name());
       return;
     }
 
@@ -133,8 +133,8 @@ void BridgeSTP::send_bpdu(struct ofpbuf *bpdu, int port_no, void *aux) {
     break;
   case PortMode::TRUNK:
     if (!port.is_trunk_vlan_allowed(vlan_id)) {
-      l->info("[{0}]: impossible to send bpdu on trunk port {0}", parent.get_name(),
-        port.name());
+      l->info("[{0}]: impossible to send bpdu on trunk port {0}",
+              parent.get_name(), port.name());
       return;
     }
 
@@ -177,29 +177,27 @@ void BridgeSTP::update_ports_state() {
       state = stp_port_get_state(sp);
       auto &bp = parent.get_bridge_port(stp_port_no(sp));
       l->info("[{0}]: port {1} has changed the state to {2}", parent.get_name(),
-          bp.name(), stp_state_name(state));
+              bp.name(), stp_state_name(state));
 
       if (bp.mode() == PortMode::ACCESS)
         vlan = VLAN_WILDCARD;
-      else if(bp.mode() == PortMode::TRUNK)
+      else if (bp.mode() == PortMode::TRUNK)
         vlan = vlan_id;
     } catch (...) {
       continue;
     }
 
-    port_vlan_key key {
-      .port = uint32_t(stp_port_no(sp)),
-      .vlan = vlan,
+    port_vlan_key key{
+        .port = uint32_t(stp_port_no(sp)), .vlan = vlan,
     };
 
-    port_vlan_value value {
-      .vlan = vlan_id,
-      .stp_state = state,
+    port_vlan_value value{
+        .vlan = vlan_id, .stp_state = state,
     };
 
-    auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+    auto port_vlan_table =
+        parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
     port_vlan_table.set(key, value);
-
   }
 }
 
@@ -282,15 +280,15 @@ int BridgeSTP::get_root_path_cost() const {
 }
 
 int BridgeSTP::get_hello_time() const {
-  return stp_get_hello_time(stp)/1000;
+  return stp_get_hello_time(stp) / 1000;
 }
 
-int BridgeSTP::get_max_age() const{
-  return stp_get_max_age(stp)/1000;
+int BridgeSTP::get_max_age() const {
+  return stp_get_max_age(stp) / 1000;
 }
 
 int BridgeSTP::get_forward_delay() const {
-  return stp_get_forward_delay(stp)/1000;
+  return stp_get_forward_delay(stp) / 1000;
 }
 
 bool BridgeSTP::check_and_reset_fdb_flush() const {
@@ -301,10 +299,9 @@ enum stp_state BridgeSTP::get_port_state(int port_id) {
   return stp_port_get_state(stp_get_port(stp, port_id));
 }
 
-std::string BridgeSTP::get_port_state_str(int port_id){
+std::string BridgeSTP::get_port_state_str(int port_id) {
   return stp_state_name(get_port_state(port_id));
 }
-
 
 enum stp_role BridgeSTP::get_port_role(int port_id) {
   return stp_port_get_role(stp_get_port(stp, port_id));
@@ -332,11 +329,11 @@ void BridgeSTP::disable_port_change_detection(int port_id) {
 
 std::string BridgeSTP::mac_to_string(const uint8_t *mac) const {
   std::stringstream ret;
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[0] << ":";
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[1] << ":";
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[2] << ":";
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[3] << ":";
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[4] << ":";
-  ret << std::setfill('0') << std::setw(2) << std::hex << (int) mac[5];
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[0] << ":";
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[1] << ":";
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[2] << ":";
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[3] << ":";
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[4] << ":";
+  ret << std::setfill('0') << std::setw(2) << std::hex << (int)mac[5];
   return ret.str();
 }

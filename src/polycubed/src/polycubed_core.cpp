@@ -34,8 +34,8 @@ std::string PolycubedCore::get_polycubeendpoint() {
 }
 
 void PolycubedCore::control_handler(const std::string &service,
-                         const HttpHandleRequest &request,
-                         HttpHandleResponse &response) {
+                                    const HttpHandleRequest &request,
+                                    HttpHandleResponse &response) {
   logger->trace("control request for {0}", service);
   auto iter = servicectrls_map_.find(service);
   if (iter != servicectrls_map_.end()) {
@@ -53,8 +53,10 @@ void PolycubedCore::control_handler(const std::string &service,
     // update request, add the actual name of the service on the url
     std::string new_url = actual_service + "/" + request.resource();
 
-    // FIXME: would it make sense to provide a set_url() method for HttpHandleRequeest?
-    HttpHandleRequest new_req(request.method(), new_url, request.body(), request.help_type());
+    // FIXME: would it make sense to provide a set_url() method for
+    // HttpHandleRequeest?
+    HttpHandleRequest new_req(request.method(), new_url, request.body(),
+                              request.help_type());
 
     ServiceController &s = servicectrls_map_.at(actual_service);
     s.managementInterface->control_handler(new_req, response);
@@ -62,17 +64,17 @@ void PolycubedCore::control_handler(const std::string &service,
 }
 
 void PolycubedCore::add_servicectrl(const std::string &name,
-                             const std::string &path) {
-  //logger->debug("PolycubedCore: post servicectrl {0}", name);
+                                    const std::string &path) {
+  // logger->debug("PolycubedCore: post servicectrl {0}", name);
   if (servicectrls_map_.count(name) != 0) {
     throw std::runtime_error("Service Controller already exists");
   }
 
   std::unordered_map<std::string, ServiceController>::iterator iter;
   bool inserted;
-  std::tie(iter, inserted) = servicectrls_map_.emplace(std::piecewise_construct,
-                              std::forward_as_tuple(name),
-                              std::forward_as_tuple(name, path));
+  std::tie(iter, inserted) = servicectrls_map_.emplace(
+      std::piecewise_construct, std::forward_as_tuple(name),
+      std::forward_as_tuple(name, path));
   if (!inserted) {
     throw std::runtime_error("error creating service controller");
   }
@@ -80,9 +82,10 @@ void PolycubedCore::add_servicectrl(const std::string &name,
   ServiceController &s = iter->second;
   try {
     s.connect(get_polycubeendpoint());
-    logger->info("service {0} loaded using {1}", s.get_name(), s.get_servicecontroller());
+    logger->info("service {0} loaded using {1}", s.get_name(),
+                 s.get_servicecontroller());
   } catch (const std::exception &e) {
-    //logger->error("cannot load service: {0}", e.what());
+    // logger->error("cannot load service: {0}", e.what());
     servicectrls_map_.erase(name);
     throw;
   }
@@ -92,7 +95,7 @@ std::string PolycubedCore::get_servicectrl(const std::string &name) {
   logger->debug("PolycubedCore: get service {0}", name);
   auto iter = servicectrls_map_.find(name);
   if (iter == servicectrls_map_.end()) {
-    //logger->warn("no service present with name {0}", name);
+    // logger->warn("no service present with name {0}", name);
     throw std::runtime_error("Service Controller does not exist");
   }
 
@@ -111,14 +114,14 @@ std::list<std::string> PolycubedCore::get_servicectrls_names() {
   return list;
 }
 
-std::list<ServiceController const *> PolycubedCore::get_servicectrls_list() const {
+std::list<ServiceController const *> PolycubedCore::get_servicectrls_list()
+    const {
   std::list<ServiceController const *> list;
   for (auto &it : servicectrls_map_) {
     list.push_back(&it.second);
   }
 
   return list;
-
 }
 
 std::string PolycubedCore::get_servicectrls() {
@@ -162,7 +165,7 @@ std::string PolycubedCore::get_cubes() {
   for (auto &it : servicectrls_map_) {
     json j2 = json::array();
     for (auto &it2 : it.second.get_cubes()) {
-       j2 += it2->toJson();
+      j2 += it2->toJson();
     }
     if (j2.size()) {
       j[it.first] = j2;
@@ -176,8 +179,8 @@ std::string PolycubedCore::get_netdev(const std::string &name) {
   json j = json::array();
   auto ifaces = Netlink::getInstance().get_available_ifaces();
   if (ifaces.count(name) != 0) {
-     j += ifaces.at(name).toJson();
-     return j.dump(4);
+    j += ifaces.at(name).toJson();
+    return j.dump(4);
   }
 
   throw std::runtime_error("netdev " + name + "does not exist");
@@ -198,7 +201,7 @@ std::string PolycubedCore::topology() {
   auto cubes = ServiceController::get_all_cubes();
 
   for (auto &it : cubes) {
-     j += it->toJson(true);
+    j += it->toJson(true);
   }
 
   return j.dump(4);
@@ -282,7 +285,7 @@ void PolycubedCore::disconnect(const std::string &peer1,
     throw std::runtime_error(peer1 + " is not connected to " + peer2);
   }
 
-   if (!ret2.empty() && ret2 != peer1) {
+  if (!ret2.empty() && ret2 != peer1) {
     throw std::runtime_error(peer1 + " is not connected to " + peer2);
   }
 

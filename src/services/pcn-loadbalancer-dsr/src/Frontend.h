@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/FrontendInterface.h"
 
@@ -26,14 +24,13 @@
 
 #include <spdlog/spdlog.h>
 
-
 class Lbdsr;
 
 using namespace io::swagger::server::model;
 using namespace polycube::service;
 
 class Frontend : public FrontendInterface {
-public:
+ public:
   Frontend(Lbdsr &parent, const FrontendJsonObject &conf);
   Frontend(Lbdsr &parent);
   virtual ~Frontend();
@@ -58,7 +55,7 @@ public:
   std::string getMac() override;
   void setMac(const std::string &value) override;
 
-private:
+ private:
   Lbdsr &parent_;
   std::string vip_ = "10.0.0.100";
   std::string mac_ = "01:01:01:aa:bb:cc";

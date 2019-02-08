@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "RuleDnat.h"
 #include "Nat.h"
@@ -25,17 +23,19 @@ using namespace polycube::service;
 
 RuleDnat::RuleDnat(Rule &parent) : parent_(parent) {}
 
-RuleDnat::RuleDnat(Rule &parent, const RuleDnatJsonObject &conf): parent_(parent) {
+RuleDnat::RuleDnat(Rule &parent, const RuleDnatJsonObject &conf)
+    : parent_(parent) {
   update(conf);
 }
 
-RuleDnat::~RuleDnat() { }
+RuleDnat::~RuleDnat() {}
 
 void RuleDnat::update(const RuleDnatJsonObject &conf) {
-  // This method updates all the object/parameter in RuleDnat object specified in the conf JsonObject.
+  // This method updates all the object/parameter in RuleDnat object specified
+  // in the conf JsonObject.
   // You can modify this implementation.
   if (conf.entryIsSet()) {
-    for(auto &i : conf.getEntry()){
+    for (auto &i : conf.getEntry()) {
       auto id = i.getId();
       auto m = getEntry(id);
       m->update(i);
@@ -43,29 +43,30 @@ void RuleDnat::update(const RuleDnatJsonObject &conf) {
   }
 }
 
-RuleDnatJsonObject RuleDnat::toJsonObject(){
+RuleDnatJsonObject RuleDnat::toJsonObject() {
   RuleDnatJsonObject conf;
-  for(auto &i : getEntryList()){
+  for (auto &i : getEntryList()) {
     conf.addRuleDnatEntry(i->toJsonObject());
   }
   return conf;
 }
 
-
-void RuleDnat::create(Rule &parent, const RuleDnatJsonObject &conf){
+void RuleDnat::create(Rule &parent, const RuleDnatJsonObject &conf) {
   // This method creates the actual RuleDnat object given thee key param.
-  // Please remember to call here the create static method for all sub-objects of RuleDnat.
+  // Please remember to call here the create static method for all sub-objects
+  // of RuleDnat.
   parent.dnat_ = std::make_shared<RuleDnat>(parent, conf);
 }
 
-std::shared_ptr<RuleDnat> RuleDnat::getEntry(Rule &parent){
+std::shared_ptr<RuleDnat> RuleDnat::getEntry(Rule &parent) {
   // This method retrieves the pointer to RuleDnat object specified by its keys.
   return parent.dnat_;
 }
 
-void RuleDnat::removeEntry(Rule &parent){
+void RuleDnat::removeEntry(Rule &parent) {
   // This method removes the single RuleDnat object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of RuleDnat.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RuleDnat.
 
   if (parent.dnat_->rules_.size() == 0) {
     // No rules to delete
@@ -83,7 +84,8 @@ void RuleDnat::removeEntry(Rule &parent){
   parent.logger()->info("Removed all DNAT rules");
 }
 
-RuleDnatAppendOutputJsonObject RuleDnat::append(RuleDnatAppendInputJsonObject input) {
+RuleDnatAppendOutputJsonObject RuleDnat::append(
+    RuleDnatAppendInputJsonObject input) {
   RuleDnatEntryJsonObject conf;
   conf.setExternalIp(input.getExternalIp());
   conf.setInternalIp(input.getInternalIp());
@@ -99,4 +101,3 @@ RuleDnatAppendOutputJsonObject RuleDnat::append(RuleDnatAppendInputJsonObject in
 std::shared_ptr<spdlog::logger> RuleDnat::logger() {
   return parent_.logger();
 }
-

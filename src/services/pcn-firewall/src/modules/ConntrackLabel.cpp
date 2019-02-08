@@ -25,8 +25,7 @@ Firewall::ConntrackLabel::ConntrackLabel(const int &index, Firewall &outer)
 
 Firewall::ConntrackLabel::~ConntrackLabel() {}
 
-std::vector<std::pair<ct_k, ct_v>>
-Firewall::ConntrackLabel::getMap() {
+std::vector<std::pair<ct_k, ct_v>> Firewall::ConntrackLabel::getMap() {
   auto table = firewall.get_hash_table<ct_k, ct_v>("connections", index);
   return table.get_all();
 }

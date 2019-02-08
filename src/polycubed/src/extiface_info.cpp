@@ -19,8 +19,8 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <linux/if_link.h>
-#include <netdb.h>
 #include <net/if.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -32,10 +32,10 @@
 namespace polycube {
 namespace polycubed {
 
-ExtIfaceInfo::ExtIfaceInfo(const std::string &name)
-    : name_(name) {}
+ExtIfaceInfo::ExtIfaceInfo(const std::string &name) : name_(name) {}
 
-ExtIfaceInfo::ExtIfaceInfo(const std::string &name, const std::string &description)
+ExtIfaceInfo::ExtIfaceInfo(const std::string &name,
+                           const std::string &description)
     : name_(name), description_(description) {}
 
 ExtIfaceInfo::~ExtIfaceInfo() {}
@@ -53,9 +53,7 @@ void ExtIfaceInfo::add_address(const std::string &addr) {
 }
 
 json ExtIfaceInfo::toJson() const {
-  json j = {
-    {"name", name_}
-  };
+  json j = {{"name", name_}};
 
   if (addresses_.size() > 0)
     j["addresses"] = addresses_;

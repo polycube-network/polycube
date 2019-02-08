@@ -28,9 +28,9 @@ enum {
 };
 
 enum {
-  DROP,     // drop packet
-  SLOWPATH, // send packet to user-space
-  FORWARD,  // forward packet between ports
+  DROP,      // drop packet
+  SLOWPATH,  // send packet to user-space
+  FORWARD,   // forward packet between ports
 };
 
 /*
@@ -47,12 +47,13 @@ BPF_ARRAY(ports_map, uint16_t, 2);
 /*
  * This function is called each time a packet arrives to the cube.
  * ctx contains the packet and md some additional metadata for the packet.
- * If the service is of type XDP_SKB/DRV CTXTYPE is equivalent to the struct xdp_md
- * otherwise, if the service is of type TC, CTXTYPE is equivalent to the __sk_buff struct
+ * If the service is of type XDP_SKB/DRV CTXTYPE is equivalent to the struct
+ * xdp_md
+ * otherwise, if the service is of type TC, CTXTYPE is equivalent to the
+ * __sk_buff struct
  * Please look at the polycube documentation for more details.
  */
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-
   pcn_log(ctx, LOG_DEBUG, "Receiving packet from port %d", md->in_port);
   pcn_pkt_log(ctx, LOG_DEBUG);
   unsigned int zero = 0;
@@ -74,7 +75,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   // what action should be performed in the packet?
-  switch(*action) {
+  switch (*action) {
   case DROP:
     pcn_log(ctx, LOG_DEBUG, "Dropping packet");
     return RX_DROP;
@@ -85,7 +86,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pcn_log(ctx, LOG_DEBUG, "Forwarding packet");
     if (md->in_port == *p1)
       return pcn_pkt_redirect(ctx, md, *p2);
-    else if(md->in_port == *p2)
+    else if (md->in_port == *p2)
       return pcn_pkt_redirect(ctx, md, *p1);
     else {
       pcn_log(ctx, LOG_ERR, "bad in_port: %d", md->in_port);

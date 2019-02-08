@@ -20,8 +20,8 @@
 
 #include <iostream>
 
-#include <sys/ioctl.h>
 #include <net/if.h>
+#include <sys/ioctl.h>
 
 namespace polycube {
 namespace polycubed {
@@ -40,35 +40,34 @@ int egress(struct __sk_buff *skb) {
 
 PortHost::PortHost(PortType type)
     : type_(type), logger(spdlog::get("polycubed")) {
-
   try {
-    //load_rx();
+    // load_rx();
     load_tx();
     switch (type_) {
     case PortType::TC:
       PatchPanel::get_tc_instance().add(*this);
-    break;
+      break;
 
     case PortType::XDP:
       PatchPanel::get_xdp_instance().add(*this);
-    break;
+      break;
     }
 
-  } catch(...) {
+  } catch (...) {
     throw;
   }
 }
 
 PortHost::~PortHost() {
   switch (type_) {
-    case PortType::TC:
-      PatchPanel::get_tc_instance().remove(*this);
+  case PortType::TC:
+    PatchPanel::get_tc_instance().remove(*this);
     break;
 
-    case PortType::XDP:
-      PatchPanel::get_xdp_instance().remove(*this);
+  case PortType::XDP:
+    PatchPanel::get_xdp_instance().remove(*this);
     break;
-    }
+  }
 
   tx_.unload_func("egress");
 }
@@ -78,13 +77,13 @@ void PortHost::load_tx() {
   enum bpf_prog_type prog_type;
 
   switch (type_) {
-    case PortType::TC:
-      prog_type = BPF_PROG_TYPE_SCHED_CLS;
+  case PortType::TC:
+    prog_type = BPF_PROG_TYPE_SCHED_CLS;
     break;
 
-    case PortType::XDP:
-      flags.push_back(std::string("-DPOLYCUBE_XDP"));
-      prog_type = BPF_PROG_TYPE_XDP;
+  case PortType::XDP:
+    flags.push_back(std::string("-DPOLYCUBE_XDP"));
+    prog_type = BPF_PROG_TYPE_XDP;
     break;
   }
 

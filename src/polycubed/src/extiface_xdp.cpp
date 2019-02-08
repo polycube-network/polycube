@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-#include "extiface_tc.h"
 #include "extiface_xdp.h"
 #include "exceptions.h"
+#include "extiface_tc.h"
 #include "netlink.h"
 #include "patchpanel.h"
 #include "port_xdp.h"
@@ -35,10 +35,10 @@ const std::string ExtIfaceXDP::XDP_PROG_CODE = R"(
 #include <bcc/proto.h>
 
 #include <uapi/linux/bpf.h>
-#include <uapi/linux/in.h>
 #include <uapi/linux/if_ether.h>
 #include <uapi/linux/if_packet.h>
 #include <uapi/linux/if_vlan.h>
+#include <uapi/linux/in.h>
 #include <uapi/linux/ip.h>
 #include <uapi/linux/ipv6.h>
 
@@ -98,8 +98,10 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, const PortXDP &port)
 
   used_ifaces.insert(iface);
 
-  xdp_prog_ = std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, true, port.get_cube_name()));
-  xdp_redir_prog_ = std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, true, port.get_cube_name()));
+  xdp_prog_ = std::unique_ptr<ebpf::BPF>(
+      new ebpf::BPF(0, nullptr, true, port.get_cube_name()));
+  xdp_redir_prog_ = std::unique_ptr<ebpf::BPF>(
+      new ebpf::BPF(0, nullptr, true, port.get_cube_name()));
 
   ifindex_ = Netlink::getInstance().get_iface_index(iface);
   try {
@@ -107,7 +109,7 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, const PortXDP &port)
     load_redirect_program();
     load_egress();
     PatchPanel::get_xdp_instance().add(*this);
-  } catch(...) {
+  } catch (...) {
     used_ifaces.erase(iface);
     throw;
   }
@@ -128,10 +130,12 @@ ExtIfaceXDP::~ExtIfaceXDP() {
 void ExtIfaceXDP::load_xdp_program() {
   // compile XDP ebpf program
   std::vector<std::string> flags_rx;
-  flags_rx.push_back(std::string("-DENDPOINT=") + std::to_string(port_.get_parent_index()));
+  flags_rx.push_back(std::string("-DENDPOINT=") +
+                     std::to_string(port_.get_parent_index()));
   flags_rx.push_back(std::string("-DINPORT=") + std::to_string(port_.index()));
   flags_rx.push_back(std::string("-DMOD_NAME=") + port_.get_cube_name());
-  flags_rx.push_back(std::string("-D_POLYCUBE_MAX_NODES=") + std::to_string(_POLYCUBE_MAX_NODES));
+  flags_rx.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
+                     std::to_string(_POLYCUBE_MAX_NODES));
 
   auto init_res = xdp_prog_->init(XDP_PROG_CODE, flags_rx);
   if (init_res.code() != 0) {
@@ -148,7 +152,8 @@ void ExtIfaceXDP::load_xdp_program() {
   }
 
   // attach to XDP
-  Netlink::getInstance().attach_to_xdp(iface_name_, fd_rx, port_.get_attach_flags());
+  Netlink::getInstance().attach_to_xdp(iface_name_, fd_rx,
+                                       port_.get_attach_flags());
 }
 
 void ExtIfaceXDP::load_redirect_program() {
@@ -163,7 +168,8 @@ void ExtIfaceXDP::load_redirect_program() {
   }
 
   // load tx_ program
-  auto load_res = xdp_redir_prog_->load_func("xdp_egress", BPF_PROG_TYPE_XDP, fd_);
+  auto load_res =
+      xdp_redir_prog_->load_func("xdp_egress", BPF_PROG_TYPE_XDP, fd_);
   if (load_res.code() != 0) {
     logger->error("failed to load ebpf program: {0}", load_res.msg());
     throw BPFError("failed to load ebpf program: " + load_res.msg());
@@ -205,5 +211,5 @@ int ExtIfaceXDP::get_fd() const {
   return fd_;
 }
 
-} //namespace polycubed
-} //namespace polycube
+}  // namespace polycubed
+}  // namespace polycube

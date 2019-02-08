@@ -55,7 +55,6 @@ static ManagementInterface *mgmt;
 #define SERVICE_REQUIRED_KERNEL_VERSION ""
 #endif
 
-
 // TODO: I am sure that there is a best way to pass this pointer around
 CubeFactory *factory_;
 std::string logfile_;
@@ -76,7 +75,7 @@ extern "C" ServiceMetadata init(CubeFactory *factory, std::string logfile) {
 }
 
 extern "C" void control_handler(const HttpHandleRequest &request,
-                            HttpHandleResponse &response) {
+                                HttpHandleResponse &response) {
   if (mgmt == nullptr) {
     return;
   }

@@ -19,10 +19,9 @@
 #include "port_tc.h"
 #include "port_xdp.h"
 
-
 //#include <tins/tins.h>
 #include <tins/ethernetII.h>
-//using Tins::EthernetII;
+// using Tins::EthernetII;
 
 namespace polycube {
 namespace service {
@@ -43,10 +42,10 @@ class Port::impl {
 
  private:
   std::shared_ptr<PortIface> port_;  // port in polycubed
-  //FIXME: Two different constructor needed. Look at BridgePort example
+  // FIXME: Two different constructor needed. Look at BridgePort example
 };
 
-Port::impl::impl(std::shared_ptr<PortIface> &port): port_(port) {}
+Port::impl::impl(std::shared_ptr<PortIface> &port) : port_(port) {}
 
 Port::impl::~impl() {}
 
@@ -70,8 +69,7 @@ const Guid &Port::impl::uuid() const {
   return port_->uuid();
 }
 
-void Port::impl::send_packet_out(EthernetII &packet,
-                                 Direction direction) {
+void Port::impl::send_packet_out(EthernetII &packet, Direction direction) {
   /*
    * Short story:
    *   EthernetII is used instead of an array of bytes to force

@@ -33,17 +33,17 @@
 #include "compiler.h"
 #include "types.h"
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 /********** util.h **********/
 #define OVS_NOT_REACHED() abort()
 
-#define ovs_assert(CONDITION)                                           \
-    if (!OVS_LIKELY(CONDITION)) {                                       \
-        abort();       \
-    }
+#define ovs_assert(CONDITION)   \
+  if (!OVS_LIKELY(CONDITION)) { \
+    abort();                    \
+  }
 
 #ifndef MIN
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
@@ -76,39 +76,38 @@ extern "C" {
  * The cast to int is present only to suppress an "expression using sizeof
  * bool" warning from "sparse" (see
  * http://permalink.gmane.org/gmane.comp.parsers.sparse/2967). */
-#define CONST_CAST(TYPE, POINTER)                               \
-    ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
-     (TYPE) (POINTER))
+#define CONST_CAST(TYPE, POINTER) \
+  ((void)sizeof((int)((POINTER) == (TYPE)(POINTER))), (TYPE)(POINTER))
 
 #define __ARRAY_SIZE_NOCHECK(ARRAY) (sizeof(ARRAY) / sizeof((ARRAY)[0]))
 #ifdef __GNUC__
 /* return 0 for array types, 1 otherwise */
-#define __ARRAY_CHECK(ARRAY) 					\
-    !__builtin_types_compatible_p(typeof(ARRAY), typeof(&ARRAY[0]))
+#define __ARRAY_CHECK(ARRAY) \
+  !__builtin_types_compatible_p(typeof(ARRAY), typeof(&ARRAY[0]))
 
 /* compile-time fail if not array */
-#define __ARRAY_FAIL(ARRAY) (sizeof(char[-2*!__ARRAY_CHECK(ARRAY)]))
-#define __ARRAY_SIZE(ARRAY)					\
-    __builtin_choose_expr(__ARRAY_CHECK(ARRAY),			\
-        __ARRAY_SIZE_NOCHECK(ARRAY), __ARRAY_FAIL(ARRAY))
+#define __ARRAY_FAIL(ARRAY) (sizeof(char[-2 * !__ARRAY_CHECK(ARRAY)]))
+#define __ARRAY_SIZE(ARRAY)                                                \
+  __builtin_choose_expr(__ARRAY_CHECK(ARRAY), __ARRAY_SIZE_NOCHECK(ARRAY), \
+                        __ARRAY_FAIL(ARRAY))
 #else
 #define __ARRAY_SIZE(ARRAY) __ARRAY_SIZE_NOCHECK(ARRAY)
 #endif
 
 #ifdef __CHECKER__
-#define BUILD_ASSERT(EXPR) ((void) 0)
-#define BUILD_ASSERT_DECL(EXPR) extern int (*build_assert(void))[1]
+#define BUILD_ASSERT(EXPR) ((void)0)
+#define BUILD_ASSERT_DECL(EXPR) extern int(*build_assert(void))[1]
 #elif !defined(__cplusplus)
 /* Build-time assertion building block. */
 #define BUILD_ASSERT__(EXPR) \
-        sizeof(struct { unsigned int build_assert_failed : (EXPR) ? 1 : -1; })
+  sizeof(struct { unsigned int build_assert_failed : (EXPR) ? 1 : -1; })
 
 /* Build-time assertion for use in a statement context. */
-#define BUILD_ASSERT(EXPR) (void) BUILD_ASSERT__(EXPR)
+#define BUILD_ASSERT(EXPR) (void)BUILD_ASSERT__(EXPR)
 
 /* Build-time assertion for use in a declaration context. */
 #define BUILD_ASSERT_DECL(EXPR) \
-        extern int (*build_assert(void))[BUILD_ASSERT__(EXPR)]
+  extern int(*build_assert(void))[BUILD_ASSERT__(EXPR)]
 #else /* __cplusplus */
 #define BUILD_ASSERT static_assert
 #define BUILD_ASSERT_DECL static_assert
@@ -134,7 +133,6 @@ void *xzalloc(size_t size);
 char *xmemdup0(const char *p_, size_t length);
 char *xstrdup(const char *s);
 
-
 /********** ofpbuf.h **********/
 struct ofpbuf;
 
@@ -143,19 +141,17 @@ void ofpbuf_free(struct ofpbuf *p);
 void *ofpbuf_base(struct ofpbuf *p);
 ssize_t ofpbuf_size(struct ofpbuf *p);
 
-
 /********** log.h **********/
-//void VLOG_WARN(const char *format, ...);
-//void VLOG_DBG(const char *format, ...);
-//void VLOG_INFO(const char *format, ...);
-
+// void VLOG_WARN(const char *format, ...);
+// void VLOG_DBG(const char *format, ...);
+// void VLOG_INFO(const char *format, ...);
 
 /********** ovs-thread.h **********/
 void ovs_mutex_init(pthread_mutex_t *m);
 void ovs_mutex_lock(pthread_mutex_t *m);
 void ovs_mutex_unlock(pthread_mutex_t *m);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

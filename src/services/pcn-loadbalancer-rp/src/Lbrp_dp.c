@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <linux/jhash.h>
 #include <uapi/linux/bpf.h>
 #include <uapi/linux/filter.h>
 #include <uapi/linux/icmp.h>
@@ -25,14 +26,13 @@
 #include <uapi/linux/pkt_cls.h>
 #include <uapi/linux/tcp.h>
 #include <uapi/linux/udp.h>
-#include <linux/jhash.h>
-
 
 /*
 *
 * This load balancer implements the following behavior:
 *
-*  - Load Balance (by looking up in the services map the VIP, to make load balancing)(from vip to backend)
+*  - Load Balance (by looking up in the services map the VIP, to make load
+* balancing)(from vip to backend)
 *  - Reverse Proxy (from backend to vip)
 *
 *    IF (DADDR IS VIP)
@@ -47,14 +47,19 @@
 *
 */
 
-
 #define MAX_SERVICES 1024
 #define MAX_SESSIONS 65536
 
 #define IP_CSUM_OFFSET (sizeof(struct eth_hdr) + offsetof(struct iphdr, check))
-#define TCP_CSUM_OFFSET (sizeof(struct eth_hdr) + sizeof(struct iphdr) + offsetof(struct tcphdr, check))
-#define UDP_CSUM_OFFSET (sizeof(struct eth_hdr) + sizeof(struct iphdr) + offsetof(struct udphdr, check))
-#define ICMP_CSUM_OFFSET (sizeof(struct eth_hdr) + sizeof(struct iphdr) + offsetof(struct icmphdr, checksum))
+#define TCP_CSUM_OFFSET                            \
+  (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
+   offsetof(struct tcphdr, check))
+#define UDP_CSUM_OFFSET                            \
+  (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
+   offsetof(struct udphdr, check))
+#define ICMP_CSUM_OFFSET                           \
+  (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
+   offsetof(struct icmphdr, checksum))
 #define IS_PSEUDO 0x10
 
 #ifndef BACKEND_PORT
@@ -85,7 +90,8 @@ struct arp_hdr {
 
 // This struct keeps the session ID of the traffic that has currently been
 // handled by the load balancer.
-// This is needed in order to perform the reverse proxy algorithm to the return traffic
+// This is needed in order to perform the reverse proxy algorithm to the return
+// traffic
 struct sessions {
   __be32 ip_src;
   __be32 ip_dst;
@@ -98,9 +104,8 @@ struct vip {
   __be32 ip;
   __be16 port;
   __be16 proto;
-  __be16 index;  //refers to backend's index for that Service(vip)
+  __be16 index;  // refers to backend's index for that Service(vip)
 } __attribute__((packed));
-
 
 struct backend {
   __be32 ip;
@@ -109,7 +114,8 @@ struct backend {
 } __attribute__((packed));
 
 /*
- * This table contains multiple entries for each virtual service (i.e., virtual IP / protocol / port).
+ * This table contains multiple entries for each virtual service (i.e., virtual
+ * IP / protocol / port).
  * When 'index' = 0, the value in the hash map is actually not a couple
  *   IP address / port but the number of backends (also called 'pool size')
  *   associated to that virtual service.
@@ -143,11 +149,11 @@ struct backend {
  */
 BPF_TABLE("hash", struct vip, struct backend, services, MAX_SERVICES);
 
-
 /*
  *  Keeps the sessions handled by the load balancer in this table. This is
  *  needed to translate the session ID back for return traffic.
- *    __u32: key (hash the translated session: Hash(ipS | ipD=BCK | pS | pD | pro) )
+ *    __u32: key (hash the translated session: Hash(ipS | ipD=BCK | pS | pD |
+ * pro) )
  *    struct vip: value (virtual service ID, to be used to translate
  *         the return traffic)
  *
@@ -156,7 +162,7 @@ BPF_TABLE("hash", struct vip, struct backend, services, MAX_SERVICES);
  *  Note that the hash is calculated, in both directions, using the IP.dst
  *  of the backend, not the original one (virtual IP address of the service).
  */
-BPF_TABLE("lru_hash", __u32 , struct vip , hash_session, MAX_SESSIONS);
+BPF_TABLE("lru_hash", __u32, struct vip, hash_session, MAX_SESSIONS);
 
 enum {
   FROM_FRONTEND = 0,
@@ -170,13 +176,12 @@ struct src_ip_r_key {
 
 struct src_ip_r_value {
   u32 sense;
-  u32 net;  // host network byte order
-  u32 mask; // host network byte order
+  u32 net;   // host network byte order
+  u32 mask;  // host network byte order
 };
 
-BPF_F_TABLE("lpm_trie", struct src_ip_r_key, struct src_ip_r_value, src_ip_rewrite,
-            MAX_SERVICES, BPF_F_NO_PREALLOC);
-
+BPF_F_TABLE("lpm_trie", struct src_ip_r_key, struct src_ip_r_value,
+            src_ip_rewrite, MAX_SERVICES, BPF_F_NO_PREALLOC);
 
 BPF_TABLE("hash", struct backend, struct vip, backend_to_service, MAX_SERVICES);
 
@@ -186,13 +191,10 @@ BPF_TABLE("hash", struct backend, struct vip, backend_to_service, MAX_SERVICES);
  * the session in the session table, to be used for the return traffic
  * (reverse proxy).
  */
-static inline struct backend *get_bck_ip(struct CTXTYPE *ctx,
-                              __be32 ip_src,
-                              __be32 ip_dst,
-                              __be16 port_src,
-                              __be16 port_dst,
-                              __be16 proto,
-                              __u32 pool_size) {
+static inline struct backend *get_bck_ip(struct CTXTYPE *ctx, __be32 ip_src,
+                                         __be32 ip_dst, __be16 port_src,
+                                         __be16 port_dst, __be16 proto,
+                                         __u32 pool_size) {
   // lookup in the sessions_table
   struct sessions sessions_key = {};
   sessions_key.ip_src = ip_src;
@@ -220,15 +222,18 @@ static inline struct backend *get_bck_ip(struct CTXTYPE *ctx,
   v_key.proto = proto;
   v_key.index = id;
 
-  pcn_log(ctx, LOG_TRACE, "Backend lookup ip: %I, port: %P, proto: 0x%04x, index: %d", ip_dst, port_dst, proto, id);
+  pcn_log(ctx, LOG_TRACE,
+          "Backend lookup ip: %I, port: %P, proto: 0x%04x, index: %d", ip_dst,
+          port_dst, proto, id);
 
   // Now, from the backend ID, let's get the actual backend server (IP/port)
-  struct backend* bck_value =  services.lookup(&v_key);
+  struct backend *bck_value = services.lookup(&v_key);
   if (!bck_value) {
     return 0;
   }
 
-  pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P", bck_value->ip, bck_value->port);
+  pcn_log(ctx, LOG_TRACE, "Found backend with ip: %I and port: %P",
+          bck_value->ip, bck_value->port);
 
   // check if src ip rewrite applies for this packet, if yes,  do not create a
   // new entry in the session table
@@ -239,7 +244,7 @@ static inline struct backend *get_bck_ip(struct CTXTYPE *ctx,
   }
 
   // Calculate a second hash on the session, but this time we use the backend IP
-  sessions_key.ip_dst = bck_value->ip;                 // backend ip address
+  sessions_key.ip_dst = bck_value->ip;      // backend ip address
   sessions_key.port_dst = bck_value->port;  // backend port
 
   if (proto == ntohs(IPPROTO_ICMP)) {
@@ -255,16 +260,17 @@ static inline struct backend *get_bck_ip(struct CTXTYPE *ctx,
   v.proto = proto;
   v.index = 0;
 
-  // update the session table with this entry. If the entry already exists, nothing happens.
+  // update the session table with this entry. If the entry already exists,
+  // nothing happens.
   // if the entry doesn't exist, it is added to the list
-  hash_session.update(&check, &v);   //hash-vip
+  hash_session.update(&check, &v);  // hash-vip
 
   return bck_value;
 }
 
-static inline void checksum(struct CTXTYPE *ctx, __u16 old_port,
-                            __u16 new_port, __u32 old_dip, __u32 new_dip,
-                            __u32 old_sip, __u32 new_sip, __u32 flag) {
+static inline void checksum(struct CTXTYPE *ctx, __u16 old_port, __u16 new_port,
+                            __u32 old_dip, __u32 new_dip, __u32 old_sip,
+                            __u32 new_sip, __u32 flag) {
   pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET, old_dip, new_dip, 4);
   pcn_l4_csum_replace(ctx, flag, old_port, new_port, 2);
   pcn_l4_csum_replace(ctx, flag, old_dip, new_dip, 4 | IS_PSEUDO);
@@ -275,9 +281,8 @@ static inline void checksum(struct CTXTYPE *ctx, __u16 old_port,
   }
 }
 
-static __always_inline
-int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-
+static __always_inline int handle_rx(struct CTXTYPE *ctx,
+                                     struct pkt_metadata *md) {
   __u16 source = 0;
   __u16 dest = 0;
   __u16 ip_proto = 0;
@@ -315,14 +320,14 @@ IP:;
   __u32 new_sip = 0;
 
   switch (ip->protocol) {
-    case IPPROTO_ICMP:
-      goto ICMP;
-    case IPPROTO_UDP:
-      goto UDP;
-    case IPPROTO_TCP:
-      goto TCP;
-    default:
-      goto DROP;
+  case IPPROTO_ICMP:
+    goto ICMP;
+  case IPPROTO_UDP:
+    goto UDP;
+  case IPPROTO_TCP:
+    goto TCP;
+  default:
+    goto DROP;
   }
 
 ICMP:
@@ -334,7 +339,7 @@ ICMP:
     goto DROP;
 
   source = icmp->un.echo.id;
-  dest =  0x0;
+  dest = 0x0;
   ip_proto = htons(IPPROTO_ICMP);
 
   pcn_log(ctx, LOG_DEBUG, "received ICMP %I --> %I", ip->saddr, ip->daddr);
@@ -346,7 +351,8 @@ UDP:
   if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*udp) > data_end)
     return RX_DROP;
 
-  pcn_log(ctx, LOG_TRACE, "received UDP: %I:%P --> %I:%P", ip->saddr, udp->source, ip->daddr, udp->dest);
+  pcn_log(ctx, LOG_TRACE, "received UDP: %I:%P --> %I:%P", ip->saddr,
+          udp->source, ip->daddr, udp->dest);
 
   source = udp->source;
   dest = udp->dest;
@@ -359,7 +365,8 @@ TCP:
   if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
     return RX_DROP;
 
-  pcn_log(ctx, LOG_TRACE, "received TCP: %I:%P --> %I:%P", ip->saddr, tcp->source, ip->daddr, tcp->dest);
+  pcn_log(ctx, LOG_TRACE, "received TCP: %I:%P --> %I:%P", ip->saddr,
+          tcp->source, ip->daddr, tcp->dest);
 
   source = tcp->source;
   dest = tcp->dest;
@@ -368,15 +375,14 @@ TCP:
   l4csum_offset = TCP_CSUM_OFFSET;
   goto LB;
 
-
 LB:;
 
   __u32 old_port = dest;
   __u32 new_port = dest;
 
-
   // Currently, the "backend port" is the one connected to the backends
-  // So, this packet is coming from the fronted and is returning back to the originating Pod.
+  // So, this packet is coming from the fronted and is returning back to the
+  // originating Pod.
 
   if (md->in_port == FRONTEND_PORT) {
     pcn_log(ctx, LOG_TRACE, "Packet arrived in the frontend port");
@@ -389,18 +395,21 @@ LB:;
     v_key.index = 0;
 
     // Look for the destination IP address in the map (with index=0)
-    // If there's a match, it means this is a VIP, so we need to apply the LB logic
+    // If there's a match, it means this is a VIP, so we need to apply the LB
+    // logic
     // If doesn't match, just send the packet as is (no need to load balance)
-    struct backend* backend_value = services.lookup(&v_key);
-    // The IP destination address is not a virtual service. Let's forward the packet as is.
+    struct backend *backend_value = services.lookup(&v_key);
+    // The IP destination address is not a virtual service. Let's forward the
+    // packet as is.
     if (!backend_value) {
-      pcn_log(ctx, LOG_TRACE, "Service lookup failed. Redirected as is to backend port");
+      pcn_log(ctx, LOG_TRACE,
+              "Service lookup failed. Redirected as is to backend port");
       return pcn_pkt_redirect(ctx, md, BACKEND_PORT);
     }
 
     // Return the proper backend for this packet
-    struct backend* bck_value = get_bck_ip(ctx,
-        ip->saddr, ip->daddr, source, dest, ip_proto, backend_value->port);
+    struct backend *bck_value = get_bck_ip(ctx, ip->saddr, ip->daddr, source,
+                                           dest, ip_proto, backend_value->port);
 
     if (!bck_value) {
       goto DROP;
@@ -418,33 +427,35 @@ LB:;
       pcn_log(ctx, LOG_TRACE, "src ip rewritten to %I", ip->saddr);
     }
 
-    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, source, bck_value->ip, bck_value->port);
+    pcn_log(ctx, LOG_TRACE, "redirected to %I:%P --> %I:%P", ip->saddr, source,
+            bck_value->ip, bck_value->port);
 
     // We are using l4csum_offset here, since it is equivalent of the protocol
     if (l4csum_offset == TCP_CSUM_OFFSET) {
       tcp->dest = bck_value->port;
-      checksum(ctx, old_port, bck_value->port, old_ip,
-               bck_value->ip, old_sip, new_sip, TCP_CSUM_OFFSET);
+      checksum(ctx, old_port, bck_value->port, old_ip, bck_value->ip, old_sip,
+               new_sip, TCP_CSUM_OFFSET);
     } else if (l4csum_offset == UDP_CSUM_OFFSET) {
       udp->dest = bck_value->port;
-      checksum(ctx, old_port, bck_value->port, old_ip,
-               bck_value->ip, old_sip, new_sip, UDP_CSUM_OFFSET);
+      checksum(ctx, old_port, bck_value->port, old_ip, bck_value->ip, old_sip,
+               new_sip, UDP_CSUM_OFFSET);
     } else {
-      pcn_log(ctx, LOG_TRACE, "translated existing ICMP session as %I --> %I", new_ip, ip->daddr);
+      pcn_log(ctx, LOG_TRACE, "translated existing ICMP session as %I --> %I",
+              new_ip, ip->daddr);
       pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET, old_ip, bck_value->ip, 4);
     }
 
     return pcn_pkt_redirect(ctx, md, BACKEND_PORT);
-  } else { // The packet is in its way back from the virtual servers. Coming from the BACKEND port
-     /*
-     * if src is srrIpRewrite
-     *     CHANGE
-     * else
-     *     SESSION TABLE
-     */
+  } else {  // The packet is in its way back from the virtual servers. Coming
+            // from the BACKEND port
+            /*
+            * if src is srrIpRewrite
+            *     CHANGE
+            * else
+            *     SESSION TABLE
+            */
 
     pcn_log(ctx, LOG_TRACE, "Packet comes from backend port: %I", ip->daddr);
-
 
     __u32 dst_ip_ = ip->daddr;
 
@@ -454,11 +465,9 @@ LB:;
     struct src_ip_r_key k = {32, ip->daddr};
     struct src_ip_r_value *v = src_ip_rewrite.lookup(&k);
     if (v && v->sense == FROM_BACKEND) {
-      struct backend key = {.ip = ip->saddr,
-                            .port = source,
-                            .proto = ip_proto};
+      struct backend key = {.ip = ip->saddr, .port = source, .proto = ip_proto};
 
-      struct vip* vip_v = backend_to_service.lookup(&key);
+      struct vip *vip_v = backend_to_service.lookup(&key);
       if (!vip_v) {
         pcn_log(ctx, LOG_ERR, "Reverse backend lookup failed");
         goto DROP;
@@ -473,7 +482,10 @@ LB:;
       new_sip = vip_v->ip;
       new_ip = ip->daddr;
       new_port = vip_v->port;
-      pcn_log(ctx, LOG_TRACE, "srcIpRewrite found. translate ip src %I dst %I --> src %I dst %I", old_sip, old_ip, new_sip, new_ip);
+      pcn_log(
+          ctx, LOG_TRACE,
+          "srcIpRewrite found. translate ip src %I dst %I --> src %I dst %I",
+          old_sip, old_ip, new_sip, new_ip);
     } else {
       struct sessions sessions_key = {};
       sessions_key.ip_src = ip->daddr;
@@ -490,12 +502,13 @@ LB:;
       __u32 check = jhash((const void *)&sessions_key, sizeof(struct sessions),
                           JHASH_INITVAL);
 
-      pcn_log(ctx, LOG_TRACE, "Check in session table %lu",check);
+      pcn_log(ctx, LOG_TRACE, "Check in session table %lu", check);
 
       // Let's check if the this session is present in the session table
-      struct vip* rev_proxy = hash_session.lookup(&check);
+      struct vip *rev_proxy = hash_session.lookup(&check);
 
-      // If this (return) packet belongs to a session that was handled by the LB,
+      // If this (return) packet belongs to a session that was handled by the
+      // LB,
       //    we have to  translate IP addresses back to their original value
       if (!rev_proxy) {
         pcn_log(ctx, LOG_TRACE, "redirected as is to frontend port");
@@ -509,26 +522,31 @@ LB:;
     }
 
     if (l4csum_offset == TCP_CSUM_OFFSET) {
-      old_port =   tcp->source;
+      old_port = tcp->source;
       tcp->source = new_port;
-      pcn_log(ctx, LOG_TRACE, "translated existing TCP session as %I:%P --> %I:%P", new_ip, tcp->source, ip->daddr, dest);
-      checksum(ctx, old_port, new_port, old_ip, new_ip, old_sip,
-               new_sip,TCP_CSUM_OFFSET);
+      pcn_log(ctx, LOG_TRACE,
+              "translated existing TCP session as %I:%P --> %I:%P", new_ip,
+              tcp->source, ip->daddr, dest);
+      checksum(ctx, old_port, new_port, old_ip, new_ip, old_sip, new_sip,
+               TCP_CSUM_OFFSET);
     } else if (l4csum_offset == UDP_CSUM_OFFSET) {
-      old_port =  udp->source;
+      old_port = udp->source;
       udp->source = new_port;
-      pcn_log(ctx, LOG_TRACE, "translated existing UDP session as %I:%P --> %I:%P", new_ip, new_port, ip->daddr, dest);
-      checksum(ctx, old_port, new_port, old_ip, new_ip,old_sip,
-               new_sip,UDP_CSUM_OFFSET);
+      pcn_log(ctx, LOG_TRACE,
+              "translated existing UDP session as %I:%P --> %I:%P", new_ip,
+              new_port, ip->daddr, dest);
+      checksum(ctx, old_port, new_port, old_ip, new_ip, old_sip, new_sip,
+               UDP_CSUM_OFFSET);
     } else {
-      pcn_log(ctx, LOG_TRACE, "translated existing ICMP session as %I --> %I", new_ip, ip->daddr);
+      pcn_log(ctx, LOG_TRACE, "translated existing ICMP session as %I --> %I",
+              new_ip, ip->daddr);
       pcn_l3_csum_replace(ctx, IP_CSUM_OFFSET, old_ip, new_ip, 4);
     }
 
     return pcn_pkt_redirect(ctx, md, FRONTEND_PORT);
   }
 
-ARP: ;
+ARP:;
   struct arp_hdr *arp = data + sizeof(*eth);
   if (data + sizeof(*eth) + sizeof(*arp) > data_end)
     goto DROP;
@@ -563,7 +581,8 @@ ARP: ;
   }
 
 NOIP:
-  pcn_log(ctx, LOG_TRACE, "received a non-ip packet (in_port %d) (proto 0x%x)", md->in_port, bpf_htons(eth->proto));
+  pcn_log(ctx, LOG_TRACE, "received a non-ip packet (in_port %d) (proto 0x%x)",
+          md->in_port, bpf_htons(eth->proto));
 
   if (md->in_port == BACKEND_PORT)
     return pcn_pkt_redirect(ctx, md, FRONTEND_PORT);

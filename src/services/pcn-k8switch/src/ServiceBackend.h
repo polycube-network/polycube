@@ -25,7 +25,7 @@ class Service;
 using namespace io::swagger::server::model;
 
 class ServiceBackend : public ServiceBackendInterface {
-public:
+ public:
   ServiceBackend(Service &parent, const ServiceBackendJsonObject &conf);
   virtual ~ServiceBackend();
 
@@ -58,11 +58,10 @@ public:
 
   typedef std::pair<std::string, uint16_t> Key;
 
-private:
+ private:
   Service &parent_;
   uint16_t weight_;
   uint16_t port_;
   std::string ip_;
   std::string name_;
 };
-

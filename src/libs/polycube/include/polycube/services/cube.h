@@ -19,16 +19,16 @@
 #include <map>
 #include <string>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include "polycube/common.h"
 
 #include "polycube/services/cube_factory.h"
+#include "polycube/services/management_interface.h"
 #include "polycube/services/port.h"
 #include "polycube/services/table.h"
-#include "polycube/services/management_interface.h"
 #include "polycube/services/utils.h"
 
 namespace polycube {
@@ -43,10 +43,8 @@ class Cube {
   friend ServiceMetadata init(CubeFactory *factory);
 
  public:
-  Cube(const std::string &name,
-       const std::vector<std::string> &ingress_code,
-       const std::vector<std::string> &egress_code,
-       const CubeType type,
+  Cube(const std::string &name, const std::vector<std::string> &ingress_code,
+       const std::vector<std::string> &egress_code, const CubeType type,
        LogLevel level = LogLevel::OFF);
   virtual ~Cube();
 
@@ -59,7 +57,8 @@ class Cube {
   void del_program(int index, ProgramType type = ProgramType::INGRESS);
 
   template <class PortConfigType>
-  std::shared_ptr<PortType> add_port(const std::string &port_name, const PortConfigType &conf);
+  std::shared_ptr<PortType> add_port(const std::string &port_name,
+                                     const PortConfigType &conf);
   void remove_port(const std::string &port_name);
   std::shared_ptr<PortType> get_port(const std::string &port_name);
   std::shared_ptr<PortType> get_port(int index);
@@ -69,21 +68,21 @@ class Cube {
   RawTable get_raw_table(const std::string &table_name, int index = 0,
                          ProgramType type = ProgramType::INGRESS);
   template <class ValueType>
-  ArrayTable<ValueType> get_array_table(const std::string &table_name,
-                                        int index = 0,
-                                        ProgramType type = ProgramType::INGRESS);
+  ArrayTable<ValueType> get_array_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
   template <class ValueType>
-  PercpuArrayTable<ValueType> get_percpuarray_table(const std::string &table_name,
-                                                    int index = 0,
-                                                    ProgramType type = ProgramType::INGRESS);
+  PercpuArrayTable<ValueType> get_percpuarray_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
   template <class KeyType, class ValueType>
-  HashTable<KeyType, ValueType> get_hash_table(const std::string &table_name,
-                                               int index = 0,
-                                               ProgramType type = ProgramType::INGRESS);
+  HashTable<KeyType, ValueType> get_hash_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
   template <class KeyType, class ValueType>
-  PercpuHashTable<KeyType, ValueType> get_percpuhash_table(const std::string &table_name,
-                                                           int index = 0,
-                                                           ProgramType type = ProgramType::INGRESS);
+  PercpuHashTable<KeyType, ValueType> get_percpuhash_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
 
   virtual void packet_in(PortType &port, PacketInMetadata &md,
                          const std::vector<uint8_t> &packet) = 0;
@@ -97,7 +96,7 @@ class Cube {
   const std::string get_name() const;
   CubeType get_type() const;
 
- //protected: (later on)
+  // protected: (later on)
   std::shared_ptr<spdlog::logger> logger();
 
   void dismount();
@@ -110,22 +109,21 @@ class Cube {
 template <class PortType>
 class Cube<PortType>::impl {
  private:
-  int get_table_fd(const std::string &table_name, int index,
-                   ProgramType type);
+  int get_table_fd(const std::string &table_name, int index, ProgramType type);
+
  public:
-  impl(Cube<PortType> &parent_,
-      const std::string &name,
-      const std::vector<std::string> &ingress_code,
-      const std::vector<std::string> &egress_code,
-      const CubeType type,
-      LogLevel level);
+  impl(Cube<PortType> &parent_, const std::string &name,
+       const std::vector<std::string> &ingress_code,
+       const std::vector<std::string> &egress_code, const CubeType type,
+       LogLevel level);
   ~impl();
   void reload(const std::string &code, int index, ProgramType type);
   int add_program(const std::string &code, int index, ProgramType type);
   void del_program(int index, ProgramType type);
 
   template <class PortConfigType>
-  std::shared_ptr<PortType> add_port(const std::string &port_name, const PortConfigType &conf);
+  std::shared_ptr<PortType> add_port(const std::string &port_name,
+                                     const PortConfigType &conf);
   void remove_port(const std::string &port_name);
   std::shared_ptr<PortType> get_port(const std::string &port_name);
   std::shared_ptr<PortType> get_port(int index);
@@ -135,32 +133,30 @@ class Cube<PortType>::impl {
                          ProgramType type);
 
   template <class ValueType>
-  ArrayTable<ValueType> get_array_table(const std::string &table_name, int index,
-                                        ProgramType type) {
+  ArrayTable<ValueType> get_array_table(const std::string &table_name,
+                                        int index, ProgramType type) {
     int fd = get_table_fd(table_name, index, type);
     return ArrayTable<ValueType>(&fd);
   };
 
   template <class ValueType>
-  PercpuArrayTable<ValueType> get_percpuarray_table(const std::string &table_name,
-                                                    int index,
-                                                    ProgramType type) {
+  PercpuArrayTable<ValueType> get_percpuarray_table(
+      const std::string &table_name, int index, ProgramType type) {
     int fd = get_table_fd(table_name, index, type);
-    return PercpuArrayTable<ValueType>(&fd);;
+    return PercpuArrayTable<ValueType>(&fd);
+    ;
   }
 
   template <class KeyType, class ValueType>
   HashTable<KeyType, ValueType> get_hash_table(const std::string &table_name,
-                                               int index,
-                                               ProgramType type) {
+                                               int index, ProgramType type) {
     int fd = get_table_fd(table_name, index, type);
-    return  HashTable<KeyType, ValueType>(&fd);
+    return HashTable<KeyType, ValueType>(&fd);
   }
 
   template <class KeyType, class ValueType>
-  PercpuHashTable<KeyType, ValueType> get_percpuhash_table(const std::string &table_name,
-                                                           int index,
-                                                           ProgramType type) {
+  PercpuHashTable<KeyType, ValueType> get_percpuhash_table(
+      const std::string &table_name, int index, ProgramType type) {
     int fd = get_table_fd(table_name, index, type);
     return PercpuHashTable<KeyType, ValueType>(&fd);
   }
@@ -180,7 +176,7 @@ class Cube<PortType>::impl {
 
  private:
   std::shared_ptr<CubeIface> cube_;  // pointer to the cube in polycubed
-  Cube &parent_;     // needed to call packet_in()
+  Cube &parent_;                     // needed to call packet_in()
   packet_in_cb handle_packet_in;
   log_msg_cb handle_log_msg;
   CubeType type_;
@@ -194,18 +190,18 @@ class Cube<PortType>::impl {
 };
 
 template <class PortType>
-Cube<PortType>::impl::impl(Cube<PortType> &parent_,
-                 const std::string &name,
-                 const std::vector<std::string> &ingress_code,
-                 const std::vector<std::string> &egress_code,
-                 const CubeType type,
-                 LogLevel level)
-    : parent_(parent_), type_(type), dismounted_(false),
-    logger_(std::make_shared<spdlog::logger>(name,
-    (spdlog::sinks_init_list) {
-      std::make_shared<spdlog::sinks::rotating_file_sink_mt> (logfile_,
-                                                              1048576 * 5, 3),
-      std::make_shared<spdlog::sinks::stdout_sink_mt> ()})) {
+Cube<PortType>::impl::impl(Cube<PortType> &parent_, const std::string &name,
+                           const std::vector<std::string> &ingress_code,
+                           const std::vector<std::string> &egress_code,
+                           const CubeType type, LogLevel level)
+    : parent_(parent_),
+      type_(type),
+      dismounted_(false),
+      logger_(std::make_shared<spdlog::logger>(
+          name, (spdlog::sinks_init_list){
+                    std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+                        logfile_, 1048576 * 5, 3),
+                    std::make_shared<spdlog::sinks::stdout_sink_mt>()})) {
   logger()->set_level(logLevelToSPDLog(level));
   // TODO: move to function
   handle_packet_in = [&](const PacketIn *md,
@@ -234,9 +230,8 @@ Cube<PortType>::impl::impl(Cube<PortType> &parent_,
   std::shared_ptr<spdlog::logger> l = spdlog::get("polycubed");
   auto start = std::chrono::high_resolution_clock::now();
 #endif
-  cube_ = factory_->create_cube(name, ingress_code, egress_code,
-                                handle_log_msg, type, handle_packet_in,
-                                level);
+  cube_ = factory_->create_cube(name, ingress_code, egress_code, handle_log_msg,
+                                type, handle_packet_in, level);
 #ifdef LOG_COMPILATION_TIME
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
@@ -256,19 +251,19 @@ Cube<PortType>::impl::~impl() {
 
 template <class PortType>
 int Cube<PortType>::impl::get_table_fd(const std::string &table_name, int index,
-                             ProgramType type) {
+                                       ProgramType type) {
   return cube_->get_table_fd(table_name, index, type);
 }
 
 template <class PortType>
 void Cube<PortType>::impl::reload(const std::string &code, int index,
-                        ProgramType type) {
+                                  ProgramType type) {
   cube_->reload(code, index, type);
 }
 
 template <class PortType>
 int Cube<PortType>::impl::add_program(const std::string &code, int index,
-                            ProgramType type) {
+                                      ProgramType type) {
   return cube_->add_program(code, index, type);
 }
 
@@ -279,8 +274,8 @@ void Cube<PortType>::impl::del_program(int index, ProgramType type) {
 
 template <class PortType>
 template <class PortConfigType>
-std::shared_ptr<PortType> Cube<PortType>::impl::add_port(const std::string &port_name,
-  const PortConfigType &conf) {
+std::shared_ptr<PortType> Cube<PortType>::impl::add_port(
+    const std::string &port_name, const PortConfigType &conf) {
   if (ports_by_name_.count(port_name) != 0) {
     throw std::runtime_error("Port " + port_name + " already exists");
   }
@@ -305,7 +300,7 @@ std::shared_ptr<PortType> Cube<PortType>::impl::add_port(const std::string &port
 template <class PortType>
 std::vector<std::shared_ptr<PortType>> Cube<PortType>::impl::get_ports() {
   std::vector<std::shared_ptr<PortType>> ports;
-  for(auto &it : ports_by_name_)
+  for (auto &it : ports_by_name_)
     ports.push_back(it.second);
 
   return ports;
@@ -327,7 +322,8 @@ void Cube<PortType>::impl::remove_port(const std::string &port_name) {
 }
 
 template <class PortType>
-std::shared_ptr<PortType> Cube<PortType>::impl::get_port(const std::string &port_name) {
+std::shared_ptr<PortType> Cube<PortType>::impl::get_port(
+    const std::string &port_name) {
   if (ports_by_name_.count(port_name) == 0) {
     throw std::runtime_error("Port " + port_name + " does not exist");
   }
@@ -338,15 +334,16 @@ std::shared_ptr<PortType> Cube<PortType>::impl::get_port(const std::string &port
 template <class PortType>
 std::shared_ptr<PortType> Cube<PortType>::impl::get_port(int index) {
   if (ports_by_id_.count(index) == 0) {
-    throw std::runtime_error("Port id " + std::to_string(index) + " does not exist");
+    throw std::runtime_error("Port id " + std::to_string(index) +
+                             " does not exist");
   }
 
   return ports_by_id_.at(index);
 }
 
 template <class PortType>
-RawTable Cube<PortType>::impl::get_raw_table(const std::string &table_name, int index,
-                                   ProgramType type) {
+RawTable Cube<PortType>::impl::get_raw_table(const std::string &table_name,
+                                             int index, ProgramType type) {
   int fd = get_table_fd(table_name, index, type);
   RawTable t(&fd);
   return std::move(t);
@@ -354,28 +351,29 @@ RawTable Cube<PortType>::impl::get_raw_table(const std::string &table_name, int 
 
 template <class PortType>
 void Cube<PortType>::impl::datapath_log_msg(const LogMsg *msg) {
-
-  spdlog::level::level_enum level_ = logLevelToSPDLog((polycube::LogLevel)msg->level);
+  spdlog::level::level_enum level_ =
+      logLevelToSPDLog((polycube::LogLevel)msg->level);
   std::string print;
 
   switch (msg->type) {
-    case 0:
-      print = utils::format_debug_string(msg->msg, msg->args);
-      logger()->log(level_, print.c_str());
+  case 0:
+    print = utils::format_debug_string(msg->msg, msg->args);
+    logger()->log(level_, print.c_str());
     break;
 
-    case 1:
+  case 1:
 #ifdef HAVE_POLYCUBE_TOOLS
-      logger()->log(level_, "packet received for debug:");
-      utils::print_packet((const uint8_t *)msg->msg, msg->len);
+    logger()->log(level_, "packet received for debug:");
+    utils::print_packet((const uint8_t *)msg->msg, msg->len);
 #else
-      logger()->warn("Received packet for debugging. polycube-tools is not available");
+    logger()->warn(
+        "Received packet for debugging. polycube-tools is not available");
 #endif
     break;
 
-    default:
-      logger()->warn("Received bad message type in datapath_log_msg");
-      return;
+  default:
+    logger()->warn("Received bad message type in datapath_log_msg");
+    return;
   }
 }
 
@@ -424,22 +422,24 @@ void Cube<PortType>::impl::dismount() {
 // PIMPL
 template <class PortType>
 Cube<PortType>::Cube(const std::string &name,
-           const std::vector<std::string> &ingress_code,
-           const std::vector<std::string> &egress_code,
-           const CubeType type,
-           LogLevel level)
-    : pimpl_(new Cube::impl(*this, name, ingress_code, egress_code, type, level)) {}
+                     const std::vector<std::string> &ingress_code,
+                     const std::vector<std::string> &egress_code,
+                     const CubeType type, LogLevel level)
+    : pimpl_(new Cube::impl(*this, name, ingress_code, egress_code, type,
+                            level)) {}
 
 template <class PortType>
 Cube<PortType>::~Cube() {}
 
 template <class PortType>
-void Cube<PortType>::reload(const std::string &code, int index, ProgramType type) {
+void Cube<PortType>::reload(const std::string &code, int index,
+                            ProgramType type) {
   return pimpl_->reload(code, index, type);
 }
 
 template <class PortType>
-int Cube<PortType>::add_program(const std::string &code, int index, ProgramType type) {
+int Cube<PortType>::add_program(const std::string &code, int index,
+                                ProgramType type) {
   return pimpl_->add_program(code, index, type);
 }
 
@@ -451,7 +451,7 @@ void Cube<PortType>::del_program(int index, ProgramType type) {
 template <class PortType>
 template <class PortConfigType>
 std::shared_ptr<PortType> Cube<PortType>::add_port(const std::string &port_name,
-const PortConfigType &conf) {
+                                                   const PortConfigType &conf) {
   return std::move(pimpl_->template add_port<PortConfigType>(port_name, conf));
 }
 
@@ -461,7 +461,8 @@ void Cube<PortType>::remove_port(const std::string &port_name) {
 }
 
 template <class PortType>
-std::shared_ptr<PortType> Cube<PortType>::get_port(const std::string &port_name) {
+std::shared_ptr<PortType> Cube<PortType>::get_port(
+    const std::string &port_name) {
   return std::move(pimpl_->get_port(port_name));
 }
 
@@ -477,7 +478,7 @@ std::vector<std::shared_ptr<PortType>> Cube<PortType>::get_ports() {
 
 template <class PortType>
 RawTable Cube<PortType>::get_raw_table(const std::string &table_name, int index,
-                             ProgramType type) {
+                                       ProgramType type) {
   return pimpl_->get_raw_table(table_name, index, type);
 }
 
@@ -523,33 +524,32 @@ void Cube<PortType>::dismount() {
 
 template <class PortType>
 template <class ValueType>
-ArrayTable<ValueType> Cube<PortType>::get_array_table(const std::string &table_name,
-                                            int index,
-                                            ProgramType type) {
+ArrayTable<ValueType> Cube<PortType>::get_array_table(
+    const std::string &table_name, int index, ProgramType type) {
   return pimpl_->template get_array_table<ValueType>(table_name, index, type);
 }
 template <class PortType>
 template <class ValueType>
-PercpuArrayTable<ValueType> Cube<PortType>::get_percpuarray_table(const std::string &table_name,
-                                                        int index,
-                                                        ProgramType type) {
-  return pimpl_->template get_percpuarray_table<ValueType>(table_name, index, type);
+PercpuArrayTable<ValueType> Cube<PortType>::get_percpuarray_table(
+    const std::string &table_name, int index, ProgramType type) {
+  return pimpl_->template get_percpuarray_table<ValueType>(table_name, index,
+                                                           type);
 }
 
 template <class PortType>
 template <class KeyType, class ValueType>
-HashTable<KeyType, ValueType> Cube<PortType>::get_hash_table(const std::string &table_name,
-                                                   int index,
-                                                   ProgramType type) {
-  return pimpl_->template get_hash_table<KeyType, ValueType>(table_name, index, type);
+HashTable<KeyType, ValueType> Cube<PortType>::get_hash_table(
+    const std::string &table_name, int index, ProgramType type) {
+  return pimpl_->template get_hash_table<KeyType, ValueType>(table_name, index,
+                                                             type);
 }
 
 template <class PortType>
 template <class KeyType, class ValueType>
-PercpuHashTable<KeyType, ValueType> Cube<PortType>::get_percpuhash_table(const std::string &table_name,
-                                                               int index,
-                                                               ProgramType type) {
-  return pimpl_->template get_percpuhash_table<KeyType, ValueType>(table_name, index, type);
+PercpuHashTable<KeyType, ValueType> Cube<PortType>::get_percpuhash_table(
+    const std::string &table_name, int index, ProgramType type) {
+  return pimpl_->template get_percpuhash_table<KeyType, ValueType>(table_name,
+                                                                   index, type);
 }
 
 }  // namespace service

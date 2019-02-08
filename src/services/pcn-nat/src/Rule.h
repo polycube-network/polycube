@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/RuleInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -37,6 +34,7 @@ class Rule : public RuleInterface {
   friend class RuleDnat;
   friend class RulePortForwarding;
   friend class RuleMasquerade;
+
  public:
   Rule(Nat &parent, const RuleJsonObject &conf);
   virtual ~Rule();
@@ -80,13 +78,12 @@ class Rule : public RuleInterface {
   void replacePortForwarding(const RulePortForwardingJsonObject &conf) override;
   void delPortForwarding() override;
 
-  Nat& getParent();
+  Nat &getParent();
 
-private:
-  Nat   &parent_;
+ private:
+  Nat &parent_;
   std::shared_ptr<RuleSnat> snat_;
   std::shared_ptr<RuleDnat> dnat_;
   std::shared_ptr<RulePortForwarding> portforwarding_;
   std::shared_ptr<RuleMasquerade> masquerade_;
 };
-

@@ -42,15 +42,15 @@ class ManagementLib : public ManagementInterface {
 
   ServiceMetadata init(CubeFactory *factory, std::string logfile);
   void control_handler(const HttpHandleRequest &request,
-                   HttpHandleResponse &response) override;
+                       HttpHandleResponse &response) override;
 
-  typedef ServiceMetadata (*init_t)(CubeFactory *polycubed, std::string logfile);
+  typedef ServiceMetadata (*init_t)(CubeFactory *polycubed,
+                                    std::string logfile);
   typedef void (*control_handler_t)(const HttpHandleRequest &request,
-                                HttpHandleResponse &response);
+                                    HttpHandleResponse &response);
   typedef void (*uninit_t)();
 
  private:
-
   DynamicLibrary library;
   bool loadFunctions();
   void unloadFunctions();

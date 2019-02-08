@@ -17,8 +17,8 @@
 #pragma once
 
 //#include "polycube/services/guid.h"
-#include "polycube/services/cube_iface.h"
 #include "polycube/services/cube_factory.h"
+#include "polycube/services/cube_iface.h"
 
 #include "controller.h"
 #include "datapath_log.h"
@@ -38,13 +38,10 @@ class CubeFactoryImpl : public CubeFactory {
   CubeFactoryImpl(const std::string &service_name);
   ~CubeFactoryImpl();
 
-  std::shared_ptr<CubeIface> create_cube(const std::string &name,
-                         const std::vector<std::string> &ingress_code,
-                         const std::vector<std::string> &egress_code,
-                         const log_msg_cb &log_msg,
-                         const CubeType type,
-                         const packet_in_cb &cb,
-                         LogLevel level);
+  std::shared_ptr<CubeIface> create_cube(
+      const std::string &name, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const CubeType type, const packet_in_cb &cb, LogLevel level);
 
   void destroy_cube(const std::string &name);
 

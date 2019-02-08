@@ -38,7 +38,7 @@ PatchPanel &PatchPanel::get_xdp_instance() {
 PatchPanel::PatchPanel(const std::string &map_name, int max_nodes)
     : max_nodes_(max_nodes), logger(spdlog::get("polycubed")) {
   std::vector<std::string> flags;
-  //flags.push_back(std::string("-DMAP_NAME=") + map_name);
+  // flags.push_back(std::string("-DMAP_NAME=") + map_name);
   flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
                   std::to_string(max_nodes_));
   std::string code(PATCHPANEL_CODE);

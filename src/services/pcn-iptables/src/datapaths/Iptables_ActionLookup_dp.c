@@ -57,18 +57,18 @@ BPF_TABLE("percpu_array", int, u64, bytes_DIRECTION, 8000);
 
 static __always_inline void incrementCounters(int *action, u32 bytes) {
   u64 *value;
-  value= pkts_DIRECTION.lookup(action);
-  if(value){
-    *value+=1;
+  value = pkts_DIRECTION.lookup(action);
+  if (value) {
+    *value += 1;
   }
-  value=bytes_DIRECTION.lookup(action);
-  if(value){
-    *value+=bytes;
+  value = bytes_DIRECTION.lookup(action);
+  if (value) {
+    *value += bytes;
   }
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet." );
+  pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet.");
 
 // _NR_ELEMENTS = int (number of rules / 64)
 // because of a bug in bcc, 63 bits are used
@@ -80,7 +80,7 @@ pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet." );
     return RX_DROP;
   }
 
-pcn_log(ctx, LOG_DEBUG, "Rule matched: %d ", (int)(ruleMatched->bits)[0]);
+  pcn_log(ctx, LOG_DEBUG, "Rule matched: %d ", (int)(ruleMatched->bits)[0]);
 
   // first element of the bitvector is the matched rule!
   key = (int)(ruleMatched->bits)[0];
@@ -97,7 +97,8 @@ pcn_log(ctx, LOG_DEBUG, "Rule matched: %d ", (int)(ruleMatched->bits)[0]);
     return RX_DROP;
 
   case 1:
-    pcn_log(ctx, LOG_DEBUG, "Action taken: ACCEPT (call CONNTRACKTABLEUPDATE) ");
+    pcn_log(ctx, LOG_DEBUG,
+            "Action taken: ACCEPT (call CONNTRACKTABLEUPDATE) ");
     call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
     return RX_DROP;
 

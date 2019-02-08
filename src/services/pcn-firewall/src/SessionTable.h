@@ -112,8 +112,7 @@ class SessionTable : public SessionTableInterface {
   SessionTableJsonObject fields;
 
   static std::string state_from_number_to_string(int state);
-  static uint32_t from_ttl_to_eta(uint64_t ttl,
-                                  uint16_t state,
+  static uint32_t from_ttl_to_eta(uint64_t ttl, uint16_t state,
                                   uint16_t l4proto);
   static uint64_t hex_string_to_uint64(const std::string &str);
 };

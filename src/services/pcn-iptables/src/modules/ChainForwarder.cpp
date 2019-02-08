@@ -30,8 +30,7 @@ Iptables::ChainForwarder::ChainForwarder(const int &index, Iptables &outer,
 
 Iptables::ChainForwarder::~ChainForwarder() {}
 
-std::string Iptables::ChainForwarder::defaultActionString(
-    ChainNameEnum chain) {
+std::string Iptables::ChainForwarder::defaultActionString(ChainNameEnum chain) {
   return "";
 }
 

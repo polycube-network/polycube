@@ -89,8 +89,8 @@ uint64_t Iptables::ActionLookup::getPktsCount(int rule_number) {
     std::lock_guard<std::mutex> guard(program_mutex_);
     uint64_t pkts = 0;
 
-    auto pkts_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto pkts_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = pkts_table.get(rule_number);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -111,8 +111,8 @@ uint64_t Iptables::ActionLookup::getBytesCount(int ruleNumber) {
 
   try {
     std::lock_guard<std::mutex> guard(program_mutex_);
-    auto bytes_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto bytes_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = bytes_table.get(ruleNumber);
     uint64_t bytes = 0;
     return std::accumulate(values.begin(), values.end(), bytes);

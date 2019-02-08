@@ -19,20 +19,20 @@
 #include <linux/if_ether.h>
 #include <functional>
 #include <map>
+#include <mutex>
+#include <random>
 #include <string>
 #include <thread>
 #include <utility>
 #include <vector>
-#include <random>
-#include <mutex>
 
 #include "extiface_info.h"
 
 #include <netlink/netlink.h>
-#include <netlink/socket.h>
-#include <netlink/route/link.h>
 #include <netlink/route/addr.h>
+#include <netlink/route/link.h>
 #include <netlink/route/qdisc.h>
+#include <netlink/socket.h>
 
 #include <spdlog/spdlog.h>
 
@@ -61,8 +61,10 @@ class Netlink {
   Netlink(Netlink const &) = delete;
   void operator=(Netlink const &) = delete;
 
-  void attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode = ATTACH_MODE::INGRESS);
-  void detach_from_tc(const std::string &iface, ATTACH_MODE mode = ATTACH_MODE::INGRESS);
+  void attach_to_tc(const std::string &iface, int fd,
+                    ATTACH_MODE mode = ATTACH_MODE::INGRESS);
+  void detach_from_tc(const std::string &iface,
+                      ATTACH_MODE mode = ATTACH_MODE::INGRESS);
 
   void attach_to_xdp(const std::string &iface, int fd, int attach_flags);
   void detach_from_xdp(const std::string &iface, int attach_flags);
@@ -74,7 +76,8 @@ class Netlink {
   template <typename Observer>
   int registerObserver(const Event &event, Observer &&observer) {
     std::lock_guard<std::mutex> lock(notify_mutex);
-    //auto it = observers_[event].insert(observers_.end(), std::forward<Observer>(observer));
+    // auto it = observers_[event].insert(observers_.end(),
+    // std::forward<Observer>(observer));
     int random_key = uniform_distribution_(engine_);
     observers_[event][random_key] = std::forward<Observer>(observer);
     return random_key;
@@ -82,7 +85,8 @@ class Netlink {
 
   void unregisterObserver(const Event &event, int observer_index) {
     std::lock_guard<std::mutex> lock(notify_mutex);
-    if(observers_.count(event) > 0 && observers_[event].count(observer_index) > 0) {
+    if (observers_.count(event) > 0 &&
+        observers_[event].count(observer_index) > 0) {
       observers_[event].erase(observer_index);
     }
   }
@@ -107,9 +111,10 @@ class Netlink {
 
   class NetlinkNotification;
   std::unique_ptr<NetlinkNotification> notification_;
-  std::map<Event, std::map<int, std::function<void(int, const std::string &)>>> observers_;
+  std::map<Event, std::map<int, std::function<void(int, const std::string &)>>>
+      observers_;
   std::uniform_int_distribution<int> uniform_distribution_;
-  std::mt19937 engine_; // Mersenne twister MT19937
+  std::mt19937 engine_;  // Mersenne twister MT19937
 };
 
 }  // namespace polycubed

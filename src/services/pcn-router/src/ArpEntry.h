@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/ArpEntryInterface.h"
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
-
 
 class Router;
 
@@ -34,13 +31,16 @@ struct arp_entry {
 } __attribute__((packed));
 
 class ArpEntry : public ArpEntryInterface {
-public:
+ public:
   ArpEntry(Router &parent, const ArpEntryJsonObject &conf);
-  ArpEntry(Router &parent, const std::string &mac, const std::string &ip, const std::string &interface);
+  ArpEntry(Router &parent, const std::string &mac, const std::string &ip,
+           const std::string &interface);
   virtual ~ArpEntry();
 
-  static void create(Router &parent, const std::string &address, const ArpEntryJsonObject &conf);
-  static std::shared_ptr<ArpEntry> getEntry(Router &parent, const std::string &address);
+  static void create(Router &parent, const std::string &address,
+                     const ArpEntryJsonObject &conf);
+  static std::shared_ptr<ArpEntry> getEntry(Router &parent,
+                                            const std::string &address);
   static void removeEntry(Router &parent, const std::string &address);
   static std::vector<std::shared_ptr<ArpEntry>> get(Router &parent);
   static void remove(Router &parent);
@@ -66,11 +66,10 @@ public:
   /// </summary>
   std::string getAddress() override;
 
-private:
+ private:
   Router &parent_;
 
   std::string mac_;
   std::string ip_;
   std::string interface_;
 };
-

@@ -16,21 +16,21 @@
 
 #pragma once
 
-#include "stp/stp.h"
+#include <algorithm>
 #include <mutex>
 #include <random>
 #include <set>
 #include <thread>
 #include <vector>
-#include <algorithm>
+#include "stp/stp.h"
 
 #include "polycube/services/cube.h"
 #include "polycube/services/port.h"
 #include "polycube/services/utils.h"
 
-#include <tins/tins.h>
-#include <tins/ethernetII.h>
 #include <tins/dot1q.h>
+#include <tins/ethernetII.h>
+#include <tins/tins.h>
 
 #include <spdlog/spdlog.h>
 
@@ -52,7 +52,8 @@ class BridgeSTP {
   void update_ports_state();
   void update_fwd_table();
 
-  bool port_should_forward(int port_id); // should this port forward packets for this vlan?
+  bool port_should_forward(
+      int port_id);  // should this port forward packets for this vlan?
 
   /* STP management functions */
   void set_priority(uint16_t priority);
@@ -65,7 +66,7 @@ class BridgeSTP {
   std::string get_address() const;
   std::string get_designated_root() const;
   bool is_root_bridge() const;
-  int get_root_path_cost() const ;
+  int get_root_path_cost() const;
   int get_hello_time() const;
   int get_max_age() const;
   int get_forward_delay() const;

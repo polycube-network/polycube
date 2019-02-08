@@ -127,47 +127,47 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->dstPort = udp->dest;
   }
 
-  key=0;
+  key = 0;
   struct elements *result;
 
-  if (md->in_port == _INGRESSPORT){
-    #if _NR_ELEMENTS_INGRESS > 0
+  if (md->in_port == _INGRESSPORT) {
+#if _NR_ELEMENTS_INGRESS > 0
     result = sharedEleIngress.lookup(&key);
-    if(result == NULL){
-      //Not possible
+    if (result == NULL) {
+      // Not possible
       return RX_DROP;
     }
-    #if _NR_ELEMENTS_INGRESS == 1
-          (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
-    #else
-    #pragma unroll
-          for (int i = 0; i < _NR_ELEMENTS_INGRESS; ++i) {
-            /*This is the first module, it initializes the percpu*/
-            (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
-          }
+#if _NR_ELEMENTS_INGRESS == 1
+    (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
+#else
+#pragma unroll
+    for (int i = 0; i < _NR_ELEMENTS_INGRESS; ++i) {
+      /*This is the first module, it initializes the percpu*/
+      (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
+    }
 
-    #endif
-    #endif
+#endif
+#endif
   }
 
-  if (md->in_port == _EGRESSPORT){
-    #if _NR_ELEMENTS_EGRESS > 0
+  if (md->in_port == _EGRESSPORT) {
+#if _NR_ELEMENTS_EGRESS > 0
     result = sharedEleEgress.lookup(&key);
-    if(result == NULL){
-      //Not possible
+    if (result == NULL) {
+      // Not possible
       return RX_DROP;
     }
-    #if _NR_ELEMENTS_EGRESS == 1
-          (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
-    #else
-    #pragma unroll
-          for (int i = 0; i < _NR_ELEMENTS_EGRESS; ++i) {
-            /*This is the first module, it initializes the percpu*/
-            (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
-          }
+#if _NR_ELEMENTS_EGRESS == 1
+    (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
+#else
+#pragma unroll
+    for (int i = 0; i < _NR_ELEMENTS_EGRESS; ++i) {
+      /*This is the first module, it initializes the percpu*/
+      (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
+    }
 
-    #endif
-    #endif
+#endif
+#endif
   }
 
   call_ingress_program(ctx, _NEXT_HOP);

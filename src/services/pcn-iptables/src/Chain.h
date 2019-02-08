@@ -107,33 +107,33 @@ class Chain : public ChainInterface {
 
   void updateChain();
   static bool ipFromRulesToMap(
-          const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool transportProtoFromRulesToMap(
-          std::map<int, std::vector<uint64_t>> &protocols,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::map<int, std::vector<uint64_t>> &protocols,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool portFromRulesToMap(
-          const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool interfaceFromRulesToMap(
-          const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &interfaces,
-          const std::vector<std::shared_ptr<ChainRule>> &rules,
-          Iptables& iptables);
+      const uint8_t &type,
+      std::map<uint16_t, std::vector<uint64_t>> &interfaces,
+      const std::vector<std::shared_ptr<ChainRule>> &rules, Iptables &iptables);
 
   static bool flagsFromRulesToMap(
-          std::vector<std::vector<uint64_t>> &flags,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::vector<std::vector<uint64_t>> &flags,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool conntrackFromRulesToMap(
-          std::map<uint8_t, std::vector<uint64_t>> &statusMap,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::map<uint8_t, std::vector<uint64_t>> &statusMap,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static void horusFromRulesToMap(
-          std::map<struct HorusRule, struct HorusValue> &horus,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::map<struct HorusRule, struct HorusValue> &horus,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static void fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
                                       struct HorusRule &key,

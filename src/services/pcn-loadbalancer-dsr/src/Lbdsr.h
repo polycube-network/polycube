@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/LbdsrInterface.h"
 
@@ -30,7 +28,6 @@
 #include "Frontend.h"
 #include "Ports.h"
 
-
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 
@@ -38,12 +35,15 @@ class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
   friend class Ports;
   friend class Frontend;
   friend class Backend;
-public:
-  Lbdsr(const std::string name, const LbdsrJsonObject &conf, CubeType type = CubeType::TC);
+
+ public:
+  Lbdsr(const std::string name, const LbdsrJsonObject &conf,
+        CubeType type = CubeType::TC);
   virtual ~Lbdsr();
   std::string generate_code(bool first);
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const LbdsrJsonObject &conf) override;
   LbdsrJsonObject toJsonObject() override;
@@ -62,13 +62,15 @@ public:
   std::string getName() override;
 
   /// <summary>
-  /// Defines the algorithm which LB use to direct requests to the node of the pool (Random, RoundRobin, ..)
+  /// Defines the algorithm which LB use to direct requests to the node of the
+  /// pool (Random, RoundRobin, ..)
   /// </summary>
   std::string getAlgorithm() override;
   void setAlgorithm(const std::string &value) override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: INFO
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE). Default: INFO
   /// </summary>
   LbdsrLoglevelEnum getLoglevel() override;
   void setLoglevel(const LbdsrLoglevelEnum &value) override;
@@ -90,7 +92,8 @@ public:
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
@@ -102,21 +105,21 @@ public:
   void replaceBackend(const BackendJsonObject &conf) override;
   void delBackend() override;
 
+  void replaceAll(std::string &str, const std::string &from,
+                  const std::string &to);
+  std::string getCode(bool first);
+  bool reloadCode();
 
-void replaceAll(std::string &str, const std::string &from, const std::string &to);
-std::string getCode(bool first);
-bool reloadCode();
+  void rmPort(std::string portName);
+  void setFrontendPort(std::string portName);
+  void setBackendPort(std::string portName);
+  void rmFrontendPort(std::string portName);
+  void rmBackendPort(std::string portName);
 
-void rmPort(std::string portName);
-void setFrontendPort(std::string portName);
-void setBackendPort(std::string portName);
-void rmFrontendPort(std::string portName);
-void rmBackendPort(std::string portName);
+  void setVipHexbe(std::string &value);
+  void setMacHexbe(std::string &value);
 
-void setVipHexbe(std::string &value);
-void setMacHexbe(std::string &value);
-
-private:
+ private:
   std::shared_ptr<Backend> backend_ = nullptr;
   std::shared_ptr<Frontend> frontend_ = nullptr;
   std::string algorithm_;

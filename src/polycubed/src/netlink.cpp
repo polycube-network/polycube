@@ -16,9 +16,9 @@
 
 #include "netlink.h"
 
-#include <iostream>
 #include <libbpf.h>
 #include <linux/if.h>
+#include <iostream>
 
 #include "exceptions.h"
 
@@ -58,13 +58,13 @@ class Netlink::NetlinkNotification {
 
     while (running) {
       do {
-	tv.tv_sec = NETLINK_TIMEOUT;
-	tv.tv_usec = 0;
+        tv.tv_sec = NETLINK_TIMEOUT;
+        tv.tv_usec = 0;
         FD_ZERO(&readset);
         FD_SET(socket_fd, &readset);
-	//The struct tv is decremented every time the select terminates.
-	//If the value is not updated, the next time select is called uses
-	//0 as timeout value, behaving as a non-blocking socket.
+        // The struct tv is decremented every time the select terminates.
+        // If the value is not updated, the next time select is called uses
+        // 0 as timeout value, behaving as a non-blocking socket.
         result = select(socket_fd + 1, &readset, NULL, NULL, &tv);
       } while (result < 0 && errno == EINTR && running);
 
@@ -106,7 +106,7 @@ class Netlink::NetlinkNotification {
       }
     }
 
-    parent->notify_all(0,"");
+    parent->notify_all(0, "");
 
     return NL_OK;
   }
@@ -259,7 +259,6 @@ void Netlink::detach_from_tc(const std::string &iface, ATTACH_MODE mode) {
     goto error;
   }
 
-
   // remove filter from the interface
   struct tcmsg t;
 
@@ -295,7 +294,6 @@ void Netlink::detach_from_tc(const std::string &iface, ATTACH_MODE mode) {
                   NLM_F_REQUEST);
   hdr->nlmsg_pid = 0;
   memcpy(nlmsg_data(hdr), &t, sizeof(t));
-
 
   nl_send_auto(sock, msg);
 
@@ -346,9 +344,7 @@ struct cb_data {
   struct rtnl_link *link;
 };
 
-static
-void addr_cb(struct nl_object *o, void *data_)
-{
+static void addr_cb(struct nl_object *o, void *data_) {
   auto logger = spdlog::get("polycubed");
 
   struct rtnl_addr *addr = (rtnl_addr *)o;
@@ -357,7 +353,7 @@ void addr_cb(struct nl_object *o, void *data_)
     return;
   }
 
-  struct cb_data *data = (struct cb_data *) data_;
+  struct cb_data *data = (struct cb_data *)data_;
   if (data == NULL) {
     logger->debug("ifaces is NULL %d");
     return;
@@ -365,7 +361,7 @@ void addr_cb(struct nl_object *o, void *data_)
 
   int cur_ifindex = rtnl_addr_get_ifindex(addr);
   int req_ifindex = rtnl_link_get_ifindex(data->link);
-  if(cur_ifindex != req_ifindex)
+  if (cur_ifindex != req_ifindex)
     return;
 
   const struct nl_addr *local = rtnl_addr_get_local(addr);
@@ -385,22 +381,21 @@ void addr_cb(struct nl_object *o, void *data_)
   data->ifaces->at(name).add_address(addr_s);
 }
 
-static
-void link_cb(struct nl_object *o, void *data_) {
+static void link_cb(struct nl_object *o, void *data_) {
   auto logger = spdlog::get("polycubed");
 
   struct rtnl_link *link = (rtnl_link *)o;
   if (link == NULL) {
-      logger->debug("link is NULL");
-      return;
+    logger->debug("link is NULL");
+    return;
   }
 
   unsigned flags = rtnl_link_get_flags(link);
 
   if (!(flags & IFF_UP) || (flags & IFF_LOOPBACK))
-      return;
+    return;
 
-  struct cb_data *data = (struct cb_data *) data_;
+  struct cb_data *data = (struct cb_data *)data_;
   if (data == NULL) {
     logger->debug("ifaces is NULL %d");
     return;
@@ -408,8 +403,8 @@ void link_cb(struct nl_object *o, void *data_) {
 
   std::string name(rtnl_link_get_name(link));
 
-  data->ifaces->insert(std::pair<std::string, ExtIfaceInfo>(name,
-        ExtIfaceInfo(name)));
+  data->ifaces->insert(
+      std::pair<std::string, ExtIfaceInfo>(name, ExtIfaceInfo(name)));
 
   data->link = link;
 
@@ -419,9 +414,11 @@ void link_cb(struct nl_object *o, void *data_) {
 std::map<std::string, ExtIfaceInfo> Netlink::get_available_ifaces() {
   std::map<std::string, ExtIfaceInfo> ifaces;
 
-  ifaces.emplace(":host",
-                 ExtIfaceInfo(":host",
-                 "pseudo interface used to connect to the host network stack"));
+  ifaces.emplace(
+      ":host",
+      ExtIfaceInfo(
+          ":host",
+          "pseudo interface used to connect to the host network stack"));
 
   int err, ifindex;
   struct rtnl_link *link;
@@ -448,8 +445,7 @@ std::map<std::string, ExtIfaceInfo> Netlink::get_available_ifaces() {
   }
 
   struct cb_data d {
-    .ifaces = &ifaces,
-    .addr_cache = addr_cache,
+    .ifaces = &ifaces, .addr_cache = addr_cache,
   };
 
   nl_cache_foreach(link_cache, link_cb, &d);
@@ -472,32 +468,33 @@ void Netlink::notify_all(int ifindex, const std::string &iface) {
   notify(Netlink::Event::ALL, ifindex, iface);
 }
 
-void Netlink::attach_to_xdp(const std::string &iface, int fd, int attach_flags){
-    logger->debug("attaching XDP program to iface {0}", iface);
+void Netlink::attach_to_xdp(const std::string &iface, int fd,
+                            int attach_flags) {
+  logger->debug("attaching XDP program to iface {0}", iface);
 
-    if(bpf_attach_xdp(iface.c_str(), fd, attach_flags) < 0){
-        logger->error("failed to attach XDP program to port: {0}", iface);
-        throw BPFError("Failed to attach XDP program to port: " + iface);
-    }
+  if (bpf_attach_xdp(iface.c_str(), fd, attach_flags) < 0) {
+    logger->error("failed to attach XDP program to port: {0}", iface);
+    throw BPFError("Failed to attach XDP program to port: " + iface);
+  }
 
-    logger->debug("XDP program attached to port: {0}", iface);
+  logger->debug("XDP program attached to port: {0}", iface);
 }
 
 void Netlink::detach_from_xdp(const std::string &iface, int attach_flags) {
-    logger->debug("detaching XDP program from port {0}", iface);
+  logger->debug("detaching XDP program from port {0}", iface);
 
-    // it is not that bad, probably the link was removed before, so no problem.
-    if (get_iface_index(iface) == -1) {
-      logger->debug("detach_from_xdp: port {0} does not exist", iface);
-      return;
-    }
+  // it is not that bad, probably the link was removed before, so no problem.
+  if (get_iface_index(iface) == -1) {
+    logger->debug("detach_from_xdp: port {0} does not exist", iface);
+    return;
+  }
 
-    if(bpf_attach_xdp(iface.c_str(), -1, attach_flags) < 0){
-        logger->error("failed to detach XDP program from port: {0}", iface);
-        throw BPFError("Failed to detach XDP program from port: " + iface);
-    }
+  if (bpf_attach_xdp(iface.c_str(), -1, attach_flags) < 0) {
+    logger->error("failed to detach XDP program from port: {0}", iface);
+    throw BPFError("Failed to detach XDP program from port: " + iface);
+  }
 
-    logger->debug("XDP program detached from port: {0}", iface);
+  logger->debug("XDP program detached from port: {0}", iface);
 }
 
 }  // namespace polycubed
