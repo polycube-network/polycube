@@ -5,6 +5,8 @@ project(polycube)
 set (CMAKE_CXX_STANDARD 11)
 
 include(cmake/GetGitRevisionDescription.cmake)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/nlohmann_json")
 
 # TODO: remove --tags in following commands once we
 # have the first annotated tag version
