@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/RulePortForwardingInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -31,6 +28,7 @@ using namespace io::swagger::server::model;
 
 class RulePortForwarding : public RulePortForwardingInterface {
   friend class RulePortForwardingEntry;
+
  public:
   RulePortForwarding(Rule &parent);
   RulePortForwarding(Rule &parent, const RulePortForwardingJsonObject &conf);
@@ -46,17 +44,22 @@ class RulePortForwarding : public RulePortForwardingInterface {
   /// <summary>
   /// List of port forwarding rules
   /// </summary>
-  std::shared_ptr<RulePortForwardingEntry> getEntry(const uint32_t &id) override;
+  std::shared_ptr<RulePortForwardingEntry> getEntry(
+      const uint32_t &id) override;
   std::vector<std::shared_ptr<RulePortForwardingEntry>> getEntryList() override;
-  void addEntry(const uint32_t &id, const RulePortForwardingEntryJsonObject &conf) override;
-  void addEntryList(const std::vector<RulePortForwardingEntryJsonObject> &conf) override;
-  void replaceEntry(const uint32_t &id, const RulePortForwardingEntryJsonObject &conf) override;
+  void addEntry(const uint32_t &id,
+                const RulePortForwardingEntryJsonObject &conf) override;
+  void addEntryList(
+      const std::vector<RulePortForwardingEntryJsonObject> &conf) override;
+  void replaceEntry(const uint32_t &id,
+                    const RulePortForwardingEntryJsonObject &conf) override;
   void delEntry(const uint32_t &id) override;
   void delEntryList() override;
 
-  RulePortForwardingAppendOutputJsonObject append(RulePortForwardingAppendInputJsonObject input) override;
-private:
-  Rule   &parent_;
+  RulePortForwardingAppendOutputJsonObject append(
+      RulePortForwardingAppendInputJsonObject input) override;
+
+ private:
+  Rule &parent_;
   std::vector<std::shared_ptr<RulePortForwardingEntry>> rules_;
 };
-

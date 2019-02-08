@@ -34,6 +34,7 @@ class ExtIfaceXDP;
 
 class ExtIfaceTC : public Node {
   friend class ExtIfaceXDP;
+
  public:
   ExtIfaceTC(const std::string &iface, const PortTC &port);
   virtual ~ExtIfaceTC();
@@ -54,8 +55,8 @@ class ExtIfaceTC : public Node {
   ebpf::BPF tx_;
   ebpf::BPF egress_;
   std::string iface_;
-  const PortTC &port_;   // where is the iface_ connected to?
-  int fd_;             // fd_ of the tx_ program
+  const PortTC &port_;  // where is the iface_ connected to?
+  int fd_;              // fd_ of the tx_ program
 
   static const std::string RX_CODE;
   static const std::string TX_CODE;

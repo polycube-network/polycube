@@ -62,8 +62,8 @@ std::string Firewall::L4ProtocolLookup::getCode() {
   return noMacroCode;
 }
 
-bool Firewall::L4ProtocolLookup::updateTableValue(uint8_t proto,
-                                                  const std::vector<uint64_t> &value) {
+bool Firewall::L4ProtocolLookup::updateTableValue(
+    uint8_t proto, const std::vector<uint64_t> &value) {
   std::string tableName = "transportProto";
 
   if (direction == ChainNameEnum::INGRESS)
@@ -83,7 +83,6 @@ bool Firewall::L4ProtocolLookup::updateTableValue(uint8_t proto,
 
 void Firewall::L4ProtocolLookup::updateMap(
     std::map<int, std::vector<uint64_t>> &protocols) {
-
   for (auto ele : protocols) {
     updateTableValue(ele.first, ele.second);
   }

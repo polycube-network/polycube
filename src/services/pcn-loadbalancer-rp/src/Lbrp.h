@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/LbrpInterface.h"
 
@@ -31,7 +29,6 @@
 #include "SrcIpRewrite.h"
 #include "hash_tuple.h"
 
-
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 
@@ -39,12 +36,15 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   friend class Ports;
   friend class Service;
   friend class SrcIpRewrite;
-public:
-  Lbrp(const std::string name, const LbrpJsonObject &conf, CubeType type = CubeType::TC);
+
+ public:
+  Lbrp(const std::string name, const LbrpJsonObject &conf,
+       CubeType type = CubeType::TC);
   virtual ~Lbrp();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const LbrpJsonObject &conf) override;
   LbrpJsonObject toJsonObject() override;
@@ -57,16 +57,24 @@ public:
   /// <summary>
   /// Services (i.e., virtual ip:port) exported to the client
   /// </summary>
-  std::shared_ptr<Service> getService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) override;
+  std::shared_ptr<Service> getService(const std::string &vip,
+                                      const uint16_t &vport,
+                                      const ServiceProtoEnum &proto) override;
   std::vector<std::shared_ptr<Service>> getServiceList() override;
-  void addService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &conf) override;
+  void addService(const std::string &vip, const uint16_t &vport,
+                  const ServiceProtoEnum &proto,
+                  const ServiceJsonObject &conf) override;
   void addServiceList(const std::vector<ServiceJsonObject> &conf) override;
-  void replaceService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &conf) override;
-  void delService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) override;
+  void replaceService(const std::string &vip, const uint16_t &vport,
+                      const ServiceProtoEnum &proto,
+                      const ServiceJsonObject &conf) override;
+  void delService(const std::string &vip, const uint16_t &vport,
+                  const ServiceProtoEnum &proto) override;
   void delServiceList() override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: OFF
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE). Default: OFF
   /// </summary>
   LbrpLoglevelEnum getLoglevel() override;
   void setLoglevel(const LbrpLoglevelEnum &value) override;
@@ -91,7 +99,8 @@ public:
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
@@ -104,8 +113,7 @@ public:
   std::shared_ptr<Ports> getFrontendPort();
   std::shared_ptr<Ports> getBackendPort();
 
-private:
+ private:
   std::unordered_map<Service::ServiceKey, Service> service_map_;
   std::shared_ptr<SrcIpRewrite> src_ip_rewrite_;
 };
-

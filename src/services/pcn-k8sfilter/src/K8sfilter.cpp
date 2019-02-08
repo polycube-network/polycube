@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "K8sfilter.h"
 #include "K8sfilter_dp.h"
 
 #include <cinttypes>
 
-K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf, CubeType type)
-  : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf,
+                     CubeType type)
+    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8sfilter] [%n] [%l] %v");
   logger()->info("Creating K8sfilter instance");
 
@@ -32,35 +31,30 @@ K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf, Cu
   setNodeportRange(conf.getNodeportRange());
 }
 
-
-K8sfilter::~K8sfilter() { }
+K8sfilter::~K8sfilter() {}
 
 void K8sfilter::update(const K8sfilterJsonObject &conf) {
-  // This method updates all the object/parameter in K8sfilter object specified in the conf JsonObject.
+  // This method updates all the object/parameter in K8sfilter object specified
+  // in the conf JsonObject.
   // You can modify this implementation.
 
-
-
   if (conf.loglevelIsSet()) {
-
     setLoglevel(conf.getLoglevel());
   }
   if (conf.portsIsSet()) {
-    for(auto &i : conf.getPorts()){
+    for (auto &i : conf.getPorts()) {
       auto name = i.getName();
       auto m = getPorts(name);
       m->update(i);
     }
   }
   if (conf.nodeportRangeIsSet()) {
-
     setNodeportRange(conf.getNodeportRange());
   }
 }
 
-K8sfilterJsonObject K8sfilter::toJsonObject(){
+K8sfilterJsonObject K8sfilter::toJsonObject() {
   K8sfilterJsonObject conf;
-
 
   conf.setName(getName());
 
@@ -70,7 +64,7 @@ K8sfilterJsonObject K8sfilter::toJsonObject(){
 
   conf.setLoglevel(getLoglevel());
 
-  for(auto &i : getPortsList()){
+  for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
 
@@ -79,23 +73,24 @@ K8sfilterJsonObject K8sfilter::toJsonObject(){
   return conf;
 }
 
-std::string K8sfilter::generate_code(){
+std::string K8sfilter::generate_code() {
   return k8sfilter_code;
 }
 
-std::vector<std::string> K8sfilter::generate_code_vector(){
+std::vector<std::string> K8sfilter::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void K8sfilter::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet){
+void K8sfilter::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                          const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
 
-std::string K8sfilter::getNodeportRange(){
+std::string K8sfilter::getNodeportRange() {
   return nodeport_range_;
 }
 
-void K8sfilter::setNodeportRange(const std::string &value){
+void K8sfilter::setNodeportRange(const std::string &value) {
   uint16_t low;
   uint16_t high;
   int ret = std::sscanf(value.c_str(), "%" SCNu16 "-%" SCNu16, &low, &high);
@@ -122,21 +117,23 @@ void K8sfilter::reloadConfig() {
   uint16_t external_port = 0;
   uint16_t internal_port = 0;
 
-  for(auto &it : get_ports()) {
-    switch(it->getType()) {
-      case PortsTypeEnum::EXTERNAL:
-        external_port = it->index();
-        break;
-      case PortsTypeEnum::INTERNAL:
-        internal_port = it->index();
-        break;
+  for (auto &it : get_ports()) {
+    switch (it->getType()) {
+    case PortsTypeEnum::EXTERNAL:
+      external_port = it->index();
+      break;
+    case PortsTypeEnum::INTERNAL:
+      internal_port = it->index();
+      break;
     }
   }
 
   flags += "#define EXTERNAL_PORT " + std::to_string(external_port) + "\n";
   flags += "#define INTERNAL_PORT " + std::to_string(internal_port) + "\n";
-  flags += "#define NODEPORT_RANGE_LOW " + std::to_string(nodeport_range_low_) + "\n";
-  flags += "#define NODEPORT_RANGE_HIGH " + std::to_string(nodeport_range_high_) + "\n";
+  flags += "#define NODEPORT_RANGE_LOW " + std::to_string(nodeport_range_low_) +
+           "\n";
+  flags += "#define NODEPORT_RANGE_HIGH " +
+           std::to_string(nodeport_range_high_) + "\n";
 
   logger()->debug("Reloading code with flags port: {}", flags);
 

@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/RuleDnatEntryInterface.h"
 
-
 #include <spdlog/spdlog.h>
-
 
 class RuleDnat;
 
@@ -33,8 +29,10 @@ class RuleDnatEntry : public RuleDnatEntryInterface {
   RuleDnatEntry(RuleDnat &parent, const RuleDnatEntryJsonObject &conf);
   virtual ~RuleDnatEntry();
 
-  static void create(RuleDnat &parent, const uint32_t &id, const RuleDnatEntryJsonObject &conf);
-  static std::shared_ptr<RuleDnatEntry> getEntry(RuleDnat &parent, const uint32_t &id);
+  static void create(RuleDnat &parent, const uint32_t &id,
+                     const RuleDnatEntryJsonObject &conf);
+  static std::shared_ptr<RuleDnatEntry> getEntry(RuleDnat &parent,
+                                                 const uint32_t &id);
   static void removeEntry(RuleDnat &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<RuleDnatEntry>> get(RuleDnat &parent);
   static void remove(RuleDnat &parent);
@@ -63,10 +61,9 @@ class RuleDnatEntry : public RuleDnatEntryInterface {
   void injectToDatapath();
   void removeFromDatapath();
 
-private:
-  RuleDnat   &parent_;
+ private:
+  RuleDnat &parent_;
   uint32_t id;
   uint32_t internalIp;
   uint32_t externalIp;
 };
-

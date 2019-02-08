@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Nat.h"
 #include "Nat_dp.h"
 
 Nat::Nat(const std::string name, const NatJsonObject &conf, CubeType type)
-  : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Nat] [%n] [%l] %v");
   logger()->info("Creating Nat instance");
 
@@ -31,17 +29,17 @@ Nat::Nat(const std::string name, const NatJsonObject &conf, CubeType type)
   addNattingTableList(conf.getNattingTable());
 }
 
-
-Nat::~Nat() { }
+Nat::~Nat() {}
 
 void Nat::update(const NatJsonObject &conf) {
-  // This method updates all the object/parameter in Nat object specified in the conf JsonObject.
+  // This method updates all the object/parameter in Nat object specified in the
+  // conf JsonObject.
   // You can modify this implementation.
   if (conf.loglevelIsSet()) {
     setLoglevel(conf.getLoglevel());
   }
   if (conf.portsIsSet()) {
-    for(auto &i : conf.getPorts()){
+    for (auto &i : conf.getPorts()) {
       auto name = i.getName();
       auto m = getPorts(name);
       m->update(i);
@@ -52,53 +50,63 @@ void Nat::update(const NatJsonObject &conf) {
     m->update(conf.getRule());
   }
   if (conf.nattingTableIsSet()) {
-    for(auto &i : conf.getNattingTable()){
+    for (auto &i : conf.getNattingTable()) {
       auto internalSrc = i.getInternalSrc();
       auto internalDst = i.getInternalDst();
       auto internalSport = i.getInternalSport();
       auto internalDport = i.getInternalDport();
       auto proto = i.getProto();
-      auto m = getNattingTable(internalSrc, internalDst, internalSport, internalDport, proto);
+      auto m = getNattingTable(internalSrc, internalDst, internalSport,
+                               internalDport, proto);
       m->update(i);
     }
   }
 }
 
-NatJsonObject Nat::toJsonObject(){
+NatJsonObject Nat::toJsonObject() {
   NatJsonObject conf;
   conf.setName(getName());
   conf.setUuid(getUuid());
   conf.setType(getType());
   conf.setLoglevel(getLoglevel());
-  for(auto &i : getPortsList()){
+  for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
   conf.setRule(getRule()->toJsonObject());
 
-  for(auto &i : getNattingTableList()){
+  for (auto &i : getNattingTableList()) {
     conf.addNattingTable(i->toJsonObject());
   }
   return conf;
 }
 
-std::string Nat::generate_code(){
+std::string Nat::generate_code() {
   std::ostringstream defines;
 
-  defines << "#define INTERNAL_PORT (" << internal_port_index_ << ")" << std::endl;
-  defines << "#define EXTERNAL_PORT (" << external_port_index_ << ")" << std::endl;
+  defines << "#define INTERNAL_PORT (" << internal_port_index_ << ")"
+          << std::endl;
+  defines << "#define EXTERNAL_PORT (" << external_port_index_ << ")"
+          << std::endl;
 
-  defines << "#define NAT_SRC (" << (int)NattingTableOriginatingRuleEnum::SNAT << ")" << std::endl;
-  defines << "#define NAT_DST (" << (int)NattingTableOriginatingRuleEnum::DNAT << ")" << std::endl;
-  defines << "#define NAT_MSQ (" << (int)NattingTableOriginatingRuleEnum::MASQUERADE << ")" << std::endl;
-  defines << "#define NAT_PFW (" << (int)NattingTableOriginatingRuleEnum::PORTFORWARDING << ")" << std::endl;
+  defines << "#define NAT_SRC (" << (int)NattingTableOriginatingRuleEnum::SNAT
+          << ")" << std::endl;
+  defines << "#define NAT_DST (" << (int)NattingTableOriginatingRuleEnum::DNAT
+          << ")" << std::endl;
+  defines << "#define NAT_MSQ ("
+          << (int)NattingTableOriginatingRuleEnum::MASQUERADE << ")"
+          << std::endl;
+  defines << "#define NAT_PFW ("
+          << (int)NattingTableOriginatingRuleEnum::PORTFORWARDING << ")"
+          << std::endl;
   return defines.str() + nat_code;
 }
 
-std::vector<std::string> Nat::generate_code_vector(){
+std::vector<std::string> Nat::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Nat::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet){
+void Nat::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                    const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
 
@@ -107,8 +115,8 @@ void Nat::reloadCode() {
 }
 
 std::shared_ptr<Ports> Nat::getInternalPort() {
-  for(auto& it : get_ports()) {
-    if(it->getType() == PortsTypeEnum::INTERNAL){
+  for (auto &it : get_ports()) {
+    if (it->getType() == PortsTypeEnum::INTERNAL) {
       return it;
     }
   }
@@ -116,8 +124,8 @@ std::shared_ptr<Ports> Nat::getInternalPort() {
 }
 
 std::shared_ptr<Ports> Nat::getExternalPort() {
-  for(auto& it : get_ports()) {
-    if(it->getType() == PortsTypeEnum::EXTERNAL){
+  for (auto &it : get_ports()) {
+    if (it->getType() == PortsTypeEnum::EXTERNAL) {
       return it;
     }
   }
@@ -130,15 +138,15 @@ std::string Nat::getExternalIpString() {
 
 std::string Nat::proto_from_int_to_string(const uint8_t proto) {
   switch (proto) {
-    case IPPROTO_ICMP:
-      return "icmp";
-    case IPPROTO_TCP:
-      return "tcp";
-    case IPPROTO_UDP:
-      return "udp";
-    default:
-      // Never happens
-      return "unknown";
+  case IPPROTO_ICMP:
+    return "icmp";
+  case IPPROTO_TCP:
+    return "tcp";
+  case IPPROTO_UDP:
+    return "udp";
+  default:
+    // Never happens
+    return "unknown";
   }
 }
 

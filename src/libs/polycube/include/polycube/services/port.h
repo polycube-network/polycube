@@ -25,7 +25,7 @@
 #include "polycube/services/port_iface.h"
 
 namespace Tins {
-  class EthernetII;
+class EthernetII;
 }
 
 using Tins::EthernetII;
@@ -39,7 +39,8 @@ class Port {
  public:
   Port(std::shared_ptr<PortIface> port);
   ~Port();
-  void send_packet_out(EthernetII &packet, Direction direction = Direction::EGRESS);
+  void send_packet_out(EthernetII &packet,
+                       Direction direction = Direction::EGRESS);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);

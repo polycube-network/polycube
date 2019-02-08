@@ -16,14 +16,15 @@
 
 #include "log.h"
 
-#include <memory>
 #include <stdarg.h>
 #include <stdio.h>
+#include <memory>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/spdlog.h>
 
-static std::shared_ptr<spdlog::logger> l = spdlog::get("pcn-bridge") == nullptr
+static std::shared_ptr<spdlog::logger> l =
+    spdlog::get("pcn-bridge") == nullptr
         ? spdlog::stdout_logger_mt("pcn-bridge")
         : spdlog::get("pcn-bridge");
 

@@ -23,9 +23,8 @@
 
 using namespace polycube::service;
 
-Iptables::ConntrackTableUpdate::ConntrackTableUpdate(const int &index,
-                                                     Iptables &outer,
-                                                     const ProgramType program_type)
+Iptables::ConntrackTableUpdate::ConntrackTableUpdate(
+    const int &index, Iptables &outer, const ProgramType program_type)
     : Iptables::Program(iptables_code_conntracktableupdate, index,
                         (program_type == ProgramType::INGRESS)
                             ? ChainNameEnum::INVALID_INGRESS

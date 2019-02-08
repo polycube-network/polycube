@@ -32,7 +32,7 @@
 #define ROUTER_PORT_N 32
 #define ARP_TABLE_DIM 32
 #define SECONDARY_ADDRESS 5
-#define TYPE_NOLOCALINTERFACE 0 //used to compare the 'type' field in the rt_v
+#define TYPE_NOLOCALINTERFACE 0  // used to compare the 'type' field in the rt_v
 #define TYPE_LOCALINTERFACE 1
 #define IP_CSUM_OFFSET (sizeof(struct eth_hdr) + offsetof(struct iphdr, check))
 #define ICMP_CSUM_OFFSET                           \
@@ -107,8 +107,9 @@ struct arp_hdr {
 * ip in the router and generates an echo reply
 */
 static inline int send_packet_for_router_to_slowpath(struct CTXTYPE *ctx,
-                                  struct pkt_metadata *md, struct eth_hdr *eth,
-                                  struct iphdr *ip) {
+                                                     struct pkt_metadata *md,
+                                                     struct eth_hdr *eth,
+                                                     struct iphdr *ip) {
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   struct icmphdr *icmp = data + sizeof(*eth) + sizeof(*ip);
@@ -119,8 +120,7 @@ static inline int send_packet_for_router_to_slowpath(struct CTXTYPE *ctx,
   mdata[1] = ip->daddr;
   mdata[2] = ip->protocol;
   return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_PKT_FOR_ROUTER,
-                                               mdata);
-
+                                          mdata);
 }
 static inline int send_icmp_ttl_time_exceeded(struct CTXTYPE *ctx,
                                               struct pkt_metadata *md,
@@ -132,11 +132,10 @@ static inline int send_icmp_ttl_time_exceeded(struct CTXTYPE *ctx,
   mdata[0] = ip_port;
   // Send packet to slowpath
   return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_TTL_EXCEEDED,
-                                             mdata);
+                                          mdata);
 }
-static inline int arp_lookup_miss(struct CTXTYPE *ctx,
-                                  struct pkt_metadata *md, __be32 dst_ip,
-                                  u16 out_port, __be32 ip_port) {
+static inline int arp_lookup_miss(struct CTXTYPE *ctx, struct pkt_metadata *md,
+                                  __be32 dst_ip, u16 out_port, __be32 ip_port) {
   pcn_log(ctx, LOG_DEBUG, "arp lookup failed. Send to controller");
 
   // Set metadata and send packet to slowpath
@@ -145,22 +144,22 @@ static inline int arp_lookup_miss(struct CTXTYPE *ctx,
   mdata[1] = out_port;
   mdata[2] = ip_port;
   return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_LOOKUP_MISS,
-                                             mdata);
+                                          mdata);
 }
 static inline __u16 checksum(unsigned short *buf, int bufsz) {
-    unsigned long sum = 0;
+  unsigned long sum = 0;
 
-    while (bufsz > 1) {
-        sum += *buf;
-        buf++;
-        bufsz -= 2;
-    }
-    if (bufsz == 1) {
-        sum += *(unsigned char *)buf;
-    }
-    sum = (sum & 0xffff) + (sum >> 16);
-    //sum = (sum & 0xffff) + (sum >> 16);
-    return ~sum;
+  while (bufsz > 1) {
+    sum += *buf;
+    buf++;
+    bufsz -= 2;
+  }
+  if (bufsz == 1) {
+    sum += *(unsigned char *)buf;
+  }
+  sum = (sum & 0xffff) + (sum >> 16);
+  // sum = (sum & 0xffff) + (sum >> 16);
+  return ~sum;
 }
 
 static inline int send_packet_to_output_interface(
@@ -181,22 +180,22 @@ static inline int send_packet_to_output_interface(
   pcn_log(ctx, LOG_TRACE, "in: %d out: %d REDIRECT", md->in_port, out_port);
 
   __be32 l3sum = 0;
-  //eth->dst = *mac_entry;
+  // eth->dst = *mac_entry;
   eth->dst = entry->mac;
   eth->src = mac_port;
   /* Decrement TTL and update checksum */
   __u32 new_ttl = ip->ttl - 1;
 
-  #ifdef POLYCUBE_XDP
-  ip->check=0;
+#ifdef POLYCUBE_XDP
+  ip->check = 0;
   ip->ttl = (__u8)new_ttl;
   ip->check = checksum((unsigned short *)ip, sizeof(struct iphdr));
-  #else
+#else
   __u32 old_ttl = ip->ttl;
   l3sum = bpf_csum_diff(&old_ttl, 4, &new_ttl, 4, l3sum);
   ip->ttl = (__u8)new_ttl;
   bpf_l3_csum_replace(ctx, IP_CSUM_OFFSET, 0, l3sum, 0);
-  #endif
+#endif
 
   return pcn_pkt_redirect(ctx, md, out_port);
 }
@@ -260,8 +259,7 @@ static inline int notify_arp_reply_to_slowpath(struct CTXTYPE *ctx,
   // notify the slowpath. New arp reply received.
   u32 mdata[3];
   mdata[0] = ip_;
-  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_REPLY,
-                                             mdata);
+  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_REPLY, mdata);
 }
 static inline int is_ether_mcast(__be64 mac_address) {
   return (mac_address & (__be64)MAC_MULTICAST_MASK);
@@ -273,11 +271,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   if (data + sizeof(*eth) > data_end)
     goto DROP;
 
-  pcn_log(ctx, LOG_TRACE, "in_port: %d, proto: 0x%x, mac_src: %M mac_dst: %M", md->in_port, bpf_htons(eth->proto), eth->src, eth->dst);
+  pcn_log(ctx, LOG_TRACE, "in_port: %d, proto: 0x%x, mac_src: %M mac_dst: %M",
+          md->in_port, bpf_htons(eth->proto), eth->src, eth->dst);
 
   struct r_port *in_port = router_port.lookup(&md->in_port);
   if (!in_port) {
-    pcn_log(ctx, LOG_ERR, "received packet from non valid port: %d", md->in_port);
+    pcn_log(ctx, LOG_ERR, "received packet from non valid port: %d",
+            md->in_port);
     goto DROP;
   }
 /*
@@ -286,7 +286,8 @@ unicast address of the router port.  If not, drop the packet.
 */
 #ifdef CHECK_MAC_DST
   if (eth->dst != in_port->mac && !is_ether_mcast(eth->dst)) {
-    pcn_log(ctx, LOG_DEBUG, "mac destination %M MISMATCH %M", eth->dst, in_port->mac);
+    pcn_log(ctx, LOG_DEBUG, "mac destination %M MISMATCH %M", eth->dst,
+            in_port->mac);
     goto DROP;
   }
 #endif
@@ -313,7 +314,7 @@ IP:;  // ipv4 packet
     goto DROP;
   }
   /* Check if the pkt destination is one local interface of the router */
-  if(rt_entry_p->type==TYPE_LOCALINTERFACE) {
+  if (rt_entry_p->type == TYPE_LOCALINTERFACE) {
     return send_packet_for_router_to_slowpath(ctx, md, eth, ip);
   }
   if (ip->ttl == 1) {

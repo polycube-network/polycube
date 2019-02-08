@@ -38,11 +38,13 @@ PortMode string_to_mode(const std::string &str) {
     throw std::runtime_error("Port mode is invalid");
 }
 
-
-Bridge::Bridge(const std::string &name, BridgeSchema &conf, CubeType type, const std::string &code)
+Bridge::Bridge(const std::string &name, BridgeSchema &conf, CubeType type,
+               const std::string &code)
     : aging_time_(300),
-    stp_enabled_(conf.stpenabledIsSet() ? conf.getStpenabled() : false),
-    Cube(name, {generate_code(conf.stpenabledIsSet() ? conf.getStpenabled() : false)}, {}, type, polycube::LogLevel::INFO) {
+      stp_enabled_(conf.stpenabledIsSet() ? conf.getStpenabled() : false),
+      Cube(name, {generate_code(conf.stpenabledIsSet() ? conf.getStpenabled()
+                                                       : false)},
+           {}, type, polycube::LogLevel::INFO) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [bridge] [%n] [%l] %v");
   conf.setUuid(get_uuid().str());
   conf.setAgingtime(aging_time_);
@@ -52,11 +54,12 @@ Bridge::~Bridge() {
   Cube::dismount();
 }
 
-bool Bridge::isStpEnabled(){
+bool Bridge::isStpEnabled() {
   return stp_enabled_;
 }
 
-PortsSchema Bridge::add_port(const std::string &port_name, const PortsSchema &port) {
+PortsSchema Bridge::add_port(const std::string &port_name,
+                             const PortsSchema &port) {
   std::lock_guard<std::mutex> guard(ports_mutex_);
 
   // Add port to the cube
@@ -77,11 +80,11 @@ void Bridge::remove_port(const std::string &port_name) {
 }
 
 PortsSchema Bridge::read_bridge_ports_by_id(const std::string &portsName) {
-  auto && p = get_bridge_port(portsName);
+  auto &&p = get_bridge_port(portsName);
   PortsSchema sch;
   sch.setName(portsName);
-  //sch.setStatus(); TODO: what is status?
-  //sch.setAddress(); TODO: what is address?
+  // sch.setStatus(); TODO: what is status?
+  // sch.setAddress(); TODO: what is address?
   sch.setMode(mode_to_string(p.mode()));
   if (p.mode() == PortMode::ACCESS) {
     PortsAccessSchema access_sch;
@@ -101,13 +104,14 @@ PortsSchema Bridge::read_bridge_ports_by_id(const std::string &portsName) {
 
 std::string Bridge::generate_code(bool stp_enabled) {
   std::string aging_time_str("#define AGING_TIME " +
-    std::to_string(aging_time_ ? aging_time_ : 300));
+                             std::to_string(aging_time_ ? aging_time_ : 300));
   return aging_time_str + (stp_enabled ? bridge_code : bridge_code_no_stp);
 }
 
-void Bridge::packet_in(BridgePort &port, PacketInMetadata &md, const std::vector<uint8_t> &packet) {
+void Bridge::packet_in(BridgePort &port, PacketInMetadata &md,
+                       const std::vector<uint8_t> &packet) {
   try {
-    //logger()->debug("[{0}] packet from port: '{1}' id: '{2}' peer:'{3}'",
+    // logger()->debug("[{0}] packet from port: '{1}' id: '{2}' peer:'{3}'",
     //  get_name(), port.name(), port.index(), port.peer());
 
     switch (static_cast<SlowPathReason>(md.reason)) {
@@ -116,7 +120,7 @@ void Bridge::packet_in(BridgePort &port, PacketInMetadata &md, const std::vector
       broadcast_packet(port, md, packet);
       break;
     case SlowPathReason::BPDU:
-      //logger()->debug("[{0}] reason: BPDU", get_name());
+      // logger()->debug("[{0}] reason: BPDU", get_name());
       // TODO: check that the bpdu is allowed
       if (stp_enabled_)
         process_bpdu(port, md, packet);
@@ -127,7 +131,8 @@ void Bridge::packet_in(BridgePort &port, PacketInMetadata &md, const std::vector
       logger()->error("Not valid reason {0} received", md.reason);
     }
   } catch (const std::exception &e) {
-    logger()->error("exception during slowpath packet processing: '{0}'", e.what());
+    logger()->error("exception during slowpath packet processing: '{0}'",
+                    e.what());
   }
 }
 
@@ -196,24 +201,23 @@ BridgeSTP &Bridge::get_stp_instance(uint16_t vlan_id, bool create) {
       throw std::runtime_error("STP instance does not exist");
     }
     logger()->debug("creating stp instance for vlan {0}", vlan_id);
-    stps_.emplace(std::piecewise_construct,
-                  std::forward_as_tuple(vlan_id),
+    stps_.emplace(std::piecewise_construct, std::forward_as_tuple(vlan_id),
                   std::forward_as_tuple(*this, vlan_id));
   }
   return stps_.at(vlan_id);
 }
 
 BridgePort::BridgePort(polycube::service::Cube<BridgePort> &parent_,
-             std::shared_ptr<polycube::service::PortIface> port_,
-             const PortsSchema &conf)
-  : Port(port_), parent(static_cast<Bridge&>(parent_)),
-  mode_(PortMode::ACCESS), access_vlan_(0),
-  l(spdlog::get("pcn-bridge")) {
-
+                       std::shared_ptr<polycube::service::PortIface> port_,
+                       const PortsSchema &conf)
+    : Port(port_),
+      parent(static_cast<Bridge &>(parent_)),
+      mode_(PortMode::ACCESS),
+      access_vlan_(0),
+      l(spdlog::get("pcn-bridge")) {
   auto ports_table = parent.get_hash_table<uint32_t, port>("ports");
-  port value {
-    .mode = static_cast<uint16_t>(PortMode::ACCESS),
-    .native_vlan = 0,
+  port value{
+      .mode = static_cast<uint16_t>(PortMode::ACCESS), .native_vlan = 0,
   };
   ports_table.set(index(), value);
 
@@ -238,9 +242,8 @@ void BridgePort::set_mode(PortMode mode) {
 
   auto ports_table = parent.get_hash_table<uint32_t, port>("ports");
 
-  port value {
-    .mode = static_cast<uint16_t>(mode),
-    .native_vlan = 0,
+  port value{
+      .mode = static_cast<uint16_t>(mode), .native_vlan = 0,
   };
 
   ports_table.set(index(), value);
@@ -265,20 +268,20 @@ void BridgePort::set_access_vlan(uint16_t vlan) {
   if (parent.stp_enabled_ && access_vlan_ != 0) {
     try {
       parent.get_stp_instance(access_vlan_).remove_port(port_id);
-    } catch (...){};
+    } catch (...) {
+    };
   }
 
-  port_vlan_key key {
-    .port = port_id,
-    .vlan = VLAN_WILDCARD,
+  port_vlan_key key{
+      .port = port_id, .vlan = VLAN_WILDCARD,
   };
 
-  port_vlan_value value {
-    .vlan = vlan,
-    .stp_state = STP_BLOCKING,
+  port_vlan_value value{
+      .vlan = vlan, .stp_state = STP_BLOCKING,
   };
 
-  auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+  auto port_vlan_table =
+      parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
   port_vlan_table.set(key, value);
   if (parent.stp_enabled_)
     parent.get_stp_instance(vlan, true).add_port(port_id);
@@ -290,21 +293,20 @@ void BridgePort::add_trunk_vlan(uint16_t vlan) {
     throw std::runtime_error("Port is not in trunk mode");
 
   if (trunk_vlans_.count(vlan) != 0)
-    return; // TODO: should an error be thrown?
+    return;  // TODO: should an error be thrown?
 
   uint16_t port_id = index();
 
-  port_vlan_key key {
-    .port = port_id,
-    .vlan = vlan,
+  port_vlan_key key{
+      .port = port_id, .vlan = vlan,
   };
 
-  port_vlan_value value {
-    .vlan = vlan,
-    .stp_state = STP_BLOCKING,
+  port_vlan_value value{
+      .vlan = vlan, .stp_state = STP_BLOCKING,
   };
 
-  auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+  auto port_vlan_table =
+      parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
   port_vlan_table.set(key, value);
 
   if (parent.isStpEnabled())
@@ -317,16 +319,16 @@ void BridgePort::remove_trunk_vlan(uint16_t vlan) {
   if (mode_ != PortMode::TRUNK)
     throw std::runtime_error("Port is not in trunk mode");
   if (trunk_vlans_.count(vlan) == 0)
-    return; // TODO: exeception?
+    return;  // TODO: exeception?
 
   uint16_t port_id = index();
 
-  port_vlan_key key {
-    .port = port_id,
-    .vlan = vlan,
+  port_vlan_key key{
+      .port = port_id, .vlan = vlan,
   };
 
-  auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+  auto port_vlan_table =
+      parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
   port_vlan_table.remove(key);
 
   if (parent.stp_enabled_)
@@ -352,9 +354,8 @@ void BridgePort::set_native_vlan(uint16_t vlan) {
   if (trunk_vlans_.count(vlan) == 0)
     throw std::runtime_error("Vlan is not allowed in port");
 
-  port value {
-    .mode = static_cast<uint16_t>(mode_),
-    .native_vlan = vlan,
+  port value{
+      .mode = static_cast<uint16_t>(mode_), .native_vlan = vlan,
   };
   auto ports_table = parent.get_hash_table<uint32_t, port>("ports");
   ports_table.set(index(), value);
@@ -368,7 +369,7 @@ bool BridgePort::is_trunk_vlan_allowed(uint16_t vlan) {
 }
 
 void BridgePort::cleanup() {
-  switch(mode_) {
+  switch (mode_) {
   case PortMode::ACCESS:
     cleanup_access_port();
     break;
@@ -381,12 +382,12 @@ void BridgePort::cleanup() {
 void BridgePort::cleanup_trunk_port() {
   uint16_t port_id = index();
 
-  auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+  auto port_vlan_table =
+      parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
 
   for (auto vlan : trunk_vlans_) {
-    port_vlan_key key {
-      .port = port_id,
-      .vlan = vlan,
+    port_vlan_key key{
+        .port = port_id, .vlan = vlan,
     };
 
     port_vlan_table.remove(key);
@@ -405,24 +406,25 @@ void BridgePort::cleanup_access_port() {
     stp_instance.remove_port(port_id);
   }
   // TODO: remove stp instance if needed
-  port_vlan_key key {
-    .port = port_id,
-    .vlan = VLAN_WILDCARD,
+  port_vlan_key key{
+      .port = port_id, .vlan = VLAN_WILDCARD,
   };
 
-  auto port_vlan_table = parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
+  auto port_vlan_table =
+      parent.get_hash_table<port_vlan_key, port_vlan_value>("port_vlan");
 
   try {
     port_vlan_table.remove(key);
-  } catch (const std::exception&) {}
+  } catch (const std::exception &) {
+  }
 
   access_vlan_ = 0;
 }
 
-
 void BridgePort::send_packet_out(const std::vector<uint8_t> &packet,
                                  bool tagged, uint16_t vlan) {
-  if (parent.stp_enabled_ && !parent.get_stp_instance(vlan).port_should_forward(index())) {
+  if (parent.stp_enabled_ &&
+      !parent.get_stp_instance(vlan).port_should_forward(index())) {
     return;
   }
 
@@ -431,11 +433,11 @@ void BridgePort::send_packet_out(const std::vector<uint8_t> &packet,
   bool send_tagged;
 
   // vlan aware broadcast implementation
-  switch(mode_) {
+  switch (mode_) {
   case PortMode::ACCESS:
     if (vlan != access_vlan()) {
-      parent.logger()->debug("port({0}) vlan({1}) != access_vlan({2})",
-        name(), vlan, access_vlan());
+      parent.logger()->debug("port({0}) vlan({1}) != access_vlan({2})", name(),
+                             vlan, access_vlan());
       return;
     }
     send_tagged = false;
@@ -443,13 +445,13 @@ void BridgePort::send_packet_out(const std::vector<uint8_t> &packet,
   case PortMode::TRUNK:
     if (!is_trunk_vlan_allowed(vlan)) {
       parent.logger()->debug("port({0}) vlan({1}) not present in trunk_vlans",
-        name(), vlan);
+                             name(), vlan);
       return;
     }
 
     if (vlan == native_vlan()) {
       parent.logger()->debug("port({0}) vlan({1}) packet to native vlan",
-        name(), vlan);
+                             name(), vlan);
       send_tagged = false;
     } else {
       send_tagged = true;
@@ -457,9 +459,9 @@ void BridgePort::send_packet_out(const std::vector<uint8_t> &packet,
     break;
   }
 
-  if (tagged == send_tagged) { // send original
+  if (tagged == send_tagged) {  // send original
     Port::send_packet_out(p);
-  } else if(!tagged && send_tagged) { //push vlan
+  } else if (!tagged && send_tagged) {  // push vlan
     EthernetII tagged_p = EthernetII(p.dst_addr(), p.src_addr());
 
     Dot1Q dot1q(vlan);
@@ -470,7 +472,7 @@ void BridgePort::send_packet_out(const std::vector<uint8_t> &packet,
     tagged_p /= *p_inner;
 
     Port::send_packet_out(tagged_p);
-  } else { // pop vlan
+  } else {  // pop vlan
     Dot1Q &p_dot1q = p.rfind_pdu<Dot1Q>();
 
     EthernetII untagged_p = EthernetII(p.dst_addr(), p.src_addr());

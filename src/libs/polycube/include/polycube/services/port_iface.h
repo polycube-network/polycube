@@ -31,7 +31,7 @@ namespace service {
 
 class CubeIface;
 
-enum class PortStatus {DOWN, UP};
+enum class PortStatus { DOWN, UP };
 
 enum class PortType {
   TC,
@@ -41,7 +41,7 @@ enum class PortType {
 class PortIface {
   friend class CubeIface;
 
-public:
+ public:
   virtual void send_packet_out(const std::vector<uint8_t> &packet,
                                Direction direction = Direction::EGRESS) = 0;
   virtual uint16_t index() const = 0;
@@ -53,6 +53,5 @@ public:
   virtual PortStatus get_status() const = 0;
   virtual PortType get_type() const = 0;
 };
-
 }
 }

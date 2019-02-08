@@ -144,7 +144,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_EGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINFORWARDER_EGRESS,
-                                     ChainNameEnum::INVALID_EGRESS)]
+                                      ChainNameEnum::INVALID_EGRESS)]
             ->reload();
       }
       if (parent_.programs_.find(std::make_pair(
@@ -152,7 +152,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_EGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINSELECTOR_EGRESS,
-                                     ChainNameEnum::INVALID_EGRESS)]
+                                      ChainNameEnum::INVALID_EGRESS)]
             ->reload();
       }
     } else if (getName() == ChainNameEnum::INPUT ||
@@ -162,7 +162,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_INGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINFORWARDER_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
       }
       if (parent_.programs_.find(std::make_pair(
@@ -170,7 +170,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_INGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINSELECTOR_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
       }
     }
@@ -452,18 +452,23 @@ void Chain::updateChain() {
    *
    * Horus optimization allows to
    * a) offload a group of contiguous rules matching on same field
-   * b) match the group of offloaded rules with complexity O(1) - single map lookup
-   * c) dynamically adapting to different groups of rules, matching each combination of ipsrc/dst, portsrc/dst, tcpflags
-   * d) dynamically check when the optimization is possible according to current ruleset. It means check orthogonality
+   * b) match the group of offloaded rules with complexity O(1) - single map
+   * lookup
+   * c) dynamically adapting to different groups of rules, matching each
+   * combination of ipsrc/dst, portsrc/dst, tcpflags
+   * d) dynamically check when the optimization is possible according to current
+   * ruleset. It means check orthogonality
    * of rules before the offloaded group, respect to the group itself.
    *
    * -Working on INPUT chain, if no FORWARD rules are present.
-   * TODO: put Horus after chainselector, so it can work only on INPUT pkts without possible semantic issues.
+   * TODO: put Horus after chainselector, so it can work only on INPUT pkts
+   * without possible semantic issues.
    *
    * each pkt received by the program, is looked-up vs the HORUS HASHMAP.
    * hit ->
    * DROP action: drop the packet;
-   * ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through pipeline
+   * ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through
+   * pipeline
    * miss ->
    * GOTO all pipeline steps
    */
@@ -516,14 +521,14 @@ void Chain::updateChain() {
         // Horus UpdateMap is in charge to update maps
         dynamic_cast<Iptables::Horus *>(
             parent_.programs_[std::make_pair(horus_index_new,
-                                            ChainNameEnum::INVALID_INGRESS)])
+                                             ChainNameEnum::INVALID_INGRESS)])
             ->updateMap(horus);
 
         // Recompile parser
         // parser should ask to Horus its index getIndex from Horus
         parent_
             .programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
 
         // Delete old Horus, if present
@@ -539,19 +544,22 @@ void Chain::updateChain() {
   if (parent_.horus_runtime_enabled_ == false) {
     // Recompile parser
     // parser should ask to Horus its index getIndex from Horus
-    parent_.programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,ChainNameEnum::INVALID_INGRESS)]->reload();
+    parent_
+        .programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,
+                                  ChainNameEnum::INVALID_INGRESS)]
+        ->reload();
 
     // Delete old Horus, if present
-    auto it = parent_.programs_.find(
-            std::make_pair(ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS));
+    auto it = parent_.programs_.find(std::make_pair(
+        ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
       delete it->second;
       parent_.programs_.erase(it);
     }
 
     // Delete old Horus, if present
-    it = parent_.programs_.find(
-            std::make_pair(ModulesConstants::HORUS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
+    it = parent_.programs_.find(std::make_pair(
+        ModulesConstants::HORUS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
       delete it->second;
       parent_.programs_.erase(it);
@@ -562,20 +570,19 @@ void Chain::updateChain() {
   // if no wildcard is present, we can early break the pipeline.
   // so we put modules with _break flags, before the others in order
   // to maximize probability to early break the pipeline.
-  bool conntrack_break =
-          conntrackFromRulesToMap(conntrack_map, getRuleList());
-  bool ipsrc_break =
-          ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, getRuleList());
+  bool conntrack_break = conntrackFromRulesToMap(conntrack_map, getRuleList());
+  bool ipsrc_break = ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, getRuleList());
   bool ipdst_break =
-          ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, getRuleList());
+      ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, getRuleList());
   bool protocol_break =
-          transportProtoFromRulesToMap(protocol_map, getRuleList());
+      transportProtoFromRulesToMap(protocol_map, getRuleList());
   bool portsrc_break =
-          portFromRulesToMap(SOURCE_TYPE, portsrc_map, getRuleList());
+      portFromRulesToMap(SOURCE_TYPE, portsrc_map, getRuleList());
   bool portdst_break =
-          portFromRulesToMap(DESTINATION_TYPE, portdst_map, getRuleList());
-  bool interface_break =
-          interfaceFromRulesToMap( (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE, interface_map, getRuleList(), parent_);
+      portFromRulesToMap(DESTINATION_TYPE, portdst_map, getRuleList());
+  bool interface_break = interfaceFromRulesToMap(
+      (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE, interface_map,
+      getRuleList(), parent_);
   bool flags_break = flagsFromRulesToMap(flags_map, getRuleList());
 
   logger()->debug(
@@ -766,23 +773,25 @@ void Chain::updateChain() {
       // At least one rule requires a matching on interface,
       // so inject the  module  on the first available position
       newProgramsChain.insert(
-              std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
-                      std::make_pair(ModulesConstants::INTERFACE, name),
-                      new Iptables::InterfaceLookup(index, name, (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE,
-                                                 this->parent_, interface_map)));
+          std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
+              std::make_pair(ModulesConstants::INTERFACE, name),
+              new Iptables::InterfaceLookup(
+                  index, name,
+                  (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE,
+                  this->parent_, interface_map)));
 
       // If this is the first module, adjust parsing to forward to it.
       if (index == startingIndex) {
-        firstProgramLoaded = newProgramsChain[std::make_pair(
-                ModulesConstants::INTERFACE, name)];
+        firstProgramLoaded =
+            newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)];
       }
       logger()->trace("Interface index:{0}", index);
       ++index;
 
       // Now the program is loaded, populate it.
       dynamic_cast<Iptables::InterfaceLookup *>(
-              newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)])
-              ->updateMap(interface_map);
+          newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)])
+          ->updateMap(interface_map);
     }
     // Done looping through interface
 

@@ -16,15 +16,19 @@
 
 /*utility methods*/
 
+#include <string>
+
 std::string from_int_to_hex(int t);
 
-uint32_t get_netmask_length(const std::string &netmask_string);;
+uint32_t get_netmask_length(const std::string &netmask_string);
+;
 
 unsigned int ip_to_int(const char *ip);
 
-bool address_in_subnet(const std::string &ip, const std::string &netmask, const std::string &network);
+bool address_in_subnet(const std::string &ip, const std::string &netmask,
+                       const std::string &network);
 
-std::string get_network_from_ip(const std::string &ip, const std::string &netmask);
+std::string get_network_from_ip(const std::string &ip,
+                                const std::string &netmask);
 
 bool is_netmask_valid(const std::string &netmask);
-

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /* =======================
    Action on matched rule
    ======================= */
@@ -43,20 +42,18 @@ BPF_TABLE("percpu_array", int, u64, bytes_DIRECTION, 8000);
 
 static __always_inline void incrementCounters(int *action, u32 bytes) {
   u64 *value;
-  value= pkts_DIRECTION.lookup(action);
-  if(value){
-    *value+=1;
+  value = pkts_DIRECTION.lookup(action);
+  if (value) {
+    *value += 1;
   }
-  value=bytes_DIRECTION.lookup(action);
-  if(value){
-    *value+=bytes;
+  value = bytes_DIRECTION.lookup(action);
+  if (value) {
+    *value += bytes;
   }
-
 }
 
-
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet." );
+  pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet.");
 
 #if _NR_ELEMENTS > 0
   int key = 0;

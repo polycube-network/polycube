@@ -30,8 +30,8 @@ Iptables::ConntrackLabel::ConntrackLabel(const int &index, Iptables &outer,
 Iptables::ConntrackLabel::~ConntrackLabel() {}
 
 std::vector<std::pair<ct_k, ct_v>> Iptables::ConntrackLabel::getMap() {
-  auto table =
-      iptables_.get_hash_table<ct_k, ct_v>("connections", index_, program_type_);
+  auto table = iptables_.get_hash_table<ct_k, ct_v>("connections", index_,
+                                                    program_type_);
   return table.get_all();
 }
 
@@ -50,8 +50,8 @@ uint64_t Iptables::ConntrackLabel::getAcceptEstablishedPktsCount(
     std::lock_guard<std::mutex> guard(program_mutex_);
     uint64_t pkts = 0;
 
-    auto pkts_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto pkts_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = pkts_table.get(0);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -73,8 +73,8 @@ uint64_t Iptables::ConntrackLabel::getAcceptEstablishedBytesCount(
 
   try {
     std::lock_guard<std::mutex> guard(program_mutex_);
-    auto bytes_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto bytes_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = bytes_table.get(0);
     uint64_t bytes = 0;
     return std::accumulate(values.begin(), values.end(), bytes);

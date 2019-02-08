@@ -51,7 +51,7 @@
 
 #define HEX_BE_ONE 0x1000000
 
-#define AF_INET		2	/* Internet IP Protocol 	*/
+#define AF_INET 2 /* Internet IP Protocol 	*/
 
 struct icmphdr {
   u_int8_t type; /* message type */
@@ -112,12 +112,12 @@ struct ct_v {
 } __attribute__((packed));
 
 #if _INGRESS_LOGIC
-  BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
-  BPF_DEVMAP(tx_port, 128);
+BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
+BPF_DEVMAP(tx_port, 128);
 #endif
 
 #if _EGRESS_LOGIC
-  BPF_TABLE("extern", int, uint64_t, timestamp, 1);
+BPF_TABLE("extern", int, uint64_t, timestamp, 1);
 #endif
 
 BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
@@ -125,13 +125,12 @@ BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
 /* from include/net/ip.h */
-static __always_inline int ip_decrease_ttl(struct iphdr *iph)
-{
-	u32 check = (__force u32)iph->check;
+static __always_inline int ip_decrease_ttl(struct iphdr *iph) {
+  u32 check = (__force u32)iph->check;
 
-	check += (__force u32)htons(0x0100);
-	iph->check = (__force __sum16)(check + (check >= 0xFFFF));
-	return --iph->ttl;
+  check += (__force u32)htons(0x0100);
+  iph->check = (__force __sum16)(check + (check >= 0xFFFF));
+  return --iph->ttl;
 }
 
 static __always_inline uint64_t *time_get_ns() {
@@ -155,8 +154,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "[ConntrackTableUpdate] received packet. SrcIP: %I, Flags: %x", pkt->srcIp, pkt->flags);
-  pcn_log(ctx, LOG_DEBUG, "[ConntrackTableUpdate] received packet. SeqN: %u, AckN: %u. ConnStatus: %u", pkt->seqN, pkt->ackN, pkt->connStatus);
+  pcn_log(ctx, LOG_DEBUG,
+          "[ConntrackTableUpdate] received packet. SrcIP: %I, Flags: %x",
+          pkt->srcIp, pkt->flags);
+  pcn_log(ctx, LOG_DEBUG,
+          "[ConntrackTableUpdate] received packet. SeqN: %u, AckN: %u. "
+          "ConnStatus: %u",
+          pkt->seqN, pkt->ackN, pkt->connStatus);
 
   if (pkt->connStatus == INVALID) {
     // No business here for these packets
@@ -199,32 +203,30 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   uint64_t *timestamp;
   timestamp = time_get_ns();
 
-  if (timestamp == NULL){
+  if (timestamp == NULL) {
     pcn_log(ctx, LOG_DEBUG, "[TableUpdate] timestamp NULL. ret DROP ");
     return RX_DROP;
   }
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
-
     // If it is a RST, label it as established.
-    if((pkt->flags & TCPHDR_RST) != 0){
-      //connections.delete(&key);
+    if ((pkt->flags & TCPHDR_RST) != 0) {
+      // connections.delete(&key);
       goto forward_action;
     }
 
     value = connections.lookup(&key);
-    if (value != NULL)
-    {
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)){
+    if (value != NULL) {
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
         goto TCP_FORWARD;
-      }else if ((value->ipRev != ipRev) && (value->portRev != portRev)){
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
         goto TCP_REVERSE;
       } else {
         goto TCP_MISS;
       }
 
-      TCP_FORWARD:;
+    TCP_FORWARD:;
 
       // Found in forward direction
       if (value->state == SYN_SENT) {
@@ -239,7 +241,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           // the handshake
           // TODO: Drop it?
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in SYN_SENT state. Flags: %x", pkt->flags);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in "
+                  "SYN_SENT state. Flags: %x",
+                  pkt->flags);
 
           pkt->connStatus = INVALID;
           goto forward_action;
@@ -255,7 +260,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->state = ESTABLISHED;
           value->ttl = *timestamp + TCP_ESTABLISHED;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from SYN_RECV to ESTABLISHED");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from "
+                  "SYN_RECV to ESTABLISHED");
 
           goto forward_action;
         } else {
@@ -263,7 +270,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           // number is wrong
           // TODO: drop it?
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in SYN_RECV state. Flags: %x", pkt->flags);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in "
+                  "SYN_RECV state. Flags: %x",
+                  pkt->flags);
 
           pkt->connStatus = INVALID;
           goto forward_action;
@@ -278,9 +288,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->ttl = *timestamp + TCP_FIN_WAIT;
           value->sequence = pkt->ackN;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from ESTABLISHED to FIN_WAIT_1. Seq: %u", value->sequence);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from "
+                  "ESTABLISHED to FIN_WAIT_1. Seq: %u",
+                  value->sequence);
 
-	  goto forward_action;
+          goto forward_action;
         } else {
           value->ttl = *timestamp + TCP_ESTABLISHED;
           goto forward_action;
@@ -289,19 +302,23 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       if (value->state == FIN_WAIT_1) {
         // Received FIN in reverse direction, waiting for ack from this side
-        if ((pkt->flags & TCPHDR_ACK) != 0 &&
-            (pkt->seqN == value->sequence)) {
+        if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->seqN == value->sequence)) {
           // Received ACK
           value->state = FIN_WAIT_2;
           value->ttl = *timestamp + TCP_FIN_WAIT;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from FIN_WAIT_1 to FIN_WAIT_2");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from "
+                  "FIN_WAIT_1 to FIN_WAIT_2");
 
         } else {
           // Validation failed, either ACK is not the only flag set or the ack
           // number is wrong
           // TODO: drop it?
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in FIN_WAIT_1 state. Flags: %x. AckSeq: %u", pkt->flags, pkt->ackN);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Failed ACK check in "
+                  "FIN_WAIT_1 state. Flags: %x. AckSeq: %u",
+                  pkt->flags, pkt->ackN);
 
           pkt->connStatus = INVALID;
           goto forward_action;
@@ -309,7 +326,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       if (value->state == FIN_WAIT_2) {
-        // Already received and acked FIN in rev direction, waiting the FIN from the
+        // Already received and acked FIN in rev direction, waiting the FIN from
+        // the
         // this side
         if ((pkt->flags & TCPHDR_FIN) != 0) {
           // FIN received. Let's wait for it to be acknowledged.
@@ -317,12 +335,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->ttl = *timestamp + TCP_LAST_ACK;
           value->sequence = pkt->ackN;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from FIN_WAIT_2 to LAST_ACK");
-	  goto forward_action;
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from "
+                  "FIN_WAIT_2 to LAST_ACK");
+          goto forward_action;
         } else {
           // Still receiving packets
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Failed FIN check in FIN_WAIT_2 state. Flags: %x. Seq: %u", pkt->flags, value->sequence);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Failed FIN check in "
+                  "FIN_WAIT_2 state. Flags: %x. Seq: %u",
+                  pkt->flags, value->sequence);
 
           value->ttl = *timestamp + TCP_FIN_WAIT;
           goto forward_action;
@@ -335,7 +358,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->state = TIME_WAIT;
           value->ttl = *timestamp + TCP_LAST_ACK;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from LAST_ACK to TIME_WAIT");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [FW_DIRECTION] Changing state from "
+                  "LAST_ACK to TIME_WAIT");
 
           goto forward_action;
         }
@@ -346,18 +371,21 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       if (value->state == TIME_WAIT) {
         if (pkt->connStatus == NEW) {
-            goto TCP_MISS;
+          goto TCP_MISS;
         } else {
-            // Let the packet go, but do not update timers.
-            goto forward_action;
+          // Let the packet go, but do not update timers.
+          goto forward_action;
         }
       }
 
-      pcn_log(ctx, LOG_DEBUG, "[ConntrackTableUpdate] [FW_DIRECTION] Should not get here. Flags: %x. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[ConntrackTableUpdate] [FW_DIRECTION] Should not get here. "
+              "Flags: %x. State: %d. ",
+              pkt->flags, value->state);
       // TODO Unexpected situation
       goto forward_action;
 
-      TCP_REVERSE:;
+    TCP_REVERSE:;
 
       // Found in reverse direction
       if (value->state == SYN_SENT) {
@@ -370,7 +398,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->ttl = *timestamp + TCP_SYN_RECV;
           value->sequence = pkt->seqN + HEX_BE_ONE;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from SYN_SENT to SYN_RECV");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                  "SYN_SENT to SYN_RECV");
 
           goto forward_action;
         }
@@ -402,7 +432,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->ttl = *timestamp + TCP_FIN_WAIT;
           value->sequence = pkt->ackN;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from ESTABLISHED to FIN_WAIT_1. Seq: %x", value->sequence);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                  "ESTABLISHED to FIN_WAIT_1. Seq: %x",
+                  value->sequence);
 
           goto forward_action;
         } else {
@@ -413,22 +446,27 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       if (value->state == FIN_WAIT_1) {
         // Received FIN in reverse direction, waiting for ack from this side
-        if ((pkt->flags & TCPHDR_ACK) != 0 &&
-            (pkt->seqN == value->sequence)) {
+        if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->seqN == value->sequence)) {
           // Received ACK
           value->state = FIN_WAIT_2;
           value->ttl = *timestamp + TCP_FIN_WAIT;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from FIN_WAIT_1 to FIN_WAIT_2");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                  "FIN_WAIT_1 to FIN_WAIT_2");
 
           // Don't forward packet, we can continue performing the check in case
-          // the current packet is a ACK,FIN. In this case we match the next if statement
+          // the current packet is a ACK,FIN. In this case we match the next if
+          // statement
         } else {
           // Validation failed, either ACK is not the only flag set or the ack
           // number is wrong
           // TODO: drop it?
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Failed ACK check in FIN_WAIT_1 state. Flags: %d. AckSeq: %d", pkt->flags, pkt->ackN);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Failed ACK check in "
+                  "FIN_WAIT_1 state. Flags: %d. AckSeq: %d",
+                  pkt->flags, pkt->ackN);
 
           pkt->connStatus = INVALID;
           goto forward_action;
@@ -436,7 +474,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       if (value->state == FIN_WAIT_2) {
-        // Already received and acked FIN in "original" direction, waiting the FIN from
+        // Already received and acked FIN in "original" direction, waiting the
+        // FIN from
         // this side
         if ((pkt->flags & TCPHDR_FIN) != 0) {
           // FIN received. Let's wait for it to be acknowledged.
@@ -444,13 +483,18 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->ttl = *timestamp + TCP_LAST_ACK;
           value->sequence = pkt->ackN;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from FIN_WAIT_1 to LAST_ACK");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                  "FIN_WAIT_1 to LAST_ACK");
 
-	  goto forward_action;
+          goto forward_action;
         } else {
           // Still receiving packets
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Failed FIN check in FIN_WAIT_2 state. Flags: %d. Seq: %d", pkt->flags, value->sequence);
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Failed FIN check in "
+                  "FIN_WAIT_2 state. Flags: %d. Seq: %d",
+                  pkt->flags, value->sequence);
 
           value->ttl = *timestamp + TCP_FIN_WAIT;
           goto forward_action;
@@ -463,7 +507,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           value->state = TIME_WAIT;
           value->ttl = *timestamp + TCP_LAST_ACK;
 
-          pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from LAST_ACK to TIME_WAIT");
+          pcn_log(ctx, LOG_TRACE,
+                  "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                  "LAST_ACK to TIME_WAIT");
 
           goto forward_action;
         }
@@ -471,21 +517,25 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         value->ttl = *timestamp + TCP_LAST_ACK;
         goto forward_action;
       }
-      
+
       if (value->state == TIME_WAIT) {
         if (pkt->connStatus == NEW) {
-            goto TCP_MISS;
+          goto TCP_MISS;
         } else {
-            // Let the packet go, but do not update timers.
-            goto forward_action;
+          // Let the packet go, but do not update timers.
+          goto forward_action;
         }
       }
 
-      pcn_log(ctx, LOG_DEBUG, "[ConntrackTableUpdate] [REV_DIRECTION] Should not get here. Flags: %d. " "State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[ConntrackTableUpdate] [REV_DIRECTION] Should not get here. "
+              "Flags: %d. "
+              "State: %d. ",
+              pkt->flags, value->state);
       goto forward_action;
     }
 
-    TCP_MISS:;
+  TCP_MISS:;
 
     // New entry. It has to be a SYN.
     if ((pkt->flags & TCPHDR_SYN) != 0 &&
@@ -509,18 +559,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   /* == UDP == */
   if (pkt->l4proto == IPPROTO_UDP) {
     value = connections.lookup(&key);
-    if (value != NULL)
-    {
-
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)){
+    if (value != NULL) {
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
         goto UDP_FORWARD;
-      }else if ((value->ipRev != ipRev) && (value->portRev != portRev)){
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
         goto UDP_REVERSE;
       } else {
         goto UDP_MISS;
       }
 
-      UDP_FORWARD:;
+    UDP_FORWARD:;
 
       // Valid entry
       if (value->state == NEW) {
@@ -538,7 +586,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto forward_action;
       }
 
-      UDP_REVERSE:;
+    UDP_REVERSE:;
 
       if (value->state == NEW) {
         // An entry was present in the rev direction with the NEW state. This
@@ -547,7 +595,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         value->ttl = *timestamp + UDP_NEW_TIMEOUT;
         value->state = ESTABLISHED;
 
-        pcn_log(ctx, LOG_TRACE, "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from NEW to ESTABLISHED");
+        pcn_log(ctx, LOG_TRACE,
+                "[ConntrackTableUpdate] [REV_DIRECTION] Changing state from "
+                "NEW to ESTABLISHED");
 
         goto forward_action;
       } else {
@@ -557,7 +607,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
     }
 
-    UDP_MISS:;
+  UDP_MISS:;
 
     // No entry found in both directions. Create one.
     newEntry.ttl = *timestamp + UDP_NEW_TIMEOUT;
@@ -578,8 +628,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     if (data + 34 + sizeof(struct icmphdr) > data_end)
       return RX_DROP;
     struct icmphdr *icmp = data + 34;
-    if (icmp->type == ICMP_ECHO)
-    {
+    if (icmp->type == ICMP_ECHO) {
       // Echo request is always treated as the first of the connection
       newEntry.ttl = *timestamp + ICMP_TIMEOUT;
       newEntry.state = NEW;
@@ -610,84 +659,93 @@ forward_action:;
 // true: if kernel >= 4.19.0 && XDP mode
 #if _FIB_LOOKUP_ENABLED
 
-  #if _INGRESS_LOGIC
+#if _INGRESS_LOGIC
 
-    // use fib_lookup helper to redirect pkt to egress interface directly (if possible)
+  // use fib_lookup helper to redirect pkt to egress interface directly (if
+  // possible)
 
-    // re-parse pkt is more convinient than parse it at pipeline beginning.
-    // furthermore it is needed, since we have to change the packet
+  // re-parse pkt is more convinient than parse it at pipeline beginning.
+  // furthermore it is needed, since we have to change the packet
 
-    void *data = (void *)(long)ctx->data;
-    void *data_end = (void *)(long)ctx->data_end;
-    struct bpf_fib_lookup fib_params;
-    struct ethhdr *eth = data;
-    struct ipv6hdr *ip6h;
-    struct iphdr *iph;
-    u16 h_proto;
-    u64 nh_off;
-    int rc;
+  void *data = (void *)(long)ctx->data;
+  void *data_end = (void *)(long)ctx->data_end;
+  struct bpf_fib_lookup fib_params;
+  struct ethhdr *eth = data;
+  struct ipv6hdr *ip6h;
+  struct iphdr *iph;
+  u16 h_proto;
+  u64 nh_off;
+  int rc;
 
-    nh_off = sizeof(*eth);
-    if (data + nh_off > data_end)
+  nh_off = sizeof(*eth);
+  if (data + nh_off > data_end)
+    return XDP_DROP;
+
+  __builtin_memset(&fib_params, 0, sizeof(fib_params));
+
+  h_proto = eth->h_proto;
+  if (h_proto == htons(ETH_P_IP)) {
+    iph = data + nh_off;
+
+    if (iph + 1 > data_end)
       return XDP_DROP;
 
-    __builtin_memset(&fib_params, 0, sizeof(fib_params));
+    if (iph->ttl <= 1)
+      return XDP_PASS;
 
-    h_proto = eth->h_proto;
-    if (h_proto == htons(ETH_P_IP)) {
-      iph = data + nh_off;
-
-      if (iph + 1 > data_end)
-        return XDP_DROP;
-
-      if (iph->ttl <= 1)
-        return XDP_PASS;
-
-      fib_params.family	= AF_INET;
-      fib_params.tos		= iph->tos;
-      fib_params.l4_protocol	= iph->protocol;
-      fib_params.sport	= 0;
-      fib_params.dport	= 0;
-      fib_params.tot_len	= ntohs(iph->tot_len);
-      fib_params.ipv4_src	= iph->saddr;
-      fib_params.ipv4_dst	= iph->daddr;
-    } else {
-      return RX_OK;
-    }
-
-    fib_params.ifindex = ctx->ingress_ifindex;
-
-    rc = bpf_fib_lookup(ctx, &fib_params, sizeof(fib_params), 0);
-
-    /* verify egress index has xdp support
-     * TO-DO bpf_map_lookup_elem(&tx_port, &key) fails with
-     *       cannot pass map_type 14 into func bpf_map_lookup_elem#1:
-     * NOTE: without verification that egress index supports XDP
-     *       forwarding packets are dropped.
-     */
-    if (rc == 0) {
-        if (h_proto == htons(ETH_P_IP))
-          ip_decrease_ttl(iph);
-
-        memcpy(eth->h_dest, fib_params.dmac, ETH_ALEN);
-        memcpy(eth->h_source, fib_params.smac, ETH_ALEN);
-
-        pcn_log(ctx, LOG_TRACE, "Conntrack Table Update +bpf_fib_lookup+ redirect pkt to ifindex %d ", fib_params.ifindex);
-        return tx_port.redirect_map(fib_params.ifindex, 0);
-
-    } else{
-      pcn_log(ctx, LOG_TRACE, "Conntrack Table Update INGRESS: ACCEPT packet, after save in session table");
-      return RX_OK;
-    }
-  #endif
-
-  #if _EGRESS_LOGIC
-    pcn_log(ctx, LOG_TRACE, "Conntrack Table Update EGRESS: ACCEPT packet, after save in session table");
+    fib_params.family = AF_INET;
+    fib_params.tos = iph->tos;
+    fib_params.l4_protocol = iph->protocol;
+    fib_params.sport = 0;
+    fib_params.dport = 0;
+    fib_params.tot_len = ntohs(iph->tot_len);
+    fib_params.ipv4_src = iph->saddr;
+    fib_params.ipv4_dst = iph->daddr;
+  } else {
     return RX_OK;
-  #endif
+  }
+
+  fib_params.ifindex = ctx->ingress_ifindex;
+
+  rc = bpf_fib_lookup(ctx, &fib_params, sizeof(fib_params), 0);
+
+  /* verify egress index has xdp support
+   * TO-DO bpf_map_lookup_elem(&tx_port, &key) fails with
+   *       cannot pass map_type 14 into func bpf_map_lookup_elem#1:
+   * NOTE: without verification that egress index supports XDP
+   *       forwarding packets are dropped.
+   */
+  if (rc == 0) {
+    if (h_proto == htons(ETH_P_IP))
+      ip_decrease_ttl(iph);
+
+    memcpy(eth->h_dest, fib_params.dmac, ETH_ALEN);
+    memcpy(eth->h_source, fib_params.smac, ETH_ALEN);
+
+    pcn_log(
+        ctx, LOG_TRACE,
+        "Conntrack Table Update +bpf_fib_lookup+ redirect pkt to ifindex %d ",
+        fib_params.ifindex);
+    return tx_port.redirect_map(fib_params.ifindex, 0);
+
+  } else {
+    pcn_log(ctx, LOG_TRACE,
+            "Conntrack Table Update INGRESS: ACCEPT packet, after save in "
+            "session table");
+    return RX_OK;
+  }
+#endif
+
+#if _EGRESS_LOGIC
+  pcn_log(ctx, LOG_TRACE,
+          "Conntrack Table Update EGRESS: ACCEPT packet, after save in session "
+          "table");
+  return RX_OK;
+#endif
 
 #else
-  pcn_log(ctx, LOG_TRACE, "Conntrack Table Update: ACCEPT packet, after save in session table");
+  pcn_log(ctx, LOG_TRACE,
+          "Conntrack Table Update: ACCEPT packet, after save in session table");
   return RX_OK;
 #endif
 

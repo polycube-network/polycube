@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/RuleSnatEntryInterface.h"
 #include "IpAddr.h"
 
-
 #include <spdlog/spdlog.h>
-
 
 class RuleSnat;
 
@@ -34,8 +30,10 @@ class RuleSnatEntry : public RuleSnatEntryInterface {
   RuleSnatEntry(RuleSnat &parent, const RuleSnatEntryJsonObject &conf);
   virtual ~RuleSnatEntry();
 
-  static void create(RuleSnat &parent, const uint32_t &id, const RuleSnatEntryJsonObject &conf);
-  static std::shared_ptr<RuleSnatEntry> getEntry(RuleSnat &parent, const uint32_t &id);
+  static void create(RuleSnat &parent, const uint32_t &id,
+                     const RuleSnatEntryJsonObject &conf);
+  static std::shared_ptr<RuleSnatEntry> getEntry(RuleSnat &parent,
+                                                 const uint32_t &id);
   static void removeEntry(RuleSnat &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<RuleSnatEntry>> get(RuleSnat &parent);
   static void remove(RuleSnat &parent);
@@ -64,12 +62,11 @@ class RuleSnatEntry : public RuleSnatEntryInterface {
   void injectToDatapath();
   void removeFromDatapath();
 
-private:
-  RuleSnat   &parent_;
+ private:
+  RuleSnat &parent_;
 
   uint32_t id;
   uint32_t internalIp;
   uint8_t internalNetmask;
   uint32_t externalIp;
 };
-

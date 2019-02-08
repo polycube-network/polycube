@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-//Modify these methods with your own implementation
+// Modify these methods with your own implementation
 
 #include "RuleSnatEntry.h"
 #include "Nat.h"
 
 using namespace polycube::service;
 
-RuleSnatEntry::RuleSnatEntry(RuleSnat &parent, const RuleSnatEntryJsonObject &conf): parent_(parent) {
-  logger()->info("Creating RuleSnatEntry instance: {0} -> {1}", conf.getInternalNet(), conf.getExternalIp());
+RuleSnatEntry::RuleSnatEntry(RuleSnat &parent,
+                             const RuleSnatEntryJsonObject &conf)
+    : parent_(parent) {
+  logger()->info("Creating RuleSnatEntry instance: {0} -> {1}",
+                 conf.getInternalNet(), conf.getExternalIp());
   update(conf);
 }
 
-RuleSnatEntry::~RuleSnatEntry() { }
+RuleSnatEntry::~RuleSnatEntry() {}
 
 void RuleSnatEntry::update(const RuleSnatEntryJsonObject &conf) {
-  // This method updates all the object/parameter in RuleSnatEntry object specified in the conf JsonObject.
+  // This method updates all the object/parameter in RuleSnatEntry object
+  // specified in the conf JsonObject.
   // You can modify this implementation.
   if (conf.internalNetIsSet()) {
     setInternalNet(conf.getInternalNet());
@@ -39,7 +43,7 @@ void RuleSnatEntry::update(const RuleSnatEntryJsonObject &conf) {
   }
 }
 
-RuleSnatEntryJsonObject RuleSnatEntry::toJsonObject(){
+RuleSnatEntryJsonObject RuleSnatEntry::toJsonObject() {
   RuleSnatEntryJsonObject conf;
   conf.setId(getId());
   conf.setInternalNet(getInternalNet());
@@ -47,14 +51,16 @@ RuleSnatEntryJsonObject RuleSnatEntry::toJsonObject(){
   return conf;
 }
 
-
-void RuleSnatEntry::create(RuleSnat &parent, const uint32_t &id, const RuleSnatEntryJsonObject &conf){
+void RuleSnatEntry::create(RuleSnat &parent, const uint32_t &id,
+                           const RuleSnatEntryJsonObject &conf) {
   // This method creates the actual RuleSnatEntry object given thee key param.
-  // Please remember to call here the create static method for all sub-objects of RuleSnatEntry.
+  // Please remember to call here the create static method for all sub-objects
+  // of RuleSnatEntry.
 
   auto newRule = new RuleSnatEntry(parent, conf);
   if (newRule == nullptr) {
-    //Totally useless, but it is needed to avoid the compiler making wrong assumptions and reordering
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
     throw std::runtime_error("I won't be thrown");
   }
 
@@ -74,7 +80,8 @@ void RuleSnatEntry::create(RuleSnat &parent, const uint32_t &id, const RuleSnatE
   newRule->injectToDatapath();
 }
 
-std::shared_ptr<RuleSnatEntry> RuleSnatEntry::getEntry(RuleSnat &parent, const uint32_t &id){
+std::shared_ptr<RuleSnatEntry> RuleSnatEntry::getEntry(RuleSnat &parent,
+                                                       const uint32_t &id) {
   // This method retrieves the pointer to NatRule object specified by its keys.
   for (int i = 0; i < parent.rules_.size(); i++) {
     if (parent.rules_[i]->id == id) {
@@ -84,9 +91,10 @@ std::shared_ptr<RuleSnatEntry> RuleSnatEntry::getEntry(RuleSnat &parent, const u
   throw std::runtime_error("There is no rule " + id);
 }
 
-void RuleSnatEntry::removeEntry(RuleSnat &parent, const uint32_t &id){
+void RuleSnatEntry::removeEntry(RuleSnat &parent, const uint32_t &id) {
   // This method removes the single RuleSnatEntry object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of RuleSnatEntry.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RuleSnatEntry.
   if (parent.rules_.size() < id || !parent.rules_[id]) {
     throw std::runtime_error("There is no rule " + id);
   }
@@ -105,7 +113,8 @@ void RuleSnatEntry::removeEntry(RuleSnat &parent, const uint32_t &id){
   parent.logger()->info("Removed SNAT entry {0}", id);
 }
 
-std::vector<std::shared_ptr<RuleSnatEntry>> RuleSnatEntry::get(RuleSnat &parent){
+std::vector<std::shared_ptr<RuleSnatEntry>> RuleSnatEntry::get(
+    RuleSnat &parent) {
   // This methods get the pointers to all the NatRule objects in Nat.
   std::vector<std::shared_ptr<RuleSnatEntry>> rules;
   for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
@@ -116,25 +125,25 @@ std::vector<std::shared_ptr<RuleSnatEntry>> RuleSnatEntry::get(RuleSnat &parent)
   return rules;
 }
 
-void RuleSnatEntry::remove(RuleSnat &parent){
+void RuleSnatEntry::remove(RuleSnat &parent) {
   // This method removes all RuleSnatEntry objects in RuleSnat.
-  // Remember to call here the remove static method for all-sub-objects of RuleSnatEntry.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RuleSnatEntry.
   RuleSnat::removeEntry(parent.parent_);
 }
 
-uint32_t RuleSnatEntry::getId(){
+uint32_t RuleSnatEntry::getId() {
   // This method retrieves the id value.
   return id;
 }
 
-
-std::string RuleSnatEntry::getInternalNet(){
+std::string RuleSnatEntry::getInternalNet() {
   // This method retrieves the internalNet value.
   struct IpAddr addr = {internalIp, internalNetmask};
   return addr.toString();
 }
 
-void RuleSnatEntry::setInternalNet(const std::string &value){
+void RuleSnatEntry::setInternalNet(const std::string &value) {
   // This method set the internalNet value.
   struct IpAddr addr;
   addr.fromString(value);
@@ -142,13 +151,13 @@ void RuleSnatEntry::setInternalNet(const std::string &value){
   this->internalNetmask = addr.netmask;
 }
 
-std::string RuleSnatEntry::getExternalIp(){
+std::string RuleSnatEntry::getExternalIp() {
   // This method retrieves the externalIp value.
   struct IpAddr addr = {externalIp, 32};
   return addr.toString();
 }
 
-void RuleSnatEntry::setExternalIp(const std::string &value){
+void RuleSnatEntry::setExternalIp(const std::string &value) {
   // This method set the externalIp value.
   struct IpAddr addr;
   addr.fromString(value);
@@ -160,24 +169,24 @@ std::shared_ptr<spdlog::logger> RuleSnatEntry::logger() {
 }
 
 void RuleSnatEntry::injectToDatapath() {
-  auto sm_rules = parent_.parent_.getParent().get_hash_table<sm_k, sm_v>("sm_rules");
-  sm_k key {
-    .internal_netmask_len = internalNetmask,
-    .internal_ip = internalIp,
+  auto sm_rules =
+      parent_.parent_.getParent().get_hash_table<sm_k, sm_v>("sm_rules");
+  sm_k key{
+      .internal_netmask_len = internalNetmask, .internal_ip = internalIp,
   };
-  sm_v value {
-    .external_ip = externalIp,
-    .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::SNAT,
+  sm_v value{
+      .external_ip = externalIp,
+      .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::SNAT,
   };
 
   sm_rules.set(key, value);
 }
 
 void RuleSnatEntry::removeFromDatapath() {
-  auto sm_rules = parent_.parent_.getParent().get_hash_table<sm_k, sm_v>("sm_rules");
-  sm_k key {
-    .internal_netmask_len = internalNetmask,
-    .internal_ip = internalIp,
+  auto sm_rules =
+      parent_.parent_.getParent().get_hash_table<sm_k, sm_v>("sm_rules");
+  sm_k key{
+      .internal_netmask_len = internalNetmask, .internal_ip = internalIp,
   };
 
   sm_rules.remove(key);

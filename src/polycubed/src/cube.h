@@ -17,27 +17,27 @@
 #pragma once
 
 #include "bcc_mutex.h"
-#include "polycube/services/guid.h"
+#include "id_generator.h"
 #include "node.h"
 #include "patchpanel.h"
-#include "id_generator.h"
 #include "polycube/services/cube_iface.h"
+#include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "polycube/services/port_iface.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <exception>
 #include <map>
 #include <set>
-#include <vector>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 
 // Print compileed eBPF C code (wrappers provided by polycubed included)
 //   as it is passed to bcc in order to get compiled and executed.
@@ -64,11 +64,9 @@ namespace polycubed {
 
 class Cube : public CubeIface {
  public:
-  explicit Cube(const std::string &name,
-                const std::string &service_name,
+  explicit Cube(const std::string &name, const std::string &service_name,
                 PatchPanel &patch_panel_ingress_,
-                PatchPanel &patch_panel_egress_,
-                LogLevel level, CubeType type);
+                PatchPanel &patch_panel_egress_, LogLevel level, CubeType type);
   virtual ~Cube();
 
   // It is not possible to copy nor assign nor move an cube.
@@ -97,18 +95,17 @@ class Cube : public CubeIface {
   const std::string get_service_name() const;
   const Guid &uuid() const;
 
-  int get_table_fd(const std::string &table_name, int index,
-                   ProgramType type);
+  int get_table_fd(const std::string &table_name, int index, ProgramType type);
 
   void set_log_level(LogLevel level);
   LogLevel get_log_level() const;
 
-  void log_compileed_code(std::string& code);
+  void log_compileed_code(std::string &code);
 
   virtual int load(ebpf::BPF &bpf, ProgramType type) = 0;
   virtual void unload(ebpf::BPF &bpf, ProgramType type) = 0;
-  virtual void compile(ebpf::BPF &bpf, const std::string &code,
-                      int index, ProgramType type) = 0;
+  virtual void compile(ebpf::BPF &bpf, const std::string &code, int index,
+                       ProgramType type) = 0;
 
   json toJson(bool include_ports) const;
 
@@ -121,7 +118,7 @@ class Cube : public CubeIface {
   static const std::string MASTER_CODE;
   static const std::string CUBE_H;
 
-protected:
+ protected:
   CubeType type_;
   void init(const std::vector<std::string> &ingress_code,
             const std::vector<std::string> &egress_code);
@@ -145,8 +142,10 @@ protected:
 
   std::unique_ptr<ebpf::BPF> master_program_;
 
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> ingress_programs_;
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> egress_programs_;
+  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+      ingress_programs_;
+  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+      egress_programs_;
 
   std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> ingress_code_;
   std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> egress_code_;

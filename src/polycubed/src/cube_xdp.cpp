@@ -25,23 +25,21 @@
 namespace polycube {
 namespace polycubed {
 
-CubeXDP::CubeXDP(const std::string &name,
-                 const std::string &service_name,
+CubeXDP::CubeXDP(const std::string &name, const std::string &service_name,
                  const std::vector<std::string> &ingress_code,
-                 const std::vector<std::string> &egress_code,
-                 LogLevel level, CubeType type)
-    : Cube(name, service_name,
-           PatchPanel::get_xdp_instance(),
-           PatchPanel::get_tc_instance(),
-           level, type), attach_flags_(0) {
-  switch(type) {
-    // FIXME: replace by definitions in if_link.h when update to new kernel.
-    case CubeType::XDP_SKB:
-      attach_flags_ |= 1U << 1;
-      break;
-    case CubeType::XDP_DRV:
-      attach_flags_ |= 1U << 2;
-      break;
+                 const std::vector<std::string> &egress_code, LogLevel level,
+                 CubeType type)
+    : Cube(name, service_name, PatchPanel::get_xdp_instance(),
+           PatchPanel::get_tc_instance(), level, type),
+      attach_flags_(0) {
+  switch (type) {
+  // FIXME: replace by definitions in if_link.h when update to new kernel.
+  case CubeType::XDP_SKB:
+    attach_flags_ |= 1U << 1;
+    break;
+  case CubeType::XDP_DRV:
+    attach_flags_ |= 1U << 2;
+    break;
   }
 
   // it has to be done here becuase it needs the load, compile methods
@@ -54,8 +52,8 @@ CubeXDP::~CubeXDP() {
   Cube::uninit();
 }
 
-void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code,
-                     int index, ProgramType type) {
+void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code, int index,
+                      ProgramType type) {
   switch (type) {
   case ProgramType::INGRESS:
     compileIngress(bpf, code);
@@ -91,8 +89,8 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
 }
 
 void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
-  std::string all_code(CUBE_H + XDP_HELPERS + XDP_WRAPPERC + \
-    DatapathLog::get_instance().parse_log(code));
+  std::string all_code(CUBE_H + XDP_HELPERS + XDP_WRAPPERC +
+                       DatapathLog::get_instance().parse_log(code));
 
 #ifdef LOG_COMPILEED_CODE
   Cube::log_compileed_code(all_code);
@@ -128,8 +126,8 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
 
 void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
   // compile ebpf program
-  std::string all_code(CubeTC::CUBE_H + CubeTC::WRAPPERC + \
-    DatapathLog::get_instance().parse_log(code));
+  std::string all_code(CubeTC::CUBE_H + CubeTC::WRAPPERC +
+                       DatapathLog::get_instance().parse_log(code));
 
 #ifdef LOG_COMPILEED_CODE
   Cube::log_compileed_code(all_code);
@@ -154,7 +152,7 @@ void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
 #endif
 
   if (init_res.code() != 0) {
-    //logger->error("failed to init bpf program: {0}", init_res.msg());
+    // logger->error("failed to init bpf program: {0}", init_res.msg());
     throw BPFError("failed to init ebpf program: " + init_res.msg());
   }
 }
@@ -166,7 +164,8 @@ int CubeXDP::do_load(ebpf::BPF &bpf) {
 
   int fd_;
   std::lock_guard<std::mutex> guard(bcc_mutex);
-  auto load_res = bpf.load_func("handle_rx_xdp_wrapper", BPF_PROG_TYPE_XDP, fd_);
+  auto load_res =
+      bpf.load_func("handle_rx_xdp_wrapper", BPF_PROG_TYPE_XDP, fd_);
 
 #ifdef LOG_COMPILATION_TIME
   auto end = std::chrono::high_resolution_clock::now();
@@ -175,8 +174,8 @@ int CubeXDP::do_load(ebpf::BPF &bpf) {
 #endif
 
   if (load_res.code() != 0) {
-      logger->error("failed to load XDP program: {0}", load_res.msg());
-      throw BPFError("Failed to load XDP program: " + load_res.msg());
+    logger->error("failed to load XDP program: {0}", load_res.msg());
+    throw BPFError("Failed to load XDP program: " + load_res.msg());
   }
   logger->debug("XDP program loaded with fd {0}", fd_);
 
@@ -196,7 +195,7 @@ void CubeXDP::do_unload(ebpf::BPF &bpf) {
   std::chrono::duration<double> elapsed_seconds = end - start;
   logger->info("+bpf.unload_func: {0}s", elapsed_seconds.count());
 #endif
-  //TODO: Remove also from the xdp_prog list?
+  // TODO: Remove also from the xdp_prog list?
   logger->debug("XDP program unloaded");
 }
 
@@ -267,8 +266,8 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *m
 )";
 
 const std::string CubeXDP::XDP_HELPERS = R"(
-#include <linux/string.h> // memmove
 #include <linux/errno.h>  // EIVNVAL
+#include <linux/string.h> // memmove
 #include <uapi/linux/if_ether.h>  // struct ethhdr
 #include <uapi/linux/ip.h> // struct iphdr
 
@@ -601,5 +600,5 @@ __wsum pcn_csum_diff(__be32 *from, u32 from_size, __be32 *to,
 
 )";
 
-} //namespace polycube
-} //namespace polycubed
+}  // namespace polycube
+}  // namespace polycubed

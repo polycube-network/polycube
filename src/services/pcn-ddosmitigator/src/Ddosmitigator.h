@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/DdosmitigatorInterface.h"
 
@@ -31,18 +29,21 @@
 #include "Ports.h"
 #include "Stats.h"
 
-
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 
-class Ddosmitigator : public polycube::service::Cube<Ports>, public DdosmitigatorInterface {
+class Ddosmitigator : public polycube::service::Cube<Ports>,
+                      public DdosmitigatorInterface {
   friend class Ports;
-public:
-  Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf, CubeType type = CubeType::TC);
+
+ public:
+  Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf,
+                CubeType type = CubeType::TC);
   virtual ~Ddosmitigator();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const DdosmitigatorJsonObject &conf) override;
   DdosmitigatorJsonObject toJsonObject() override;
@@ -61,7 +62,8 @@ public:
   std::string getName() override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: INFO
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE). Default: INFO
   /// </summary>
   DdosmitigatorLoglevelEnum getLoglevel() override;
   void setLoglevel(const DdosmitigatorLoglevelEnum &value) override;
@@ -71,9 +73,12 @@ public:
   /// </summary>
   std::shared_ptr<BlacklistDst> getBlacklistDst(const std::string &ip) override;
   std::vector<std::shared_ptr<BlacklistDst>> getBlacklistDstList() override;
-  void addBlacklistDst(const std::string &ip, const BlacklistDstJsonObject &conf) override;
-  void addBlacklistDstList(const std::vector<BlacklistDstJsonObject> &conf) override;
-  void replaceBlacklistDst(const std::string &ip, const BlacklistDstJsonObject &conf) override;
+  void addBlacklistDst(const std::string &ip,
+                       const BlacklistDstJsonObject &conf) override;
+  void addBlacklistDstList(
+      const std::vector<BlacklistDstJsonObject> &conf) override;
+  void replaceBlacklistDst(const std::string &ip,
+                           const BlacklistDstJsonObject &conf) override;
   void delBlacklistDst(const std::string &ip) override;
   void delBlacklistDstList() override;
 
@@ -89,7 +94,8 @@ public:
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
@@ -109,21 +115,26 @@ public:
   /// </summary>
   std::shared_ptr<BlacklistSrc> getBlacklistSrc(const std::string &ip) override;
   std::vector<std::shared_ptr<BlacklistSrc>> getBlacklistSrcList() override;
-  void addBlacklistSrc(const std::string &ip, const BlacklistSrcJsonObject &conf) override;
-  void addBlacklistSrcList(const std::vector<BlacklistSrcJsonObject> &conf) override;
-  void replaceBlacklistSrc(const std::string &ip, const BlacklistSrcJsonObject &conf) override;
+  void addBlacklistSrc(const std::string &ip,
+                       const BlacklistSrcJsonObject &conf) override;
+  void addBlacklistSrcList(
+      const std::vector<BlacklistSrcJsonObject> &conf) override;
+  void replaceBlacklistSrc(const std::string &ip,
+                           const BlacklistSrcJsonObject &conf) override;
   void delBlacklistSrc(const std::string &ip) override;
   void delBlacklistSrcList() override;
 
   /// <summary>
-  /// If set, this will be the port used to redirect traffic (instead of PASS it to STACK)
+  /// If set, this will be the port used to redirect traffic (instead of PASS it
+  /// to STACK)
   /// </summary>
   std::string getRedirectPort() override;
   void setRedirectPort(const std::string &value) override;
 
-  void replaceAll(std::string &str, const std::string &from, const std::string &to);
+  void replaceAll(std::string &str, const std::string &from,
+                  const std::string &to);
 
-public:
+ public:
   std::string getCode();
   bool reloadCode();
 
@@ -139,7 +150,7 @@ public:
   bool src_match_ = false;
   bool dst_match_ = false;
 
-private:
+ private:
   uint32_t in_port_ = 0;
   uint32_t out_port_ = 1;
 
@@ -152,8 +163,7 @@ private:
   // when code is reloaded it will be set to false
   bool is_code_changed_ = false;
 
-public:
+ public:
   std::unordered_map<std::string, BlacklistSrc> blacklistsrc_;
   std::unordered_map<std::string, BlacklistDst> blacklistdst_;
 };
-

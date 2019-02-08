@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Backend.h"
 #include "Lbdsr.h"
 
-Backend::Backend(Lbdsr &parent, const BackendJsonObject &conf): parent_(parent) {
+Backend::Backend(Lbdsr &parent, const BackendJsonObject &conf)
+    : parent_(parent) {
   logger()->info("Creating Backend instance");
 
   if (conf.poolIsSet()) {
@@ -31,14 +30,15 @@ Backend::Backend(Lbdsr &parent, const BackendJsonObject &conf): parent_(parent) 
 
 Backend::Backend(Lbdsr &parent) : parent_(parent) {}
 
-Backend::~Backend() { }
+Backend::~Backend() {}
 
 void Backend::update(const BackendJsonObject &conf) {
-  //This method updates all the object/parameter in Backend object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Backend object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
 
-  if(conf.poolIsSet()) {
-    for(auto &i : conf.getPool()){
+  if (conf.poolIsSet()) {
+    for (auto &i : conf.getPool()) {
       auto id = i.getId();
       auto m = getPool(id);
       m->update(i);
@@ -46,27 +46,27 @@ void Backend::update(const BackendJsonObject &conf) {
   }
 }
 
-BackendJsonObject Backend::toJsonObject(){
+BackendJsonObject Backend::toJsonObject() {
   BackendJsonObject conf;
 
-  //Remove comments when you implement all sub-methods
-  for(auto &i : getPoolList()){
-   conf.addBackendPool(i->toJsonObject());
+  // Remove comments when you implement all sub-methods
+  for (auto &i : getPoolList()) {
+    conf.addBackendPool(i->toJsonObject());
   }
 
   return conf;
 }
 
-
-void Backend::create(Lbdsr &parent, const BackendJsonObject &conf){
-  //This method creates the actual Backend object given thee key param.
-  //Please remember to call here the create static method for all sub-objects of Backend.
+void Backend::create(Lbdsr &parent, const BackendJsonObject &conf) {
+  // This method creates the actual Backend object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of Backend.
   parent.logger()->debug("[Backend] Received request to create new Backend");
   parent.backend_ = std::make_shared<Backend>(parent, conf);
 }
 
-std::shared_ptr<Backend> Backend::getEntry(Lbdsr &parent){
-  //This method retrieves the pointer to Backend object specified by its keys.
+std::shared_ptr<Backend> Backend::getEntry(Lbdsr &parent) {
+  // This method retrieves the pointer to Backend object specified by its keys.
   if (parent.backend_ != nullptr) {
     return parent.backend_;
   } else {
@@ -74,9 +74,10 @@ std::shared_ptr<Backend> Backend::getEntry(Lbdsr &parent){
   }
 }
 
-void Backend::removeEntry(Lbdsr &parent){
-  //This method removes the single Backend object specified by its keys.
-  //Remember to call here the remove static method for all-sub-objects of Backend.
+void Backend::removeEntry(Lbdsr &parent) {
+  // This method removes the single Backend object specified by its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // Backend.
   if (parent.backend_ != nullptr) {
     parent.backend_->delPoolList();
     parent.backend_ = nullptr;
@@ -84,9 +85,6 @@ void Backend::removeEntry(Lbdsr &parent){
     throw std::runtime_error("There is no backend in this LBDSR");
   }
 }
-
-
-
 
 std::shared_ptr<spdlog::logger> Backend::logger() {
   return parent_.logger();

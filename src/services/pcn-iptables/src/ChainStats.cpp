@@ -151,8 +151,9 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
 
   if (parent.parent_.horus_runtime_enabled_) {
     if (!parent.parent_.horus_swap_) {
-      auto horusProgram = dynamic_cast<Iptables::Horus *>(programs[std::make_pair(
-          ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS)]);
+      auto horusProgram = dynamic_cast<Iptables::Horus *>(
+          programs[std::make_pair(ModulesConstants::HORUS_INGRESS,
+                                  ChainNameEnum::INVALID_INGRESS)]);
       bytes += horusProgram->getBytesCount(id);
       pkts += horusProgram->getPktsCount(id);
       horusProgram->flushCounters(id);

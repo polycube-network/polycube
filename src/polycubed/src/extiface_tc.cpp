@@ -64,7 +64,7 @@ ExtIfaceTC::ExtIfaceTC(const std::string &iface, const PortTC &port)
     load_egress();
 
     PatchPanel::get_tc_instance().add(*this);
-  } catch(...) {
+  } catch (...) {
     used_ifaces.erase(iface);
     throw;
   }
@@ -158,8 +158,6 @@ void ExtIfaceTC::load_tx() {
 int ExtIfaceTC::get_fd() const {
   return fd_;
 }
-
-
 
 }  // namespace polycubed
 }  // namespace polycube

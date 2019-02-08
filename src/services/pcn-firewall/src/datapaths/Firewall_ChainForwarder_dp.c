@@ -22,18 +22,18 @@
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_DEBUG, "Code ChainForwarder receiving packet.");
-  if (md->in_port == _INGRESSPORT){
-    #if _NR_ELEMENTS_INGRESS > 0
+  if (md->in_port == _INGRESSPORT) {
+#if _NR_ELEMENTS_INGRESS > 0
     call_ingress_program(ctx, _NEXT_HOP_INGRESS_1);
-    #endif
+#endif
     pcn_log(ctx, LOG_DEBUG, "No ingress chain. ");
     _DEFAULTACTION_INGRESS
   }
 
-  if (md->in_port == _EGRESSPORT){
-    #if _NR_ELEMENTS_EGRESS > 0
+  if (md->in_port == _EGRESSPORT) {
+#if _NR_ELEMENTS_EGRESS > 0
     call_ingress_program(ctx, _NEXT_HOP_EGRESS_1);
-    #endif
+#endif
     pcn_log(ctx, LOG_DEBUG, "No egress chain. ");
     _DEFAULTACTION_EGRESS
   }

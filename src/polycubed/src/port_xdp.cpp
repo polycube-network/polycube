@@ -22,7 +22,7 @@
 namespace polycube {
 namespace polycubed {
 
-PortXDP::PortXDP(CubeIface &parent, const std::string& name, uint16_t id)
+PortXDP::PortXDP(CubeIface &parent, const std::string &name, uint16_t id)
     : Port(parent, name, id) {
   type_ = PortType::XDP;
 }
@@ -40,7 +40,7 @@ std::string PortXDP::get_cube_name() const {
 }
 
 int PortXDP::get_attach_flags() const {
-  CubeXDP &p = static_cast<CubeXDP&>(parent_);
+  CubeXDP &p = static_cast<CubeXDP &>(parent_);
   return p.attach_flags_;
 }
 
@@ -48,5 +48,5 @@ unsigned int PortXDP::get_peer_ifindex() const {
   return Netlink::getInstance().get_iface_index(peer_);
 }
 
-} //namespace polycube
-} //namespace polycubed
+}  // namespace polycube
+}  // namespace polycubed

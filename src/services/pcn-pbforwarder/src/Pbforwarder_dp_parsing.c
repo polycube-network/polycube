@@ -62,29 +62,26 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
   pkt->dstMac = ethernet->dst;
   uint16_t ether_type = ethernet->proto;
 
-  #ifdef POLYCUBE_XDP
+#ifdef POLYCUBE_XDP
   pkt->vlan_present = pcn_is_vlan_present(ctx);
   if (pkt->vlan_present) {
-    if(pcn_get_vlan_id(ctx, &(pkt->vlan), &ether_type) < 0)
+    if (pcn_get_vlan_id(ctx, &(pkt->vlan), &ether_type) < 0)
       return RX_DROP;
   }
-  #else
+#else
   pkt->vlan_present = ctx->vlan_present;
   if (pkt->vlan_present) {
     ether_type = ctx->vlan_proto;
     pkt->vlan = (uint16_t)(ctx->vlan_tci & 0x0fff);
   }
-  #endif
-
-
-
+#endif
 
   /* Parsing L3 */
   struct iphdr *ip = NULL;
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   pkt->ip = 0;
-  #if LEVEL > 2
+#if LEVEL > 2
   if (ether_type == bpf_htons(ETH_P_IP)) {
     ip = data + sizeof(*ethernet);
     if (data + sizeof(*ethernet) + sizeof(*ip) > data_end)
@@ -92,7 +89,7 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
     pkt->ip = 1;
     pkt->srcIp = ip->saddr;
     pkt->dstIp = ip->daddr;
-    #if LEVEL == 4
+#if LEVEL == 4
     if (ip->protocol == IPPROTO_TCP) {
       tcp = data + sizeof(*ethernet) + sizeof(*ip);
       if (data + sizeof(*ethernet) + sizeof(*ip) + sizeof(*tcp) > data_end)
@@ -108,9 +105,9 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
       pkt->srcPort = udp->source;
       pkt->dstPort = udp->dest;
     }
-    #endif
+#endif
   }
-  #endif
+#endif
   call_ingress_program(ctx, 1);
   return RX_DROP;
 }

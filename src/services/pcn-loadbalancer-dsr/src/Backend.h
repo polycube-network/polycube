@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/BackendInterface.h"
 
@@ -35,7 +33,8 @@ using namespace polycube::service;
 
 class Backend : public BackendInterface {
   friend class BackendPool;
-public:
+
+ public:
   Backend(Lbdsr &parent, const BackendJsonObject &conf);
   Backend(Lbdsr &parent);
   virtual ~Backend();
@@ -55,11 +54,12 @@ public:
   std::vector<std::shared_ptr<BackendPool>> getPoolList() override;
   void addPool(const uint32_t &id, const BackendPoolJsonObject &conf) override;
   void addPoolList(const std::vector<BackendPoolJsonObject> &conf) override;
-  void replacePool(const uint32_t &id, const BackendPoolJsonObject &conf) override;
+  void replacePool(const uint32_t &id,
+                   const BackendPoolJsonObject &conf) override;
   void delPool(const uint32_t &id) override;
   void delPoolList() override;
 
-private:
+ private:
   Lbdsr &parent_;
   std::unordered_map<uint32_t, std::string> pools_;
 };

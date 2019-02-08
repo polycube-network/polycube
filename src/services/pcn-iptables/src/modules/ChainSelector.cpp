@@ -32,7 +32,8 @@ Iptables::ChainSelector::ChainSelector(const int &index, Iptables &outer,
   netlink_notification_index_chainselector_ =
       netlink_instance_chainselector_.registerObserver(
           polycube::polycubed::Netlink::Event::ALL,
-          std::bind(&ChainSelector::netlinkNotificationCallbackChainSelector, this));
+          std::bind(&ChainSelector::netlinkNotificationCallbackChainSelector,
+                    this));
 }
 
 Iptables::ChainSelector::~ChainSelector() {
@@ -96,7 +97,7 @@ void Iptables::ChainSelector::updateLocalIps() {
     if (local_ips_.find(new_ip.first) == local_ips_.end()) {
       local_ips_.insert({new_ip.first, new_ip.first});
       iptables_.logger()->info("ip: {0} was not present. ++ ADDING",
-                              new_ip.first);
+                               new_ip.first);
       try {
         uint32_t ip_be = polycube::service::utils::ip_string_to_be_uint(
             removeNetFromIp(new_ip.first));
@@ -113,7 +114,7 @@ void Iptables::ChainSelector::updateLocalIps() {
   for (auto old_ip = local_ips_.begin(); old_ip != local_ips_.end();) {
     if (localip_new.find((*old_ip).first) == localip_new.end()) {
       iptables_.logger()->info("ip: {0} is not present. -- REMOVING",
-                              (*old_ip).first);
+                               (*old_ip).first);
       try {
         uint32_t ip_be = polycube::service::utils::ip_string_to_be_uint(
             removeNetFromIp((*old_ip).first));
@@ -147,8 +148,8 @@ uint64_t Iptables::ChainSelector::getDefaultPktsCount(ChainNameEnum chain) {
     std::lock_guard<std::mutex> guard(program_mutex_);
     uint64_t pkts = 0;
 
-    auto pkts_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto pkts_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = pkts_table.get(0);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -157,8 +158,7 @@ uint64_t Iptables::ChainSelector::getDefaultPktsCount(ChainNameEnum chain) {
   }
 }
 
-uint64_t Iptables::ChainSelector::getDefaultBytesCount(
-    ChainNameEnum chain) {
+uint64_t Iptables::ChainSelector::getDefaultBytesCount(ChainNameEnum chain) {
   std::string table_name = "bytes_default_";
 
   if (chain == ChainNameEnum::INPUT)
@@ -170,8 +170,8 @@ uint64_t Iptables::ChainSelector::getDefaultBytesCount(
 
   try {
     std::lock_guard<std::mutex> guard(program_mutex_);
-    auto bytes_table =
-        iptables_.get_percpuarray_table<uint64_t>(table_name, index_, program_type_);
+    auto bytes_table = iptables_.get_percpuarray_table<uint64_t>(
+        table_name, index_, program_type_);
     auto values = bytes_table.get(0);
     uint64_t bytes = 0;
     return std::accumulate(values.begin(), values.end(), bytes);

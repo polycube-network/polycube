@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <string>
 #include <spdlog/spdlog.h>
+#include <string>
 
 namespace polycube {
 
-// Taken from https://github.com/gabime/spdlog/blob/master/include/spdlog/common.h
+// Taken from
+// https://github.com/gabime/spdlog/blob/master/include/spdlog/common.h
 
 enum class LogLevel {
   TRACE = 0,

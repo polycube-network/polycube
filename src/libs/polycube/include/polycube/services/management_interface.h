@@ -31,14 +31,14 @@ struct ServiceMetadata {
   std::string swaggerCodegenGitRepoId;
   std::string dataModel;
   std::string requiredKernelVersion;
-  //Add here additional service metadata
+  // Add here additional service metadata
 };
 
 class ManagementInterface {
  public:
-  virtual ~ManagementInterface() {};
+  virtual ~ManagementInterface(){};
   virtual void control_handler(const HttpHandleRequest &request,
-                           HttpHandleResponse &response) = 0;
+                               HttpHandleResponse &response) = 0;
 };
 
 }  // namespace service

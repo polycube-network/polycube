@@ -168,8 +168,7 @@ std::vector<std::string> Firewall::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Firewall::packet_in(Ports &port,
-                         polycube::service::PacketInMetadata &md,
+void Firewall::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                          const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }

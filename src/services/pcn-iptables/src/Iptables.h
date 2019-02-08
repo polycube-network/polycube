@@ -148,7 +148,7 @@ class Iptables : public polycube::service::Cube<Ports>,
                        const uint16_t &dport,
                        const SessionTableJsonObject &conf) override;
   void addSessionTableList(
-          const std::vector<SessionTableJsonObject> &conf) override;
+      const std::vector<SessionTableJsonObject> &conf) override;
   void replaceSessionTable(const std::string &src, const std::string &dst,
                            const std::string &l4proto, const uint16_t &sport,
                            const uint16_t &dport,
@@ -264,7 +264,8 @@ class Iptables : public polycube::service::Cube<Ports>,
     // same as reload.
     bool load();
 
-    // For a given Program, it generated a list of next hops_ with following syntax
+    // For a given Program, it generated a list of next hops_ with following
+    // syntax
     // <_NEXT_HOP_<INPUT/FORWARD/OUTPUT>_<hop_number>
     // E.g. _NEXT_HOP_INPUT_1
     // used in chainforwarder
@@ -291,8 +292,8 @@ class Iptables : public polycube::service::Cube<Ports>,
     enum HorusType { HORUS_INGRESS, HORUS_EGRESS };
 
     Horus(const int &index, Iptables &outer,
-         const std::map<struct HorusRule, struct HorusValue> &horus,
-         HorusType t = HORUS_INGRESS);
+          const std::map<struct HorusRule, struct HorusValue> &horus,
+          HorusType t = HORUS_INGRESS);
     ~Horus();
 
     std::string getCode();
@@ -302,7 +303,8 @@ class Iptables : public polycube::service::Cube<Ports>,
     uint64_t getBytesCount(int rule_number);
 
     void flushCounters(int rule_number);
-    void updateTableValue(struct HorusRule horus_key, struct HorusValue horus_value);
+    void updateTableValue(struct HorusRule horus_key,
+                          struct HorusValue horus_value);
     void updateMap(const std::map<struct HorusRule, struct HorusValue> &horus);
 
    private:
@@ -388,7 +390,7 @@ class Iptables : public polycube::service::Cube<Ports>,
     void updateTableValue(IpAddr ip, const std::vector<uint64_t> &value);
     void updateMap(const std::map<struct IpAddr, std::vector<uint64_t>> &ips);
 
-  private:
+   private:
     int type_;
   };
 
@@ -406,10 +408,10 @@ class Iptables : public polycube::service::Cube<Ports>,
 
   class L4PortLookup : public Program {
    public:
-    L4PortLookup(const int &index, const ChainNameEnum &chain,
-                 const int &type, Iptables &outer);
-    L4PortLookup(const int &index, const ChainNameEnum &chain,
-                 const int &type, Iptables &outer,
+    L4PortLookup(const int &index, const ChainNameEnum &chain, const int &type,
+                 Iptables &outer);
+    L4PortLookup(const int &index, const ChainNameEnum &chain, const int &type,
+                 Iptables &outer,
                  const std::map<uint16_t, std::vector<uint64_t>> &ports);
 
     ~L4PortLookup();
@@ -418,33 +420,32 @@ class Iptables : public polycube::service::Cube<Ports>,
     bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
     void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &ports);
 
-  private:
-      int type_;  // SOURCE or DESTINATION
-      bool wildcard_rule_;
-      std::string wildcard_string_;
+   private:
+    int type_;  // SOURCE or DESTINATION
+    bool wildcard_rule_;
+    std::string wildcard_string_;
   };
-
 
   class InterfaceLookup : public Program {
-  public:
-      InterfaceLookup(const int &index, const ChainNameEnum &chain,
-                   const int &type, Iptables &outer);
-      InterfaceLookup(const int &index, const ChainNameEnum &chain,
-                   const int &type, Iptables &outer,
-                   const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
+   public:
+    InterfaceLookup(const int &index, const ChainNameEnum &chain,
+                    const int &type, Iptables &outer);
+    InterfaceLookup(
+        const int &index, const ChainNameEnum &chain, const int &type,
+        Iptables &outer,
+        const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
 
-      ~InterfaceLookup();
-      std::string getCode();
+    ~InterfaceLookup();
+    std::string getCode();
 
-      bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
-      void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
+    bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
+    void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &interfaces);
 
-  private:
-      int type_;  // IN or OUT
-      bool wildcard_rule_;
-      std::string wildcard_string_;
+   private:
+    int type_;  // IN or OUT
+    bool wildcard_rule_;
+    std::string wildcard_string_;
   };
-
 
   class TcpFlagsLookup : public Program {
    public:
@@ -472,8 +473,7 @@ class Iptables : public polycube::service::Cube<Ports>,
 
   class ActionLookup : public Program {
    public:
-    ActionLookup(const int &index, const ChainNameEnum &chain,
-                 Iptables &outer);
+    ActionLookup(const int &index, const ChainNameEnum &chain, Iptables &outer);
     ~ActionLookup();
 
     std::string getCode();
@@ -506,9 +506,10 @@ class Iptables : public polycube::service::Cube<Ports>,
 
   uint8_t conntrack_mode_ = ConntrackModes::OFF;  // No Optimizations yet
 
-  uint8_t conntrack_mode_input_ = ConntrackModes::OFF;    // No Optimizations yet
-  uint8_t conntrack_mode_forward_ = ConntrackModes::OFF;  // No Optimizations yet
-  uint8_t conntrack_mode_output_ = ConntrackModes::OFF;   // No Optimizations yet
+  uint8_t conntrack_mode_input_ = ConntrackModes::OFF;  // No Optimizations yet
+  uint8_t conntrack_mode_forward_ =
+      ConntrackModes::OFF;                               // No Optimizations yet
+  uint8_t conntrack_mode_output_ = ConntrackModes::OFF;  // No Optimizations yet
 
   bool accept_established_enabled_input_ = false;
   bool accept_established_enabled_forward_ = false;

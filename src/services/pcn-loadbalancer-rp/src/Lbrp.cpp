@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Lbrp.h"
 #include "Lbrp_dp.h"
@@ -27,7 +25,7 @@
 using namespace Tins;
 
 Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf, CubeType type)
-  : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbrp] [%n] [%l] %v");
   logger()->info("Creating Lbrp instance");
 
@@ -36,15 +34,15 @@ Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf, CubeType type)
   addPortsList(conf.getPorts());
 }
 
-
-Lbrp::~Lbrp() { }
+Lbrp::~Lbrp() {}
 
 void Lbrp::update(const LbrpJsonObject &conf) {
-  //This method updates all the object/parameter in Lbrp object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Lbrp object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
 
-  if(conf.serviceIsSet()) {
-    for(auto &i : conf.getService()){
+  if (conf.serviceIsSet()) {
+    for (auto &i : conf.getService()) {
       auto vip = i.getVip();
       auto vport = i.getVport();
       auto proto = i.getProto();
@@ -53,18 +51,17 @@ void Lbrp::update(const LbrpJsonObject &conf) {
     }
   }
 
-  if(conf.loglevelIsSet()) {
+  if (conf.loglevelIsSet()) {
     setLoglevel(conf.getLoglevel());
   }
 
-  if(conf.srcIpRewriteIsSet()) {
+  if (conf.srcIpRewriteIsSet()) {
     auto m = getSrcIpRewrite();
     m->update(conf.getSrcIpRewrite());
   }
 
-
-  if(conf.portsIsSet()) {
-    for(auto &i : conf.getPorts()){
+  if (conf.portsIsSet()) {
+    for (auto &i : conf.getPorts()) {
       auto name = i.getName();
       auto m = getPorts(name);
       m->update(i);
@@ -72,12 +69,12 @@ void Lbrp::update(const LbrpJsonObject &conf) {
   }
 }
 
-LbrpJsonObject Lbrp::toJsonObject(){
+LbrpJsonObject Lbrp::toJsonObject() {
   LbrpJsonObject conf;
 
   conf.setName(getName());
 
-  for(auto &i : getServiceList()){
+  for (auto &i : getServiceList()) {
     conf.addService(i->toJsonObject());
   }
 
@@ -85,7 +82,7 @@ LbrpJsonObject Lbrp::toJsonObject(){
   conf.setSrcIpRewrite(getSrcIpRewrite()->toJsonObject());
   conf.setType(getType());
 
-  for(auto &i : getPortsList()){
+  for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
 
@@ -93,15 +90,16 @@ LbrpJsonObject Lbrp::toJsonObject(){
   return conf;
 }
 
-std::string Lbrp::generate_code(){
+std::string Lbrp::generate_code() {
   return lbrp_code;
 }
 
-std::vector<std::string> Lbrp::generate_code_vector(){
+std::vector<std::string> Lbrp::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet){
+void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                     const std::vector<uint8_t> &packet) {
   EthernetII eth(&packet[0], packet.size());
 
   auto b_port = getBackendPort();
@@ -109,7 +107,8 @@ void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const
     return;
 
   // send the original packet
-  logger()->debug("Sending original ARP reply to backend port: {}", b_port->name());
+  logger()->debug("Sending original ARP reply to backend port: {}",
+                  b_port->name());
   b_port->send_packet_out(eth);
 
   // send a second packet for the virtual src IPs
@@ -122,7 +121,8 @@ void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const
   IPv4Address addr(ip);
   arp.sender_ip_addr(addr);
 
-  logger()->debug("Sending modified ARP reply to backend port: {}", b_port->name());
+  logger()->debug("Sending modified ARP reply to backend port: {}",
+                  b_port->name());
   b_port->send_packet_out(eth);
 }
 
@@ -130,21 +130,23 @@ void Lbrp::reloadCodeWithNewPorts() {
   uint16_t frontend_port = 0;
   uint16_t backend_port = 1;
 
-  for(auto &it : get_ports()) {
-    switch(it->getType()) {
-      case PortsTypeEnum::FRONTEND:
-        frontend_port = it->index();
-        break;
-      case PortsTypeEnum::BACKEND:
-        backend_port = it->index();
-        break;
+  for (auto &it : get_ports()) {
+    switch (it->getType()) {
+    case PortsTypeEnum::FRONTEND:
+      frontend_port = it->index();
+      break;
+    case PortsTypeEnum::BACKEND:
+      backend_port = it->index();
+      break;
     }
   }
 
   logger()->debug("Reloading code with frontend port: {0} and backend port {1}",
-                   frontend_port, backend_port);
-  std::string frontend_port_str("#define FRONTEND_PORT " + std::to_string(frontend_port));
-  std::string backend_port_str("#define BACKEND_PORT " + std::to_string(backend_port));
+                  frontend_port, backend_port);
+  std::string frontend_port_str("#define FRONTEND_PORT " +
+                                std::to_string(frontend_port));
+  std::string backend_port_str("#define BACKEND_PORT " +
+                               std::to_string(backend_port));
 
   reload(frontend_port_str + "\n" + backend_port_str + "\n" + lbrp_code);
 
@@ -152,8 +154,8 @@ void Lbrp::reloadCodeWithNewPorts() {
 }
 
 std::shared_ptr<Ports> Lbrp::getFrontendPort() {
-  for(auto& it : get_ports()) {
-    if(it->getType() == PortsTypeEnum::FRONTEND){
+  for (auto &it : get_ports()) {
+    if (it->getType() == PortsTypeEnum::FRONTEND) {
       return it;
     }
   }
@@ -161,8 +163,8 @@ std::shared_ptr<Ports> Lbrp::getFrontendPort() {
 }
 
 std::shared_ptr<Ports> Lbrp::getBackendPort() {
-  for(auto& it : get_ports()) {
-    if(it->getType() == PortsTypeEnum::BACKEND){
+  for (auto &it : get_ports()) {
+    if (it->getType() == PortsTypeEnum::BACKEND) {
       return it;
     }
   }

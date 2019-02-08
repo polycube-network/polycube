@@ -69,8 +69,8 @@ std::string Firewall::L4PortLookup::getCode() {
   return noMacroCode;
 }
 
-bool Firewall::L4PortLookup::updateTableValue(uint16_t port,
-                                              const std::vector<uint64_t> &value) {
+bool Firewall::L4PortLookup::updateTableValue(
+    uint16_t port, const std::vector<uint64_t> &value) {
   std::string tableName;
 
   if (type == SOURCE_TYPE) {

@@ -17,7 +17,7 @@
 #ifndef STP_H
 #define STP_H 1
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -34,9 +34,9 @@ extern "C" {
 
 struct ofpbuf;
 
-#define ETH_ADDR_LEN           6
-#define ETH_HEADER_LEN         14
-#define DOT1Q_HEADER_LEN       4
+#define ETH_ADDR_LEN 6
+#define ETH_HEADER_LEN 14
+#define DOT1Q_HEADER_LEN 4
 #define LLC_HEADER_LEN 3
 
 /* LLC field values used for STP frames. */
@@ -49,19 +49,17 @@ struct ofpbuf;
 #define STP_DEFAULT_PORT_PRIORITY 128
 
 /* Default time values. */
-#define STP_DEFAULT_MAX_AGE    20000
+#define STP_DEFAULT_MAX_AGE 20000
 #define STP_DEFAULT_HELLO_TIME 2000
-#define STP_DEFAULT_FWD_DELAY  15000
+#define STP_DEFAULT_FWD_DELAY 15000
 
 /* Bridge identifier.  Top 16 bits are a priority value (numerically lower
  * values are higher priorities).  Bottom 48 bits are MAC address of bridge. */
 typedef uint64_t stp_identifier;
 
-
 #define STP_ID_FMT "%04" PRIx16 ".%012" PRIx64
 #define STP_ID_ARGS(stp_id) \
-    (uint16_t)((stp_id) >> 48), \
-    (uint64_t)((stp_id) & 0xffffffffffffULL)
+  (uint16_t)((stp_id) >> 48), (uint64_t)((stp_id)&0xffffffffffffULL)
 
 #define STP_PORT_ID_FMT "%04" PRIx16
 
@@ -135,11 +133,11 @@ bool stp_get_changed_port(struct stp *, struct stp_port **portp);
  * likely different than the spec would indicate.
  */
 enum stp_state {
-    STP_DISABLED = 1 << 0,       /* 8.4.5: See note above. */
-    STP_LISTENING = 1 << 1,      /* 8.4.2: Not learning or relaying frames. */
-    STP_LEARNING = 1 << 2,       /* 8.4.3: Learning but not relaying frames. */
-    STP_FORWARDING = 1 << 3,     /* 8.4.4: Learning and relaying frames. */
-    STP_BLOCKING = 1 << 4        /* 8.4.1: Initial boot state. */
+  STP_DISABLED = 1 << 0,   /* 8.4.5: See note above. */
+  STP_LISTENING = 1 << 1,  /* 8.4.2: Not learning or relaying frames. */
+  STP_LEARNING = 1 << 2,   /* 8.4.3: Learning but not relaying frames. */
+  STP_FORWARDING = 1 << 3, /* 8.4.4: Learning and relaying frames. */
+  STP_BLOCKING = 1 << 4    /* 8.4.1: Initial boot state. */
 };
 const char *stp_state_name(enum stp_state);
 bool stp_forward_in_state(enum stp_state);
@@ -148,10 +146,10 @@ bool stp_should_forward_bpdu(enum stp_state);
 
 /* Role of an STP port. */
 enum stp_role {
-    STP_ROLE_ROOT,               /* Path to root bridge. */
-    STP_ROLE_DESIGNATED,         /* Path to LAN segments. */
-    STP_ROLE_ALTERNATE,          /* Backup path to root bridge. */
-    STP_ROLE_DISABLED            /* Port does not participate in STP. */
+  STP_ROLE_ROOT,       /* Path to root bridge. */
+  STP_ROLE_DESIGNATED, /* Path to LAN segments. */
+  STP_ROLE_ALTERNATE,  /* Backup path to root bridge. */
+  STP_ROLE_DISABLED    /* Port does not participate in STP. */
 };
 const char *stp_role_name(enum stp_role);
 
@@ -165,8 +163,8 @@ int stp_port_no(const struct stp_port *);
 int stp_port_get_id(const struct stp_port *);
 enum stp_state stp_port_get_state(const struct stp_port *);
 enum stp_role stp_port_get_role(const struct stp_port *);
-void stp_port_get_counts(const struct stp_port *,
-                         int *tx_count, int *rx_count, int *error_count);
+void stp_port_get_counts(const struct stp_port *, int *tx_count, int *rx_count,
+                         int *error_count);
 void stp_port_enable(struct stp_port *);
 void stp_port_disable(struct stp_port *);
 void stp_port_set_priority(struct stp_port *, uint8_t new_priority);
@@ -176,7 +174,7 @@ void stp_port_set_speed(struct stp_port *, unsigned int speed);
 void stp_port_enable_change_detection(struct stp_port *);
 void stp_port_disable_change_detection(struct stp_port *);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

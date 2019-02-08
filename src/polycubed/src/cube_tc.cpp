@@ -25,15 +25,11 @@
 namespace polycube {
 namespace polycubed {
 
-CubeTC::CubeTC(const std::string &name,
-               const std::string &service_name,
+CubeTC::CubeTC(const std::string &name, const std::string &service_name,
                const std::vector<std::string> &ingress_code,
-               const std::vector<std::string> &egress_code,
-               LogLevel level)
-    : Cube(name, service_name,
-           PatchPanel::get_tc_instance(),
-           PatchPanel::get_tc_instance(),
-           level, CubeType::TC) {
+               const std::vector<std::string> &egress_code, LogLevel level)
+    : Cube(name, service_name, PatchPanel::get_tc_instance(),
+           PatchPanel::get_tc_instance(), level, CubeType::TC) {
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
@@ -47,8 +43,8 @@ CubeTC::~CubeTC() {
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
                         ebpf::BPF &bpf, const std::string &code, int index) {
   // compile ebpf program
-  std::string all_code(CUBE_H + WRAPPERC + \
-   DatapathLog::get_instance().parse_log(code));
+  std::string all_code(CUBE_H + WRAPPERC +
+                       DatapathLog::get_instance().parse_log(code));
 
 #ifdef LOG_COMPILEED_CODE
   Cube::log_compileed_code(all_code);
@@ -73,13 +69,13 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
 #endif
 
   if (init_res.code() != 0) {
-    //logger->error("failed to init bpf program: {0}", init_res.msg());
+    // logger->error("failed to init bpf program: {0}", init_res.msg());
     throw BPFError("failed to init ebpf program: " + init_res.msg());
   }
 }
 
 int CubeTC::do_load(ebpf::BPF &bpf) {
- int fd_;
+  int fd_;
 
 #ifdef LOG_COMPILATION_TIME
   auto start = std::chrono::high_resolution_clock::now();
@@ -96,7 +92,7 @@ int CubeTC::do_load(ebpf::BPF &bpf) {
 #endif
 
   if (load_res.code() != 0) {
-    //logger->error("failed to load bpf program: {0}", load_res.msg());
+    // logger->error("failed to load bpf program: {0}", load_res.msg());
     throw BPFError("failed to load bpf program: " + load_res.msg());
   }
 

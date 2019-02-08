@@ -62,8 +62,8 @@ std::string Firewall::TcpFlagsLookup::getCode() {
   return noMacroCode;
 }
 
-bool Firewall::TcpFlagsLookup::updateTableValue(uint32_t flagMask,
-                                                const std::vector<uint64_t> &value) {
+bool Firewall::TcpFlagsLookup::updateTableValue(
+    uint32_t flagMask, const std::vector<uint64_t> &value) {
   std::string tableName = "tcpFlags";
 
   if (direction == ChainNameEnum::INGRESS)

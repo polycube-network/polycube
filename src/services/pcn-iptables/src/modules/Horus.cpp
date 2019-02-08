@@ -58,9 +58,9 @@ struct horusKey {
   }
 };
 
-Iptables::Horus::Horus(const int &index, Iptables &outer,
-                     const std::map<struct HorusRule, struct HorusValue> &horus,
-                     HorusType type)
+Iptables::Horus::Horus(
+    const int &index, Iptables &outer,
+    const std::map<struct HorusRule, struct HorusValue> &horus, HorusType type)
     : Iptables::Program(iptables_code_horus, index,
                         ChainNameEnum::INVALID_INGRESS, outer) {
   type_ = type;
@@ -137,8 +137,8 @@ std::string Iptables::Horus::getCode() {
     replaceAll(no_macro_code, "call_bpf_program", "call_egress_program");
   }
 
-  iptables_.logger()->debug("HORUS fields ENABLED: {0} - DISABLED {1} ", enabled,
-                           disabled);
+  iptables_.logger()->debug("HORUS fields ENABLED: {0} - DISABLED {1} ",
+                            enabled, disabled);
 
   return no_macro_code;
 }
@@ -150,7 +150,8 @@ uint64_t Iptables::Horus::getPktsCount(int rule_number) {
     std::lock_guard<std::mutex> guard(program_mutex_);
     uint64_t pkts = 0;
 
-    auto pkts_table = iptables_.get_percpuarray_table<uint64_t>(table_name, index_);
+    auto pkts_table =
+        iptables_.get_percpuarray_table<uint64_t>(table_name, index_);
     auto values = pkts_table.get(rule_number);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -193,7 +194,7 @@ void Iptables::Horus::flushCounters(int rule_number) {
 }
 
 void Iptables::Horus::updateTableValue(struct HorusRule horus_key,
-                                      struct HorusValue horus_value) {
+                                       struct HorusValue horus_value) {
   std::vector<std::string> key_vector;
   struct horusKey key;
 

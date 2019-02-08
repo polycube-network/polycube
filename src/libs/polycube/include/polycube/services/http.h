@@ -31,21 +31,15 @@ using Http::Code;
  * this class is still under contruction.
  */
 
-enum class HelpType {
-  NO_HELP,
-  NONE,
-  SHOW,
-  SET,
-  DEL,
-  ADD
-};
+enum class HelpType { NO_HELP, NONE, SHOW, SET, DEL, ADD };
 
 class HttpHandleRequest {
  public:
   HttpHandleRequest();
   // TODO: add headers to this constructor
   HttpHandleRequest(Method method, const std::string &url,
-                   const std::string &body, HelpType help_type = HelpType::NO_HELP);
+                    const std::string &body,
+                    HelpType help_type = HelpType::NO_HELP);
   virtual ~HttpHandleRequest();
 
   std::string resource() const;

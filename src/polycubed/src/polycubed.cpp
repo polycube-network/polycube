@@ -17,14 +17,14 @@
 #include <algorithm>
 #include <thread>
 
+#include <errno.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/file.h>
-#include <errno.h>
 
 #include "config.h"
 #include "polycube/services/json.hpp"
@@ -71,7 +71,7 @@ void shutdown_handler(int s) {
 void initlogger() {
   spdlog::drop("polycubed");
   file = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-    config.getLogFile(), 1048576 * 5, 3);
+      config.getLogFile(), 1048576 * 5, 3);
   console = std::make_shared<spdlog::sinks::stdout_sink_mt>();
   sinks = {file, console};
   logger = std::make_shared<spdlog::logger>("polycubed", sinks);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
 
   if (getuid()) {
     logger->critical("please run polycubed as root");
-     exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
 
   config.dump();
@@ -169,7 +169,8 @@ int main(int argc, char *argv[]) {
   logger->info("version {}", VERSION);
 
   if (!utils::check_kernel_version(REQUIRED_POLYCUBED_KERNEL)) {
-    logger->error("kernel {0} is required for polycubed", REQUIRED_POLYCUBED_KERNEL);
+    logger->error("kernel {0} is required for polycubed",
+                  REQUIRED_POLYCUBED_KERNEL);
     exit(EXIT_FAILURE);
   }
 
@@ -194,9 +195,10 @@ int main(int argc, char *argv[]) {
   if (rc) {
     if (EWOULDBLOCK == errno) {
       unsigned long other_pid;
-      FILE * pif_file_f = fdopen(pid_file, "r");
+      FILE *pif_file_f = fdopen(pid_file, "r");
       fscanf(pif_file_f, "%lu", &other_pid);
-      logger->critical("There is another polycube instance running with pid {0}", other_pid);
+      logger->critical(
+          "There is another polycube instance running with pid {0}", other_pid);
       exit(EXIT_FAILURE);
     }
   }
@@ -207,7 +209,7 @@ int main(int argc, char *argv[]) {
   // Each instance of a service requires a high number of file descriptors
   // (for example helloworld required 7), hence the default limit is too low
   // for creating many instances of the services.
-  struct rlimit r = {32*1024, 64*1024};
+  struct rlimit r = {32 * 1024, 64 * 1024};
   if (setrlimit(RLIMIT_NOFILE, &r)) {
     logger->critical("Failed to set max number of possible filedescriptor");
     return -1;
@@ -227,7 +229,7 @@ int main(int argc, char *argv[]) {
     PatchPanel::get_xdp_instance();
     Controller::get_tc_instance();
     Controller::get_xdp_instance();
-  } catch(const std::exception &e) {
+  } catch (const std::exception &e) {
     logger->critical("Error starting polycube: {0}", e.what());
     return -1;
   }

@@ -15,9 +15,9 @@
  */
 
 #include "Pbforwarder.h"
-#include "Pbforwarder_dp_parsing.h"
-#include "Pbforwarder_dp_matching.h"
 #include "Pbforwarder_dp_action.h"
+#include "Pbforwarder_dp_matching.h"
+#include "Pbforwarder_dp_parsing.h"
 
 Pbforwarder::Pbforwarder(const std::string name,
                          const PbforwarderJsonObject &conf, CubeType type)

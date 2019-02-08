@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "RulePortForwarding.h"
 #include "Nat.h"
 
 using namespace polycube::service;
 
-RulePortForwarding::RulePortForwarding(Rule &parent): parent_(parent) {}
+RulePortForwarding::RulePortForwarding(Rule &parent) : parent_(parent) {}
 
-RulePortForwarding::RulePortForwarding(Rule &parent, const RulePortForwardingJsonObject &conf): parent_(parent) {
+RulePortForwarding::RulePortForwarding(Rule &parent,
+                                       const RulePortForwardingJsonObject &conf)
+    : parent_(parent) {
   update(conf);
 }
 
-RulePortForwarding::~RulePortForwarding() { }
+RulePortForwarding::~RulePortForwarding() {}
 
 void RulePortForwarding::update(const RulePortForwardingJsonObject &conf) {
-  // This method updates all the object/parameter in RulePortForwarding object specified in the conf JsonObject.
+  // This method updates all the object/parameter in RulePortForwarding object
+  // specified in the conf JsonObject.
   // You can modify this implementation.
   if (conf.entryIsSet()) {
-    for(auto &i : conf.getEntry()){
+    for (auto &i : conf.getEntry()) {
       auto id = i.getId();
       auto m = getEntry(id);
       m->update(i);
@@ -43,29 +44,34 @@ void RulePortForwarding::update(const RulePortForwardingJsonObject &conf) {
   }
 }
 
-RulePortForwardingJsonObject RulePortForwarding::toJsonObject(){
+RulePortForwardingJsonObject RulePortForwarding::toJsonObject() {
   RulePortForwardingJsonObject conf;
-  for(auto &i : getEntryList()){
+  for (auto &i : getEntryList()) {
     conf.addRulePortForwardingEntry(i->toJsonObject());
   }
   return conf;
 }
 
-
-void RulePortForwarding::create(Rule &parent, const RulePortForwardingJsonObject &conf){
-  // This method creates the actual RulePortForwarding object given thee key param.
-  // Please remember to call here the create static method for all sub-objects of RulePortForwarding.
+void RulePortForwarding::create(Rule &parent,
+                                const RulePortForwardingJsonObject &conf) {
+  // This method creates the actual RulePortForwarding object given thee key
+  // param.
+  // Please remember to call here the create static method for all sub-objects
+  // of RulePortForwarding.
   parent.portforwarding_ = std::make_shared<RulePortForwarding>(parent, conf);
 }
 
-std::shared_ptr<RulePortForwarding> RulePortForwarding::getEntry(Rule &parent){
-  // This method retrieves the pointer to RulePortForwarding object specified by its keys.
+std::shared_ptr<RulePortForwarding> RulePortForwarding::getEntry(Rule &parent) {
+  // This method retrieves the pointer to RulePortForwarding object specified by
+  // its keys.
   return parent.portforwarding_;
 }
 
-void RulePortForwarding::removeEntry(Rule &parent){
-  // This method removes the single RulePortForwarding object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of RulePortForwarding.
+void RulePortForwarding::removeEntry(Rule &parent) {
+  // This method removes the single RulePortForwarding object specified by its
+  // keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RulePortForwarding.
 
   if (parent.portforwarding_->rules_.size() == 0) {
     // No rules to delete
@@ -83,7 +89,8 @@ void RulePortForwarding::removeEntry(Rule &parent){
   parent.logger()->info("Removed all PortForwarding rules");
 }
 
-RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(RulePortForwardingAppendInputJsonObject input) {
+RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(
+    RulePortForwardingAppendInputJsonObject input) {
   RulePortForwardingEntryJsonObject conf;
   conf.setInternalIp(input.getInternalIp());
   conf.setInternalPort(input.getInternalPort());
@@ -102,4 +109,3 @@ RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(RulePortForw
 std::shared_ptr<spdlog::logger> RulePortForwarding::logger() {
   return parent_.logger();
 }
-

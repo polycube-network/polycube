@@ -20,13 +20,13 @@
 #include <algorithm>
 #include <list>
 
-#include "polycube/services/http.h"
 #include "polycube/services/guid.h"
+#include "polycube/services/http.h"
 #include "polycube/services/json.hpp"
 #include "service_controller.h"
 
-#include "extiface_info.h"
 #include "cube_factory_impl.h"
+#include "extiface_info.h"
 #include "netlink.h"
 
 using json = nlohmann::json;
@@ -68,8 +68,7 @@ class PolycubedCore {
   std::string get_polycubeendpoint();
 
  private:
-  bool try_to_set_peer(const std::string &peer1,
-                       const std::string &peer2);
+  bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
 
   std::unordered_map<std::string, ServiceController> servicectrls_map_;
   std::string polycubeendpoint_;

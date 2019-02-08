@@ -56,12 +56,15 @@ struct icmphdr {
 };
 
 enum {
-  INPUT_LABELING,   // goto input chain and label packet
-  FORWARD_LABELING, // goto forward chain and label packet
-  OUTPUT_LABELING,  // goto output chain and label packet
-  PASS_LABELING,    // one chain is hit (IN/PUT/FWD) but there are no rules and default action is accept. Label packet and let it pass.
-  PASS_NO_LABELING, // OUTPUT chain is not hit, let the packet pass without labeling //NEVER HIT
-  DROP_NO_LABELING  // one chain is hit (IN/PUT/FWD) but there are no rules and default action is DROP. //NEVER HIT
+  INPUT_LABELING,    // goto input chain and label packet
+  FORWARD_LABELING,  // goto forward chain and label packet
+  OUTPUT_LABELING,   // goto output chain and label packet
+  PASS_LABELING,     // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is accept. Label packet and let it pass.
+  PASS_NO_LABELING,  // OUTPUT chain is not hit, let the packet pass without
+                     // labeling //NEVER HIT
+  DROP_NO_LABELING   // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is DROP. //NEVER HIT
 };
 
 enum {
@@ -106,17 +109,18 @@ struct ct_v {
 } __attribute__((packed));
 
 #if _INGRESS_LOGIC
-  BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
+BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
 #endif
 
 #if _EGRESS_LOGIC
-  BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
+BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
 #endif
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 // BPF_TABLE("extern", int, struct packetHeaders, packetEgress, 1);
 
-// This is the percpu array containing the forwarding decision. ChainForwarder just lookup this value.
+// This is the percpu array containing the forwarding decision. ChainForwarder
+// just lookup this value.
 BPF_TABLE("extern", int, int, forwardingDecision, 1);
 
 static __always_inline int *getForwardingDecision() {
@@ -125,62 +129,62 @@ static __always_inline int *getForwardingDecision() {
 }
 
 #if _INGRESS_LOGIC
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Input, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Input, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Input, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Input, 1);
 
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Forward, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Forward, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Forward, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Forward, 1);
 #endif
 
 #if _EGRESS_LOGIC
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Output, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Output, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Output, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Output, 1);
 #endif
 
 #if _INGRESS_LOGIC
-  static __always_inline void incrementAcceptEstablishedInput(u32 bytes) {
-    u64 *value;
-    int zero = 0;
-    value = pkts_acceptestablished_Input.lookup(&zero);
-    if (value) {
-      *value += 1;
-    }
-
-    value = bytes_acceptestablished_Input.lookup(&zero);
-    if (value) {
-      *value += bytes;
-    }
+static __always_inline void incrementAcceptEstablishedInput(u32 bytes) {
+  u64 *value;
+  int zero = 0;
+  value = pkts_acceptestablished_Input.lookup(&zero);
+  if (value) {
+    *value += 1;
   }
 
-  static __always_inline void incrementAcceptEstablishedForward(u32 bytes) {
-    u64 *value;
-    int zero = 0;
-    value = pkts_acceptestablished_Forward.lookup(&zero);
-    if (value) {
-      *value += 1;
-    }
+  value = bytes_acceptestablished_Input.lookup(&zero);
+  if (value) {
+    *value += bytes;
+  }
+}
 
-    value = bytes_acceptestablished_Forward.lookup(&zero);
-    if (value) {
-      *value += bytes;
-    }
+static __always_inline void incrementAcceptEstablishedForward(u32 bytes) {
+  u64 *value;
+  int zero = 0;
+  value = pkts_acceptestablished_Forward.lookup(&zero);
+  if (value) {
+    *value += 1;
+  }
+
+  value = bytes_acceptestablished_Forward.lookup(&zero);
+  if (value) {
+    *value += bytes;
+  }
 }
 #endif
 
 #if _EGRESS_LOGIC
-  static __always_inline void incrementAcceptEstablishedOutput(u32 bytes) {
-    u64 *value;
-    int zero = 0;
-    value = pkts_acceptestablished_Output.lookup(&zero);
-    if (value) {
-      *value += 1;
-    }
-
-    value=bytes_acceptestablished_Output.lookup(&zero);
-    if (value) {
-      *value += bytes;
-    }
+static __always_inline void incrementAcceptEstablishedOutput(u32 bytes) {
+  u64 *value;
+  int zero = 0;
+  value = pkts_acceptestablished_Output.lookup(&zero);
+  if (value) {
+    *value += 1;
   }
+
+  value = bytes_acceptestablished_Output.lookup(&zero);
+  if (value) {
+    *value += bytes;
+  }
+}
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
@@ -229,22 +233,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
-
     value = connections.lookup(&key);
-    if (value != NULL)
-    {
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)){
+    if (value != NULL) {
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
         goto TCP_FORWARD;
-      }else if ((value->ipRev != ipRev) && (value->portRev != portRev)){
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
         goto TCP_REVERSE;
       } else {
         goto TCP_MISS;
       }
 
-      TCP_FORWARD:;
+    TCP_FORWARD:;
 
       // If it is a RST, label it as established.
-      if((pkt->flags & TCPHDR_RST) != 0){
+      if ((pkt->flags & TCPHDR_RST) != 0) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
@@ -287,25 +289,28 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
-      
+
       if (value->state == TIME_WAIT) {
-        // If the state is TIME_WAIT but we receive a new SYN the connection is considered NEW
+        // If the state is TIME_WAIT but we receive a new SYN the connection is
+        // considered NEW
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-            pkt->connStatus = NEW;
-            goto action;
+          pkt->connStatus = NEW;
+          goto action;
         }
-      } 
+      }
 
       // Unexpected situation
-      pcn_log(ctx, LOG_DEBUG, "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
 
-      TCP_REVERSE:;
+    TCP_REVERSE:;
 
       // If it is a RST, label it as established.
-      if((pkt->flags & TCPHDR_RST) != 0){
+      if ((pkt->flags & TCPHDR_RST) != 0) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
@@ -345,22 +350,26 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
-      
+
       if (value->state == TIME_WAIT) {
-        // If the state is TIME_WAIT but we receive a new SYN the connection is considered NEW
+        // If the state is TIME_WAIT but we receive a new SYN the connection is
+        // considered NEW
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-            pkt->connStatus = NEW;
-            goto action;
+          pkt->connStatus = NEW;
+          goto action;
         }
-      } 
+      }
 
-      pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: %d. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: "
+              "%d. State: %d. ",
+              pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
     }
 
-    TCP_MISS:;
+  TCP_MISS:;
 
     // New entry. It has to be a SYN.
     if ((pkt->flags & TCPHDR_SYN) != 0 &&
@@ -377,20 +386,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   /* == UDP == */
   if (pkt->l4proto == IPPROTO_UDP) {
-
     value = connections.lookup(&key);
-    if (value != NULL)
-    {
-
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)){
+    if (value != NULL) {
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
         goto UDP_FORWARD;
-      }else if ((value->ipRev != ipRev) && (value->portRev != portRev)){
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
         goto UDP_REVERSE;
       } else {
         goto UDP_MISS;
       }
 
-      UDP_FORWARD:;
+    UDP_FORWARD:;
 
       // Valid entry
       if (value->state == NEW) {
@@ -405,7 +411,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      UDP_REVERSE:;
+    UDP_REVERSE:;
 
       if (value->state == NEW) {
         // An entry was present in the rev direction with the NEW state. This
@@ -420,7 +426,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
     }
 
-    UDP_MISS:;
+  UDP_MISS:;
 
     // No entry found in both directions. Create one.
     pkt->connStatus = NEW;
@@ -442,19 +448,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       goto action;
     }
 
-    if (icmp->type == ICMP_ECHOREPLY)
-    {
+    if (icmp->type == ICMP_ECHOREPLY) {
       value = connections.lookup(&key);
-      if (value != NULL)
-      {
-
-        if ((value->ipRev != ipRev) && (value->portRev != portRev)){
+      if (value != NULL) {
+        if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
           goto ICMP_REVERSE;
         } else {
           goto ICMP_MISS;
         }
 
-        ICMP_REVERSE:;
+      ICMP_REVERSE:;
 
         pkt->connStatus = ESTABLISHED;
         goto action;
@@ -466,7 +469,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
     }
 
-    ICMP_MISS:;
+  ICMP_MISS:;
 
     if (icmp->type == ICMP_TIMESTAMP || icmp->type == ICMP_TIMESTAMPREPLY ||
         icmp->type == ICMP_INFO_REQUEST || icmp->type == ICMP_INFO_REPLY ||
@@ -484,11 +487,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
-    if (encapsulatedIp->saddr <= encapsulatedIp->daddr){
+    if (encapsulatedIp->saddr <= encapsulatedIp->daddr) {
       key.srcIp = encapsulatedIp->saddr;
       key.dstIp = encapsulatedIp->daddr;
       ipRev = 0;
-    }else{
+    } else {
       key.srcIp = encapsulatedIp->daddr;
       key.dstIp = encapsulatedIp->saddr;
       ipRev = 1;
@@ -505,9 +508,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
     key.dstPort = *temp;
 
-    if (key.srcPort <= key.dstPort){
+    if (key.srcPort <= key.dstPort) {
       portRev = 0;
-    }else{
+    } else {
       *temp = key.srcPort;
       key.srcPort = key.dstPort;
       key.dstPort = *temp;
@@ -527,7 +530,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     goto action;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d", pkt->l4proto);
+  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d",
+          pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
   pkt->connStatus = INVALID;
@@ -535,43 +539,43 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 action:;
   // TODO possible optimization, inject it if needed
-  int * decision = getForwardingDecision();
+  int *decision = getForwardingDecision();
 
   if (decision == NULL) {
     return RX_DROP;
   }
 
-  #if _INGRESS_LOGIC
+#if _INGRESS_LOGIC
 
   switch (*decision) {
   case INPUT_LABELING:
     pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: INPUT_LABELING ");
 
-    #if _CONNTRACK_MODE_INPUT == 2
-      goto DISABLED;
-    #elif _CONNTRACK_MODE_INPUT == 1
-      if (pkt->connStatus == ESTABLISHED) {
-        incrementAcceptEstablishedInput(md->packet_len);
-        goto ENABLED_MATCH;
-      } else {
-        goto ENABLED_NOT_MATCH;
-      }
-    #endif
+#if _CONNTRACK_MODE_INPUT == 2
+    goto DISABLED;
+#elif _CONNTRACK_MODE_INPUT == 1
+    if (pkt->connStatus == ESTABLISHED) {
+      incrementAcceptEstablishedInput(md->packet_len);
+      goto ENABLED_MATCH;
+    } else {
+      goto ENABLED_NOT_MATCH;
+    }
+#endif
     return RX_DROP;
 
   case FORWARD_LABELING:
     pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: FORWARD_LABELING ");
 
-    #if _CONNTRACK_MODE_FORWARD == 2
-      goto DISABLED;
-    #elif _CONNTRACK_MODE_FORWARD == 1
-      if (pkt->connStatus == ESTABLISHED) {
-        incrementAcceptEstablishedForward(md->packet_len);
-        goto ENABLED_MATCH;
-      } else {
-        goto ENABLED_NOT_MATCH;
-      }
-    #endif
+#if _CONNTRACK_MODE_FORWARD == 2
+    goto DISABLED;
+#elif _CONNTRACK_MODE_FORWARD == 1
+    if (pkt->connStatus == ESTABLISHED) {
+      incrementAcceptEstablishedForward(md->packet_len);
+      goto ENABLED_MATCH;
+    } else {
+      goto ENABLED_NOT_MATCH;
+    }
+#endif
     return RX_DROP;
 
   case PASS_LABELING:
@@ -583,7 +587,6 @@ action:;
   default:
     pcn_log(ctx, LOG_ERR, "ConntrackLabel Ingress: Something went wrong. ");
     return RX_DROP;
-
   }
 
 #endif
@@ -594,16 +597,16 @@ action:;
   case OUTPUT_LABELING:
     pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: OUTPUT_LABELING ");
 
-    #if _CONNTRACK_MODE_OUTPUT == 2
-      goto DISABLED;
-    #elif _CONNTRACK_MODE_OUTPUT == 1
-      if (pkt->connStatus == ESTABLISHED) {
-        incrementAcceptEstablishedOutput(md->packet_len);
-        goto ENABLED_MATCH;
-      } else {
-        goto ENABLED_NOT_MATCH;
-      }
-    #endif
+#if _CONNTRACK_MODE_OUTPUT == 2
+    goto DISABLED;
+#elif _CONNTRACK_MODE_OUTPUT == 1
+    if (pkt->connStatus == ESTABLISHED) {
+      incrementAcceptEstablishedOutput(md->packet_len);
+      goto ENABLED_MATCH;
+    } else {
+      goto ENABLED_NOT_MATCH;
+    }
+#endif
     return RX_DROP;
 
   case PASS_LABELING:
@@ -615,30 +618,37 @@ action:;
   default:
     pcn_log(ctx, LOG_ERR, "ChainForwarder Egress: Something went wrong. ");
     return RX_DROP;
-
   }
 
 #endif
 
 DISABLED:;
-  pcn_log(ctx, LOG_TRACE, "ConntrackLabel (Optimization OFF) Calling Chainforwarder %d", _CHAINFORWARDER);
+  pcn_log(ctx, LOG_TRACE,
+          "ConntrackLabel (Optimization OFF) Calling Chainforwarder %d",
+          _CHAINFORWARDER);
   call_bpf_program(ctx, _CHAINFORWARDER);
 
-  pcn_log(ctx, LOG_TRACE, "ConntrackLabel Calling Chainforwarder FAILED. Dropping");
+  pcn_log(ctx, LOG_TRACE,
+          "ConntrackLabel Calling Chainforwarder FAILED. Dropping");
   return RX_DROP;
 
 ENABLED_MATCH:;
   // ON (Perform optimization for accept established)
   //  if established, forward directly
-  pcn_log(ctx, LOG_TRACE, "ConntrackLabel (Optimization ON) ESTABLISHED Connection found. Calling ConntrackTableUpdate.");
+  pcn_log(ctx, LOG_TRACE,
+          "ConntrackLabel (Optimization ON) ESTABLISHED Connection found. "
+          "Calling ConntrackTableUpdate.");
   call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
 
   pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] Something went wrong.");
   return RX_DROP;
 
 ENABLED_NOT_MATCH:;
-  // ON (Perform optimization for accept established), but no match on ESTABLISHED connection
-  pcn_log(ctx, LOG_TRACE, "ConntrackLabel (Optimization ON) no connection found. Calling ChainForwarder.");
+  // ON (Perform optimization for accept established), but no match on
+  // ESTABLISHED connection
+  pcn_log(ctx, LOG_TRACE,
+          "ConntrackLabel (Optimization ON) no connection found. Calling "
+          "ChainForwarder.");
   call_bpf_program(ctx, _CHAINFORWARDER);
 
   pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] Something went wrong.");

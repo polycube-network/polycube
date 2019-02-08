@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/PortsInterface.h"
 #include "polycube/services/cube.h"
@@ -24,7 +22,6 @@
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
-
 
 class Nat;
 
@@ -37,7 +34,8 @@ class Ports : public polycube::service::Port, public PortsInterface {
         const PortsJsonObject &conf);
   virtual ~Ports();
 
-  static void create(Nat &parent, const std::string &name, const PortsJsonObject &conf);
+  static void create(Nat &parent, const std::string &name,
+                     const PortsJsonObject &conf);
   static std::shared_ptr<Ports> getEntry(Nat &parent, const std::string &name);
   static void removeEntry(Nat &parent, const std::string &name);
   static std::vector<std::shared_ptr<Ports>> get(Nat &parent);
@@ -63,7 +61,8 @@ class Ports : public polycube::service::Port, public PortsInterface {
   PortsStatusEnum getStatus() override;
 
   /// <summary>
-  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)
+  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another
+  /// cube (e.g., &#39;br1:port2&#39;)
   /// </summary>
   std::string getPeer() override;
   void setPeer(const std::string &value) override;
@@ -74,17 +73,19 @@ class Ports : public polycube::service::Port, public PortsInterface {
   PortsTypeEnum getType() override;
 
   /// <summary>
-  /// IP address of the port. If the port is EXTERNAL this is the external ip address.
+  /// IP address of the port. If the port is EXTERNAL this is the external ip
+  /// address.
   /// </summary>
   std::string getIp() override;
   void setIp(const std::string &value) override;
 
-private:
-  Nat   &parent_;
+ private:
+  Nat &parent_;
   PortsTypeEnum port_type_;
   std::string ip_;
 
-  static void validateInternalPortParams(Nat &parent, const PortsJsonObject &conf);
-  static void validateExternalPortParams(Nat &parent, const PortsJsonObject &conf);
+  static void validateInternalPortParams(Nat &parent,
+                                         const PortsJsonObject &conf);
+  static void validateExternalPortParams(Nat &parent,
+                                         const PortsJsonObject &conf);
 };
-

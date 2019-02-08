@@ -16,7 +16,7 @@
 
 #pragma once
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -24,6 +24,6 @@ void VLOG_WARN(const char *format, ...);
 void VLOG_DBG(const char *format, ...);
 void VLOG_INFO(const char *format, ...);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif

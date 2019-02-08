@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /* =======================
    First Bit Search Search
    ======================= */
@@ -28,7 +27,6 @@ BPF_ARRAY(index64, uint16_t, 64);
 struct elements {
   uint64_t bits[_MAXRULES];
 };
-
 
 BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
 static __always_inline struct elements *getShared() {
@@ -58,7 +56,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     (ele->bits)[0] = *matchingResult;
-    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ", *matchingResult);
+    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ",
+            *matchingResult);
     call_ingress_program(ctx, _NEXT_HOP_1);
   }
 
@@ -77,17 +76,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       int globalBit = *matchingResult + i * 63;
-      pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element %d offset %d. ", i, *matchingResult);
+      pcn_log(ctx, LOG_DEBUG,
+              "Bitscan _DIRECTION Matching element %d offset %d. ", i,
+              *matchingResult);
       (ele->bits)[0] = globalBit;
       call_ingress_program(ctx, _NEXT_HOP_1);
-
 
     }  // ele->bits[i] != 0
   }    // end loop
 #endif
 
 #endif
-pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
+  pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
   _DEFAULTACTION;
 }
-

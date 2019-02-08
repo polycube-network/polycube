@@ -42,7 +42,7 @@ namespace polycubed {
 class PortXDP;
 
 class ExtIfaceXDP : public Node {
-public:
+ public:
   ExtIfaceXDP(const std::string &iface, const PortXDP &port);
   virtual ~ExtIfaceXDP();
 
@@ -52,7 +52,7 @@ public:
 
   int get_fd() const;
 
-private:
+ private:
   static std::set<std::string> used_ifaces;
   void load_xdp_program();
   void load_redirect_program();
@@ -73,6 +73,5 @@ private:
   std::shared_ptr<spdlog::logger> logger;
 };
 
-
-} // namespace polycubed
-} // namespace polycube
+}  // namespace polycubed
+}  // namespace polycube

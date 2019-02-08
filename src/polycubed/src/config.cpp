@@ -16,46 +16,58 @@
 
 #include "config.h"
 #include <getopt.h>
-#include <algorithm>
-#include <exception>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <linux/limits.h>
 #include <string.h>
-#include <regex>
 #include <sys/stat.h>
+#include <algorithm>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <regex>
+#include <string>
 
 #include "version.h"
 
 namespace configuration {
 
-#define LOGLEVEL        spdlog::level::level_enum::info
-#define DAEMON          false
-#define PIDFILE         "/var/run/polycube.pid"
-#define SERVER_PORT     9000
-#define SERVER_IP       "localhost"
-#define LOGFILE         "/var/log/polycube/polycubed.log"
-#define CONFIGFILEDIR   "/etc/polycube"
-#define CONFIGFILENAME  "polycubed.conf"
-#define CONFIGFILE      (CONFIGFILEDIR "/" CONFIGFILENAME)
+#define LOGLEVEL spdlog::level::level_enum::info
+#define DAEMON false
+#define PIDFILE "/var/run/polycube.pid"
+#define SERVER_PORT 9000
+#define SERVER_IP "localhost"
+#define LOGFILE "/var/log/polycube/polycubed.log"
+#define CONFIGFILEDIR "/etc/polycube"
+#define CONFIGFILENAME "polycubed.conf"
+#define CONFIGFILE (CONFIGFILEDIR "/" CONFIGFILENAME)
 
 static void show_usage(const std::string &name) {
   std::cout << std::boolalpha;
   std::cout << "Usage: " << name << " [OPTIONS]" << std::endl;
-  std::cout << "-p, --port PORT: port where the rest server listens (default: " << SERVER_PORT << ")" << std::endl;
-  std::cout << "-a, --addr: addr where polycubed listens (default: " << SERVER_IP << ")" << std::endl;
-  std::cout << "-l, --loglevel: set log level (trace, debug, info, warn, err, critical, off, default: info)" << std::endl;
+  std::cout << "-p, --port PORT: port where the rest server listens (default: "
+            << SERVER_PORT << ")" << std::endl;
+  std::cout << "-a, --addr: addr where polycubed listens (default: "
+            << SERVER_IP << ")" << std::endl;
+  std::cout << "-l, --loglevel: set log level (trace, debug, info, warn, err, "
+               "critical, off, default: info)"
+            << std::endl;
   std::cout << "-c, --cert: path to ssl certificate" << std::endl;
   std::cout << "-k, --key: path to ssl private key" << std::endl;
-  std::cout << "--cacert: path to certification authority certificate used to validate clients" << std::endl;
-  std::cout << "-d, --daemon: run as daemon (default: " << DAEMON << ")" << std::endl;
+  std::cout << "--cacert: path to certification authority certificate used to "
+               "validate clients"
+            << std::endl;
+  std::cout << "-d, --daemon: run as daemon (default: " << DAEMON << ")"
+            << std::endl;
   std::cout << "-v, --version: show version and exit" << std::endl;
-  std::cout << "--logfile: file to save polycube logs (default: " << LOGFILE << ")" << std::endl;
-  std::cout << "--pidfile: file to save polycubed pid (default: " << PIDFILE << ")" << std::endl;
-  std::cout << "--configfile: configuration file (default: " << CONFIGFILE << ")" << std::endl;
-  std::cout << "--cert-blacklist: path to black listed certificates" << std::endl;
-  std::cout << "--cert-whitelist: path to white listed certificates" << std::endl;
+  std::cout << "--logfile: file to save polycube logs (default: " << LOGFILE
+            << ")" << std::endl;
+  std::cout << "--pidfile: file to save polycubed pid (default: " << PIDFILE
+            << ")" << std::endl;
+  std::cout << "--configfile: configuration file (default: " << CONFIGFILE
+            << ")" << std::endl;
+  std::cout << "--cert-blacklist: path to black listed certificates"
+            << std::endl;
+  std::cout << "--cert-whitelist: path to white listed certificates"
+            << std::endl;
   std::cout << "-h, --help: print this message" << std::endl;
 }
 
@@ -77,14 +89,13 @@ bool parse_bool(std::string str) {
 Config config;
 
 Config::Config()
-  : loglevel(LOGLEVEL),
-    daemon(DAEMON),
-    pidfile(PIDFILE),
-    server_port(SERVER_PORT),
-    server_ip(SERVER_IP),
-    logfile(LOGFILE),
-    configfile(CONFIGFILE)
-    {}
+    : loglevel(LOGLEVEL),
+      daemon(DAEMON),
+      pidfile(PIDFILE),
+      server_port(SERVER_PORT),
+      server_ip(SERVER_IP),
+      logfile(LOGFILE),
+      configfile(CONFIGFILE) {}
 
 Config::~Config() {}
 
@@ -92,22 +103,23 @@ spdlog::level::level_enum Config::getLogLevel() const {
   return loglevel;
 }
 
-#define CHECK_OVERWRITE(PARAMETER, NEW_VALUE, CURRENT_VALUE, DEFAULT) \
-do { \
-  if (NEW_VALUE == CURRENT_VALUE) { \
-    return; \
-  } \
-  if (CURRENT_VALUE != DEFAULT) {\
-    logger->warn("'--" PARAMETER "' also present on configuration file, overwritting it"); \
-  } \
-} while(0)
-
+#define CHECK_OVERWRITE(PARAMETER, NEW_VALUE, CURRENT_VALUE, DEFAULT)        \
+  do {                                                                       \
+    if (NEW_VALUE == CURRENT_VALUE) {                                        \
+      return;                                                                \
+    }                                                                        \
+    if (CURRENT_VALUE != DEFAULT) {                                          \
+      logger->warn("'--" PARAMETER                                           \
+                   "' also present on configuration file, overwritting it"); \
+    }                                                                        \
+  } while (0)
 
 void Config::setLogLevel(const std::string &value_) {
   std::string value(value_);
   std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-  spdlog::level::level_enum level_ =  spdlog::level::from_str(value);
-  // from_str returns off if the level is not valid, be more agressive on that check
+  spdlog::level::level_enum level_ = spdlog::level::from_str(value);
+  // from_str returns off if the level is not valid, be more agressive on that
+  // check
   if (level_ == spdlog::level::level_enum::off && value != "off") {
     throw std::runtime_error(value + " is not a valid logging level");
   }
@@ -142,7 +154,8 @@ uint16_t Config::getServerPort() const {
 void Config::setServerPort(const std::string &value) {
   unsigned long port_ = std::atol(optarg);
   if (port_ > UINT16_MAX) {
-    throw std::runtime_error("port value" + std::string(optarg) + " is not not valid");
+    throw std::runtime_error("port value" + std::string(optarg) +
+                             " is not not valid");
   }
 
   CHECK_OVERWRITE("port", port_, server_port, SERVER_PORT);
@@ -218,11 +231,12 @@ void Config::create_configuration_file(const std::string &path) {
   if (!file.good()) {
     throw std::runtime_error("error creating configuration file");
   }
-  file << std::boolalpha; // print booleans as "true"/"false" instead of "1/0"
+  file << std::boolalpha;  // print booleans as "true"/"false" instead of "1/0"
   file << "# polycubed configuration file" << std::endl << std::endl;
-  file << "# logging level (trace, debug, info, warn, err, critical, off)" << std::endl;
+  file << "# logging level (trace, debug, info, warn, err, critical, off)"
+       << std::endl;
   file << "loglevel: " << spdlog::level::to_c_str(loglevel) << std::endl;
-  file << "# run as daemon"<< std::endl;
+  file << "# run as daemon" << std::endl;
   file << "daemon: " << daemon << std::endl;
   file << "# file to save polycubed pid" << std::endl;
   file << "pidfile: " << pidfile << std::endl;
@@ -237,12 +251,14 @@ void Config::create_configuration_file(const std::string &path) {
   file << "#cert: path_to_certificate_file" << std::endl;
   file << "# server private key " << std::endl;
   file << "#key: path_to_key_fule" << std::endl;
-  file << "# certification authority certificate "<< std::endl;
+  file << "# certification authority certificate " << std::endl;
   file << "#cacert: path_to_certificate_file" << std::endl;
   file << "# path to black list certificates folder" << std::endl;
-  file << "#cert-blacklist: path to folder containing black listed certificates" << std::endl;
+  file << "#cert-blacklist: path to folder containing black listed certificates"
+       << std::endl;
   file << "# path to white list certificates folder" << std::endl;
-  file << "#cert-whitelist: path to folder containing white listed certificates" << std::endl;
+  file << "#cert-whitelist: path to folder containing white listed certificates"
+       << std::endl;
 }
 
 void Config::dump() {
@@ -276,8 +292,10 @@ void Config::load_from_file(const std::string &path) {
   std::ifstream file(path);
   if (!file.good()) {
     if (path == CONFIGFILE) {
-      logger->warn("default configfile ({}) not found, creating a new with default parameters",
-        CONFIGFILE);
+      logger->warn(
+          "default configfile ({}) not found, creating a new with default "
+          "parameters",
+          CONFIGFILE);
       create_configuration_file(CONFIGFILE);
     } else {
       throw std::runtime_error("error opening " + path);
@@ -312,7 +330,8 @@ void Config::load_from_file(const std::string &path) {
 
     if (!std::regex_match(str, match, rule)) {
       std::stringstream err;
-      err << "bad line in configuration file: " << path << ":" << i << " -> \"" << str << "\"" << std::endl;
+      err << "bad line in configuration file: " << path << ":" << i << " -> \""
+          << str << "\"" << std::endl;
       throw std::runtime_error(err.str().c_str());
     }
 
@@ -330,28 +349,29 @@ void Config::load_from_file(const std::string &path) {
 }
 
 static struct option options[] = {
-  {"loglevel",            required_argument,  NULL,   'l'},
-  {"port",                required_argument,  NULL,   'p'},
-  {"daemon",              optional_argument,  NULL,   'd'},
-  {"addr",                required_argument,  NULL,   'a'},
-  {"help",                no_argument,        NULL,   'h'},
-  {"version",             no_argument,        NULL,   'v'},
-  {"cert",                required_argument,  NULL,   'c'},
-  {"key",                 required_argument,  NULL,   'k'},
-  {"logfile",             required_argument,  NULL,    1},
-  {"pidfile",             required_argument,  NULL,    2},
-  {"configfile",          required_argument,  NULL,    4},
-  {"cacert",              required_argument,  NULL,    5},
-  {"cert-whitelist",      required_argument,  NULL,    6},
-  {"cert-blacklist",      required_argument,  NULL,    7},
-  {NULL,                  0,                  NULL,    0},
+    {"loglevel", required_argument, NULL, 'l'},
+    {"port", required_argument, NULL, 'p'},
+    {"daemon", optional_argument, NULL, 'd'},
+    {"addr", required_argument, NULL, 'a'},
+    {"help", no_argument, NULL, 'h'},
+    {"version", no_argument, NULL, 'v'},
+    {"cert", required_argument, NULL, 'c'},
+    {"key", required_argument, NULL, 'k'},
+    {"logfile", required_argument, NULL, 1},
+    {"pidfile", required_argument, NULL, 2},
+    {"configfile", required_argument, NULL, 4},
+    {"cacert", required_argument, NULL, 5},
+    {"cert-whitelist", required_argument, NULL, 6},
+    {"cert-blacklist", required_argument, NULL, 7},
+    {NULL, 0, NULL, 0},
 };
 
 void Config::load_from_cli(int argc, char *argv[]) {
   int option_index = 0;
   char ch;
   optind = 0;
-  while ((ch = getopt_long(argc, argv, "l:p:a:dhv", options, &option_index)) != -1) {
+  while ((ch = getopt_long(argc, argv, "l:p:a:dhv", options, &option_index)) !=
+         -1) {
     switch (ch) {
     case 'l':
       setLogLevel(optarg);
@@ -399,7 +419,8 @@ bool Config::load(int argc, char *argv[]) {
   char ch;
 
   // do a first pass looking for "configfile", "-h", "-v"
-  while ((ch = getopt_long(argc, argv, "l:p:a:dhv", options, &option_index)) != -1) {
+  while ((ch = getopt_long(argc, argv, "l:p:a:dhv", options, &option_index)) !=
+         -1) {
     switch (ch) {
     case 'v':
       show_version();
@@ -430,7 +451,8 @@ void Config::check() {
   }
 
   if (cert_path != "" && cacert_path == "" && cert_whitelist_path == "") {
-    throw std::runtime_error("--cacert or --cert-whitelist are needed when using --cert");
+    throw std::runtime_error(
+        "--cacert or --cert-whitelist are needed when using --cert");
   }
 
   if (cacert_path != "" && cert_path == "") {
@@ -438,17 +460,17 @@ void Config::check() {
   }
 
   if (cacert_path != "" && cert_whitelist_path != "") {
-    throw std::runtime_error("--cacert and --cert-whitelist cannot be used together");
+    throw std::runtime_error(
+        "--cacert and --cert-whitelist cannot be used together");
   }
 
   if (cert_whitelist_path != "" && cert_blacklist_path != "") {
-    throw std::runtime_error("--cert-blacklist & --cert-whitelist cannot be used together");
+    throw std::runtime_error(
+        "--cert-blacklist & --cert-whitelist cannot be used together");
   }
 
   if (cert_blacklist_path != "" && cacert_path == "") {
     throw std::runtime_error("--cert-blacklist requires --cacert");
   }
 }
-
 }
-

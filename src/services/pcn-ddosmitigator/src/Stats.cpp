@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Stats.h"
 #include "Ddosmitigator.h"
 
 using namespace polycube::service;
 
-Stats::Stats(Ddosmitigator &parent, const StatsJsonObject &conf): parent_(parent) {
+Stats::Stats(Ddosmitigator &parent, const StatsJsonObject &conf)
+    : parent_(parent) {
   logger()->info("Creating Stats instance");
 }
 
-Stats::~Stats() { }
+Stats::~Stats() {}
 
 void Stats::update(const StatsJsonObject &conf) {
-  //This method updates all the object/parameter in Stats object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Stats object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
 }
 
-StatsJsonObject Stats::toJsonObject(){
+StatsJsonObject Stats::toJsonObject() {
   StatsJsonObject conf;
 
   conf.setPps(getPps());
@@ -44,39 +44,39 @@ StatsJsonObject Stats::toJsonObject(){
   return conf;
 }
 
-
-void Stats::create(Ddosmitigator &parent, const StatsJsonObject &conf){
-
+void Stats::create(Ddosmitigator &parent, const StatsJsonObject &conf) {
   // throw std::runtime_error("[Stats]: Method create not supported");
 }
 
-std::shared_ptr<Stats> Stats::getEntry(Ddosmitigator &parent){
-  //This method retrieves the pointer to Stats object specified by its keys.
+std::shared_ptr<Stats> Stats::getEntry(Ddosmitigator &parent) {
+  // This method retrieves the pointer to Stats object specified by its keys.
   parent.logger()->debug("Stats getEntry");
 
   StatsJsonObject sjo;
   return std::shared_ptr<Stats>(new Stats(parent, sjo));
 }
 
-void Stats::removeEntry(Ddosmitigator &parent){
-  //This method removes the single Stats object specified by its keys.
-  //Remember to call here the remove static method for all-sub-objects of Stats.
-  throw std::runtime_error("[Stats]: Method removeEntry not supported. Read Only");
+void Stats::removeEntry(Ddosmitigator &parent) {
+  // This method removes the single Stats object specified by its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // Stats.
+  throw std::runtime_error(
+      "[Stats]: Method removeEntry not supported. Read Only");
 }
 
-uint64_t Stats::getPps(){
-  //This method retrieves the pps value.
+uint64_t Stats::getPps() {
+  // This method retrieves the pps value.
   int begin = getPkts();
   sleep(1);
   int end = getPkts();
 
-  return end-begin;
+  return end - begin;
   return 0;
   // throw std::runtime_error("[Stats]: Method getPps not implemented");
 }
 
-uint64_t Stats::getPkts(){
-  //This method retrieves the pkts value.
+uint64_t Stats::getPkts() {
+  // This method retrieves the pkts value.
   uint64_t pkts = 0;
 
   auto dropcnt = parent_.get_percpuarray_table<uint64_t>("dropcnt");

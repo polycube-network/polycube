@@ -219,10 +219,11 @@ static int ChainRuleConntrackEnum_to_int(const ConntrackstatusEnum &status) {
   }
 }
 
-// convert ip address list from internal rules representation, to Api representation
-void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+// convert ip address list from internal rules representation, to Api
+// representation
+void Chain::ip_from_rules_to_map(
+    const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
     const std::vector<std::shared_ptr<ChainRule>> &rules) {
-
   // track if, at least, one wildcard rule is present
   std::vector<uint32_t> dontCareRules;
 
@@ -230,18 +231,18 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
   struct IpAddr current;
   uint32_t ruleId;
 
-  // std::cout<< "+ITERATING ON RULES+ Adding ips in map (except 0.0.0.0 handled later)";
+  // std::cout<< "+ITERATING ON RULES+ Adding ips in map (except 0.0.0.0 handled
+  // later)";
 
   // iterate over all rules
   // and keep track of different ips (except 0.0.0.0 hadled later)
   // push distinct ips as keys in ips map
   for (auto const &rule : rules) {
     try {
-      if (type == SOURCE_TYPE){
+      if (type == SOURCE_TYPE) {
         current.fromString(rule->getSrc());
         // std::cout << "SRC IP RULE | ";
-      }
-      else{
+      } else {
         current.fromString(rule->getDst());
         // std::cout << "DST IP RULE | ";
       }
@@ -252,20 +253,23 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
       continue;
     }
     ruleId = rule->getId();
-    // std::cout << "ID: " << ruleId << " Current IP: " << current.toString() << std::endl;
+    // std::cout << "ID: " << ruleId << " Current IP: " << current.toString() <<
+    // std::endl;
     auto it = ips.find(current);
     if (it == ips.end()) {
       // std::cout << "FIRST TIME I SEE THIS IP -> insert " << std::endl;
-      std::vector<uint64_t> bitVector(FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+      std::vector<uint64_t> bitVector(
+          FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
       current.ruleId = ruleId;
-      ips.insert(std::pair<struct IpAddr, std::vector<uint64_t>>(current, bitVector));
+      ips.insert(
+          std::pair<struct IpAddr, std::vector<uint64_t>>(current, bitVector));
 
-    //   for (auto eval : ips) {
-    //     std::cout << eval.first.toString() << ": ";
-    //     std::cout << std::bitset<32>(eval.second[0]) << " ";
-    //     std::cout << std::endl;
-    //     std::cout << std::endl;
-    //  }
+      //   for (auto eval : ips) {
+      //     std::cout << eval.first.toString() << ": ";
+      //     std::cout << std::bitset<32>(eval.second[0]) << " ";
+      //     std::cout << std::endl;
+      //     std::cout << std::endl;
+      //  }
     }
   }
 
@@ -277,14 +281,14 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
     struct IpAddr currentRuleIp;
     uint32_t currentRuleId;
 
-    // For each rule (if don't care rule, use 0.0.0.0), then apply netmask, compare and SET_BIT if match
+    // For each rule (if don't care rule, use 0.0.0.0), then apply netmask,
+    // compare and SET_BIT if match
     for (auto const &rule : rules) {
       try {
-        if (type == SOURCE_TYPE){
+        if (type == SOURCE_TYPE) {
           currentRuleIp.fromString(rule->getSrc());
           // std::cout << "SRC IP RULE | ";
-        }
-        else{
+        } else {
           currentRuleIp.fromString(rule->getDst());
           // std::cout << "DST IP RULE | ";
         }
@@ -295,29 +299,34 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
       }
 
       currentRuleId = rule->getId();
-      // std::cout << "ID: " << currentRuleId << " Current rule IP: " << currentRuleIp.toString() << std::endl;
+      // std::cout << "ID: " << currentRuleId << " Current rule IP: " <<
+      // currentRuleIp.toString() << std::endl;
       auto netmask = (currentRuleIp.netmask);
-      auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask)-1));
+      auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask) - 1));
 
-      // std::cout << "ADDRESS(fixed): " << address.toString() << " RULE-IP(loop):" << currentRuleIp.toString() << std::endl;
-      // std::cout << "netmask: " << netmask << "mask: " << std::bitset<32>(mask) << std::endl;
+      // std::cout << "ADDRESS(fixed): " << address.toString() << "
+      // RULE-IP(loop):" << currentRuleIp.toString() << std::endl;
+      // std::cout << "netmask: " << netmask << "mask: " <<
+      // std::bitset<32>(mask) << std::endl;
 
-      if (((address.ip & mask) == (currentRuleIp.ip & mask)) && (currentRuleIp.netmask <= address.netmask)) {
+      if (((address.ip & mask) == (currentRuleIp.ip & mask)) &&
+          (currentRuleIp.netmask <= address.netmask)) {
         // std::cout << "Set BIT " << std::endl;
         SET_BIT(bitVector[currentRuleId / 63], currentRuleId % 63);
       }
     }
   }
 
-  // std::cout << "ips.size: " << ips.size() << " dontCareRules.size(): " << dontCareRules.size() << std::endl;
+  // std::cout << "ips.size: " << ips.size() << " dontCareRules.size(): " <<
+  // dontCareRules.size() << std::endl;
 
   // Don't care rules are in all entries. Anyway, this loops is useless if there
   // are no rules at all requiring matching on this field.
   if (ips.size() != 0 && dontCareRules.size() != 0) {
-
     // std::cout << "++ ADDING 0.0.0.0/0 rule :)" << std::endl;
 
-    std::vector<uint64_t> bitVector(FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+    std::vector<uint64_t> bitVector(
+        FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
     struct IpAddr wildcardIp = {0, 0};
 
     auto &address = wildcardIp;
@@ -327,11 +336,10 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
 
     for (auto const &rule : rules) {
       try {
-        if (type == SOURCE_TYPE){
+        if (type == SOURCE_TYPE) {
           currentRuleIp.fromString(rule->getSrc());
           // std::cout << "SRC IP RULE | ";
-        }
-        else{
+        } else {
           currentRuleIp.fromString(rule->getDst());
           // std::cout << "DST IP RULE | ";
         }
@@ -342,20 +350,25 @@ void Chain::ip_from_rules_to_map(const uint8_t &type, std::map<struct IpAddr, st
       }
 
       currentRuleId = rule->getId();
-      // std::cout << "ID: " << currentRuleId << " Current rule IP: " << currentRuleIp.toString() << std::endl;
+      // std::cout << "ID: " << currentRuleId << " Current rule IP: " <<
+      // currentRuleIp.toString() << std::endl;
       auto netmask = (currentRuleIp.netmask);
-      auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask)-1));
+      auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask) - 1));
 
-      // std::cout << "ADDRESS(fixed): " << address.toString() << " RULE-IP(loop):" << currentRuleIp.toString() << std::endl;
-      // std::cout << "netmask: " << netmask << "mask: " << std::bitset<32>(mask) << std::endl;
+      // std::cout << "ADDRESS(fixed): " << address.toString() << "
+      // RULE-IP(loop):" << currentRuleIp.toString() << std::endl;
+      // std::cout << "netmask: " << netmask << "mask: " <<
+      // std::bitset<32>(mask) << std::endl;
 
-      if (((address.ip & mask) == (currentRuleIp.ip & mask)) && (currentRuleIp.netmask <= address.netmask)) {
+      if (((address.ip & mask) == (currentRuleIp.ip & mask)) &&
+          (currentRuleIp.netmask <= address.netmask)) {
         // std::cout << "Set BIT " << std::endl;
         SET_BIT(bitVector[currentRuleId / 63], currentRuleId % 63);
       }
     }
 
-    ips.insert(std::pair<struct IpAddr, std::vector<uint64_t>>(wildcardIp, bitVector));
+    ips.insert(
+        std::pair<struct IpAddr, std::vector<uint64_t>>(wildcardIp, bitVector));
   }
 
   // std::cout << "++ END ++ " << std::endl;

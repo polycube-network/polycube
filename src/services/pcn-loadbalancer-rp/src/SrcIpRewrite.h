@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/SrcIpRewriteInterface.h"
-
 
 #include <spdlog/spdlog.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 
 class Lbrp;
 
@@ -38,12 +34,12 @@ struct src_ip_r_key {
 
 struct src_ip_r_value {
   uint32_t sense;
-  uint32_t net;  // host network byte order
-  uint32_t mask; // host network byte order
-}  __attribute__((packed));
+  uint32_t net;   // host network byte order
+  uint32_t mask;  // host network byte order
+} __attribute__((packed));
 
 class SrcIpRewrite : public SrcIpRewriteInterface {
-public:
+ public:
   friend class Lbrp;
   SrcIpRewrite(Lbrp &parent, const SrcIpRewriteJsonObject &conf);
   virtual ~SrcIpRewrite();
@@ -68,11 +64,10 @@ public:
   std::string getIpRange() override;
   void setIpRange(const std::string &value) override;
 
-private:
+ private:
   Lbrp &parent_;
   std::string new_ip_range;
   std::string ip_range;
   uint32_t net;
   uint32_t mask;
 };
-

@@ -20,8 +20,8 @@
 
 namespace polycube {
 
-static std::string level_names[] \
-  {"TRACE", "DEBUG", "INFO", "WARN", "ERR", "CRITICAL", "OFF"};
+static std::string level_names[]{"TRACE", "DEBUG",    "INFO", "WARN",
+                                 "ERR",   "CRITICAL", "OFF"};
 
 std::string logLevelString(polycube::LogLevel l) {
   return level_names[(int)l];
@@ -36,13 +36,20 @@ polycube::LogLevel stringLogLevel(const std::string &level) {
 
 spdlog::level::level_enum logLevelToSPDLog(polycube::LogLevel level) {
   switch (level) {
-    case polycube::LogLevel::TRACE: return spdlog::level::trace;
-    case polycube::LogLevel::DEBUG: return spdlog::level::debug;
-    case polycube::LogLevel::INFO: return spdlog::level::info;
-    case polycube::LogLevel::WARN: return spdlog::level::warn;
-    case polycube::LogLevel::ERR: return spdlog::level::err;
-    case polycube::LogLevel::CRITICAL: return spdlog::level::critical;
-    case polycube::LogLevel::OFF: return spdlog::level::off;
+  case polycube::LogLevel::TRACE:
+    return spdlog::level::trace;
+  case polycube::LogLevel::DEBUG:
+    return spdlog::level::debug;
+  case polycube::LogLevel::INFO:
+    return spdlog::level::info;
+  case polycube::LogLevel::WARN:
+    return spdlog::level::warn;
+  case polycube::LogLevel::ERR:
+    return spdlog::level::err;
+  case polycube::LogLevel::CRITICAL:
+    return spdlog::level::critical;
+  case polycube::LogLevel::OFF:
+    return spdlog::level::off;
   }
 }
 

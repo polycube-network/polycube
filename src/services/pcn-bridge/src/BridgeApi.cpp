@@ -36,9 +36,10 @@ using namespace io::swagger::server::model;
 * Responses:
 * FilteringdatabaseSchema
 */
-FilteringdatabaseSchema
-Bridge::create_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address, const FilteringdatabaseSchema &filteringdatabase) {
-    throw std::runtime_error("Method not implemented");
+FilteringdatabaseSchema Bridge::create_bridge_filteringdatabase_by_id(
+    const std::string &vlan, const std::string &address,
+    const FilteringdatabaseSchema &filteringdatabase) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -52,8 +53,9 @@ Bridge::create_bridge_filteringdatabase_by_id(const std::string &vlan, const std
 * std::vector<FilteringdatabaseSchema>
 */
 std::vector<FilteringdatabaseSchema>
-Bridge::create_bridge_filteringdatabase_list_by_id(const std::vector<FilteringdatabaseSchema> &filteringdatabase) {
-    throw std::runtime_error("Method not implemented");
+Bridge::create_bridge_filteringdatabase_list_by_id(
+    const std::vector<FilteringdatabaseSchema> &filteringdatabase) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -67,9 +69,9 @@ Bridge::create_bridge_filteringdatabase_list_by_id(const std::vector<Filteringda
 * Responses:
 * PortsAccessSchema
 */
-PortsAccessSchema
-Bridge::create_bridge_ports_access_by_id(const std::string &portsName, const PortsAccessSchema &access) {
-    throw std::runtime_error("Method not implemented");
+PortsAccessSchema Bridge::create_bridge_ports_access_by_id(
+    const std::string &portsName, const PortsAccessSchema &access) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -84,9 +86,10 @@ Bridge::create_bridge_ports_access_by_id(const std::string &portsName, const Por
 * Responses:
 * PortsStpSchema
 */
-PortsStpSchema
-Bridge::create_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan, const PortsStpSchema &stp) {
-    throw std::runtime_error("Method not implemented");
+PortsStpSchema Bridge::create_bridge_ports_stp_by_id(
+    const std::string &portsName, const std::string &vlan,
+    const PortsStpSchema &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -100,9 +103,9 @@ Bridge::create_bridge_ports_stp_by_id(const std::string &portsName, const std::s
 * Responses:
 * std::vector<PortsStpSchema>
 */
-std::vector<PortsStpSchema>
-Bridge::create_bridge_ports_stp_list_by_id(const std::string &portsName, const std::vector<PortsStpSchema> &stp) {
-    throw std::runtime_error("Method not implemented");
+std::vector<PortsStpSchema> Bridge::create_bridge_ports_stp_list_by_id(
+    const std::string &portsName, const std::vector<PortsStpSchema> &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -117,13 +120,14 @@ Bridge::create_bridge_ports_stp_list_by_id(const std::string &portsName, const s
 * Responses:
 * PortsTrunkAllowedSchema
 */
-PortsTrunkAllowedSchema
-Bridge::create_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid, const PortsTrunkAllowedSchema &allowed) {
+PortsTrunkAllowedSchema Bridge::create_bridge_ports_trunk_allowed_by_id(
+    const std::string &portsName, const std::string &vlanid,
+    const PortsTrunkAllowedSchema &allowed) {
   auto &&p = get_bridge_port(portsName);
   p.add_trunk_vlan(std::stoul(vlanid));
   PortsTrunkAllowedSchema ports_trunk_allowed;
   ports_trunk_allowed.setVlanid(std::stoul(vlanid));
-  //TODO return fulfilled schema
+  // TODO return fulfilled schema
   return ports_trunk_allowed;
 }
 
@@ -139,8 +143,10 @@ Bridge::create_bridge_ports_trunk_allowed_by_id(const std::string &portsName, co
 * std::vector<PortsTrunkAllowedSchema>
 */
 std::vector<PortsTrunkAllowedSchema>
-Bridge::create_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName, const std::vector<PortsTrunkAllowedSchema> &allowed) {
-    throw std::runtime_error("Method not implemented");
+Bridge::create_bridge_ports_trunk_allowed_list_by_id(
+    const std::string &portsName,
+    const std::vector<PortsTrunkAllowedSchema> &allowed) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -154,9 +160,9 @@ Bridge::create_bridge_ports_trunk_allowed_list_by_id(const std::string &portsNam
 * Responses:
 * PortsTrunkSchema
 */
-PortsTrunkSchema
-Bridge::create_bridge_ports_trunk_by_id(const std::string &portsName, const PortsTrunkSchema &trunk) {
-    throw std::runtime_error("Method not implemented");
+PortsTrunkSchema Bridge::create_bridge_ports_trunk_by_id(
+    const std::string &portsName, const PortsTrunkSchema &trunk) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -170,9 +176,9 @@ Bridge::create_bridge_ports_trunk_by_id(const std::string &portsName, const Port
 * Responses:
 * StpSchema
 */
-StpSchema
-Bridge::create_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp) {
-    throw std::runtime_error("Method not implemented");
+StpSchema Bridge::create_bridge_stp_by_id(const std::string &vlan,
+                                          const StpSchema &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -185,9 +191,9 @@ Bridge::create_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp) {
 * Responses:
 * std::vector<StpSchema>
 */
-std::vector<StpSchema>
-Bridge::create_bridge_stp_list_by_id(const std::vector<StpSchema> &stp) {
-    throw std::runtime_error("Method not implemented");
+std::vector<StpSchema> Bridge::create_bridge_stp_list_by_id(
+    const std::vector<StpSchema> &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -201,9 +207,9 @@ Bridge::create_bridge_stp_list_by_id(const std::vector<StpSchema> &stp) {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_filteringdatabase_by_id(const std::string &vlan,
+                                                   const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -215,9 +221,8 @@ Bridge::delete_bridge_filteringdatabase_by_id(const std::string &vlan, const std
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_filteringdatabase_list_by_id() {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_filteringdatabase_list_by_id() {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -230,9 +235,8 @@ Bridge::delete_bridge_filteringdatabase_list_by_id() {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_access_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_ports_access_by_id(const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -246,9 +250,9 @@ Bridge::delete_bridge_ports_access_by_id(const std::string &portsName) {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_ports_stp_by_id(const std::string &portsName,
+                                           const std::string &vlan) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -261,9 +265,8 @@ Bridge::delete_bridge_ports_stp_by_id(const std::string &portsName, const std::s
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_stp_list_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_ports_stp_list_by_id(const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -277,8 +280,8 @@ Bridge::delete_bridge_ports_stp_list_by_id(const std::string &portsName) {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid) {
+void Bridge::delete_bridge_ports_trunk_allowed_by_id(
+    const std::string &portsName, const std::string &vlanid) {
   auto &&p = get_bridge_port(portsName);
   p.remove_trunk_vlan(std::stoul(vlanid));
 }
@@ -293,9 +296,9 @@ Bridge::delete_bridge_ports_trunk_allowed_by_id(const std::string &portsName, co
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_ports_trunk_allowed_list_by_id(
+    const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -308,9 +311,8 @@ Bridge::delete_bridge_ports_trunk_allowed_list_by_id(const std::string &portsNam
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_ports_trunk_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_ports_trunk_by_id(const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -323,9 +325,8 @@ Bridge::delete_bridge_ports_trunk_by_id(const std::string &portsName) {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_stp_by_id(const std::string &vlan) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_stp_by_id(const std::string &vlan) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -337,9 +338,8 @@ Bridge::delete_bridge_stp_by_id(const std::string &vlan) {
 * Responses:
 *
 */
-void
-Bridge::delete_bridge_stp_list_by_id() {
-    throw std::runtime_error("Method not implemented");
+void Bridge::delete_bridge_stp_list_by_id() {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -351,8 +351,7 @@ Bridge::delete_bridge_stp_list_by_id() {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_agingtime_by_id() {
+int32_t Bridge::read_bridge_agingtime_by_id() {
   return aging_time_;
 }
 
@@ -365,9 +364,8 @@ Bridge::read_bridge_agingtime_by_id() {
 * Responses:
 * BridgeSchema
 */
-BridgeSchema
-Bridge::read_bridge_by_id() {
-    throw std::runtime_error("Method not implemented");
+BridgeSchema Bridge::read_bridge_by_id() {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -381,9 +379,9 @@ Bridge::read_bridge_by_id() {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_filteringdatabase_age_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+int32_t Bridge::read_bridge_filteringdatabase_age_by_id(
+    const std::string &vlan, const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -397,9 +395,9 @@ Bridge::read_bridge_filteringdatabase_age_by_id(const std::string &vlan, const s
 * Responses:
 * FilteringdatabaseSchema
 */
-FilteringdatabaseSchema
-Bridge::read_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+FilteringdatabaseSchema Bridge::read_bridge_filteringdatabase_by_id(
+    const std::string &vlan, const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -413,9 +411,9 @@ Bridge::read_bridge_filteringdatabase_by_id(const std::string &vlan, const std::
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_filteringdatabase_entrytype_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+std::string Bridge::read_bridge_filteringdatabase_entrytype_by_id(
+    const std::string &vlan, const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -436,18 +434,19 @@ Bridge::read_bridge_filteringdatabase_list_by_id() {
   struct timespec now_;
   clock_gettime(CLOCK_MONOTONIC, &now_);
   const uint64_t SEC2NANOSEC = 1000000000ULL;
-  uint64_t now = now_.tv_sec*SEC2NANOSEC + now_.tv_nsec;
+  uint64_t now = now_.tv_sec * SEC2NANOSEC + now_.tv_nsec;
   for (auto &it : entries) {
     FilteringdatabaseSchema fw;
     auto key = it.first;
     auto value = it.second;
 
-    if ((now - value.timestamp) > aging_time_*SEC2NANOSEC) {
-      logger()->debug("Ignoring old entry: now {0}, timestamp: {1}", now, value.timestamp);
-       fwdtable.remove(key);
+    if ((now - value.timestamp) > aging_time_ * SEC2NANOSEC) {
+      logger()->debug("Ignoring old entry: now {0}, timestamp: {1}", now,
+                      value.timestamp);
+      fwdtable.remove(key);
       continue;
     }
-    fw.setAge((now - value.timestamp)/SEC2NANOSEC);
+    fw.setAge((now - value.timestamp) / SEC2NANOSEC);
 
     // get vlan
     fw.setVlan(key.vlan);
@@ -476,9 +475,9 @@ Bridge::read_bridge_filteringdatabase_list_by_id() {
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_filteringdatabase_port_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+std::string Bridge::read_bridge_filteringdatabase_port_by_id(
+    const std::string &vlan, const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -491,8 +490,8 @@ Bridge::read_bridge_filteringdatabase_port_by_id(const std::string &vlan, const 
 * Responses:
 * PortsAccessSchema
 */
-PortsAccessSchema
-Bridge::read_bridge_ports_access_by_id(const std::string &portsName) {
+PortsAccessSchema Bridge::read_bridge_ports_access_by_id(
+    const std::string &portsName) {
   PortsAccessSchema ports_access;
   auto &&p = get_bridge_port(portsName);
   ports_access.setVlanid(p.access_vlan());
@@ -509,8 +508,8 @@ Bridge::read_bridge_ports_access_by_id(const std::string &portsName) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_ports_access_vlanid_by_id(const std::string &portsName) {
+int32_t Bridge::read_bridge_ports_access_vlanid_by_id(
+    const std::string &portsName) {
   auto &&p = get_bridge_port(portsName);
   return p.access_vlan();
 }
@@ -525,9 +524,9 @@ Bridge::read_bridge_ports_access_vlanid_by_id(const std::string &portsName) {
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_ports_address_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+std::string Bridge::read_bridge_ports_address_by_id(
+    const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -540,8 +539,7 @@ Bridge::read_bridge_ports_address_by_id(const std::string &portsName) {
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_ports_mode_by_id(const std::string &portsName) {
+std::string Bridge::read_bridge_ports_mode_by_id(const std::string &portsName) {
   auto &&p = get_bridge_port(portsName);
   return mode_to_string(p.mode());
 }
@@ -557,10 +555,10 @@ Bridge::read_bridge_ports_mode_by_id(const std::string &portsName) {
 * Responses:
 * PortsStpSchema
 */
-PortsStpSchema
-Bridge::read_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan) {
+PortsStpSchema Bridge::read_bridge_ports_stp_by_id(const std::string &portsName,
+                                                   const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
-  auto && p = get_bridge_port(portsName);
+  auto &&p = get_bridge_port(portsName);
   PortsStpSchema port;
   port.setState(stp.get_port_state_str(p.index()));
   port.setVlan(std::stoul(vlan));
@@ -578,9 +576,9 @@ Bridge::read_bridge_ports_stp_by_id(const std::string &portsName, const std::str
 * Responses:
 * std::vector<PortsStpSchema>
 */
-std::vector<PortsStpSchema>
-Bridge::read_bridge_ports_stp_list_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+std::vector<PortsStpSchema> Bridge::read_bridge_ports_stp_list_by_id(
+    const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -594,9 +592,9 @@ Bridge::read_bridge_ports_stp_list_by_id(const std::string &portsName) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_ports_stp_pathcost_by_id(const std::string &portsName, const std::string &vlan) {
-    throw std::runtime_error("Method not implemented");
+int32_t Bridge::read_bridge_ports_stp_pathcost_by_id(
+    const std::string &portsName, const std::string &vlan) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -610,9 +608,9 @@ Bridge::read_bridge_ports_stp_pathcost_by_id(const std::string &portsName, const
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_ports_stp_portpriority_by_id(const std::string &portsName, const std::string &vlan) {
-    throw std::runtime_error("Method not implemented");
+int32_t Bridge::read_bridge_ports_stp_portpriority_by_id(
+    const std::string &portsName, const std::string &vlan) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -626,10 +624,10 @@ Bridge::read_bridge_ports_stp_portpriority_by_id(const std::string &portsName, c
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_ports_stp_state_by_id(const std::string &portsName, const std::string &vlan) {
+std::string Bridge::read_bridge_ports_stp_state_by_id(
+    const std::string &portsName, const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
-  auto && p = get_bridge_port(portsName);
+  auto &&p = get_bridge_port(portsName);
   return stp.get_port_state_str(p.index());
 }
 
@@ -644,9 +642,9 @@ Bridge::read_bridge_ports_stp_state_by_id(const std::string &portsName, const st
 * Responses:
 * PortsTrunkAllowedSchema
 */
-PortsTrunkAllowedSchema
-Bridge::read_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid) {
-    throw std::runtime_error("Method not implemented");
+PortsTrunkAllowedSchema Bridge::read_bridge_ports_trunk_allowed_by_id(
+    const std::string &portsName, const std::string &vlanid) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -660,8 +658,9 @@ Bridge::read_bridge_ports_trunk_allowed_by_id(const std::string &portsName, cons
 * std::vector<PortsTrunkAllowedSchema>
 */
 std::vector<PortsTrunkAllowedSchema>
-Bridge::read_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+Bridge::read_bridge_ports_trunk_allowed_list_by_id(
+    const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -674,9 +673,9 @@ Bridge::read_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName)
 * Responses:
 * PortsTrunkSchema
 */
-PortsTrunkSchema
-Bridge::read_bridge_ports_trunk_by_id(const std::string &portsName) {
-    throw std::runtime_error("Method not implemented");
+PortsTrunkSchema Bridge::read_bridge_ports_trunk_by_id(
+    const std::string &portsName) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -689,9 +688,9 @@ Bridge::read_bridge_ports_trunk_by_id(const std::string &portsName) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName) {
-  auto && p = get_bridge_port(portsName);
+int32_t Bridge::read_bridge_ports_trunk_nativevlan_by_id(
+    const std::string &portsName) {
+  auto &&p = get_bridge_port(portsName);
   return p.native_vlan();
 }
 
@@ -705,8 +704,7 @@ Bridge::read_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName) {
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_stp_address_by_id(const std::string &vlan) {
+std::string Bridge::read_bridge_stp_address_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   return stp.get_address();
 }
@@ -721,8 +719,7 @@ Bridge::read_bridge_stp_address_by_id(const std::string &vlan) {
 * Responses:
 * StpSchema
 */
-StpSchema
-Bridge::read_bridge_stp_by_id(const std::string &vlan) {
+StpSchema Bridge::read_bridge_stp_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   StpSchema stpSchema;
   stpSchema.setVlan(std::stoul(vlan));
@@ -744,8 +741,7 @@ Bridge::read_bridge_stp_by_id(const std::string &vlan) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_stp_forwarddelay_by_id(const std::string &vlan) {
+int32_t Bridge::read_bridge_stp_forwarddelay_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   return stp.get_forward_delay();
 }
@@ -760,8 +756,7 @@ Bridge::read_bridge_stp_forwarddelay_by_id(const std::string &vlan) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_stp_hellotime_by_id(const std::string &vlan) {
+int32_t Bridge::read_bridge_stp_hellotime_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   return stp.get_hello_time();
 }
@@ -775,9 +770,8 @@ Bridge::read_bridge_stp_hellotime_by_id(const std::string &vlan) {
 * Responses:
 * std::vector<StpSchema>
 */
-std::vector<StpSchema>
-Bridge::read_bridge_stp_list_by_id() {
-    throw std::runtime_error("Method not implemented");
+std::vector<StpSchema> Bridge::read_bridge_stp_list_by_id() {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -790,8 +784,7 @@ Bridge::read_bridge_stp_list_by_id() {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_stp_maxmessageage_by_id(const std::string &vlan) {
+int32_t Bridge::read_bridge_stp_maxmessageage_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   return stp.get_max_age();
 }
@@ -806,8 +799,7 @@ Bridge::read_bridge_stp_maxmessageage_by_id(const std::string &vlan) {
 * Responses:
 * int32_t
 */
-int32_t
-Bridge::read_bridge_stp_priority_by_id(const std::string &vlan) {
+int32_t Bridge::read_bridge_stp_priority_by_id(const std::string &vlan) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   return stp.get_priority();
 }
@@ -821,19 +813,18 @@ Bridge::read_bridge_stp_priority_by_id(const std::string &vlan) {
 * Responses:
 * std::string
 */
-std::string
-Bridge::read_bridge_type_by_id() {
-    CubeType type = get_type();
+std::string Bridge::read_bridge_type_by_id() {
+  CubeType type = get_type();
 
-    switch(type) {
-      case CubeType::TC:
-        return std::string("TC");
-      case CubeType::XDP_SKB:
-      case CubeType::XDP_DRV:
-        return std::string("TYPE_XDP");
-    }
+  switch (type) {
+  case CubeType::TC:
+    return std::string("TC");
+  case CubeType::XDP_SKB:
+  case CubeType::XDP_DRV:
+    return std::string("TYPE_XDP");
+  }
 
-    return std::string("TYPE_UNKNOWN");
+  return std::string("TYPE_UNKNOWN");
 }
 
 /**
@@ -845,9 +836,8 @@ Bridge::read_bridge_type_by_id() {
 * Responses:
 * bool
 */
-bool
-Bridge::read_bridge_stpenabled_by_id() {
-    throw std::runtime_error("Method not implemented");
+bool Bridge::read_bridge_stpenabled_by_id() {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -860,8 +850,7 @@ Bridge::read_bridge_stpenabled_by_id() {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_agingtime_by_id(const int32_t &agingtime) {
+void Bridge::update_bridge_agingtime_by_id(const int32_t &agingtime) {
   // avoid unnecessary updates
   if (aging_time_ == agingtime)
     return;
@@ -879,9 +868,8 @@ Bridge::update_bridge_agingtime_by_id(const int32_t &agingtime) {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_by_id(const BridgeSchema &bridge) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_by_id(const BridgeSchema &bridge) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -896,9 +884,10 @@ Bridge::update_bridge_by_id(const BridgeSchema &bridge) {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_filteringdatabase_by_id(const std::string &vlan, const std::string &address, const FilteringdatabaseSchema &filteringdatabase) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_filteringdatabase_by_id(
+    const std::string &vlan, const std::string &address,
+    const FilteringdatabaseSchema &filteringdatabase) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -913,9 +902,10 @@ Bridge::update_bridge_filteringdatabase_by_id(const std::string &vlan, const std
 * Responses:
 *
 */
-void
-Bridge::update_bridge_filteringdatabase_entrytype_by_id(const std::string &vlan, const std::string &address, const std::string &entrytype) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_filteringdatabase_entrytype_by_id(
+    const std::string &vlan, const std::string &address,
+    const std::string &entrytype) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -928,9 +918,9 @@ Bridge::update_bridge_filteringdatabase_entrytype_by_id(const std::string &vlan,
 * Responses:
 *
 */
-void
-Bridge::update_bridge_filteringdatabase_list_by_id(const std::vector<FilteringdatabaseSchema> &filteringdatabase) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_filteringdatabase_list_by_id(
+    const std::vector<FilteringdatabaseSchema> &filteringdatabase) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -945,9 +935,10 @@ Bridge::update_bridge_filteringdatabase_list_by_id(const std::vector<Filteringda
 * Responses:
 *
 */
-void
-Bridge::update_bridge_filteringdatabase_port_by_id(const std::string &vlan, const std::string &address, const std::string &port) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_filteringdatabase_port_by_id(
+    const std::string &vlan, const std::string &address,
+    const std::string &port) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -961,8 +952,8 @@ Bridge::update_bridge_filteringdatabase_port_by_id(const std::string &vlan, cons
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_access_by_id(const std::string &portsName, const PortsAccessSchema &access) {
+void Bridge::update_bridge_ports_access_by_id(const std::string &portsName,
+                                              const PortsAccessSchema &access) {
   auto &&p = get_bridge_port(portsName);
   p.set_access_vlan(access.getVlanid());
 }
@@ -978,8 +969,8 @@ Bridge::update_bridge_ports_access_by_id(const std::string &portsName, const Por
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_access_vlanid_by_id(const std::string &portsName, const int32_t &vlanid) {
+void Bridge::update_bridge_ports_access_vlanid_by_id(
+    const std::string &portsName, const int32_t &vlanid) {
   auto &&p = get_bridge_port(portsName);
   p.set_access_vlan(vlanid);
 }
@@ -995,9 +986,9 @@ Bridge::update_bridge_ports_access_vlanid_by_id(const std::string &portsName, co
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_address_by_id(const std::string &portsName, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_address_by_id(const std::string &portsName,
+                                               const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1011,8 +1002,8 @@ Bridge::update_bridge_ports_address_by_id(const std::string &portsName, const st
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_mode_by_id(const std::string &portsName, const std::string &mode) {
+void Bridge::update_bridge_ports_mode_by_id(const std::string &portsName,
+                                            const std::string &mode) {
   auto &&p = get_bridge_port(portsName);
   PortMode requested_mode = string_to_mode(mode);
   p.set_mode(requested_mode);
@@ -1030,9 +1021,10 @@ Bridge::update_bridge_ports_mode_by_id(const std::string &portsName, const std::
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_stp_by_id(const std::string &portsName, const std::string &vlan, const PortsStpSchema &stp) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_stp_by_id(const std::string &portsName,
+                                           const std::string &vlan,
+                                           const PortsStpSchema &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1046,9 +1038,9 @@ Bridge::update_bridge_ports_stp_by_id(const std::string &portsName, const std::s
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_stp_list_by_id(const std::string &portsName, const std::vector<PortsStpSchema> &stp) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_stp_list_by_id(
+    const std::string &portsName, const std::vector<PortsStpSchema> &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1063,9 +1055,10 @@ Bridge::update_bridge_ports_stp_list_by_id(const std::string &portsName, const s
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_stp_pathcost_by_id(const std::string &portsName, const std::string &vlan, const int32_t &pathcost) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_stp_pathcost_by_id(
+    const std::string &portsName, const std::string &vlan,
+    const int32_t &pathcost) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1080,9 +1073,10 @@ Bridge::update_bridge_ports_stp_pathcost_by_id(const std::string &portsName, con
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_stp_portpriority_by_id(const std::string &portsName, const std::string &vlan, const int32_t &portpriority) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_stp_portpriority_by_id(
+    const std::string &portsName, const std::string &vlan,
+    const int32_t &portpriority) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1097,9 +1091,10 @@ Bridge::update_bridge_ports_stp_portpriority_by_id(const std::string &portsName,
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_trunk_allowed_by_id(const std::string &portsName, const std::string &vlanid, const PortsTrunkAllowedSchema &allowed) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_trunk_allowed_by_id(
+    const std::string &portsName, const std::string &vlanid,
+    const PortsTrunkAllowedSchema &allowed) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1113,9 +1108,10 @@ Bridge::update_bridge_ports_trunk_allowed_by_id(const std::string &portsName, co
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_trunk_allowed_list_by_id(const std::string &portsName, const std::vector<PortsTrunkAllowedSchema> &allowed) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_trunk_allowed_list_by_id(
+    const std::string &portsName,
+    const std::vector<PortsTrunkAllowedSchema> &allowed) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1129,9 +1125,9 @@ Bridge::update_bridge_ports_trunk_allowed_list_by_id(const std::string &portsNam
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_trunk_by_id(const std::string &portsName, const PortsTrunkSchema &trunk) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_ports_trunk_by_id(const std::string &portsName,
+                                             const PortsTrunkSchema &trunk) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1145,8 +1141,8 @@ Bridge::update_bridge_ports_trunk_by_id(const std::string &portsName, const Port
 * Responses:
 *
 */
-void
-Bridge::update_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName, const int32_t &nativevlan) {
+void Bridge::update_bridge_ports_trunk_nativevlan_by_id(
+    const std::string &portsName, const int32_t &nativevlan) {
   logger()->info("Updating native vlan!");
   auto &&p = get_bridge_port(portsName);
   p.set_native_vlan(nativevlan);
@@ -1164,9 +1160,9 @@ Bridge::update_bridge_ports_trunk_nativevlan_by_id(const std::string &portsName,
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_address_by_id(const std::string &vlan, const std::string &address) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_stp_address_by_id(const std::string &vlan,
+                                             const std::string &address) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1180,9 +1176,9 @@ Bridge::update_bridge_stp_address_by_id(const std::string &vlan, const std::stri
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_stp_by_id(const std::string &vlan,
+                                     const StpSchema &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1196,8 +1192,8 @@ Bridge::update_bridge_stp_by_id(const std::string &vlan, const StpSchema &stp) {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_forwarddelay_by_id(const std::string &vlan, const int32_t &forwarddelay) {
+void Bridge::update_bridge_stp_forwarddelay_by_id(const std::string &vlan,
+                                                  const int32_t &forwarddelay) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   stp.set_forward_delay(forwarddelay);
 }
@@ -1213,8 +1209,8 @@ Bridge::update_bridge_stp_forwarddelay_by_id(const std::string &vlan, const int3
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_hellotime_by_id(const std::string &vlan, const int32_t &hellotime) {
+void Bridge::update_bridge_stp_hellotime_by_id(const std::string &vlan,
+                                               const int32_t &hellotime) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   stp.set_hello_time(hellotime);
 }
@@ -1229,9 +1225,8 @@ Bridge::update_bridge_stp_hellotime_by_id(const std::string &vlan, const int32_t
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_list_by_id(const std::vector<StpSchema> &stp) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_stp_list_by_id(const std::vector<StpSchema> &stp) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1245,8 +1240,8 @@ Bridge::update_bridge_stp_list_by_id(const std::vector<StpSchema> &stp) {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_maxmessageage_by_id(const std::string &vlan, const int32_t &maxmessageage) {
+void Bridge::update_bridge_stp_maxmessageage_by_id(
+    const std::string &vlan, const int32_t &maxmessageage) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   stp.set_max_age(maxmessageage);
 }
@@ -1262,8 +1257,8 @@ Bridge::update_bridge_stp_maxmessageage_by_id(const std::string &vlan, const int
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stp_priority_by_id(const std::string &vlan, const int32_t &priority) {
+void Bridge::update_bridge_stp_priority_by_id(const std::string &vlan,
+                                              const int32_t &priority) {
   auto &&stp = get_stp_instance(std::stoul(vlan));
   stp.set_priority(priority);
 }
@@ -1278,9 +1273,8 @@ Bridge::update_bridge_stp_priority_by_id(const std::string &vlan, const int32_t 
 * Responses:
 *
 */
-void
-Bridge::update_bridge_stpenabled_by_id(const bool &stpenabled) {
-    throw std::runtime_error("Method not implemented");
+void Bridge::update_bridge_stpenabled_by_id(const bool &stpenabled) {
+  throw std::runtime_error("Method not implemented");
 }
 
 /**
@@ -1293,7 +1287,6 @@ Bridge::update_bridge_stpenabled_by_id(const bool &stpenabled) {
 * Responses:
 *
 */
-void
-Bridge::update_bridge_type_by_id(const std::string &type) {
-    throw std::runtime_error("You cannot change the CubeType at runtime");
+void Bridge::update_bridge_type_by_id(const std::string &type) {
+  throw std::runtime_error("You cannot change the CubeType at runtime");
 }

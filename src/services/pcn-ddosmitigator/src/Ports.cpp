@@ -20,25 +20,26 @@
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
-  : Port(port), parent_(static_cast<Ddosmitigator&>(parent)) {
+    : Port(port), parent_(static_cast<Ddosmitigator &>(parent)) {
   logger()->info("Creating Ports instance");
-  if(conf.peerIsSet()) {
+  if (conf.peerIsSet()) {
     setPeer(conf.getPeer());
   }
 }
 
-Ports::~Ports() { }
+Ports::~Ports() {}
 
 void Ports::update(const PortsJsonObject &conf) {
-  //This method updates all the object/parameter in Ports object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Ports object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
 
-  if(conf.peerIsSet()) {
+  if (conf.peerIsSet()) {
     setPeer(conf.getPeer());
   }
 }
 
-PortsJsonObject Ports::toJsonObject(){
+PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
 
   conf.setStatus(getStatus());
@@ -52,40 +53,44 @@ PortsJsonObject Ports::toJsonObject(){
   return conf;
 }
 
-void Ports::create(Ddosmitigator &parent, const std::string &name, const PortsJsonObject &conf){
-
-  //This method creates the actual Ports object given thee key param.
-  //Please remember to call here the create static method for all sub-objects of Ports.
+void Ports::create(Ddosmitigator &parent, const std::string &name,
+                   const PortsJsonObject &conf) {
+  // This method creates the actual Ports object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of Ports.
 
   // call method in base class
   auto p = parent.add_port<PortsJsonObject>(name, conf);
 
   parent.addPort(name);
-  //logger()->info("New port create with name {0}", name);
+  // logger()->info("New port create with name {0}", name);
 }
 
-std::shared_ptr<Ports> Ports::getEntry(Ddosmitigator &parent, const std::string &name){
-  //This method retrieves the pointer to Ports object specified by its keys.
-  //logger()->info("Called getEntry with name: {0}", name);
+std::shared_ptr<Ports> Ports::getEntry(Ddosmitigator &parent,
+                                       const std::string &name) {
+  // This method retrieves the pointer to Ports object specified by its keys.
+  // logger()->info("Called getEntry with name: {0}", name);
   return parent.get_port(name);
 }
 
-void Ports::removeEntry(Ddosmitigator &parent, const std::string &name){
-  //This method removes the single Ports object specified by its keys.
-  //Remember to call here the remove static method for all-sub-objects of Ports.
+void Ports::removeEntry(Ddosmitigator &parent, const std::string &name) {
+  // This method removes the single Ports object specified by its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // Ports.
   // call to base class
   parent.remove_port(name);
   parent.rmPort(name);
 }
 
-std::vector<std::shared_ptr<Ports>> Ports::get(Ddosmitigator &parent){
-  //This methods get the pointers to all the Ports objects in Ddosmitigator.
+std::vector<std::shared_ptr<Ports>> Ports::get(Ddosmitigator &parent) {
+  // This methods get the pointers to all the Ports objects in Ddosmitigator.
   return parent.get_ports();
 }
 
-void Ports::remove(Ddosmitigator &parent){
-  //This method removes all Ports objects in Ddosmitigator.
-  //Remember to call here the remove static method for all-sub-objects of Ports.
+void Ports::remove(Ddosmitigator &parent) {
+  // This method removes all Ports objects in Ddosmitigator.
+  // Remember to call here the remove static method for all-sub-objects of
+  // Ports.
   auto ports = parent.get_ports();
   for (auto it : ports) {
     removeEntry(parent, it->name());
@@ -95,5 +100,3 @@ void Ports::remove(Ddosmitigator &parent){
 std::shared_ptr<spdlog::logger> Ports::logger() {
   return parent_.logger();
 }
-
-

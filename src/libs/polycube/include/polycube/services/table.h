@@ -25,10 +25,10 @@
 namespace polycube {
 namespace service {
 
-//class Cube;
+// class Cube;
 
 class RawTable {
-  //friend class Cube;
+  // friend class Cube;
 
  public:
   RawTable();
@@ -41,7 +41,7 @@ class RawTable {
   int first(void *key);
   int next(const void *key, void *next);
 
- //protected:
+  // protected:
   RawTable(void *op);
 
  private:
@@ -51,11 +51,11 @@ class RawTable {
 
 template <class ValueType>
 class ArrayTable : protected RawTable {
-  //friend class Cube;
+  // friend class Cube;
 
  public:
-  ArrayTable() : RawTable() {};
-  ~ArrayTable() {};
+  ArrayTable() : RawTable(){};
+  ~ArrayTable(){};
 
   ValueType get(const uint32_t &key) {
     ValueType t;
@@ -73,7 +73,7 @@ class ArrayTable : protected RawTable {
 
     do {
       ret.emplace_back(key, get(key));
-    } while(!RawTable::next(&key, &key));
+    } while (!RawTable::next(&key, &key));
 
     return ret;
   }
@@ -82,17 +82,17 @@ class ArrayTable : protected RawTable {
     RawTable::set(&key, &value);
   }
 
- //private:
-  ArrayTable(void *op): RawTable(op) {};
+  // private:
+  ArrayTable(void *op) : RawTable(op){};
 };
 
 template <class ValueType>
 class PercpuArrayTable : protected RawTable {
-  //friend class Cube;
+  // friend class Cube;
 
  public:
-  PercpuArrayTable() : RawTable(), ncpus_(get_possible_cpu_count()) {};
-  ~PercpuArrayTable() {};
+  PercpuArrayTable() : RawTable(), ncpus_(get_possible_cpu_count()){};
+  ~PercpuArrayTable(){};
 
   std::vector<ValueType> get(const uint32_t &key) {
     std::vector<ValueType> t(ncpus_);
@@ -110,7 +110,7 @@ class PercpuArrayTable : protected RawTable {
 
     do {
       ret.emplace_back(key, get(key));
-    } while(!RawTable::next(&key, &key));
+    } while (!RawTable::next(&key, &key));
 
     return ret;
   }
@@ -125,18 +125,18 @@ class PercpuArrayTable : protected RawTable {
     set(key, v);
   }
 
- //private:
-  PercpuArrayTable(void *op): RawTable(op), ncpus_(get_possible_cpu_count()) {};
+  // private:
+  PercpuArrayTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
   unsigned int ncpus_;
 };
 
 template <class KeyType, class ValueType>
 class HashTable : protected RawTable {
-  //friend class Cube;
+  // friend class Cube;
 
  public:
-  HashTable() : RawTable() {};
-  ~HashTable() {};
+  HashTable() : RawTable(){};
+  ~HashTable(){};
 
   ValueType get(const KeyType &key) {
     ValueType t;
@@ -154,7 +154,7 @@ class HashTable : protected RawTable {
 
     do {
       ret.emplace_back(key, get(key));
-    } while(!RawTable::next(&key, &key));
+    } while (!RawTable::next(&key, &key));
 
     return ret;
   }
@@ -173,16 +173,16 @@ class HashTable : protected RawTable {
       remove(k);
     }
   }
- //private:
-  HashTable(void *op): RawTable(op) {};
+  // private:
+  HashTable(void *op) : RawTable(op){};
 };
 
 template <class KeyType, class ValueType>
 class PercpuHashTable : protected RawTable {
-  //friend class Cube;
+  // friend class Cube;
  public:
-  PercpuHashTable() : RawTable(), ncpus_(get_possible_cpu_count()) {};
-  ~PercpuHashTable() {};
+  PercpuHashTable() : RawTable(), ncpus_(get_possible_cpu_count()){};
+  ~PercpuHashTable(){};
 
   std::vector<ValueType> get(const KeyType &key) {
     std::vector<ValueType> t(ncpus_);
@@ -200,7 +200,7 @@ class PercpuHashTable : protected RawTable {
 
     do {
       ret.emplace_back(key, get(key));
-    } while(!RawTable::next(&key, &key));
+    } while (!RawTable::next(&key, &key));
 
     return ret;
   }
@@ -226,8 +226,8 @@ class PercpuHashTable : protected RawTable {
     }
   }
 
- //private:
-  PercpuHashTable(void *op): RawTable(op), ncpus_(get_possible_cpu_count()) {};
+  // private:
+  PercpuHashTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
   unsigned int ncpus_;
 };
 

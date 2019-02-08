@@ -48,8 +48,8 @@ Iptables::L4PortLookup::L4PortLookup(
     // std::cout << "-- wildcard NO --+" << std::endl;
   } else {
     wildcard_rule_ = true;
-    wildcard_string_ = fromContainerToMapString(it->second.begin(),
-                                              it->second.end(), "{", "}", ",");
+    wildcard_string_ = fromContainerToMapString(
+        it->second.begin(), it->second.end(), "{", "}", ",");
     // std::cout << "-- wildcard YES --+" << std::endl;
     // std::cout << wildcardString << std::endl;
   }

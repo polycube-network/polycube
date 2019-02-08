@@ -23,21 +23,37 @@ HttpHandleRequest::HttpHandleRequest() {}
 HttpHandleRequest::HttpHandleRequest(Method method, const std::string &url,
                                      const std::string &body,
                                      HelpType help_type)
-    : method_(method), url_(url), body_(body), help_type_(help_type){}
+    : method_(method), url_(url), body_(body), help_type_(help_type) {}
 HttpHandleRequest::~HttpHandleRequest() {}
 
-std::string HttpHandleRequest::resource() const { return url_; }
-Method HttpHandleRequest::method() const { return method_; }
-std::string HttpHandleRequest::body() const { return body_; }
-HelpType HttpHandleRequest::help_type() const { return help_type_; }
+std::string HttpHandleRequest::resource() const {
+  return url_;
+}
+Method HttpHandleRequest::method() const {
+  return method_;
+}
+std::string HttpHandleRequest::body() const {
+  return body_;
+}
+HelpType HttpHandleRequest::help_type() const {
+  return help_type_;
+}
 HttpHandleResponse::HttpHandleResponse() {}
 HttpHandleResponse::~HttpHandleResponse() {}
 
-std::string HttpHandleResponse::body() const { return body_; }
-void HttpHandleResponse::set_body(const std::string &body) { body_ = body; }
+std::string HttpHandleResponse::body() const {
+  return body_;
+}
+void HttpHandleResponse::set_body(const std::string &body) {
+  body_ = body;
+}
 
-Code HttpHandleResponse::code() const { return code_; }
-void HttpHandleResponse::set_code(Code code) { code_ = code; }
+Code HttpHandleResponse::code() const {
+  return code_;
+}
+void HttpHandleResponse::set_code(Code code) {
+  code_ = code;
+}
 
 // to be compatible with pistache
 void HttpHandleResponse::send(Code code, const std::string &body) {

@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/StatsInterface.h"
 #include "polycube/services/utils.h"
@@ -29,7 +27,7 @@ class Ddosmitigator;
 using namespace io::swagger::server::model;
 
 class Stats : public StatsInterface {
-public:
+ public:
   Stats(Ddosmitigator &parent, const StatsJsonObject &conf);
   virtual ~Stats();
 
@@ -50,8 +48,6 @@ public:
   /// </summary>
   uint64_t getPkts() override;
 
-private:
+ private:
   Ddosmitigator &parent_;
-
 };
-

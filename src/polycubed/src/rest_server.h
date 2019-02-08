@@ -74,43 +74,32 @@ class RestServer {
   void delete_servicectrl(const Rest::Request &request,
                           Http::ResponseWriter response);
 
-  void get_cubes(const Rest::Request &request,
-                     Http::ResponseWriter response);
-  void get_cube(const Rest::Request &request,
-                    Http::ResponseWriter response);
+  void get_cubes(const Rest::Request &request, Http::ResponseWriter response);
+  void get_cube(const Rest::Request &request, Http::ResponseWriter response);
 
-  void cubes_help(const Rest::Request &request,
-                    Http::ResponseWriter response);
+  void cubes_help(const Rest::Request &request, Http::ResponseWriter response);
 
-  void cube_help(const Rest::Request &request,
-                    Http::ResponseWriter response);
+  void cube_help(const Rest::Request &request, Http::ResponseWriter response);
 
-  void get_netdevs(const Rest::Request &request,
-                   Http::ResponseWriter response);
-  void get_netdev(const Rest::Request &request,
-                  Http::ResponseWriter response);
+  void get_netdevs(const Rest::Request &request, Http::ResponseWriter response);
+  void get_netdev(const Rest::Request &request, Http::ResponseWriter response);
 
   void netdevs_help(const Rest::Request &request,
                     Http::ResponseWriter response);
 
-  void netdev_help(const Rest::Request &request,
-                   Http::ResponseWriter response);
+  void netdev_help(const Rest::Request &request, Http::ResponseWriter response);
 
-  void connect(const Rest::Request &request,
-               Http::ResponseWriter response);
-  void disconnect(const Rest::Request &request,
-                  Http::ResponseWriter response);
+  void connect(const Rest::Request &request, Http::ResponseWriter response);
+  void disconnect(const Rest::Request &request, Http::ResponseWriter response);
 
-  void topology(const Rest::Request &request,
-                Http::ResponseWriter response);
+  void topology(const Rest::Request &request, Http::ResponseWriter response);
   void topology_help(const Rest::Request &request,
                      Http::ResponseWriter response);
 
   void default_handler(const Rest::Request &request,
                        Http::ResponseWriter response);
 
-  void get_version(const Rest::Request &request,
-                   Http::ResponseWriter response);
+  void get_version(const Rest::Request &request, Http::ResponseWriter response);
 
   void logRequest(const Rest::Request &request);
   void logJson(json j);

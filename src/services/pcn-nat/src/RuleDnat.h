@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/RuleDnatInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -31,6 +28,7 @@ using namespace io::swagger::server::model;
 
 class RuleDnat : public RuleDnatInterface {
   friend class RuleDnatEntry;
+
  public:
   RuleDnat(Rule &parent);
   RuleDnat(Rule &parent, const RuleDnatJsonObject &conf);
@@ -48,15 +46,18 @@ class RuleDnat : public RuleDnatInterface {
   /// </summary>
   std::shared_ptr<RuleDnatEntry> getEntry(const uint32_t &id) override;
   std::vector<std::shared_ptr<RuleDnatEntry>> getEntryList() override;
-  void addEntry(const uint32_t &id, const RuleDnatEntryJsonObject &conf) override;
+  void addEntry(const uint32_t &id,
+                const RuleDnatEntryJsonObject &conf) override;
   void addEntryList(const std::vector<RuleDnatEntryJsonObject> &conf) override;
-  void replaceEntry(const uint32_t &id, const RuleDnatEntryJsonObject &conf) override;
+  void replaceEntry(const uint32_t &id,
+                    const RuleDnatEntryJsonObject &conf) override;
   void delEntry(const uint32_t &id) override;
   void delEntryList() override;
 
-  RuleDnatAppendOutputJsonObject append(RuleDnatAppendInputJsonObject input) override;
-private:
-  Rule   &parent_;
+  RuleDnatAppendOutputJsonObject append(
+      RuleDnatAppendInputJsonObject input) override;
+
+ private:
+  Rule &parent_;
   std::vector<std::shared_ptr<RuleDnatEntry>> rules_;
 };
-

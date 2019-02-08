@@ -53,7 +53,7 @@ class PortHost : public Node {
   void load_tx();
 
   ebpf::BPF tx_;
-  int fd_; // fd_ of the tx_ program
+  int fd_;  // fd_ of the tx_ program
   static const std::string TX_CODE;
   PortType type_;
   std::shared_ptr<spdlog::logger> logger;

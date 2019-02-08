@@ -41,8 +41,7 @@ class Pbforwarder : public polycube::service::Cube<Ports>,
   virtual ~Pbforwarder() override;
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port,
-                 polycube::service::PacketInMetadata &md,
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
   void update(const PbforwarderJsonObject &conf) override;

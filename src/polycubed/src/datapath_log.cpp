@@ -123,7 +123,7 @@ struct log_table_t log_buffer;
 
 void DatapathLog::call_back_proxy(void *cb_cookie, void *data, int data_size) {
   LogMsg *log_msg = static_cast<LogMsg *>(data);
-  //spdlog::get("polycubed")->debug("call_back_proxy");
+  // spdlog::get("polycubed")->debug("call_back_proxy");
 
   DatapathLog *c = static_cast<DatapathLog *>(cb_cookie);
   if (c == nullptr)
@@ -144,18 +144,18 @@ DatapathLog &DatapathLog::get_instance() {
   return instance;
 }
 
-DatapathLog::DatapathLog()
-  : logger(spdlog::get("polycubed")) {
-
+DatapathLog::DatapathLog() : logger(spdlog::get("polycubed")) {
   auto res = perf_buffer_.init(LOG_BUFFER);
   if (res.code() != 0) {
     logger->error("impossible to load log buffer: {0}", res.msg());
     throw std::runtime_error("Error loading log buffer");
   }
 
-  res = perf_buffer_.open_perf_buffer("log_buffer", call_back_proxy, nullptr, this);
+  res = perf_buffer_.open_perf_buffer("log_buffer", call_back_proxy, nullptr,
+                                      this);
   if (res.code() != 0) {
-    logger->error("Cannot open perf ring buffer for controller: {0}", res.msg());
+    logger->error("Cannot open perf ring buffer for controller: {0}",
+                  res.msg());
     throw std::runtime_error("Error opening perf buffer: " + res.msg());
   }
 
@@ -199,18 +199,22 @@ void DatapathLog::stop() {
   }
 }
 
-std::string DatapathLog::replace_string(std::string& subject, const std::string& search, const std::string& replace) {
-    size_t start_pos = 0;
-    while((start_pos = subject.find(search, start_pos)) != std::string::npos) {
-        subject.replace(start_pos, search.length(), replace);
-        start_pos += replace.length(); // Handles case where 'to' is a substring of 'from'
-    }
-    return subject;
+std::string DatapathLog::replace_string(std::string &subject,
+                                        const std::string &search,
+                                        const std::string &replace) {
+  size_t start_pos = 0;
+  while ((start_pos = subject.find(search, start_pos)) != std::string::npos) {
+    subject.replace(start_pos, search.length(), replace);
+    start_pos +=
+        replace.length();  // Handles case where 'to' is a substring of 'from'
+  }
+  return subject;
 }
 
 // matches all C++ comments
 // https://stackoverflow.com/questions/36454069/how-to-remove-c-style-comments-from-code
-static std::regex regComments(R"***((?:\/\/(?:\\\n|[^\n])*)|(?:\/\*[\s\S]*?\*\/)|((?:R"([^(\\\s]{0,16})\([^)]*\)\2")|(?:@"[^"]*?")|(?:"(?:\?\?'|\\\\|\\"|\\\n|[^"])*?")|(?:'(?:\\\\|\\'|\\\n|[^'])*?')))***");
+static std::regex regComments(
+    R"***((?:\/\/(?:\\\n|[^\n])*)|(?:\/\*[\s\S]*?\*\/)|((?:R"([^(\\\s]{0,16})\([^)]*\)\2")|(?:@"[^"]*?")|(?:"(?:\?\?'|\\\\|\\"|\\\n|[^"])*?")|(?:'(?:\\\\|\\'|\\\n|[^'])*?')))***");
 
 // matches all calls to pcn_log(ctx, ...)
 static std::regex regN(R"***(pcn_log\s*\(([\s\S]+?)\)\s*;)***");
@@ -219,27 +223,28 @@ static std::regex regAddSpaces(R"***( +)***");
 
 static std::regex regNPkt(R"***(pcn_pkt_log\s*\(([\s\S]+?)\)\s*;)***");
 
-std::string DatapathLog::dp_callback(const std::smatch& m) {
-    std::string match = std::regex_replace(m.str(1), regNewLine, "");
-    match = std::regex_replace(match, regAddSpaces, " ");
-    std::string new_string = std::string(REPLACE_BASE);
-    new_string = DatapathLog::replace_string(new_string, "$1", match);
-    return new_string;
+std::string DatapathLog::dp_callback(const std::smatch &m) {
+  std::string match = std::regex_replace(m.str(1), regNewLine, "");
+  match = std::regex_replace(match, regAddSpaces, " ");
+  std::string new_string = std::string(REPLACE_BASE);
+  new_string = DatapathLog::replace_string(new_string, "$1", match);
+  return new_string;
 }
 
-std::string DatapathLog::dp_callback_pkt(const std::smatch& m) {
-    std::string match = std::regex_replace(m.str(1), regNewLine, "");
-    match = std::regex_replace(match, regAddSpaces, " ");
-    std::string new_string = std::string(REPLACE_BASE_PKT);
-    new_string = DatapathLog::replace_string(new_string, "$1", match);
-    return new_string;
+std::string DatapathLog::dp_callback_pkt(const std::smatch &m) {
+  std::string match = std::regex_replace(m.str(1), regNewLine, "");
+  match = std::regex_replace(match, regAddSpaces, " ");
+  std::string new_string = std::string(REPLACE_BASE_PKT);
+  new_string = DatapathLog::replace_string(new_string, "$1", match);
+  return new_string;
 }
 
 std::string DatapathLog::parse_log(const std::string &code) {
   // remove all comments from the code before going on
   auto code1 = std::regex_replace(code, regComments, "$1");
   auto code2 = std::regex_replace_cb(code1, regN, DatapathLog::dp_callback);
-  auto code3 = std::regex_replace_cb(code2, regNPkt, DatapathLog::dp_callback_pkt);
+  auto code3 =
+      std::regex_replace_cb(code2, regNPkt, DatapathLog::dp_callback_pkt);
   return BASE_CODE + code3;
 }
 

@@ -16,9 +16,9 @@
 
 #include "polycube/services/utils.h"
 
-#include <iterator>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <iterator>
 #include <random>
 #include <sstream>
 
@@ -43,13 +43,13 @@ namespace utils {
 uint32_t ip_string_to_be_uint(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
-  int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n",
-                       a + 0, a + 1, a + 2, a + 3, &last);
+  int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
+                       a + 3, &last);
   if (rc != 4 || ip.size() != last)
     throw std::runtime_error("Not an ipv4 address " + ip);
 
-  return uint32_t(a[3]) << 24 | uint32_t(a[2]) << 16 |
-          uint32_t(a[1]) << 8 | uint32_t(a[0]);
+  return uint32_t(a[3]) << 24 | uint32_t(a[2]) << 16 | uint32_t(a[1]) << 8 |
+         uint32_t(a[0]);
 }
 
 std::string be_uint_to_ip_string(uint32_t ip) {
@@ -62,26 +62,24 @@ std::string be_uint_to_ip_string(uint32_t ip) {
 uint64_t mac_string_to_be_uint(const std::string &mac) {
   uint8_t a[6];
   int last = -1;
-  int rc = sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n",
-                  a + 0, a + 1, a + 2, a + 3, a + 4, a + 5,
-                  &last);
+  int rc = sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n", a + 0, a + 1,
+                  a + 2, a + 3, a + 4, a + 5, &last);
   if (rc != 6 || mac.size() != last) {
     throw std::runtime_error("invalid mac address format " + mac);
   }
-  return uint64_t(a[5]) << 40 | uint64_t(a[4]) << 32 |
-         uint64_t(a[3]) << 24 | uint64_t(a[2]) << 16 |
-         uint64_t(a[1]) << 8 | uint64_t(a[0]);
+  return uint64_t(a[5]) << 40 | uint64_t(a[4]) << 32 | uint64_t(a[3]) << 24 |
+         uint64_t(a[2]) << 16 | uint64_t(a[1]) << 8 | uint64_t(a[0]);
 }
 
 std::string be_uint_to_mac_string(uint64_t mac) {
   uint8_t a[6];
   for (int i = 0; i < 6; i++) {
-    a[i] = (mac >> i*8) & 0xFF;
+    a[i] = (mac >> i * 8) & 0xFF;
   }
 
   char str[19];
-  std::sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x", a[0], a[1],
-               a[2], a[3], a[4], a[5]);
+  std::sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x", a[0], a[1], a[2], a[3],
+               a[4], a[5]);
   return std::string(str);
 }
 
@@ -90,15 +88,13 @@ std::string ip_string_to_hexbe_string(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
   int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
-                  a + 3, &last);
+                       a + 3, &last);
   if (rc != 4 || ip.size() != last)
     throw std::runtime_error("Not an ipv4 address " + ip);
 
   std::stringstream stream;
-  stream << std::setfill ('0') << std::setw(8) << std::hex
-         << (uint32_t(a[3]) << 24 |
-             uint32_t(a[2]) << 16 |
-             uint32_t(a[1]) << 8 |
+  stream << std::setfill('0') << std::setw(8) << std::hex
+         << (uint32_t(a[3]) << 24 | uint32_t(a[2]) << 16 | uint32_t(a[1]) << 8 |
              uint32_t(a[0]));
   return "0x" + stream.str();
 }
@@ -126,7 +122,8 @@ std::string mac_string_to_hexbe_string(const std::string &mac) {
   return ret;
 }
 
-// Convert and ip string into the dotted notation (ip must be in network byte order)
+// Convert and ip string into the dotted notation (ip must be in network byte
+// order)
 std::string ip_to_string(uint32_t ip) {
   struct in_addr ip_addr;
   ip_addr.s_addr = ip;
@@ -137,7 +134,7 @@ std::string ip_to_string(uint32_t ip) {
 std::string mac_to_string(uint64_t mac) {
   uint8_t array[6];
   for (int i = 0; i < 6; i++) {
-    array[i] = (mac >> i*8) & 0xFF;
+    array[i] = (mac >> i * 8) & 0xFF;
   }
 
   char str[19];
@@ -147,7 +144,6 @@ std::string mac_to_string(uint64_t mac) {
 }
 
 std::string format_debug_string(std::string str, const uint64_t args[4]) {
-
   struct replace_element {
     std::string from;
     std::string to;
@@ -165,17 +161,17 @@ std::string format_debug_string(std::string str, const uint64_t args[4]) {
         continue;
       }
       // look for custom specifiers and format them
-      if (str[i+1] == 'I') {
+      if (str[i + 1] == 'I') {
         to_replace.push_back(
-          replace_element{"%I", ip_to_string(args[arg_index]), i});
+            replace_element{"%I", ip_to_string(args[arg_index]), i});
         to_rellocate[arg_index] = true;
-      } else if (str[i+1] == 'M') {
+      } else if (str[i + 1] == 'M') {
         to_replace.push_back(
-          replace_element{"%M", mac_to_string(args[arg_index]), i});
+            replace_element{"%M", mac_to_string(args[arg_index]), i});
         to_rellocate[arg_index] = true;
-      } else if (str[i+1] == 'P') {
+      } else if (str[i + 1] == 'P') {
         to_replace.push_back(
-          replace_element{"%P", std::to_string(ntohs(args[arg_index])), i});
+            replace_element{"%P", std::to_string(ntohs(args[arg_index])), i});
         to_rellocate[arg_index] = true;
       }
       arg_index++;
@@ -199,8 +195,8 @@ std::string format_debug_string(std::string str, const uint64_t args[4]) {
   // +50 is enough for holding the arguments
   char buf[str.size() + 50];
 
-  std::snprintf(buf, sizeof(buf), str.c_str(),
-      new_args[0], new_args[1], new_args[2], new_args[3]);
+  std::snprintf(buf, sizeof(buf), str.c_str(), new_args[0], new_args[1],
+                new_args[2], new_args[3]);
 
   return std::string(buf);
 }
@@ -208,26 +204,26 @@ std::string format_debug_string(std::string str, const uint64_t args[4]) {
 #ifdef HAVE_POLYCUBE_TOOLS
 void print_packet(const uint8_t *pkt, uint32_t len) {
   netdissect_options Ndo;
-	netdissect_options *ndo = &Ndo;
+  netdissect_options *ndo = &Ndo;
 
   memset(ndo, 0, sizeof(*ndo));
   char ebuf[100];
-  //if (nd_init(ebuf, sizeof(ebuf)) == -1)
-	//  return;
+  // if (nd_init(ebuf, sizeof(ebuf)) == -1)
+  //  return;
 
-	ndo_set_function_pointers(ndo);
+  ndo_set_function_pointers(ndo);
 
   ndo->ndo_nflag = 1;
   ndo->ndo_vflag = 0;
-  //ndo->ndo_qflag = 1;
+  // ndo->ndo_qflag = 1;
   ndo->ndo_tflag = 0;
   const char name[] = "helloworld";
   ndo->program_name = name;
-  ndo->ndo_eflag = 1; // print ethernet packet
+  ndo->ndo_eflag = 1;  // print ethernet packet
   init_print(ndo, 0, 0, 0);
   ndo->ndo_if_printer = get_if_printer(ndo, 0);
 
-  struct pcap_pkthdr hdr = {{0,0}, len, len};
+  struct pcap_pkthdr hdr = {{0, 0}, len, len};
   pretty_print_packet(ndo, &hdr, pkt, 0);
 }
 #endif
@@ -238,8 +234,8 @@ std::string get_random_mac() {
   std::uniform_int_distribution<uint64_t> dist(1, UINT64_MAX);
 
   uint64_t port_mac = dist(mt);
-  port_mac &= ~(1ULL << 40); // unicast
-  port_mac |= (1ULL << 41);  // locally administrated
+  port_mac &= ~(1ULL << 40);  // unicast
+  port_mac |= (1ULL << 41);   // locally administrated
 
   // Copy mac to uint8_t array
   uint8_t mac[6];
@@ -250,12 +246,12 @@ std::string get_random_mac() {
   }
   char mac_str[50];
   std::sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2],
-          mac[3], mac[4], mac[5]);
+               mac[3], mac[4], mac[5]);
   std::string mac_string = mac_str;
   return mac_string;
 }
 
-uint64_t hex_string_to_uint(const std::string &str){
+uint64_t hex_string_to_uint(const std::string &str) {
   uint64_t x;
   std::stringstream ss;
   ss << std::hex << str;
@@ -264,23 +260,23 @@ uint64_t hex_string_to_uint(const std::string &str){
   return x;
 }
 
-std::string get_ip_from_string(const std::string& ipv_net) {
+std::string get_ip_from_string(const std::string &ipv_net) {
   size_t pos = ipv_net.find("/");
   if (pos == std::string::npos) {
-    return std::string(); // throw?
+    return std::string();  // throw?
   }
   return ipv_net.substr(0, pos);
 }
 
-std::string get_netmask_from_string(const std::string& ipv) {
+std::string get_netmask_from_string(const std::string &ipv) {
   std::string ipv_net = ipv;
   size_t pos = ipv_net.find("/");
   if (pos == std::string::npos) {
-    return std::string(); // throw?
+    return std::string();  // throw?
   }
   return ipv_net.substr(pos + 1, std::string::npos);
 }
 
-} // namespace utils
+}  // namespace utils
 }  // namespace service
 }  // namespace polycube

@@ -64,8 +64,7 @@ struct IpAddr {
   uint8_t netmask;
   uint32_t ruleId;
   std::string toString() const {
-    return utils::be_uint_to_ip_string(ip) +
-           "/" + std::to_string(netmask);
+    return utils::be_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
   }
   void fromString(std::string ipnetmask) {
     std::string ip_;

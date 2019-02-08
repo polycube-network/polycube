@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/K8switchInterface.h"
 
@@ -47,8 +45,8 @@ struct nodeport_session_in {
 } __attribute__((packed));
 
 struct nodeport_session_out {
-  uint64_t mac_dst; // : 48;
-  uint64_t mac_src; // : 48;
+  uint64_t mac_dst;  // : 48;
+  uint64_t mac_src;  // : 48;
   uint32_t ip_src;
   uint32_t ip_dst;
   uint16_t port_src;
@@ -60,15 +58,19 @@ struct nodeport_session_out {
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 
-class K8switch : public polycube::service::Cube<Ports>, public K8switchInterface {
+class K8switch : public polycube::service::Cube<Ports>,
+                 public K8switchInterface {
   friend class Ports;
   friend class Service;
-public:
-  K8switch(const std::string name, const K8switchJsonObject &conf, CubeType type = CubeType::TC);
+
+ public:
+  K8switch(const std::string name, const K8switchJsonObject &conf,
+           CubeType type = CubeType::TC);
   virtual ~K8switch();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const K8switchJsonObject &conf) override;
   K8switchJsonObject toJsonObject() override;
@@ -81,12 +83,19 @@ public:
   /// <summary>
   /// Services (i.e., virtual ip:port) exported to the client
   /// </summary>
-  std::shared_ptr<Service> getService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) override;
+  std::shared_ptr<Service> getService(const std::string &vip,
+                                      const uint16_t &vport,
+                                      const ServiceProtoEnum &proto) override;
   std::vector<std::shared_ptr<Service>> getServiceList() override;
-  void addService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &conf) override;
+  void addService(const std::string &vip, const uint16_t &vport,
+                  const ServiceProtoEnum &proto,
+                  const ServiceJsonObject &conf) override;
   void addServiceList(const std::vector<ServiceJsonObject> &conf) override;
-  void replaceService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &conf) override;
-  void delService(const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) override;
+  void replaceService(const std::string &vip, const uint16_t &vport,
+                      const ServiceProtoEnum &proto,
+                      const ServiceJsonObject &conf) override;
+  void delService(const std::string &vip, const uint16_t &vport,
+                  const ServiceProtoEnum &proto) override;
   void delServiceList() override;
 
   /// <summary>
@@ -111,7 +120,8 @@ public:
   void doSetVirtualClientSubnet(const std::string &value);
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: OFF
+  /// Defines the logging level of a service instance, from none (OFF) to the
+  /// most verbose (TRACE). Default: OFF
   /// </summary>
   K8switchLoglevelEnum getLoglevel() override;
   void setLoglevel(const K8switchLoglevelEnum &value) override;
@@ -128,7 +138,8 @@ public:
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
@@ -142,16 +153,18 @@ public:
   /// </summary>
   std::shared_ptr<FwdTable> getFwdTable(const std::string &address) override;
   std::vector<std::shared_ptr<FwdTable>> getFwdTableList() override;
-  void addFwdTable(const std::string &address, const FwdTableJsonObject &conf) override;
+  void addFwdTable(const std::string &address,
+                   const FwdTableJsonObject &conf) override;
   void addFwdTableList(const std::vector<FwdTableJsonObject> &conf) override;
-  void replaceFwdTable(const std::string &address, const FwdTableJsonObject &conf) override;
+  void replaceFwdTable(const std::string &address,
+                       const FwdTableJsonObject &conf) override;
   void delFwdTable(const std::string &address) override;
   void delFwdTableList() override;
 
   void reloadConfig();
   std::shared_ptr<Ports> getNodePortPort();
 
-private:
+ private:
   void cleanupSessionTable();
   uint32_t timestampToAge(const uint64_t timestamp);
   void tick();
@@ -182,4 +195,3 @@ private:
   unsigned int ncpus;
   unsigned int buf_size;
 };
-

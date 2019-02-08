@@ -16,9 +16,7 @@
 
 #pragma once
 
-
 #include "../interface/RuleSnatInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -30,6 +28,7 @@ using namespace io::swagger::server::model;
 
 class RuleSnat : public RuleSnatInterface {
   friend class RuleSnatEntry;
+
  public:
   RuleSnat(Rule &parent);
   RuleSnat(Rule &parent, const RuleSnatJsonObject &conf);
@@ -47,15 +46,18 @@ class RuleSnat : public RuleSnatInterface {
   /// </summary>
   std::shared_ptr<RuleSnatEntry> getEntry(const uint32_t &id) override;
   std::vector<std::shared_ptr<RuleSnatEntry>> getEntryList() override;
-  void addEntry(const uint32_t &id, const RuleSnatEntryJsonObject &conf) override;
+  void addEntry(const uint32_t &id,
+                const RuleSnatEntryJsonObject &conf) override;
   void addEntryList(const std::vector<RuleSnatEntryJsonObject> &conf) override;
-  void replaceEntry(const uint32_t &id, const RuleSnatEntryJsonObject &conf) override;
+  void replaceEntry(const uint32_t &id,
+                    const RuleSnatEntryJsonObject &conf) override;
   void delEntry(const uint32_t &id) override;
   void delEntryList() override;
 
-  RuleSnatAppendOutputJsonObject append(RuleSnatAppendInputJsonObject input) override;
-private:
-  Rule   &parent_;
+  RuleSnatAppendOutputJsonObject append(
+      RuleSnatAppendInputJsonObject input) override;
+
+ private:
+  Rule &parent_;
   std::vector<std::shared_ptr<RuleSnatEntry>> rules_;
 };
-

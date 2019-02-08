@@ -32,12 +32,15 @@ Port::Port(CubeIface &parent, const std::string &name, uint16_t index)
       peer_port_(nullptr),
       peer_iface_(nullptr),
       logger(spdlog::get("polycubed")) {
-  netlink_notification_index = Netlink::getInstance().registerObserver(Netlink::Event::LINK_DELETED,
-                               std::bind(&Port::netlink_notification, this, std::placeholders::_1, std::placeholders::_2));
+  netlink_notification_index = Netlink::getInstance().registerObserver(
+      Netlink::Event::LINK_DELETED,
+      std::bind(&Port::netlink_notification, this, std::placeholders::_1,
+                std::placeholders::_2));
 }
 
 Port::~Port() {
-  Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED, netlink_notification_index);
+  Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED,
+                                            netlink_notification_index);
 }
 
 uint16_t Port::index() const {
@@ -67,7 +70,7 @@ std::string Port::get_path() const {
 }
 
 bool Port::operator==(const PortIface &rhs) const {
-  if(dynamic_cast<const Port *>(&rhs) != NULL)
+  if (dynamic_cast<const Port *>(&rhs) != NULL)
     return this->uuid() == rhs.uuid();
   else
     return false;
@@ -109,7 +112,8 @@ PortType Port::get_type() const {
   return type_;
 }
 
-void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction direction) {
+void Port::send_packet_out(const std::vector<uint8_t> &packet,
+                           Direction direction) {
   if (get_status() != PortStatus::UP) {
     logger->warn("packetout: port {0}:{1} is down", parent_.get_name(), name_);
     return;
@@ -117,8 +121,8 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction directi
 
   std::lock_guard<std::mutex> guard(port_mutex_);
 
-  Controller &c = (type_ == PortType::TC) ? Controller::get_tc_instance() :
-                                            Controller::get_xdp_instance();
+  Controller &c = (type_ == PortType::TC) ? Controller::get_tc_instance()
+                                          : Controller::get_xdp_instance();
 
   uint16_t port;
   uint16_t module;
@@ -127,10 +131,11 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction directi
     module = parent_.get_index(ProgramType::INGRESS);
     port = index();
   } else if (direction == Direction::EGRESS) {
-    if(peer_port_) {
-      module = static_cast<Port*>(peer_port_)->parent_.get_index(ProgramType::INGRESS);
+    if (peer_port_) {
+      module = static_cast<Port *>(peer_port_)
+                   ->parent_.get_index(ProgramType::INGRESS);
       port = peer_port_->index();
-    } else if(peer_iface_) {
+    } else if (peer_iface_) {
       module = peer_iface_->get_index();
       port = 0;
     }

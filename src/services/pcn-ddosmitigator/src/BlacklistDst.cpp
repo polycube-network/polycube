@@ -20,31 +20,37 @@
 
 using namespace polycube::service;
 
-BlacklistDst::BlacklistDst(Ddosmitigator &parent, const BlacklistDstJsonObject &conf): parent_(parent) {
+BlacklistDst::BlacklistDst(Ddosmitigator &parent,
+                           const BlacklistDstJsonObject &conf)
+    : parent_(parent) {
   logger()->debug("BlacklistDst Constructor. ip {0} ", conf.getIp());
   this->ip_ = conf.getIp();
 }
 
 BlacklistDst::~BlacklistDst() {
-  auto dstblacklist = parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
+  auto dstblacklist =
+      parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
   logger()->debug("BlacklistDst Destructor. ip {0} ", ip_);
-  try{
+  try {
     dstblacklist.remove(utils::ip_string_to_be_uint(ip_));
-  } catch (...){ }
+  } catch (...) {
+  }
 }
 
 void BlacklistDst::update(const BlacklistDstJsonObject &conf) {
-  //This method updates all the object/parameter in BlacklistDst object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in BlacklistDst object
+  // specified in the conf JsonObject.
+  // You can modify this implementation.
   logger()->error("BlacklistDst update. This method should never be called ");
 }
 
-BlacklistDstJsonObject BlacklistDst::toJsonObject(){
+BlacklistDstJsonObject BlacklistDst::toJsonObject() {
   BlacklistDstJsonObject conf;
 
-    try{
+  try {
     conf.setIp(getIp());
-  } catch (...) {}
+  } catch (...) {
+  }
   logger()->debug("BlacklistDst toJsonObject");
 
   conf.setDropPkts(getDropPkts());
@@ -52,22 +58,24 @@ BlacklistDstJsonObject BlacklistDst::toJsonObject(){
   return conf;
 }
 
-void BlacklistDst::create(Ddosmitigator &parent, const std::string &ip, const BlacklistDstJsonObject &conf){
-
-  //This method creates the actual BlacklistDst object given thee key param.
-  //Please remember to call here the create static method for all sub-objects of BlacklistDst.
+void BlacklistDst::create(Ddosmitigator &parent, const std::string &ip,
+                          const BlacklistDstJsonObject &conf) {
+  // This method creates the actual BlacklistDst object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of BlacklistDst.
   parent.logger()->debug("BlacklistDst create");
 
-  try{
+  try {
     // TODO check if dst ip rules are already present
     // and reinject datapath with dstblacklist ps
 
-    if (parent.blacklistdst_.size() >= 0 ){
+    if (parent.blacklistdst_.size() >= 0) {
       parent.setDstMatch(true);
       parent.reloadCode();
     }
 
-    auto dstblacklist = parent.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
+    auto dstblacklist =
+        parent.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
     dstblacklist.set(utils::ip_string_to_be_uint(ip), 0);
   } catch (...) {
     throw std::runtime_error("unable to add element to map");
@@ -76,26 +84,31 @@ void BlacklistDst::create(Ddosmitigator &parent, const std::string &ip, const Bl
   BlacklistDstJsonObject configuration;
   configuration.setIp(ip);
 
-  parent.blacklistdst_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
-    std::forward_as_tuple(parent, configuration));
+  parent.blacklistdst_.emplace(std::piecewise_construct,
+                               std::forward_as_tuple(ip),
+                               std::forward_as_tuple(parent, configuration));
 }
 
-std::shared_ptr<BlacklistDst> BlacklistDst::getEntry(Ddosmitigator &parent, const std::string &ip){
-  //This method retrieves the pointer to BlacklistDst object specified by its keys.
+std::shared_ptr<BlacklistDst> BlacklistDst::getEntry(Ddosmitigator &parent,
+                                                     const std::string &ip) {
+  // This method retrieves the pointer to BlacklistDst object specified by its
+  // keys.
   parent.logger()->debug("BlacklistDst getEntry");
 
-  return std::shared_ptr<BlacklistDst>(&parent.blacklistdst_.at(ip), [](BlacklistDst *) {});
+  return std::shared_ptr<BlacklistDst>(&parent.blacklistdst_.at(ip),
+                                       [](BlacklistDst *) {});
 }
 
-void BlacklistDst::removeEntry(Ddosmitigator &parent, const std::string &ip){
-  //This method removes the single BlacklistDst object specified by its keys.
-  //Remember to call here the remove static method for all-sub-objects of BlacklistDst.
+void BlacklistDst::removeEntry(Ddosmitigator &parent, const std::string &ip) {
+  // This method removes the single BlacklistDst object specified by its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // BlacklistDst.
   parent.logger()->debug("BlacklistDst removeEntry");
 
   // ebpf map remove is performed in destructor
   parent.blacklistdst_.erase(ip);
 
-  if (parent.blacklistdst_.size() == 0 ){
+  if (parent.blacklistdst_.size() == 0) {
     parent.setDstMatch(false);
     parent.reloadCode();
   }
@@ -103,8 +116,10 @@ void BlacklistDst::removeEntry(Ddosmitigator &parent, const std::string &ip){
   return;
 }
 
-std::vector<std::shared_ptr<BlacklistDst>> BlacklistDst::get(Ddosmitigator &parent){
-  //This methods get the pointers to all the BlacklistDst objects in Ddosmitigator.
+std::vector<std::shared_ptr<BlacklistDst>> BlacklistDst::get(
+    Ddosmitigator &parent) {
+  // This methods get the pointers to all the BlacklistDst objects in
+  // Ddosmitigator.
   parent.logger()->debug("BlacklistDst get vector");
 
   std::vector<std::shared_ptr<BlacklistDst>> blacklistdst;
@@ -116,15 +131,16 @@ std::vector<std::shared_ptr<BlacklistDst>> BlacklistDst::get(Ddosmitigator &pare
   return blacklistdst;
 }
 
-void BlacklistDst::remove(Ddosmitigator &parent){
-  //This method removes all BlacklistDst objects in Ddosmitigator.
-  //Remember to call here the remove static method for all-sub-objects of BlacklistDst.
+void BlacklistDst::remove(Ddosmitigator &parent) {
+  // This method removes all BlacklistDst objects in Ddosmitigator.
+  // Remember to call here the remove static method for all-sub-objects of
+  // BlacklistDst.
   parent.logger()->debug("BlacklistDst remove");
 
   // ebpf maps remove performed in destructor
   parent.blacklistdst_.clear();
 
-  if (parent.blacklistdst_.size() == 0 ){
+  if (parent.blacklistdst_.size() == 0) {
     parent.setDstMatch(false);
     parent.reloadCode();
   }
@@ -132,25 +148,26 @@ void BlacklistDst::remove(Ddosmitigator &parent){
   return;
 }
 
-std::string BlacklistDst::getIp(){
-  //This method retrieves the ip value.
+std::string BlacklistDst::getIp() {
+  // This method retrieves the ip value.
   logger()->debug("BlacklistDst getIp {0} ", this->ip_);
 
   return this->ip_;
 }
 
-uint64_t BlacklistDst::getDropPkts(){
-  //This method retrieves the dropPkts value.
+uint64_t BlacklistDst::getDropPkts() {
+  // This method retrieves the dropPkts value.
   uint64_t pkts = 0;
-  try{
-    auto dstblacklist = parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
+  try {
+    auto dstblacklist =
+        parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
     auto values = dstblacklist.get(utils::ip_string_to_be_uint(ip_));
 
     pkts = std::accumulate(values.begin(), values.end(), pkts);
 
     logger()->debug("getting dropped packets...");
     logger()->debug("got {0} pkts", pkts);
-  // TODO: what is this try-catch block for then?
+    // TODO: what is this try-catch block for then?
   } catch (...) {
     throw;
   }

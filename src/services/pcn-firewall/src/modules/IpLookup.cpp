@@ -91,9 +91,8 @@ void Firewall::IpLookup::updateTableValue(uint8_t netmask, std::string ip,
   else if (direction == ChainNameEnum::EGRESS)
     tableName += "Egress";
 
-  lpm_k key {
-    .netmask_len = netmask,
-    .ip = utils::ip_string_to_be_uint(ip),
+  lpm_k key{
+      .netmask_len = netmask, .ip = utils::ip_string_to_be_uint(ip),
   };
 
   auto table = firewall.get_raw_table(tableName, index);
@@ -116,9 +115,9 @@ void Firewall::IpLookup::updateTableValue(IpAddr ip,
   else if (direction == ChainNameEnum::EGRESS)
     tableName += "Egress";
 
-  lpm_k key {
-    .netmask_len = ip.netmask,
-    .ip = ip.ip, // TODO: is byteordering ok?
+  lpm_k key{
+      .netmask_len = ip.netmask,
+      .ip = ip.ip,  // TODO: is byteordering ok?
   };
 
   auto table = firewall.get_raw_table(tableName, index);

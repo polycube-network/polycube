@@ -17,40 +17,44 @@
 #include "ServiceBackend.h"
 #include "K8switch.h"
 
-ServiceBackend::ServiceBackend(Service &parent, const ServiceBackendJsonObject &conf): parent_(parent) {
-  if(conf.nameIsSet()) {
+ServiceBackend::ServiceBackend(Service &parent,
+                               const ServiceBackendJsonObject &conf)
+    : parent_(parent) {
+  if (conf.nameIsSet()) {
     setName(conf.getName());
   }
 
   // TODO: set default value for weight in datamodel
-  if(conf.weightIsSet()) {
+  if (conf.weightIsSet()) {
     weight_ = conf.getWeight();
-    if(conf.getWeight() < 1 && conf.getWeight() != 0) {
-      throw std::runtime_error("Variable weight is in a wrong range. Supported range is from 1 to 100");
+    if (conf.getWeight() < 1 && conf.getWeight() != 0) {
+      throw std::runtime_error(
+          "Variable weight is in a wrong range. Supported range is from 1 to "
+          "100");
     }
   } else {
-    setWeight(1); //default weight
+    setWeight(1);  // default weight
   }
 
   ip_ = conf.getIp();
   port_ = conf.getPort();
 }
 
-ServiceBackend::~ServiceBackend() { }
+ServiceBackend::~ServiceBackend() {}
 
 void ServiceBackend::update(const ServiceBackendJsonObject &conf) {
-  if(conf.nameIsSet()) {
+  if (conf.nameIsSet()) {
     setName(conf.getName());
   }
 
-  if(conf.weightIsSet()) {
+  if (conf.weightIsSet()) {
     setWeight(conf.getWeight());
   } else {
-    setWeight(1); //default weight // TODO: do in datamodel
+    setWeight(1);  // default weight // TODO: do in datamodel
   }
 }
 
-ServiceBackendJsonObject ServiceBackend::toJsonObject(){
+ServiceBackendJsonObject ServiceBackend::toJsonObject() {
   ServiceBackendJsonObject conf;
 
   conf.setIp(getIp());

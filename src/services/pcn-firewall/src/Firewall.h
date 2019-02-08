@@ -56,7 +56,8 @@ struct ct_v {
   uint32_t sequence;
 } __attribute__((packed));
 
-class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface {
+class Firewall : public polycube::service::Cube<Ports>,
+                 public FirewallInterface {
   friend class Ports;
   friend class Chain;
   friend class ChainRule;
@@ -69,8 +70,7 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
   virtual ~Firewall();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port,
-                 polycube::service::PacketInMetadata &md,
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
   void update(const FirewallJsonObject &conf) override;
@@ -262,7 +262,8 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
              Firewall &outer);
     ~IpLookup() override;
     std::string getCode();
-    void updateTableValue(uint8_t netmask, std::string ip, const std::vector<uint64_t> &value);
+    void updateTableValue(uint8_t netmask, std::string ip,
+                          const std::vector<uint64_t> &value);
     void updateTableValue(IpAddr ip, const std::vector<uint64_t> &value);
     void updateMap(const std::map<struct IpAddr, std::vector<uint64_t>> &ips);
   };
@@ -297,7 +298,8 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
                    Firewall &outer);
     ~TcpFlagsLookup();
     std::string getCode();
-    bool updateTableValue(uint32_t flagMask, const std::vector<uint64_t> &value);
+    bool updateTableValue(uint32_t flagMask,
+                          const std::vector<uint64_t> &value);
     void updateMap(const std::vector<std::vector<uint64_t>> &flags);
   };
 

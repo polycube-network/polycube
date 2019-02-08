@@ -58,7 +58,6 @@ static __always_inline struct elements *getBitVect(struct lpm_k *key) {
 
 #endif
 
-
 BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
@@ -66,7 +65,7 @@ static __always_inline struct packetHeaders *getPacket() {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
 
 /*The struct elements and the lookup table are defined only if NR_ELEMENTS>0, so
  * this code has to be used only in those cases.*/

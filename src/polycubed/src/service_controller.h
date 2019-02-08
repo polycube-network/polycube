@@ -25,15 +25,15 @@
 using polycube::service::PortType;
 using polycube::service::PortIface;
 
-#include "polycube/services/guid.h"
-#include "polycube/services/json.hpp"
-#include "polycube/services/management_interface.h"
 #include "cube_factory_impl.h"
 #include "cube_tc.h"
 #include "cube_xdp.h"
-#include "port_host.h"
 #include "extiface_tc.h"
 #include "extiface_xdp.h"
+#include "polycube/services/guid.h"
+#include "polycube/services/json.hpp"
+#include "polycube/services/management_interface.h"
+#include "port_host.h"
 #include "port_tc.h"
 #include "port_xdp.h"
 #include "utils.h"
@@ -46,7 +46,7 @@ using json = nlohmann::json;
 using service::ManagementInterface;
 using service::ServiceMetadata;
 
-enum class ServiceControllerType {LIBRARY, DAEMON};
+enum class ServiceControllerType { LIBRARY, DAEMON };
 
 class ServiceController {
  public:
@@ -83,7 +83,8 @@ class ServiceController {
   static void set_port_peer(Port &p, const std::string &peer_name);
 
   std::shared_ptr<ManagementInterface> managementInterface;
-private:
+
+ private:
   std::string name_;
   std::string servicecontroller_;
   std::string datamodel_;
@@ -93,8 +94,7 @@ private:
   CubeFactoryImpl factory_;
 
   // returns true if peer is in the cube:port format
-  static bool parse_peer_name(const std::string &peer,
-                              std::string &cube,
+  static bool parse_peer_name(const std::string &peer, std::string &cube,
                               std::string &port);
 
   // these objects save all the common objects accross different services
