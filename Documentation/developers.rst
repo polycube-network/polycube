@@ -348,7 +348,10 @@ Additional hints
 
 1. **Creating multiple data plane programs**. If possible, it would be nice to create a single dataplane program, and enabling/disabling some portions using conditional compilation macros.
 
-2. **Coding Style**: Please be sure that the coding style satisfies the rules defined in the [clang-format](.clang-format) file. In order to fix the style of a source file run `clang-format -style=file -i <file.[cpp,h]>` on the root folder of polycube.
+2. **Coding Style**: The `scripts/check-style.py` uses `clang-format` to check the code style.
+This tool has to be executed from the root folder.
+A list of files or folders to check is received as argument; the entire source code is checked when no parameters are passed.
+The `--fix` option will automatically fix the code style instead of simply checking
 
 3. **Trailing white spaces**: Trailing white spaces could generate some git noise.
 Any decent text editor has an option to remove them automatically, it is a good idea to enable it.
