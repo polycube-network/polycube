@@ -114,6 +114,9 @@ class RestServer {
   void topology_help(const Pistache::Rest::Request &request,
                      Pistache::Http::ResponseWriter response);
 
+  void redirect(const Pistache::Rest::Request &request,
+                Pistache::Http::ResponseWriter response);
+
   void get_version(const Pistache::Rest::Request &request,
                    Pistache::Http::ResponseWriter response);
 
