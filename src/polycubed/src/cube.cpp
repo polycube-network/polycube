@@ -223,63 +223,63 @@ void Cube::reload(const std::string &code, int index, ProgramType type) {
   return do_reload(code, index, type);
 }
 
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
-  std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
-  int fd;
+std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
+std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
+int fd;
 
-  switch (type) {
-  case ProgramType::INGRESS:
-    programs = &ingress_programs_;
-    code_ = &ingress_code_;
-    break;
-  case ProgramType::EGRESS:
-    programs = &egress_programs_;
-    code_ = &egress_code_;
-    break;
-  default:
-    throw std::runtime_error("Bad program type");
+switch (type) {
+case ProgramType::INGRESS:
+  programs = &ingress_programs_;
+  code_ = &ingress_code_;
+  break;
+case ProgramType::EGRESS:
+  programs = &egress_programs_;
+  code_ = &egress_code_;
+  break;
+default:
+  throw std::runtime_error("Bad program type");
+}
+
+if (index >= programs->size()) {
+  throw std::runtime_error("Invalid ebpf program index");
+}
+
+if (programs->at(index) == nullptr) {
+  throw std::runtime_error("ebpf does not exist");
+}
+
+// create new ebpf program, telling to steal the maps of this program
+std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
+    new ebpf::BPF(0, nullptr, false, name_, &*programs->at(index)));
+
+bcc_guard.unlock();
+compile(*new_bpf_program, code, index, type);
+fd = load(*new_bpf_program, type);
+
+switch (type) {
+case ProgramType::INGRESS:
+  ingress_programs_table_->update_value(index, fd);
+  // update patch panel if program is master
+  if (index == 0) {
+    ingress_fd_ = fd;
+    patch_panel_ingress_.update(ingress_index_, ingress_fd_);
   }
-
-  if (index >= programs->size()) {
-    throw std::runtime_error("Invalid ebpf program index");
+  break;
+case ProgramType::EGRESS:
+  egress_programs_table_->update_value(index, fd);
+  // update patch panel if program is master
+  if (index == 0) {
+    egress_fd_ = fd;
+    patch_panel_egress_.update(egress_index_, egress_fd_);
   }
+  break;
+}
 
-  if (programs->at(index) == nullptr) {
-    throw std::runtime_error("ebpf does not exist");
-  }
-
-  // create new ebpf program, telling to steal the maps of this program
-  std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-  std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
-      new ebpf::BPF(0, nullptr, false, name_, &*programs->at(index)));
-
-  bcc_guard.unlock();
-  compile(*new_bpf_program, code, index, type);
-  fd = load(*new_bpf_program, type);
-
-  switch (type) {
-  case ProgramType::INGRESS:
-    ingress_programs_table_->update_value(index, fd);
-    // update patch panel if program is master
-    if (index == 0) {
-      ingress_fd_ = fd;
-      patch_panel_ingress_.update(ingress_index_, ingress_fd_);
-    }
-    break;
-  case ProgramType::EGRESS:
-    egress_programs_table_->update_value(index, fd);
-    // update patch panel if program is master
-    if (index == 0) {
-      egress_fd_ = fd;
-      patch_panel_egress_.update(egress_index_, egress_fd_);
-    }
-    break;
-  }
-
-  unload(*programs->at(index), type);
-  (*programs)[index] = std::move(new_bpf_program);
-  // update last used code
-  (*code_)[index] = code;
+unload(*programs->at(index), type);
+(*programs)[index] = std::move(new_bpf_program);
+// update last used code
+(*code_)[index] = code;
 
 int Cube::add_program(const std::string &code, int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);

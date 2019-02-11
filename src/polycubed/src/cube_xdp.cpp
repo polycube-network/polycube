@@ -147,7 +147,7 @@ int CubeXDP::do_load(ebpf::BPF &bpf) {
 void CubeXDP::do_unload(ebpf::BPF &bpf) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res = bpf.unload_func("handle_rx_xdp_wrapper");
-  //TODO: Remove also from the xdp_prog list?
+  // TODO: Remove also from the xdp_prog list?
   logger->debug("XDP program unloaded");
 }
 

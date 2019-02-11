@@ -226,9 +226,8 @@ Cube<PortType>::impl::impl(Cube<PortType> &parent_, const std::string &name,
     parent_.datapath_log_msg(msg);
   };
 
-  cube_ = factory_->create_cube(name, ingress_code, egress_code,
-                                handle_log_msg, type, handle_packet_in,
-                                level);
+  cube_ = factory_->create_cube(name, ingress_code, egress_code, handle_log_msg,
+                                type, handle_packet_in, level);
 }
 
 template <class PortType>

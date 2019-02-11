@@ -63,7 +63,6 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
 int CubeTC::do_load(ebpf::BPF &bpf) {
   int fd_;
 
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res =
       bpf.load_func("handle_rx_wrapper", BPF_PROG_TYPE_SCHED_CLS, fd_);
