@@ -158,7 +158,7 @@ def run_clang_format_diff(args, file):
             proc.returncode, file), errs)
 
     if args.fix:
-        return ("", "")
+        return ([], "")
     return make_diff(file, original, outs), errs
 
 
