@@ -208,7 +208,7 @@ def print_trouble(prog, message, use_colors):
     print("{}: {} {}".format(prog, error_text, message), file=sys.stderr)
 
 
-default_files = ['src/services/', 'src/libs/polycube']
+default_files = ['src/services/', 'src/libs/polycube', 'src/polycubed']
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
