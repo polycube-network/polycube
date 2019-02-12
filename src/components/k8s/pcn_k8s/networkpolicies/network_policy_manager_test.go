@@ -1745,7 +1745,7 @@ func TestPodsAffected(t *testing.T) {
 	assert.Empty(t, podsAffected)
 }
 
-func TestIpsAndIds(t *testing.T) {
+func TestIds(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
@@ -1774,7 +1774,7 @@ func TestIpsAndIds(t *testing.T) {
 			},
 		},
 	}
-	startingID := int32(5)
+
 	expectedRules := k8sfirewall.Chain{
 		Name: "ingress",
 		Rule: []k8sfirewall.ChainRule{
@@ -1782,14 +1782,12 @@ func TestIpsAndIds(t *testing.T) {
 				L4proto: "TCP",
 				Action:  "drop",
 				Src:     "192.168.1.1",
-				Id:      startingID + 0,
 				Dst:     "192.16.15.25",
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
 				Action:  "drop",
 				Src:     "192.168.1.2",
-				Id:      startingID + 1,
 				Dst:     "192.16.15.25",
 			},
 		},
@@ -1802,7 +1800,7 @@ func TestIpsAndIds(t *testing.T) {
 		},
 	}
 
-	_, genRules := manager.putIPsAndIDs(pod, rules, startingID)
+	genRules := manager.putIPs(pod, rules)
 	rules.Rule = genRules
 	assert.ElementsMatch(t, expectedRules.Rule, rules.Rule)
 
@@ -1831,7 +1829,7 @@ func TestIpsAndIds(t *testing.T) {
 			},
 		},
 	}
-	startingID = int32(3)
+
 	expectedRules = k8sfirewall.Chain{
 		Name: "egress",
 		Rule: []k8sfirewall.ChainRule{
@@ -1839,15 +1837,15 @@ func TestIpsAndIds(t *testing.T) {
 				L4proto: "TCP",
 				Action:  "drop",
 				Dst:     "192.168.1.1",
-				Id:      startingID + 0,
-				Src:     "192.16.15.25",
+
+				Src: "192.16.15.25",
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
 				Action:  "drop",
 				Dst:     "192.168.1.2",
-				Id:      startingID + 1,
-				Src:     "192.16.15.25",
+
+				Src: "192.16.15.25",
 			},
 		},
 	}
@@ -1859,161 +1857,9 @@ func TestIpsAndIds(t *testing.T) {
 		},
 	}
 
-	_, genRules = manager.putIPsAndIDs(pod, rules, startingID)
+	genRules = manager.putIPs(pod, rules)
 	rules.Rule = genRules
 	assert.ElementsMatch(t, expectedRules.Rule, rules.Rule)
-}
-
-func TestAddNewFw(t *testing.T) {
-	policyName := "test-policy"
-	pod := pcn_types.Pod{
-		Pod: core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				UID: "TEST-POD1-UUID-1",
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "192.169.1.1",
-			},
-		},
-	}
-	ingressChain := k8sfirewall.Chain{
-		Name:     "ingress",
-		Default_: "drop",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id:      1,
-				Src:     "192.168.1.1",
-				Dst:     pod.Pod.Status.PodIP,
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-		},
-	}
-	egressChain := k8sfirewall.Chain{
-		Name:     "egress",
-		Default_: "drop",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id:      1,
-				Src:     pod.Pod.Status.PodIP,
-				Dst:     "192.168.1.1",
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-		},
-	}
-	expectedUID := "fw-" + pod.Pod.UID
-	expectedDeployedFirewalls := map[k8s_types.UID]*deployedFirewall{
-		expectedUID: &deployedFirewall{
-			lastIngressID: 1,
-			lastEgressID:  1,
-			firewall: &k8sfirewall.Firewall{
-				Name:  string("fw-" + pod.Pod.UID),
-				Type_: "TC",
-			},
-			ingressChain: &ingressChain,
-			egressChain:  &egressChain,
-			policyRulesIDs: map[string]*policyRulesIDs{
-				policyName: &policyRulesIDs{
-					ingress: []int32{1},
-					egress:  []int32{1},
-				},
-			},
-		},
-	}
-	testObj := new(MockPodController)
-	manager := Init(testObj)
-
-	manager.addDeployedFw(pod, ingressChain, egressChain, []int32{1}, []int32{1}, policyName)
-	actualDeployedFirewall, ok := manager.deployedFirewalls[expectedUID]
-	assert.True(t, ok)
-	assert.Len(t, manager.deployedFirewalls, 1)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].ingressChain, actualDeployedFirewall.ingressChain)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].egressChain, actualDeployedFirewall.egressChain)
-	assert.Equal(t, "TC", actualDeployedFirewall.firewall.Type_)
-	assert.Equal(t, string(expectedUID), actualDeployedFirewall.firewall.Name)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].lastIngressID, actualDeployedFirewall.lastIngressID)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].lastEgressID, actualDeployedFirewall.lastEgressID)
-	actualPolicyRules, ok := manager.deployedFirewalls[expectedUID].policyRulesIDs[policyName]
-	assert.True(t, ok)
-	assert.Len(t, manager.deployedFirewalls[expectedUID].policyRulesIDs, 1)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].policyRulesIDs[policyName].ingress, actualPolicyRules.ingress)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].policyRulesIDs[policyName].egress, actualPolicyRules.egress)
-
-	//	Let's suppose I deploy a new policy: we need to merge the two generated firewalls
-	policyName1 := "test-policy-1"
-	ingressChain1 := k8sfirewall.Chain{
-		Name:     "ingress",
-		Default_: "drop",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id:      2,
-				Src:     "192.168.10.10",
-				Dst:     pod.Pod.Status.PodIP,
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-			k8sfirewall.ChainRule{
-				Id:      3,
-				Src:     "192.168.100.100",
-				Dst:     pod.Pod.Status.PodIP,
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-		},
-	}
-	egressChain1 := k8sfirewall.Chain{
-		Name:     "egress",
-		Default_: "drop",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id:      2,
-				Src:     pod.Pod.Status.PodIP,
-				Dst:     "192.168.10.10",
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-			k8sfirewall.ChainRule{
-				Id:      3,
-				Src:     pod.Pod.Status.PodIP,
-				Dst:     "192.168.100.100",
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-			k8sfirewall.ChainRule{
-				Id:      4,
-				Src:     pod.Pod.Status.PodIP,
-				Dst:     "192.168.200.200",
-				Action:  "forward",
-				L4proto: "TCP",
-				Sport:   80,
-			},
-		},
-	}
-	egressChain.Rule = append(egressChain.Rule, egressChain1.Rule...)
-	ingressChain.Rule = append(ingressChain.Rule, ingressChain1.Rule...)
-	manager.addDeployedFw(pod, ingressChain1, egressChain1, []int32{2, 3}, []int32{2, 3, 4}, policyName1)
-	actualDeployedFirewall, ok = manager.deployedFirewalls[expectedUID]
-	assert.True(t, ok)
-	assert.Len(t, manager.deployedFirewalls, 1)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].ingressChain, actualDeployedFirewall.ingressChain)
-	assert.Equal(t, expectedDeployedFirewalls[expectedUID].egressChain, actualDeployedFirewall.egressChain)
-	assert.Equal(t, "TC", actualDeployedFirewall.firewall.Type_)
-	assert.Equal(t, string(expectedUID), actualDeployedFirewall.firewall.Name)
-	assert.Equal(t, ingressChain.Rule[len(ingressChain.Rule)-1].Id, actualDeployedFirewall.lastIngressID)
-	assert.Equal(t, egressChain.Rule[len(egressChain.Rule)-1].Id, actualDeployedFirewall.lastEgressID)
-	actualPolicyRules, ok = manager.deployedFirewalls[expectedUID].policyRulesIDs[policyName1]
-	assert.True(t, ok)
-	assert.Len(t, manager.deployedFirewalls[expectedUID].policyRulesIDs, 2)
-	assert.ElementsMatch(t, []int32{2, 3}, actualPolicyRules.ingress)
-	assert.Equal(t, []int32{2, 3, 4}, actualPolicyRules.egress)
-
 }
 
 func TestComplexPolicy(t *testing.T) {
@@ -2258,7 +2104,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     "192.168.0.0/16",
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      1,
+				//Id:      1,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
@@ -2266,7 +2112,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     "192.168.0.0/16",
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      2,
+				//Id:      2,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
@@ -2274,7 +2120,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     "192.168.2.0/24",
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "drop",
-				Id:      3,
+				//Id:      3,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
@@ -2282,7 +2128,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     "192.168.2.0/24",
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "drop",
-				Id:      4,
+				//Id:      4,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
@@ -2290,7 +2136,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     betaPods[0].Pod.Status.PodIP,
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      5,
+				//Id:      5,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
@@ -2298,7 +2144,7 @@ func TestComplexPolicy(t *testing.T) {
 				Src:     betaPods[0].Pod.Status.PodIP,
 				Dst:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      6,
+				//Id:      6,
 			},
 		},
 	}
@@ -2313,7 +2159,10 @@ func TestComplexPolicy(t *testing.T) {
 		fmt.Printf("%+v\n", productionPodFw.ingressChain.Rule[i])
 		fmt.Println("---")
 	}*/
-	assert.ElementsMatch(t, expectedIngressChain.Rule, productionPodFw.ingressChain.Rule)
+	rules, ok := productionPodFw.rules[policy.Name]
+	assert.Len(t, productionPodFw.rules, 1)
+	assert.True(t, ok)
+	assert.ElementsMatch(t, expectedIngressChain.Rule, rules.ingress)
 
 	expectedEgressChain := k8sfirewall.Chain{
 		Name:     "ingress",
@@ -2325,7 +2174,7 @@ func TestComplexPolicy(t *testing.T) {
 				Dst:     "192.169.0.0/16",
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      1,
+				//Id:      1,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
@@ -2333,7 +2182,7 @@ func TestComplexPolicy(t *testing.T) {
 				Dst:     "192.169.0.0/16",
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      2,
+				//Id:      2,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
@@ -2341,7 +2190,7 @@ func TestComplexPolicy(t *testing.T) {
 				Dst:     "192.169.2.0/24",
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "drop",
-				Id:      3,
+				//Id:      3,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
@@ -2349,21 +2198,21 @@ func TestComplexPolicy(t *testing.T) {
 				Dst:     "192.169.2.0/24",
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "drop",
-				Id:      4,
+				//Id:      4,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
 				Dport:   port4.IntVal,
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      5,
+				//Id:      5,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
 				Dport:   port4.IntVal,
 				Src:     productionPods[0].Pod.Status.PodIP,
 				Action:  "forward",
-				Id:      6,
+				//Id:      6,
 			},
 		},
 	}
@@ -2374,138 +2223,11 @@ func TestComplexPolicy(t *testing.T) {
 		fmt.Printf("%+v\n", productionPodFw.egressChain.Rule[i])
 		fmt.Println("---")
 	}*/
-	assert.ElementsMatch(t, expectedEgressChain.Rule, productionPodFw.egressChain.Rule)
-
-	assert.Equal(t, int32(6), productionPodFw.lastIngressID)
-	assert.Equal(t, int32(6), productionPodFw.lastEgressID)
-
-	assert.ElementsMatch(t, []int32{1, 2, 3, 4, 5, 6}, productionPodFw.policyRulesIDs[policy.Name].ingress)
-	assert.ElementsMatch(t, []int32{1, 2, 3, 4, 5, 6}, productionPodFw.policyRulesIDs[policy.Name].egress)
-	/*policyRulesids := manager.deployedPolicies
-	assert.Len(t, policyRulesids, 2)
-	assert.Equal(t, k8s_types.UID("fw-"+policy.ObjectMeta.UID), policyRulesids[policy.Name])*/
-}
-
-func TestRemoveRules(t *testing.T) {
-	testObj := new(MockPodController)
-	manager := Init(testObj)
-
-	rules := []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 3,
-		},
-		k8sfirewall.ChainRule{
-			Id: 4,
-		},
-		k8sfirewall.ChainRule{
-			Id: 5,
-		},
-		k8sfirewall.ChainRule{
-			Id: 6,
-		},
-	}
-
-	remove := []int32{3, 4, 5}
-	expectedRules := []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 6,
-		},
-	}
-	result := manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
-
-	remove = []int32{1, 2}
-	expectedRules = []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 3,
-		},
-		k8sfirewall.ChainRule{
-			Id: 4,
-		},
-		k8sfirewall.ChainRule{
-			Id: 5,
-		},
-		k8sfirewall.ChainRule{
-			Id: 6,
-		},
-	}
-	result = manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
-
-	remove = []int32{4, 5, 6}
-	expectedRules = []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 3,
-		},
-	}
-	result = manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
-
-	remove = []int32{1}
-	expectedRules = []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 3,
-		},
-		k8sfirewall.ChainRule{
-			Id: 4,
-		},
-		k8sfirewall.ChainRule{
-			Id: 5,
-		},
-		k8sfirewall.ChainRule{
-			Id: 6,
-		},
-	}
-	result = manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
-
-	remove = []int32{6}
-	expectedRules = []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 3,
-		},
-		k8sfirewall.ChainRule{
-			Id: 4,
-		},
-		k8sfirewall.ChainRule{
-			Id: 5,
-		},
-	}
-	result = manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
-
-	remove = []int32{1, 2, 3, 4, 5, 6}
-	expectedRules = []k8sfirewall.ChainRule{}
-	result = manager.removeRules(rules, remove)
-	assert.ElementsMatch(t, expectedRules, result)
+	assert.ElementsMatch(t, expectedEgressChain.Rule, rules.egress)
+	expecteduids := []k8s_types.UID{k8s_types.UID("PRODUCTION-POD-UID-1"), k8s_types.UID("BETA-POD-UID-1")}
+	policyRulesids := manager.deployedPolicies
+	assert.Len(t, policyRulesids, 1)
+	assert.ElementsMatch(t, expecteduids, policyRulesids[policy.Name])
 }
 
 func TestRemovePolicy(t *testing.T) {
@@ -2552,16 +2274,25 @@ func TestRemovePolicy(t *testing.T) {
 	}
 	firewallDeployed := deployedFirewall{
 		firewall: &k8sfirewall.Firewall{},
-		policyRulesIDs: map[string]*policyRulesIDs{
-			policyToDelete: &policyRulesIDs{
-				ingress: []int32{2, 3},
-				egress:  []int32{3, 4},
+		rules: map[string]*policyRules{
+			"keep": &policyRules{
+				ingress: []k8sfirewall.ChainRule{
+					ingressChain.Rule[0],
+					ingressChain.Rule[3],
+				},
+				egress: []k8sfirewall.ChainRule{
+					egressChain.Rule[0],
+					egressChain.Rule[1],
+					egressChain.Rule[4],
+				},
+			},
+			policyToDelete: &policyRules{
+				ingress: ingressChain.Rule[1:2],
+				egress:  egressChain.Rule[2:3],
 			},
 		},
-		ingressChain:  &ingressChain,
-		egressChain:   &egressChain,
-		lastIngressID: 4,
-		lastEgressID:  4,
+		ingressChain: &ingressChain,
+		egressChain:  &egressChain,
 	}
 	manager.deployedFirewalls[k8s_types.UID("fw-"+"POD")] = &firewallDeployed
 	manager.deployedPolicies[policyToDelete] = []k8s_types.UID{
@@ -2572,32 +2303,10 @@ func TestRemovePolicy(t *testing.T) {
 			Name: policyToDelete,
 		},
 	}
-	expectedIngressRules := []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-			Id: 4,
-		},
-	}
-	expectedEgressRules := []k8sfirewall.ChainRule{
-		k8sfirewall.ChainRule{
-			Id: 1,
-		},
-		k8sfirewall.ChainRule{
-			Id: 2,
-		},
-		k8sfirewall.ChainRule{
-			Id: 5,
-		},
-	}
 
 	manager.RemovePolicy(&policy)
 	result := manager.deployedFirewalls[k8s_types.UID("fw-POD")]
-	assert.ElementsMatch(t, expectedIngressRules, result.ingressChain.Rule)
-	assert.ElementsMatch(t, expectedEgressRules, result.egressChain.Rule)
-	_, ok := manager.deployedPolicies[policyToDelete]
-	assert.False(t, ok)
-	_, ok = result.policyRulesIDs[policyToDelete]
-	assert.False(t, ok)
+	assert.Len(t, result.rules, 1)
+	_, exists := result.rules[policy.Name]
+	assert.False(t, exists)
 }
