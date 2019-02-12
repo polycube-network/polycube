@@ -1,3 +1,5 @@
+# This script is based on https://github.com/Sarcasm/run-clang-format
+
 #!/usr/bin/env python
 """A wrapper script around clang-format, suitable for linting multiple files
 and to use for continuous integration.
