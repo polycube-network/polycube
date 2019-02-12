@@ -315,7 +315,8 @@ def main():
                  'src/services/*/src/default-src',
                  'src/services/*/src/interface',
                  'src/services/*/src/serializer',
-                 'src/services/*/src/*-lib.cpp'))
+                 'src/services/*/src/model', # compatibility with bridge
+                 'src/services/*/src/*-lib.cpp',))
 
     if not files:
         return
