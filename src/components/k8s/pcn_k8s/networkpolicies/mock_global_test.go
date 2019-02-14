@@ -101,27 +101,7 @@ func (m *MockPodController) Stop() {}
 func (m *MockPodController) Subscribe(event pcn_types.EventType, consumer func(*pcn_types.Pod)) (func(), error) {
 	return func() {}, nil
 }
-func (m *MockPodController) GetPodsByName(name string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(name, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPodsByName(channel chan<- []pcn_types.Pod, name string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(channel, name, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) GetPodsByLabels(labels map[string]string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(labels, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPodsByLabels(channel chan<- []pcn_types.Pod, labels map[string]string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(channel, labels, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
 func (m *MockPodController) GetPods(query pcn_types.Query) ([]pcn_types.Pod, error) {
-	args := m.Called(query)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPods(channel chan<- []pcn_types.Pod, query pcn_types.Query) ([]pcn_types.Pod, error) {
 	args := m.Called(query)
 	return args.Get(0).([]pcn_types.Pod), args.Error(1)
 }

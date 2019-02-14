@@ -3,17 +3,15 @@ package controllers
 import (
 
 	//	TODO-ON-MERGE: change the path to polycube
-	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
-	query "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/podquery"
-	polycube_pod "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/polycubepod"
+	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 )
 
 type PodController interface {
 	Run()
 	Stop()
-	Subscribe(events.EventType, func(*polycube_pod.Pod)) (func(), error)
+	Subscribe(pcn_types.EventType, func(*pcn_types.Pod)) (func(), error)
 
-	GetPods(query.Query) ([]polycube_pod.Pod, error)
+	GetPods(pcn_types.Query) ([]pcn_types.Pod, error)
 	/*AsyncGetPods(chan<- []polycube_pod.Pod, query.Query) ([]polycube_pod.Pod, error)
 
 	GetPodsByName(string, string) ([]polycube_pod.Pod, error)
