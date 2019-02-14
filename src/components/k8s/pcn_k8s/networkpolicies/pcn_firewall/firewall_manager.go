@@ -7,18 +7,19 @@ import (
 	k8s_types "k8s.io/apimachinery/pkg/types"
 )
 
-type PcnFirewallManager interface {
+type Manager interface {
 	GetOrCreate(k8s_types.UID) PcnFirewall
 	Get(k8s_types.UID) PcnFirewall
 }
 
 type FirewallManager struct {
 	firewalls map[k8s_types.UID]PcnFirewall
-	fwAPI     *k8sfirewall.FirewallApiService
+	//fwAPI     *k8sfirewall.FirewallApiService
+	fwAPI k8sfirewall.FirewallAPI
 	sync.Mutex
 }
 
-func StartFirewallManager(basePath string) PcnFirewallManager {
+func StartFirewallManager(basePath string) Manager {
 
 	fwManager := &FirewallManager{
 		firewalls: map[k8s_types.UID]PcnFirewall{},
