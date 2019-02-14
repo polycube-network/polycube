@@ -107,11 +107,10 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 				ingressChain, egressChain := d.fillChains(currentPod, ingressChain, egressChain)
 
 				if deploy {
-					fwUID := k8s_types.UID("fw-" + currentPod.Pod.UID)
 					//	Create the firewall (or get it if already exists)
-					fw := d.firewallManager.GetOrCreate(fwUID)
+					fw := d.firewallManager.GetOrCreate(currentPod.Pod)
 					if fw == nil {
-						l.Panicln("Could not create firewall", fwUID, ". Will stop here.")
+						l.Panicln("Could not create firewall fw-", currentPod.Pod, ". Will stop here.")
 						return
 					}
 

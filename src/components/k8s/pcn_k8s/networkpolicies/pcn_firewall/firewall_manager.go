@@ -4,12 +4,13 @@ import (
 	"sync"
 
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
+	core_v1 "k8s.io/api/core/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
 )
 
 type Manager interface {
-	GetOrCreate(k8s_types.UID) PcnFirewall
-	Get(k8s_types.UID) PcnFirewall
+	GetOrCreate(core_v1.Pod) PcnFirewall
+	Get(core_v1.Pod) PcnFirewall
 }
 
 type FirewallManager struct {
@@ -32,26 +33,32 @@ func StartFirewallManager(basePath string) Manager {
 	return fwManager
 }
 
-func (f *FirewallManager) GetOrCreate(name k8s_types.UID) PcnFirewall {
+func (f *FirewallManager) GetOrCreate(pod core_v1.Pod) PcnFirewall {
+
+	//	Firewall name
+	ID := k8s_types.UID("fw-" + pod.UID)
 
 	//	Exists?
-	if fw := f.Get(name); fw != nil {
+	if fw := f.Get(pod); fw != nil {
 		return fw
 	}
 
 	//	Create it
-	fw := newFirewall(string(name), f.fwAPI)
+	fw := newFirewall(pod, f.fwAPI)
 
 	f.Lock()
-	f.firewalls[name] = fw
+	f.firewalls[ID] = fw
 	f.Unlock()
 
 	return fw
 }
 
-func (f *FirewallManager) Get(name k8s_types.UID) PcnFirewall {
+func (f *FirewallManager) Get(pod core_v1.Pod) PcnFirewall {
 
-	if fw, exists := f.firewalls[name]; exists {
+	//	Firewall name
+	ID := k8s_types.UID("fw-" + pod.UID)
+
+	if fw, exists := f.firewalls[ID]; exists {
 		return fw
 	}
 

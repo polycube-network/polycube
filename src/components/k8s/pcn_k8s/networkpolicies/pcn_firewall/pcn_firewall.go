@@ -6,6 +6,7 @@ import (
 
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
+	core_v1 "k8s.io/api/core/v1"
 )
 
 type PcnFirewall interface {
@@ -49,7 +50,7 @@ type rulesContainer struct {
 type jsonFirewall struct {
 }
 
-func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
+func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 
 	//	This method is unexported by design: *only* the firewall manager is supposed to create new firewalls,
 	//	no one else should be able to do that.
@@ -58,6 +59,8 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 		"by":     "PcnFirewall",
 		"method": "New()",
 	})
+	//	The name of the firewall
+	name := string("fw-" + pod.UID)
 	l.Infoln("Starting a new firewall with name", name)
 
 	//-------------------------------------
@@ -113,6 +116,9 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 		l.Errorln("Could not create firewall with name", name, ":", err, response)
 		return nil
 	}
+
+	//	Set the Ports
+	//response, err := deployedFw.fwAPI.CreateFirewallPortsListByID(nil)
 
 	// Since Interactive is not sent in the request, we will do it again now
 	response, err = deployedFw.fwAPI.UpdateFirewallInteractiveByID(nil, name, false)

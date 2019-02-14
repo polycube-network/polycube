@@ -9,7 +9,6 @@ import (
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	networking_v1 "k8s.io/api/networking/v1"
-	k8s_types "k8s.io/apimachinery/pkg/types"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -61,7 +60,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 
 		for _, pods := range podsAffected {
 			for _, pod := range pods {
-				fw := firewallManager.Get(k8s_types.UID("fw-" + pod.Pod.UID))
+				fw := firewallManager.Get(pod.Pod)
 
 				if fw != nil {
 					fw.CeasePolicy(policy.Name)
