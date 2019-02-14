@@ -6,7 +6,7 @@ import (
 	"time"
 
 	//	TODO-ON-MERGE: change this to the polycube path
-	events "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events"
+	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 
 	log "github.com/sirupsen/logrus"
 	networking_v1 "k8s.io/api/networking/v1"
@@ -107,9 +107,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			}).Infof("Something has been added! Workspaces is %s", key)
 
 			//	Set up the event
-			event := events.Event{
+			event := pcn_types.Event{
 				Key:       key,
-				Type:      events.New,
+				Type:      pcn_types.New,
 				Namespace: strings.Split(key, "/")[0],
 			}
 
@@ -127,9 +127,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			key, err := cache.MetaNamespaceKeyFunc(new)
 
 			//	Set up the event
-			event := events.Event{
+			event := pcn_types.Event{
 				Key:       key,
-				Type:      events.Update,
+				Type:      pcn_types.Update,
 				Namespace: strings.Split(key, "/")[0],
 			}
 			//	Add this event to the queue
@@ -146,9 +146,9 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 
 			//	Set up the event
-			event := events.Event{
+			event := pcn_types.Event{
 				Key:       key,
-				Type:      events.Delete,
+				Type:      pcn_types.Delete,
 				Namespace: strings.Split(key, "/")[0],
 			}
 			//	Add this event to the queue
@@ -242,7 +242,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 			return
 		}
 
-		event := _event.(events.Event)
+		event := _event.(pcn_types.Event)
 
 		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
@@ -268,7 +268,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 	}
 }
 
-func (npc *DefaultNetworkPolicyController) processPolicy(event events.Event) error {
+func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) error {
 
 	var l = log.WithFields(log.Fields{
 		"by":     npc.logBy,
@@ -302,11 +302,11 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event events.Event) err
 
 	switch event.Type {
 
-	case events.New:
+	case pcn_types.New:
 		npc.dispatchers.new.Dispatch(policy)
-	case events.Update:
+	case pcn_types.Update:
 		npc.dispatchers.update.Dispatch(policy)
-	case events.Delete:
+	case pcn_types.Delete:
 		npc.dispatchers.delete.Dispatch(policy)
 	}
 
@@ -339,7 +339,7 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (npc *DefaultNetworkPolicyController) Subscribe(event events.EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
+func (npc *DefaultNetworkPolicyController) Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
@@ -360,7 +360,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event events.EventType, con
 	//	New event
 	//-------------------------------------
 
-	case events.New:
+	case pcn_types.New:
 		id := npc.dispatchers.new.Add(consumerFunc)
 
 		return func() {
@@ -371,7 +371,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event events.EventType, con
 	//	Update event
 	//-------------------------------------
 
-	case events.Update:
+	case pcn_types.Update:
 		id := npc.dispatchers.update.Add(consumerFunc)
 
 		return func() {
@@ -382,7 +382,7 @@ func (npc *DefaultNetworkPolicyController) Subscribe(event events.EventType, con
 	//	Delete Event
 	//-------------------------------------
 
-	case events.Delete:
+	case pcn_types.Delete:
 		id := npc.dispatchers.delete.Add(consumerFunc)
 
 		return func() {

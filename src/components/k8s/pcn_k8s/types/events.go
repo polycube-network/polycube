@@ -1,4 +1,4 @@
-package eventtypes
+package types
 
 type Event struct {
 	Key       string
