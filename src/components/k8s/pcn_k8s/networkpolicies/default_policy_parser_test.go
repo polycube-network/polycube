@@ -3,107 +3,19 @@ package networkpolicies
 import (
 	"testing"
 
-	k8s_types "k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
-
-	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
-
-	"github.com/stretchr/testify/mock"
-
-	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
-	"github.com/stretchr/testify/assert"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
+	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
+	"github.com/stretchr/testify/assert"
 )
 
-var GlobalPodSelector1 = meta_v1.LabelSelector{
-	MatchLabels: map[string]string{
-		"type":    "app",
-		"version": "2.5",
-	},
-}
-var GlobalNamespace1 = "Production"
-var GlobalName1 = "TestDefaultPolicy"
-var GlobalQuery1 = pcn_types.Query{
-	Pod: []pcn_types.QueryObject{
-		pcn_types.QueryObject{
-			By:     "labels",
-			Labels: GlobalPodSelector1.MatchLabels,
-		},
-	},
-	Namespace: []pcn_types.QueryObject{
-		pcn_types.QueryObject{
-			By:   "name",
-			Name: GlobalNamespace1,
-		},
-	},
-}
-var GlobalPodsFound1 = []pcn_types.Pod{
-	pcn_types.Pod{
-		Pod: core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: GlobalNamespace1,
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.100.10.10",
-			},
-		},
-		Veth: "veth123",
-	},
-	pcn_types.Pod{
-		Pod: core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: GlobalNamespace1,
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.100.20.20",
-			},
-		},
-		Veth: "veth123",
-	},
-}
-
-//	Mock the pod controller
-type MockPodController struct {
-	mock.Mock
-}
-
-func (m *MockPodController) Run()  {}
-func (m *MockPodController) Stop() {}
-func (m *MockPodController) Subscribe(event pcn_types.EventType, consumer func(*pcn_types.Pod)) (func(), error) {
-	return func() {}, nil
-}
-func (m *MockPodController) GetPodsByName(name string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(name, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPodsByName(channel chan<- []pcn_types.Pod, name string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(channel, name, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) GetPodsByLabels(labels map[string]string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(labels, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPodsByLabels(channel chan<- []pcn_types.Pod, labels map[string]string, ns string) ([]pcn_types.Pod, error) {
-	args := m.Called(channel, labels, ns)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) GetPods(query pcn_types.Query) ([]pcn_types.Pod, error) {
-	args := m.Called(query)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-func (m *MockPodController) AsyncGetPods(channel chan<- []pcn_types.Pod, query pcn_types.Query) ([]pcn_types.Pod, error) {
-	args := m.Called(query)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
-}
-
-func Init(podController controllers.PodController) *NetworkPolicyManager {
-	manager := NewNetworkPolicyManager(nil, podController, "url")
-
+func Init(podController pcn_controllers.PodController) *DefaultPolicyParser {
+	manager := newDefaultPolicyParser(podController, nil, nil)
 	return manager
 }
 
@@ -112,28 +24,17 @@ func TestNotNil(t *testing.T) {
 	assert.NotNil(t, manager)
 }
 
-func CommonTest(t *testing.T, err error, generatedFirewall []k8sfirewall.Firewall) {
-	assert.Nil(t, err)
-
-	if err != nil {
-		t.Errorf("error is not nil %s", err)
-	}
-
-	//assert.Equal(t, false, generatedFirewall.Interactive)
-	//assert.Equal(t, 2, len(generatedFirewall.Chain))
-}
-
 func TestNoSpec(t *testing.T) {
 
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
-	ingress, egress := manager.GetPolicyTypes(nil)
+	ingress, egress := manager.ParsePolicyTypes(nil)
 
 	assert.Zero(t, len(ingress))
 	assert.Zero(t, len(egress))
 
-	ingressChain, egressChain := manager.ParseDefaultRules(ingress, egress, "ns")
+	ingressChain, egressChain := manager.ParseRules(ingress, egress, "ns")
 
 	assert.Equal(t, "ingress", ingressChain.Name)
 	assert.Equal(t, "egress", egressChain.Name)
@@ -152,7 +53,7 @@ func TestPolicyTypes(t *testing.T) {
 	spec := &networking_v1.NetworkPolicySpec{
 		Ingress: []networking_v1.NetworkPolicyIngressRule{},
 	}
-	ingress, egress := manager.GetPolicyTypes(spec)
+	ingress, egress := manager.ParsePolicyTypes(spec)
 	assert.NotNil(t, ingress)
 	assert.Empty(t, ingress)
 	assert.Nil(t, egress)
@@ -163,7 +64,7 @@ func TestPolicyTypes(t *testing.T) {
 		},
 		Ingress: []networking_v1.NetworkPolicyIngressRule{},
 	}
-	ingress, egress = manager.GetPolicyTypes(spec)
+	ingress, egress = manager.ParsePolicyTypes(spec)
 	assert.NotNil(t, ingress)
 	assert.Empty(t, ingress)
 	assert.Nil(t, egress)
@@ -172,7 +73,7 @@ func TestPolicyTypes(t *testing.T) {
 	spec = &networking_v1.NetworkPolicySpec{
 		Egress: []networking_v1.NetworkPolicyEgressRule{},
 	}
-	ingress, egress = manager.GetPolicyTypes(spec)
+	ingress, egress = manager.ParsePolicyTypes(spec)
 	assert.Nil(t, ingress)
 	assert.Empty(t, ingress)
 	assert.Nil(t, egress)
@@ -183,7 +84,7 @@ func TestPolicyTypes(t *testing.T) {
 		},
 		Egress: []networking_v1.NetworkPolicyEgressRule{},
 	}
-	ingress, egress = manager.GetPolicyTypes(spec)
+	ingress, egress = manager.ParsePolicyTypes(spec)
 	assert.NotNil(t, egress)
 	assert.Empty(t, egress)
 	assert.Nil(t, ingress)
@@ -196,7 +97,7 @@ func TestPolicyTypes(t *testing.T) {
 		Ingress: []networking_v1.NetworkPolicyIngressRule{},
 		Egress:  []networking_v1.NetworkPolicyEgressRule{},
 	}
-	ingress, egress = manager.GetPolicyTypes(spec)
+	ingress, egress = manager.ParsePolicyTypes(spec)
 	assert.NotNil(t, egress)
 	assert.NotNil(t, ingress)
 	assert.Empty(t, egress)
@@ -211,7 +112,7 @@ func TestIngressLenIsZero(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
-	ingressChain, egressChain := manager.ParseDefaultRules(ingress, nil, "ns")
+	ingressChain, egressChain := manager.ParseRules(ingress, nil, "ns")
 
 	assert.Equal(t, "ingress", ingressChain.Name)
 	assert.Equal(t, "egress", egressChain.Name)
@@ -235,7 +136,7 @@ func TestFromIsNil(t *testing.T) {
 	manager := Init(testObj)
 
 	//	No need to check for egresschain anymore, the case when it is nil it's already been tested above
-	ingressChain, _ := manager.ParseDefaultRules(ingress, nil, "ns")
+	ingressChain, _ := manager.ParseRules(ingress, nil, "ns")
 
 	assert.Equal(t, "ingress", ingressChain.Name)
 	assert.Zero(t, len(ingressChain.Rule))
@@ -254,7 +155,7 @@ func TestFromIsEmpty(t *testing.T) {
 	manager := Init(testObj)
 
 	//	No need to check for egresschain anymore, the case when it is nil it's already been tested above
-	ingressChain, _ := manager.ParseDefaultRules(ingress, nil, "ns")
+	ingressChain, _ := manager.ParseRules(ingress, nil, "ns")
 
 	assert.Equal(t, "ingress", ingressChain.Name)
 	assert.Zero(t, len(ingressChain.Rule))
@@ -272,7 +173,7 @@ func TestToIsNil(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
-	_, egressChain := manager.ParseDefaultRules(nil, egress, "ns")
+	_, egressChain := manager.ParseRules(nil, egress, "ns")
 
 	assert.Equal(t, "egress", egressChain.Name)
 	assert.Zero(t, len(egressChain.Rule))
@@ -290,7 +191,7 @@ func TestToIsEmpty(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
-	_, egressChain := manager.ParseDefaultRules(nil, egress, "ns")
+	_, egressChain := manager.ParseRules(nil, egress, "ns")
 
 	assert.Equal(t, "egress", egressChain.Name)
 	assert.Zero(t, len(egressChain.Rule))
@@ -325,9 +226,9 @@ func TestSingleRuleIPBlockNoExceptions(t *testing.T) {
 		},
 	}
 
-	iRules := manager.parseDefaultIPBlock(ipBlock, "ingress")
+	iRules := manager.ParseIPBlock(ipBlock, "ingress")
 	assert.Equal(t, expectedIngressRule, iRules)
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.Len(t, ingressChain.Rule, 1)
 	assert.Equal(t, expectedIngressRule, ingressChain.Rule)
 
@@ -351,9 +252,9 @@ func TestSingleRuleIPBlockNoExceptions(t *testing.T) {
 		},
 	}
 
-	eRules := manager.parseDefaultIPBlock(ipBlock, "egress")
+	eRules := manager.ParseIPBlock(ipBlock, "egress")
 	assert.Equal(t, expectedEgressRule, eRules)
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.Len(t, egressChain.Rule, 1)
 	assert.Equal(t, expectedEgressRule, egressChain.Rule)
 }
@@ -403,9 +304,9 @@ func TestSingleRuleIPBlockMultipleExceptions(t *testing.T) {
 		},
 	}
 
-	iRules := manager.parseDefaultIPBlock(ipBlock, "ingress")
+	iRules := manager.ParseIPBlock(ipBlock, "ingress")
 	assert.Equal(t, expectedIngressRule, iRules)
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.Len(t, ingressChain.Rule, 4)
 	assert.Equal(t, expectedIngressRule, ingressChain.Rule)
 
@@ -441,9 +342,9 @@ func TestSingleRuleIPBlockMultipleExceptions(t *testing.T) {
 		},
 	}
 
-	eRules := manager.parseDefaultIPBlock(ipBlock, "egress")
+	eRules := manager.ParseIPBlock(ipBlock, "egress")
 	assert.Equal(t, expectedEgressRule, eRules)
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.Len(t, egressChain.Rule, 4)
 	assert.Equal(t, expectedEgressRule, egressChain.Rule)
 }
@@ -499,12 +400,12 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolNoPort(t *testing.T) {
 		},
 	}
 
-	iRules := manager.parseDefaultIPBlock(ipBlock, "ingress")
+	iRules := manager.ParseIPBlock(ipBlock, "ingress")
 	assert.Equal(t, expectedIngressRule, iRules)
 	for i := 0; i < len(expectedIngressRule); i++ {
 		expectedIngressRule[i].L4proto = "TCP"
 	}
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.Len(t, ingressChain.Rule, 4)
 	assert.Equal(t, expectedIngressRule, ingressChain.Rule)
 
@@ -541,12 +442,12 @@ func TestSingleRuleIPBlockMultipleExceptionsWithProtocolNoPort(t *testing.T) {
 		},
 	}
 
-	eRules := manager.parseDefaultIPBlock(ipBlock, "egress")
+	eRules := manager.ParseIPBlock(ipBlock, "egress")
 	assert.Equal(t, expectedEgressRule, eRules)
 	for i := 0; i < len(expectedEgressRule); i++ {
 		expectedEgressRule[i].L4proto = "TCP"
 	}
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.Len(t, egressChain.Rule, 4)
 	assert.Equal(t, expectedEgressRule, egressChain.Rule)
 }
@@ -643,7 +544,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 		},
 	}
 
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.Len(t, ingressChain.Rule, len(expectedIngressRule))
 	assert.Equal(t, expectedIngressRule, ingressChain.Rule)
 
@@ -712,7 +613,7 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 		},
 	}
 
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.Len(t, egressChain.Rule, len(expectedEgressRule))
 	assert.Equal(t, expectedEgressRule, egressChain.Rule)
 }
@@ -742,19 +643,19 @@ func TestSupportedProtocols(t *testing.T) {
 	manager := Init(testObj)
 
 	//	--- UDP
-	supported, protocol, pport := manager.parseDefaultProtocolAndPort(ports[0])
+	supported, protocol, pport := manager.parseProtocolAndPort(ports[0])
 	assert.Equal(t, "UDP", protocol)
 	assert.Equal(t, int32(port.IntVal), pport)
 	assert.True(t, supported)
 
 	//	--- TCP
-	supported, protocol, pport = manager.parseDefaultProtocolAndPort(ports[2])
+	supported, protocol, pport = manager.parseProtocolAndPort(ports[2])
 	assert.Equal(t, "TCP", protocol)
 	assert.Equal(t, int32(port.IntVal), pport)
 	assert.True(t, supported)
 
 	//	--- STCP
-	supported, protocol, pport = manager.parseDefaultProtocolAndPort(ports[1])
+	supported, protocol, pport = manager.parseProtocolAndPort(ports[1])
 	assert.Len(t, protocol, 0)
 	assert.Zero(t, pport)
 	assert.False(t, supported)
@@ -770,9 +671,10 @@ func TestSupportedProtocols(t *testing.T) {
 			protocol: "UDP",
 		},
 	}
-	parsedPP := manager.generatePorts(ports)
+	parsedPP := manager.ParsePorts(ports)
 	assert.ElementsMatch(t, parsedPP, expectedGeneratedPorts)
 }
+
 func TestGeneratedSupportedProtocolsWithUnsupported(t *testing.T) {
 	stcp := core_v1.ProtocolSCTP
 	tcp := core_v1.ProtocolTCP
@@ -818,7 +720,7 @@ func TestGeneratedSupportedProtocolsWithUnsupported(t *testing.T) {
 		},
 	}
 
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
 
 	//---------------------------------
@@ -844,7 +746,7 @@ func TestGeneratedSupportedProtocolsWithUnsupported(t *testing.T) {
 		},
 	}
 
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.ElementsMatch(t, expectedEgressRule, egressChain.Rule)
 }
 
@@ -882,7 +784,7 @@ func TestOnlyUnsupportedProtocol(t *testing.T) {
 		},
 	}
 
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.Empty(t, ingressChain.Rule)
 
 	//---------------------------------
@@ -900,7 +802,7 @@ func TestOnlyUnsupportedProtocol(t *testing.T) {
 		},
 	}
 
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.Empty(t, egressChain.Rule)
 }
 
@@ -962,7 +864,7 @@ func TestProtocolIsNil(t *testing.T) {
 		},
 	}
 
-	ingressChain := manager.parseDefaultIngressRules(ingress, "ns")
+	ingressChain := manager.ParseIngress(ingress, "ns")
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
 
 	//---------------------------------
@@ -1006,7 +908,7 @@ func TestProtocolIsNil(t *testing.T) {
 		},
 	}
 
-	egressChain := manager.parseDefaultEgressRules(egress, "ns")
+	egressChain := manager.ParseEgress(egress, "ns")
 	assert.ElementsMatch(t, expectedEgressRule, egressChain.Rule)
 }
 
@@ -1057,7 +959,7 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 		Namespace: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:   "name",
-				Name: GlobalNamespace1,
+				Name: ProductionNamespace,
 			},
 		},
 	}).Return(podsFound, nil)
@@ -1087,14 +989,14 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 			Action: "forward",
 		},
 	}
-	rules, err := manager.parseDefaultSelectors(podSelector, nil, GlobalNamespace1, "ingress")
+	rules, err := manager.ParseSelectors(podSelector, nil, ProductionNamespace, "ingress")
 	assert.Nil(t, err)
 	assert.ElementsMatch(t, expectedIngressRules, rules)
 	for i := 0; i < len(expectedIngressRules); i++ {
 		expectedIngressRules[i].L4proto = "TCP"
 		expectedIngressRules[i].Sport = int32(port.IntVal)
 	}
-	ingressChain := manager.parseDefaultIngressRules(ingress, GlobalNamespace1)
+	ingressChain := manager.ParseIngress(ingress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
 
 	//---------------------------------
@@ -1122,14 +1024,14 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 		},
 	}
 
-	rules, err = manager.parseDefaultSelectors(podSelector, nil, GlobalNamespace1, "egress")
+	rules, err = manager.ParseSelectors(podSelector, nil, ProductionNamespace, "egress")
 	assert.Nil(t, err)
 	assert.ElementsMatch(t, expectedEgressRules, rules)
 	for i := 0; i < len(expectedEgressRules); i++ {
 		expectedEgressRules[i].L4proto = "TCP"
 		expectedEgressRules[i].Dport = int32(port.IntVal)
 	}
-	egressChain := manager.parseDefaultEgressRules(egress, GlobalNamespace1)
+	egressChain := manager.ParseEgress(egress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedEgressRules, egressChain.Rule)
 }
 
@@ -1163,7 +1065,7 @@ func TestPodSelectorNoPodsFound(t *testing.T) {
 		Namespace: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:   "name",
-				Name: GlobalNamespace1,
+				Name: ProductionNamespace,
 			},
 		},
 	}).Return(podsFound, nil)
@@ -1183,10 +1085,10 @@ func TestPodSelectorNoPodsFound(t *testing.T) {
 			Ports: ports,
 		},
 	}
-	rules, err := manager.parseDefaultSelectors(podSelector, nil, GlobalNamespace1, "ingress")
+	rules, err := manager.ParseSelectors(podSelector, nil, ProductionNamespace, "ingress")
 	assert.Nil(t, err)
 	assert.Empty(t, rules)
-	ingressChain := manager.parseDefaultIngressRules(ingress, GlobalNamespace1)
+	ingressChain := manager.ParseIngress(ingress, ProductionNamespace)
 	assert.Empty(t, ingressChain.Rule)
 
 	//---------------------------------
@@ -1203,10 +1105,10 @@ func TestPodSelectorNoPodsFound(t *testing.T) {
 			Ports: ports,
 		},
 	}
-	rules, err = manager.parseDefaultSelectors(podSelector, nil, GlobalNamespace1, "egress")
+	rules, err = manager.ParseSelectors(podSelector, nil, ProductionNamespace, "egress")
 	assert.Nil(t, err)
 	assert.Empty(t, rules)
-	egressChain := manager.parseDefaultEgressRules(egress, GlobalNamespace1)
+	egressChain := manager.ParseEgress(egress, ProductionNamespace)
 	assert.Empty(t, egressChain.Rule)
 }
 
@@ -1234,11 +1136,11 @@ func TestPodMatchExpressionReturnsNoRules(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
-	pods, err := manager.getPodsFromDefaultSelectors(podSelector, nil, GlobalNamespace1)
+	pods, err := manager.getPodsFromSelectors(podSelector, nil, ProductionNamespace)
 	assert.Nil(t, pods)
 	assert.NotNil(t, err)
 
-	rules, err := manager.parseDefaultSelectors(podSelector, nil, GlobalName1, "ingress")
+	rules, err := manager.ParseSelectors(podSelector, nil, TestDefaultPolicyName, "ingress")
 	assert.Nil(t, rules)
 	assert.NotNil(t, err)
 
@@ -1256,7 +1158,7 @@ func TestPodMatchExpressionReturnsNoRules(t *testing.T) {
 			Ports: ports,
 		},
 	}
-	ingressChain := manager.parseDefaultIngressRules(ingress, GlobalNamespace1)
+	ingressChain := manager.ParseIngress(ingress, ProductionNamespace)
 	assert.Empty(t, ingressChain.Rule)
 
 	//---------------------------------
@@ -1273,7 +1175,7 @@ func TestPodMatchExpressionReturnsNoRules(t *testing.T) {
 			Ports: ports,
 		},
 	}
-	egressChain := manager.parseDefaultEgressRules(egress, GlobalNamespace1)
+	egressChain := manager.ParseEgress(egress, ProductionNamespace)
 	assert.Empty(t, egressChain.Rule)
 }
 
@@ -1312,19 +1214,19 @@ func TestEmptyAndNilPodSelectorSelectsAllPodsInSameNamespace(t *testing.T) {
 		Namespace: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:   "name",
-				Name: GlobalNamespace1,
+				Name: ProductionNamespace,
 			},
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
 
-	pods, err := manager.getPodsFromDefaultSelectors(podSelector, nil, GlobalNamespace1)
+	pods, err := manager.getPodsFromSelectors(podSelector, nil, ProductionNamespace)
 	assert.Nil(t, err)
 	assert.NotNil(t, pods)
 	assert.ElementsMatch(t, podsFound, pods)
 
 	podSelector.MatchLabels = nil
-	pods, err = manager.getPodsFromDefaultSelectors(podSelector, nil, GlobalNamespace1)
+	pods, err = manager.getPodsFromSelectors(podSelector, nil, ProductionNamespace)
 	assert.Nil(t, err)
 	assert.NotNil(t, pods)
 	assert.ElementsMatch(t, podsFound, pods)
@@ -1354,7 +1256,7 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.30.30",
@@ -1365,7 +1267,7 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.50.30",
@@ -1431,9 +1333,9 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 			Sport:   int32(port.IntVal),
 		},
 	}
-	ingressChain := manager.parseDefaultIngressRules(ingress, GlobalNamespace1)
+	ingressChain := manager.ParseIngress(ingress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
-	ingressChain = manager.parseDefaultIngressRules(ingress1, GlobalNamespace1)
+	ingressChain = manager.ParseIngress(ingress1, ProductionNamespace)
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
 
 	//---------------------------------
@@ -1475,9 +1377,9 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 			Dport:   int32(port.IntVal),
 		},
 	}
-	egressChain := manager.parseDefaultEgressRules(egress, GlobalNamespace1)
+	egressChain := manager.ParseEgress(egress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedEgressRules, egressChain.Rule)
-	egressChain = manager.parseDefaultEgressRules(egress1, GlobalNamespace1)
+	egressChain = manager.ParseEgress(egress1, ProductionNamespace)
 	assert.ElementsMatch(t, expectedEgressRules, egressChain.Rule)
 }
 
@@ -1502,7 +1404,7 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.30.30",
@@ -1513,7 +1415,7 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.50.30",
@@ -1570,7 +1472,7 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 			Sport:   int32(port.IntVal),
 		},
 	}
-	ingressChain := manager.parseDefaultIngressRules(ingress, GlobalNamespace1)
+	ingressChain := manager.ParseIngress(ingress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedIngressRules, ingressChain.Rule)
 
 	//---------------------------------
@@ -1604,12 +1506,13 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 			Dport:   int32(port.IntVal),
 		},
 	}
-	egressChain := manager.parseDefaultEgressRules(egress, GlobalNamespace1)
+	egressChain := manager.ParseEgress(egress, ProductionNamespace)
 	assert.ElementsMatch(t, expectedEgressRules, egressChain.Rule)
 }
 
 func TestPodsAffected(t *testing.T) {
-	podSelector := &meta_v1.LabelSelector{
+	//	From a specific namespace
+	podSelector := meta_v1.LabelSelector{
 		MatchLabels: map[string]string{
 			"app":   "books-library",
 			"cache": "redis",
@@ -1619,7 +1522,7 @@ func TestPodsAffected(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.30.30",
@@ -1630,7 +1533,7 @@ func TestPodsAffected(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.50.30",
@@ -1650,24 +1553,32 @@ func TestPodsAffected(t *testing.T) {
 		Namespace: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:   "name",
-				Name: GlobalNamespace1,
+				Name: ProductionNamespace,
 			},
 		},
 	}).Return(podsFound, nil)
 	expectedPods := map[string][]pcn_types.Pod{
-		GlobalNamespace1: podsFound,
+		ProductionNamespace: podsFound,
 	}
 	manager := Init(testObj)
-
-	podsAffected, err := manager.getPodsAffectedByDefaultPolicy(podSelector, GlobalNamespace1)
+	policy := networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: ProductionNamespace,
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			PodSelector: podSelector,
+		},
+	}
+	podsAffected, err := manager.GetPodsAffected(&policy)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPods, podsAffected)
 
+	//	All namespaces
 	podsFound = []pcn_types.Pod{
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.30.30",
@@ -1678,7 +1589,7 @@ func TestPodsAffected(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
+					Namespace: ProductionNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.50.30",
@@ -1689,7 +1600,7 @@ func TestPodsAffected(t *testing.T) {
 		pcn_types.Pod{
 			Pod: core_v1.Pod{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: "Beta",
+					Namespace: BetaNamespace,
 				},
 				Status: core_v1.PodStatus{
 					PodIP: "172.10.70.30",
@@ -1713,19 +1624,34 @@ func TestPodsAffected(t *testing.T) {
 		},
 	}).Return(podsFound, nil)
 	expectedPods = map[string][]pcn_types.Pod{
-		GlobalNamespace1: []pcn_types.Pod{
+		ProductionNamespace: []pcn_types.Pod{
 			podsFound[0],
 			podsFound[1],
 		},
-		"Beta": []pcn_types.Pod{
+		BetaNamespace: []pcn_types.Pod{
 			podsFound[2],
 		},
 	}
-
-	podsAffected, err = manager.getPodsAffectedByDefaultPolicy(podSelector, "*")
+	policy = networking_v1.NetworkPolicy{
+		/*ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: ProductionNamespace,
+		},*/
+		Spec: networking_v1.NetworkPolicySpec{
+			PodSelector: podSelector,
+		},
+	}
+	podsAffected, err = manager.GetPodsAffected(&policy)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPods, podsAffected)
 
+	policy = networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: StagingNamespace,
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			PodSelector: podSelector,
+		},
+	}
 	testObj.On("GetPods", pcn_types.Query{
 		Pod: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
@@ -1736,16 +1662,16 @@ func TestPodsAffected(t *testing.T) {
 		Namespace: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:   "name",
-				Name: "Staging",
+				Name: StagingNamespace,
 			},
 		},
 	}).Return([]pcn_types.Pod{}, nil)
-	podsAffected, err = manager.getPodsAffectedByDefaultPolicy(podSelector, "Staging")
+	podsAffected, err = manager.GetPodsAffected(&policy)
 	assert.Nil(t, err)
 	assert.Empty(t, podsAffected)
 }
 
-func TestIds(t *testing.T) {
+func TestIPs(t *testing.T) {
 	testObj := new(MockPodController)
 	manager := Init(testObj)
 
@@ -1890,11 +1816,11 @@ func TestComplexPolicy(t *testing.T) {
 	}
 	policy := &networking_v1.NetworkPolicy{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: GlobalName1,
-			//Namespace: GlobalNamespace1,
+			Name: TestDefaultPolicyName,
+			//Namespace: ProductionNamespace,
 		},
 		Spec: networking_v1.NetworkPolicySpec{
-			PodSelector: GlobalPodSelector1,
+			PodSelector: AppPodSelector,
 			PolicyTypes: []networking_v1.PolicyType{
 				networking_v1.PolicyTypeIngress,
 				networking_v1.PolicyTypeEgress,
@@ -2000,41 +1926,9 @@ func TestComplexPolicy(t *testing.T) {
 	//	The pods in this fake cluster
 	//---------------------------------
 
-	//	In the Production namespace
-	productionPods := []pcn_types.Pod{
-		pcn_types.Pod{
-			Pod: core_v1.Pod{
-				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: GlobalNamespace1,
-					UID:       "PRODUCTION-POD-UID-1",
-				},
-				Status: core_v1.PodStatus{
-					PodIP: "172.20.20.20",
-				},
-			},
-			Veth: "veth123",
-		},
-	}
-
-	//	In the Beta namespace
-	betaPods := []pcn_types.Pod{
-		pcn_types.Pod{
-			Pod: core_v1.Pod{
-				ObjectMeta: meta_v1.ObjectMeta{
-					Namespace: "Beta",
-					UID:       "BETA-POD-UID-1",
-				},
-				Status: core_v1.PodStatus{
-					PodIP: "172.40.40.40",
-				},
-			},
-			Veth: "veth512",
-		},
-	}
-
 	allPods := []pcn_types.Pod{}
-	allPods = append(allPods, productionPods...)
-	allPods = append(allPods, betaPods...)
+	allPods = append(allPods, ProductionPods...)
+	allPods = append(allPods, BetaPods...)
 
 	//---------------------------------
 	//	Faking the Pod controller
@@ -2045,7 +1939,7 @@ func TestComplexPolicy(t *testing.T) {
 		Pod: []pcn_types.QueryObject{
 			pcn_types.QueryObject{
 				By:     "labels",
-				Labels: GlobalPodSelector1.MatchLabels,
+				Labels: AppPodSelector.MatchLabels,
 			},
 		},
 		Namespace: []pcn_types.QueryObject{
@@ -2082,16 +1976,26 @@ func TestComplexPolicy(t *testing.T) {
 				Labels: namespaceLabels,
 			},
 		},
-	}).Return(productionPods, nil)
+	}).Return(ProductionPods, nil)
 
 	manager := Init(testObj)
-	manager.DeployNewPolicy(policy)
-	deployedFirewalls := manager.deployedFirewalls
-	assert.Len(t, deployedFirewalls, 2)
+	parsed := manager.Parse(policy, false)
+
+	assert.Len(t, parsed, 2)
+
+	_, exists := parsed[BetaNamespace]
+	assert.True(t, exists)
+
+	productionParse, exists := parsed[ProductionNamespace]
+	assert.True(t, exists)
 
 	//---------------------------------
 	//	What we expect for the first pod
 	//---------------------------------
+
+	productionPod := ProductionPods[0]
+	first, exists := productionParse[productionPod.Pod.UID]
+	assert.True(t, exists)
 
 	//	IngressChain
 	expectedIngressChain := k8sfirewall.Chain{
@@ -2102,7 +2006,7 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "TCP",
 				Sport:   port1.IntVal,
 				Src:     "192.168.0.0/16",
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      1,
 			},
@@ -2110,7 +2014,7 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "UDP",
 				Sport:   port1.IntVal,
 				Src:     "192.168.0.0/16",
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      2,
 			},
@@ -2118,7 +2022,7 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "TCP",
 				Sport:   port1.IntVal,
 				Src:     "192.168.2.0/24",
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "drop",
 				//Id:      3,
 			},
@@ -2126,53 +2030,46 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "UDP",
 				Sport:   port1.IntVal,
 				Src:     "192.168.2.0/24",
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "drop",
 				//Id:      4,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
 				Sport:   port1.IntVal,
-				Src:     betaPods[0].Pod.Status.PodIP,
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Src:     BetaPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      5,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
 				Sport:   port1.IntVal,
-				Src:     betaPods[0].Pod.Status.PodIP,
-				Dst:     productionPods[0].Pod.Status.PodIP,
+				Src:     BetaPods[0].Pod.Status.PodIP,
+				Dst:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      6,
 			},
 		},
 	}
 
-	productionPod := productionPods[0]
-	productionPodFw, ok := deployedFirewalls["fw-"+productionPod.Pod.UID]
-	assert.True(t, ok)
-	assert.Equal(t, string("fw-"+productionPod.Pod.UID), productionPodFw.firewall.Name)
+	assert.Equal(t, expectedIngressChain, first.ingressChain)
 	/*fmt.Println("---")
 	for i := 0; i < len(expectedIngressChain.Rule); i++ {
 		fmt.Printf("%+v\n", expectedIngressChain.Rule[i])
-		fmt.Printf("%+v\n", productionPodFw.ingressChain.Rule[i])
+		fmt.Printf("%+v\n", first.ingressChain.Rule[i])
 		fmt.Println("---")
 	}*/
-	rules, ok := productionPodFw.rules[policy.Name]
-	assert.Len(t, productionPodFw.rules, 1)
-	assert.True(t, ok)
-	assert.ElementsMatch(t, expectedIngressChain.Rule, rules.ingress)
 
 	expectedEgressChain := k8sfirewall.Chain{
-		Name:     "ingress",
+		Name:     "egress",
 		Default_: "drop",
 		Rule: []k8sfirewall.ChainRule{
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
 				Dport:   port2.IntVal,
 				Dst:     "192.169.0.0/16",
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      1,
 			},
@@ -2180,7 +2077,7 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "TCP",
 				Dport:   port3.IntVal,
 				Dst:     "192.169.0.0/16",
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      2,
 			},
@@ -2188,7 +2085,7 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "TCP",
 				Dport:   port2.IntVal,
 				Dst:     "192.169.2.0/24",
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "drop",
 				//Id:      3,
 			},
@@ -2196,117 +2093,33 @@ func TestComplexPolicy(t *testing.T) {
 				L4proto: "TCP",
 				Dport:   port3.IntVal,
 				Dst:     "192.169.2.0/24",
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "drop",
 				//Id:      4,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "TCP",
 				Dport:   port4.IntVal,
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      5,
 			},
 			k8sfirewall.ChainRule{
 				L4proto: "UDP",
 				Dport:   port4.IntVal,
-				Src:     productionPods[0].Pod.Status.PodIP,
+				Src:     productionPod.Pod.Status.PodIP,
 				Action:  "forward",
 				//Id:      6,
 			},
 		},
 	}
 
+	assert.Equal(t, expectedEgressChain, first.egressChain)
+
 	/*fmt.Println("---")
 	for i := 0; i < len(expectedEgressChain.Rule); i++ {
 		fmt.Printf("%+v\n", expectedEgressChain.Rule[i])
-		fmt.Printf("%+v\n", productionPodFw.egressChain.Rule[i])
+		fmt.Printf("%+v\n", first.egressChain.Rule[i])
 		fmt.Println("---")
 	}*/
-	assert.ElementsMatch(t, expectedEgressChain.Rule, rules.egress)
-	expecteduids := []k8s_types.UID{k8s_types.UID("PRODUCTION-POD-UID-1"), k8s_types.UID("BETA-POD-UID-1")}
-	policyRulesids := manager.deployedPolicies
-	assert.Len(t, policyRulesids, 1)
-	assert.ElementsMatch(t, expecteduids, policyRulesids[policy.Name])
-}
-
-func TestRemovePolicy(t *testing.T) {
-	testObj := new(MockPodController)
-	manager := Init(testObj)
-
-	policyToDelete := "delete"
-	ingressChain := k8sfirewall.Chain{
-		Name: "ingress",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id: 1,
-			},
-			k8sfirewall.ChainRule{
-				Id: 2,
-			},
-			k8sfirewall.ChainRule{
-				Id: 3,
-			},
-			k8sfirewall.ChainRule{
-				Id: 4,
-			},
-		},
-	}
-	egressChain := k8sfirewall.Chain{
-		Name: "egress",
-		Rule: []k8sfirewall.ChainRule{
-			k8sfirewall.ChainRule{
-				Id: 1,
-			},
-			k8sfirewall.ChainRule{
-				Id: 2,
-			},
-			k8sfirewall.ChainRule{
-				Id: 3,
-			},
-			k8sfirewall.ChainRule{
-				Id: 4,
-			},
-			k8sfirewall.ChainRule{
-				Id: 5,
-			},
-		},
-	}
-	firewallDeployed := deployedFirewall{
-		firewall: &k8sfirewall.Firewall{},
-		rules: map[string]*policyRules{
-			"keep": &policyRules{
-				ingress: []k8sfirewall.ChainRule{
-					ingressChain.Rule[0],
-					ingressChain.Rule[3],
-				},
-				egress: []k8sfirewall.ChainRule{
-					egressChain.Rule[0],
-					egressChain.Rule[1],
-					egressChain.Rule[4],
-				},
-			},
-			policyToDelete: &policyRules{
-				ingress: ingressChain.Rule[1:2],
-				egress:  egressChain.Rule[2:3],
-			},
-		},
-		ingressChain: &ingressChain,
-		egressChain:  &egressChain,
-	}
-	manager.deployedFirewalls[k8s_types.UID("fw-"+"POD")] = &firewallDeployed
-	manager.deployedPolicies[policyToDelete] = []k8s_types.UID{
-		k8s_types.UID("fw-" + "POD"),
-	}
-	policy := networking_v1.NetworkPolicy{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyToDelete,
-		},
-	}
-
-	manager.RemovePolicy(&policy)
-	result := manager.deployedFirewalls[k8s_types.UID("fw-POD")]
-	assert.Len(t, result.rules, 1)
-	_, exists := result.rules[policy.Name]
-	assert.False(t, exists)
 }

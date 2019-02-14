@@ -31,7 +31,9 @@ import (
 	//	importing controllers
 	//	TODO-ON-MERGE: change the path here to polycube-network
 	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
-	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies"
+	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	networkpolicies "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies"
+	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
@@ -81,11 +83,11 @@ var (
 	nodesWatcher     watch.Interface
 
 	//	--- Controllers
-	defaultnpc *controllers.DefaultNetworkPolicyController
+	defaultnpc *pcn_controllers.DefaultNetworkPolicyController
 	//	--- /Controllers
 
-	//	networkPolicyManager parses network policies and knows how to handle them
-	networkPolicyManager *networkpolicies.NetworkPolicyManager
+	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
+	firewallManager      pcn_firewall.Manager
 
 	stop bool
 )
@@ -246,8 +248,11 @@ func main() {
 	//	Set up the network policy controller (for the kubernetes policies)
 	defaultnpc = controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
 
+	//	Start the firewall manager
+	firewallManager = pcn_firewall.StartFirewallManager(basePath)
+
 	//	Get the policy manager
-	networkPolicyManager = networkpolicies.NewNetworkPolicyManager(defaultnpc, nil, basePath)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, nil, firewallManager)
 
 	// kv handler
 	go kvM.Loop()
