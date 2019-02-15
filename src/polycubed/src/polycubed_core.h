@@ -72,7 +72,7 @@ class PolycubedCore {
   std::string get_polycubeendpoint();
 
   std::string get_cube_port_parameter(const std::string &cube,
-                                      const std::string &port,
+                                      const std::string &port_name,
                                       const std::string &parameter);
   std::string set_cube_parameter(const std::string &cube,
                                  const std::string &parameter,
