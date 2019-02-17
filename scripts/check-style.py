@@ -1,3 +1,5 @@
+# This script is based on https://github.com/Sarcasm/run-clang-format
+
 #!/usr/bin/env python
 """A wrapper script around clang-format, suitable for linting multiple files
 and to use for continuous integration.
@@ -87,6 +89,17 @@ class UnexpectedError(Exception):
         self.formatted_traceback = traceback.format_exc()
         self.exc = exc
 
+def check_copyright_header(lines):
+    # return True if finds the 'Copyright' word in the first 5 lines
+    i = 0
+    for l in lines:
+        if ("Copyright" in l or "copyright" in l or
+            "SPDX-License-Identifier" in l):
+            return True
+        if i == 5:
+            break
+        i += 1
+    return False
 
 def run_clang_format_diff_wrapper(args, file):
     try:
@@ -98,7 +111,6 @@ def run_clang_format_diff_wrapper(args, file):
         raise UnexpectedError('{}: {}: {}'.format(file, e.__class__.__name__,
                                                   e), e)
 
-
 def run_clang_format_diff(args, file):
     try:
         with io.open(file, 'r', encoding='utf-8') as f:
@@ -106,6 +118,14 @@ def run_clang_format_diff(args, file):
     except IOError as exc:
         raise DiffError(str(exc))
     invocation = [args.clang_format_executable, file]
+
+    ret = ExitStatus.SUCCESS
+
+    if not args.fix:
+        if check_copyright_header(original) == False:
+            ret = ExitStatus.DIFF
+            if not args.quiet:
+                print("File {} is missing the copyright header".format(file))
 
     if args.fix:
         invocation.append('-i')
@@ -158,8 +178,8 @@ def run_clang_format_diff(args, file):
             proc.returncode, file), errs)
 
     if args.fix:
-        return ("", "")
-    return make_diff(file, original, outs), errs
+        return [], "", 0
+    return make_diff(file, original, outs), errs, ret
 
 
 def bold_red(s):
@@ -208,7 +228,7 @@ def print_trouble(prog, message, use_colors):
     print("{}: {} {}".format(prog, error_text, message), file=sys.stderr)
 
 
-default_files = ['src/services/', 'src/libs/polycube']
+default_files = ['src/services/', 'src/libs/polycube', 'src/polycubed']
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -297,7 +317,8 @@ def main():
                  'src/services/*/src/default-src',
                  'src/services/*/src/interface',
                  'src/services/*/src/serializer',
-                 'src/services/*/src/*-lib.cpp'))
+                 'src/services/*/src/model', # compatibility with bridge
+                 'src/services/*/src/*-lib.cpp',))
 
     if not files:
         return
@@ -319,7 +340,7 @@ def main():
 
     while True:
         try:
-            outs, errs = next(it)
+            outs, errs, ret = next(it)
         except StopIteration:
             break
         except DiffError as e:
@@ -338,6 +359,8 @@ def main():
             break
         else:
             sys.stderr.writelines(errs)
+            if ret != ExitStatus.SUCCESS:
+                retcode = ret
             if outs == []:
                 continue
             if not args.quiet:
