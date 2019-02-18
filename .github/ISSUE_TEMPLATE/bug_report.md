@@ -7,29 +7,24 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+## Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+## To Reproduce
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Modify this '....'
 3. Execute this '....'
 4. See error
 
-**Expected behavior**
+## Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Logs**
-Please share all the relevant logs, which can help the developers to diagnose the issue.
+## Please tell us about your environment: 
+1. OS details: `cat /etc/*-release` 
+2. Kernel details: `uname -a`
+3. Polycube Version: `polycubectl version`
+4. Polycube Log: Attach the log from `/var/log/polycube/polycubed.log`
 
-**OS and Polycube Version Details (please complete the following information):**
-- OS details: 
-1. OS: `cat /etc/*-release` 
-2. Kernel: `uname -r`
-- Polycube Details [e.g. 0.x.x]
-1. Version: `polycubectl version`
-2. Logs: `cat /var/log/polycube/polycubed.log`
-
-**Additional context**
+## Additional context
 Add any other context about the problem here.
