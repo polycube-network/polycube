@@ -16,7 +16,6 @@ endmacro()
 # first argument is the service name used in the rest API
 # second argument is the folder of the service
 
-add_service(bridge pcn-bridge)
 add_service(ddosmitigator pcn-ddosmitigator)
 add_service(firewall pcn-firewall)
 add_service(helloworld pcn-helloworld)
