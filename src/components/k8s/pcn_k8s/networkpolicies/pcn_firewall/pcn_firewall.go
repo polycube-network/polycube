@@ -117,7 +117,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 		return nil
 	}
 
-	//	Set the Ports
+	//	Set the Ports (this is doen in the CNI)
 	//response, err := deployedFw.fwAPI.CreateFirewallPortsListByID(nil)
 
 	// Since Interactive is not sent in the request, we will do it again now
@@ -343,9 +343,16 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		return nil, err
 	}
 
-	if len(chain.Rule) > 0 {
-		//	TODO: are rules always sorted by ID? check this.
-		ID = chain.Rule[len(chain.Rule)-1].Id + 1
+	//	UPDATE: This is actually useless: from what I've tested all chains have at least one default rule,
+	//	but it has proven to be buggy anyway so I'll just leave it
+	length := len(chain.Rule)
+	if length > 0 {
+		if length > 1 {
+			//	-2 because the last one is the default one and its ID is close to overflow.
+			ID = chain.Rule[len(chain.Rule)-2].Id + 1
+			//ID = chain.Rule[len(chain.Rule)-1].Id + 1
+		}
+		// else just make them start from 1
 	}
 	for i := 0; i < len(rules); i++ {
 		//rules[i].Id = ID + i

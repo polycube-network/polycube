@@ -129,6 +129,10 @@ func TestInjectRules(t *testing.T) {
 				Id: lastID,
 				//	... not relevant
 			},
+			k8sfirewall.ChainRule{
+				Id: ^int32(0),
+				//	... not relevant
+			},
 		},
 	}
 	MockAPI.On("ReadFirewallChainByID", nil, notEmpty, "ingress").Return(notEmptyChain, &http.Response{}, nil)
