@@ -24,8 +24,12 @@ A clear and concise description of what you expected to happen.
 Please share all the relevant logs, which can help the developers to diagnose the issue.
 
 **OS and Polycube Version Details (please complete the following information):**
-- OS: [e.g. Ubuntu 18.04 LTS]
-- Version [e.g. 0.1.0-alpha]
+- OS details: 
+1. OS: `cat /etc/*-release` 
+2. Kernel: `uname -r`
+- Polycube Details [e.g. 0.x.x]
+1. Version: `polycubectl version`
+2. Logs: `cat /var/log/polycube/polycubed.log`
 
 **Additional context**
 Add any other context about the problem here.
