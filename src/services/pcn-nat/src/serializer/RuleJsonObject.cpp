@@ -22,29 +22,52 @@ namespace swagger {
 namespace server {
 namespace model {
 
-RuleJsonObject::RuleJsonObject() {
+RuleJsonObject::RuleJsonObject() : 
+  m_snatIsSet(false),
+  m_masqueradeIsSet(false),
+  m_dnatIsSet(false),
+  m_portForwardingIsSet(false) { }
 
-  m_snatIsSet = false;
+RuleJsonObject::RuleJsonObject(nlohmann::json &val) : 
+  m_snatIsSet(false),
+  m_masqueradeIsSet(false),
+  m_dnatIsSet(false),
+  m_portForwardingIsSet(false) { 
+  if (val.count("snat")) {
+  
+  
+    if (!val["snat"].is_null()) {
+      RuleSnatJsonObject newItem { val["snat"] };
+      setSnat(newItem);
+    }
+  }
 
-  m_masqueradeIsSet = false;
+  if (val.count("masquerade")) {
+  
+  
+    if (!val["masquerade"].is_null()) {
+      RuleMasqueradeJsonObject newItem { val["masquerade"] };
+      setMasquerade(newItem);
+    }
+  }
 
-  m_dnatIsSet = false;
+  if (val.count("dnat")) {
+  
+  
+    if (!val["dnat"].is_null()) {
+      RuleDnatJsonObject newItem { val["dnat"] };
+      setDnat(newItem);
+    }
+  }
 
-  m_portForwardingIsSet = false;
-}
-
-RuleJsonObject::~RuleJsonObject() {}
-
-void RuleJsonObject::validateKeys() {
-
-}
-
-void RuleJsonObject::validateMandatoryFields() {
-
-}
-
-void RuleJsonObject::validateParams() {
-
+  if (val.count("port-forwarding")) {
+  
+  
+    if (!val["port-forwarding"].is_null()) {
+      RulePortForwardingJsonObject newItem { val["port-forwarding"] };
+      setPortForwarding(newItem);
+    }
+  }
 }
 
 nlohmann::json RuleJsonObject::toJson() const {
@@ -64,57 +87,6 @@ nlohmann::json RuleJsonObject::toJson() const {
   }
 
   return val;
-}
-
-void RuleJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("snat") != val.end()) {
-
-
-    if (!val["snat"].is_null()) {
-      RuleSnatJsonObject newItem;
-      newItem.fromJson(val["snat"]);
-      setSnat(newItem);
-    }
-  }
-
-  if (val.find("masquerade") != val.end()) {
-
-
-    if (!val["masquerade"].is_null()) {
-      RuleMasqueradeJsonObject newItem;
-      newItem.fromJson(val["masquerade"]);
-      setMasquerade(newItem);
-    }
-  }
-
-  if (val.find("dnat") != val.end()) {
-
-
-    if (!val["dnat"].is_null()) {
-      RuleDnatJsonObject newItem;
-      newItem.fromJson(val["dnat"]);
-      setDnat(newItem);
-    }
-  }
-
-  if (val.find("port-forwarding") != val.end()) {
-
-
-    if (!val["port-forwarding"].is_null()) {
-      RulePortForwardingJsonObject newItem;
-      newItem.fromJson(val["port-forwarding"]);
-      setPortForwarding(newItem);
-    }
-  }
 }
 
 nlohmann::json RuleJsonObject::helpKeys() {

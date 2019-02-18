@@ -20,14 +20,13 @@
 
 #pragma once
 
-#include "NatApi.h"
-
 
 #include <memory>
 #include <map>
 #include <mutex>
 #include "../Nat.h"
 
+#include "NatJsonObject.h"
 #include "NattingTableJsonObject.h"
 #include "RuleJsonObject.h"
 #include "RuleDnatJsonObject.h"
@@ -45,7 +44,6 @@
 #include "RuleSnatAppendInputJsonObject.h"
 #include "RuleSnatAppendOutputJsonObject.h"
 #include "RuleSnatEntryJsonObject.h"
-#include "NatJsonObject.h"
 #include <vector>
 
 namespace io {
@@ -55,11 +53,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class NatApiImpl : public io::swagger::server::api::NatApi {
-public:
-  NatApiImpl();
-  ~NatApiImpl() { };
-
+namespace NatApiImpl {
   void create_nat_by_id(const std::string &name, const NatJsonObject &value);
   void create_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableJsonObject &value);
   void create_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value);
@@ -172,13 +166,7 @@ public:
   void update_nat_rule_snat_entry_external_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_nat_rule_snat_entry_internal_net_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_nat_rule_snat_entry_list_by_id(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Nat>> cubes;
-  std::shared_ptr<Nat> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

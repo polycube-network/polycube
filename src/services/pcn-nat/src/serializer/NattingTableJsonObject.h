@@ -39,17 +39,13 @@ enum class NattingTableOriginatingRuleEnum {
 class  NattingTableJsonObject : public JsonObjectBase {
 public:
   NattingTableJsonObject();
-  virtual ~NattingTableJsonObject();
+  NattingTableJsonObject(nlohmann::json& json);
+  ~NattingTableJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -126,7 +122,7 @@ public:
   void unsetExternalPort();
 
 
-protected:
+private:
   std::string m_internalSrc;
   bool m_internalSrcIsSet;
   std::string m_internalDst;
@@ -143,8 +139,6 @@ protected:
   bool m_externalIpIsSet;
   uint16_t m_externalPort;
   bool m_externalPortIsSet;
-
-  std::vector<std::string> allowedParameters_{ "internal-src", "internal-dst", "internal-sport", "internal-dport", "proto", "originating-rule", "external-ip", "external-port" };
 };
 
 }

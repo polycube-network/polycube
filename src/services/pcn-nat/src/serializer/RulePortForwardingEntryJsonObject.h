@@ -36,17 +36,13 @@ namespace model {
 class  RulePortForwardingEntryJsonObject : public JsonObjectBase {
 public:
   RulePortForwardingEntryJsonObject();
-  virtual ~RulePortForwardingEntryJsonObject();
+  RulePortForwardingEntryJsonObject(nlohmann::json& json);
+  ~RulePortForwardingEntryJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -105,7 +101,7 @@ public:
   void unsetInternalPort();
 
 
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
   std::string m_externalIp;
@@ -118,8 +114,6 @@ protected:
   bool m_internalIpIsSet;
   uint16_t m_internalPort;
   bool m_internalPortIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id", "external-ip", "external-port", "proto", "internal-ip", "internal-port" };
 };
 
 }

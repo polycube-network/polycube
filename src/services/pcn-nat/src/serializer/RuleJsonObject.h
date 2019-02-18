@@ -40,17 +40,13 @@ namespace model {
 class  RuleJsonObject : public JsonObjectBase {
 public:
   RuleJsonObject();
-  virtual ~RuleJsonObject();
+  RuleJsonObject(nlohmann::json& json);
+  ~RuleJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -93,7 +89,7 @@ public:
   void unsetPortForwarding();
 
 
-protected:
+private:
   RuleSnatJsonObject m_snat;
   bool m_snatIsSet;
   RuleMasqueradeJsonObject m_masquerade;
@@ -102,8 +98,6 @@ protected:
   bool m_dnatIsSet;
   RulePortForwardingJsonObject m_portForwarding;
   bool m_portForwardingIsSet;
-
-  std::vector<std::string> allowedParameters_{ "snat", "masquerade", "dnat", "port-forwarding" };
 };
 
 }

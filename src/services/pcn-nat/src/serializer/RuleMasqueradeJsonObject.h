@@ -36,17 +36,13 @@ namespace model {
 class  RuleMasqueradeJsonObject : public JsonObjectBase {
 public:
   RuleMasqueradeJsonObject();
-  virtual ~RuleMasqueradeJsonObject();
+  RuleMasqueradeJsonObject(nlohmann::json& json);
+  ~RuleMasqueradeJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -65,11 +61,9 @@ public:
   void unsetEnabled();
 
 
-protected:
+private:
   bool m_enabled;
   bool m_enabledIsSet;
-
-  std::vector<std::string> allowedParameters_{ "enabled" };
 };
 
 }

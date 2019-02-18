@@ -22,23 +22,14 @@ namespace swagger {
 namespace server {
 namespace model {
 
-RuleDnatAppendOutputJsonObject::RuleDnatAppendOutputJsonObject() {
+RuleDnatAppendOutputJsonObject::RuleDnatAppendOutputJsonObject() : 
+  m_idIsSet(false) { }
 
-  m_idIsSet = false;
-}
-
-RuleDnatAppendOutputJsonObject::~RuleDnatAppendOutputJsonObject() {}
-
-void RuleDnatAppendOutputJsonObject::validateKeys() {
-
-}
-
-void RuleDnatAppendOutputJsonObject::validateMandatoryFields() {
-
-}
-
-void RuleDnatAppendOutputJsonObject::validateParams() {
-
+RuleDnatAppendOutputJsonObject::RuleDnatAppendOutputJsonObject(nlohmann::json &val) : 
+  m_idIsSet(false) { 
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
+  }
 }
 
 nlohmann::json RuleDnatAppendOutputJsonObject::toJson() const {
@@ -50,21 +41,6 @@ nlohmann::json RuleDnatAppendOutputJsonObject::toJson() const {
 
 
   return val;
-}
-
-void RuleDnatAppendOutputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("id") != val.end()) {
-    setId(val.at("id"));
-  }
 }
 
 nlohmann::json RuleDnatAppendOutputJsonObject::helpKeys() {

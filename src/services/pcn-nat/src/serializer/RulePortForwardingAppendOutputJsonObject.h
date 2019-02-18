@@ -36,17 +36,13 @@ namespace model {
 class  RulePortForwardingAppendOutputJsonObject : public JsonObjectBase {
 public:
   RulePortForwardingAppendOutputJsonObject();
-  virtual ~RulePortForwardingAppendOutputJsonObject();
+  RulePortForwardingAppendOutputJsonObject(nlohmann::json& json);
+  ~RulePortForwardingAppendOutputJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -65,11 +61,9 @@ public:
   void unsetId();
 
 
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id" };
 };
 
 }
