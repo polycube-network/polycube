@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "TransparenthelloworldApi.h"
-
 
 #include <memory>
 #include <map>
@@ -38,11 +36,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class TransparenthelloworldApiImpl : public io::swagger::server::api::TransparenthelloworldApi {
-public:
-  TransparenthelloworldApiImpl();
-  ~TransparenthelloworldApiImpl() { };
-
+namespace TransparenthelloworldApiImpl {
   void create_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &value);
   void delete_transparenthelloworld_by_id(const std::string &name);
   TransparenthelloworldJsonObject read_transparenthelloworld_by_id(const std::string &name);
@@ -59,13 +53,7 @@ public:
   void update_transparenthelloworld_ingress_action_by_id(const std::string &name, const TransparenthelloworldIngressActionEnum &value);
   void update_transparenthelloworld_list_by_id(const std::vector<TransparenthelloworldJsonObject> &value);
   void update_transparenthelloworld_loglevel_by_id(const std::string &name, const TransparenthelloworldLoglevelEnum &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Transparenthelloworld>> cubes;
-  std::shared_ptr<Transparenthelloworld> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

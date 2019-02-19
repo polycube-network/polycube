@@ -48,17 +48,13 @@ enum class TransparenthelloworldEgressActionEnum {
 class  TransparenthelloworldJsonObject : public JsonObjectBase {
 public:
   TransparenthelloworldJsonObject();
-  virtual ~TransparenthelloworldJsonObject();
+  TransparenthelloworldJsonObject(nlohmann::json& json);
+  ~TransparenthelloworldJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -125,7 +121,7 @@ public:
   static TransparenthelloworldEgressActionEnum string_to_TransparenthelloworldEgressActionEnum(const std::string &str);
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_uuid;
@@ -138,8 +134,6 @@ protected:
   bool m_ingressActionIsSet;
   TransparenthelloworldEgressActionEnum m_egressAction;
   bool m_egressActionIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ingress-action", "egress-action" };
 };
 
 }

@@ -1,3 +1,5 @@
+include(${PROJECT_SOURCE_DIR}/cmake/LoadFileAsVariable.cmake)
+
 aux_source_directory(serializer SERIALIZER_SOURCES)
 aux_source_directory(api API_SOURCES)
 aux_source_directory(default-src SRC_SOURCES)

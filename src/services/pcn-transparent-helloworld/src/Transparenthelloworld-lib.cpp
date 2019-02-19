@@ -18,24 +18,26 @@
 #define SERVICE_VERSION "1.0"
 #define SERVICE_PYANG_GIT ""
 #define SERVICE_SWAGGER_CODEGEN_GIT "polycube/a0059af"
-#define SERVICE_REQUIRED_KERNEL_VERSION ""
+#define SERVICE_REQUIRED_KERNEL_VERSION "4.14.0"
+
 const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
 module transparenthelloworld {
   yang-version 1.1;
   namespace "http://polycube.network/transparenthelloworld";
   prefix "transparenthelloworld";
 
-  import polycube-transparent-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Transparent-Helloworld service";
 
-  basemodel:service-description "Transparent-Helloworld Service";
-  basemodel:service-version "1.0";
-  basemodel:service-name "transparenthelloworld";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Transparent-Helloworld Service";
+  polycube-base:service-version "1.0";
+  polycube-base:service-name "transparenthelloworld";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:transparent-base-yang-module";
+  uses "polycube-transparent-base:transparent-base-yang-module";
 
   leaf ingress-action {
     type enumeration {
@@ -59,4 +61,10 @@ module transparenthelloworld {
 }
 
 )POLYCUBE_DM";
+
+extern "C" const char *data_model() {
+  return SERVICE_DATA_MODEL.c_str();
+}
+
+
 #include <polycube/services/shared_library.h>

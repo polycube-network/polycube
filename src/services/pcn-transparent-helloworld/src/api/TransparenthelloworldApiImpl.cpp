@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-TransparenthelloworldApiImpl::TransparenthelloworldApiImpl() {}
+namespace TransparenthelloworldApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Transparenthelloworld>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Transparenthelloworld> TransparenthelloworldApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Transparenthelloworld> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,7 +37,13 @@ std::shared_ptr<Transparenthelloworld> TransparenthelloworldApiImpl::get_cube(co
   return iter->second;
 }
 
-void TransparenthelloworldApiImpl::create_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
@@ -59,11 +63,11 @@ void TransparenthelloworldApiImpl::create_transparenthelloworld_by_id(const std:
   }
 }
 
-void TransparenthelloworldApiImpl::replace_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &bridge){
+void replace_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void TransparenthelloworldApiImpl::delete_transparenthelloworld_by_id(const std::string &name) {
+void delete_transparenthelloworld_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void TransparenthelloworldApiImpl::delete_transparenthelloworld_by_id(const std:
   cubes.erase(name);
 }
 
-std::string TransparenthelloworldApiImpl::read_transparenthelloworld_uuid_by_id(const std::string &name) {
+std::string read_transparenthelloworld_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<TransparenthelloworldJsonObject> TransparenthelloworldApiImpl::read_transparenthelloworld_list_by_id() {
+std::vector<TransparenthelloworldJsonObject> read_transparenthelloworld_list_by_id() {
   std::vector<TransparenthelloworldJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<TransparenthelloworldJsonObject> TransparenthelloworldApiImpl::read_
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> TransparenthelloworldApiImpl::read_transparenthelloworld_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_transparenthelloworld_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -94,6 +98,8 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> TransparenthelloworldA
   }
   return r;
 }
+
+
 
 
 /**
@@ -107,7 +113,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> TransparenthelloworldA
 * TransparenthelloworldJsonObject
 */
 TransparenthelloworldJsonObject
-TransparenthelloworldApiImpl::read_transparenthelloworld_by_id(const std::string &name) {
+read_transparenthelloworld_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -126,7 +132,7 @@ TransparenthelloworldApiImpl::read_transparenthelloworld_by_id(const std::string
 * TransparenthelloworldEgressActionEnum
 */
 TransparenthelloworldEgressActionEnum
-TransparenthelloworldApiImpl::read_transparenthelloworld_egress_action_by_id(const std::string &name) {
+read_transparenthelloworld_egress_action_by_id(const std::string &name) {
   auto transparenthelloworld = get_cube(name);
   return transparenthelloworld->getEgressAction();
 
@@ -146,7 +152,7 @@ TransparenthelloworldApiImpl::read_transparenthelloworld_egress_action_by_id(con
 * TransparenthelloworldIngressActionEnum
 */
 TransparenthelloworldIngressActionEnum
-TransparenthelloworldApiImpl::read_transparenthelloworld_ingress_action_by_id(const std::string &name) {
+read_transparenthelloworld_ingress_action_by_id(const std::string &name) {
   auto transparenthelloworld = get_cube(name);
   return transparenthelloworld->getIngressAction();
 
@@ -166,7 +172,7 @@ TransparenthelloworldApiImpl::read_transparenthelloworld_ingress_action_by_id(co
 * TransparenthelloworldLoglevelEnum
 */
 TransparenthelloworldLoglevelEnum
-TransparenthelloworldApiImpl::read_transparenthelloworld_loglevel_by_id(const std::string &name) {
+read_transparenthelloworld_loglevel_by_id(const std::string &name) {
   auto transparenthelloworld = get_cube(name);
   return transparenthelloworld->getLoglevel();
 
@@ -186,7 +192,7 @@ TransparenthelloworldApiImpl::read_transparenthelloworld_loglevel_by_id(const st
 * CubeType
 */
 CubeType
-TransparenthelloworldApiImpl::read_transparenthelloworld_type_by_id(const std::string &name) {
+read_transparenthelloworld_type_by_id(const std::string &name) {
   auto transparenthelloworld = get_cube(name);
   return transparenthelloworld->getType();
 
@@ -207,7 +213,7 @@ TransparenthelloworldApiImpl::read_transparenthelloworld_type_by_id(const std::s
 *
 */
 void
-TransparenthelloworldApiImpl::update_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &value) {
+update_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &value) {
   auto transparenthelloworld = get_cube(name);
 
   transparenthelloworld->update(value);
@@ -228,7 +234,7 @@ TransparenthelloworldApiImpl::update_transparenthelloworld_by_id(const std::stri
 *
 */
 void
-TransparenthelloworldApiImpl::update_transparenthelloworld_egress_action_by_id(const std::string &name, const TransparenthelloworldEgressActionEnum &value) {
+update_transparenthelloworld_egress_action_by_id(const std::string &name, const TransparenthelloworldEgressActionEnum &value) {
   auto transparenthelloworld = get_cube(name);
 
   transparenthelloworld->setEgressAction(value);
@@ -249,7 +255,7 @@ TransparenthelloworldApiImpl::update_transparenthelloworld_egress_action_by_id(c
 *
 */
 void
-TransparenthelloworldApiImpl::update_transparenthelloworld_ingress_action_by_id(const std::string &name, const TransparenthelloworldIngressActionEnum &value) {
+update_transparenthelloworld_ingress_action_by_id(const std::string &name, const TransparenthelloworldIngressActionEnum &value) {
   auto transparenthelloworld = get_cube(name);
 
   transparenthelloworld->setIngressAction(value);
@@ -269,13 +275,13 @@ TransparenthelloworldApiImpl::update_transparenthelloworld_ingress_action_by_id(
 *
 */
 void
-TransparenthelloworldApiImpl::update_transparenthelloworld_list_by_id(const std::vector<TransparenthelloworldJsonObject> &value) {
+update_transparenthelloworld_list_by_id(const std::vector<TransparenthelloworldJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> TransparenthelloworldApiImpl::update_transparenthelloworld_list_by_id_get_list(const std::vector<TransparenthelloworldJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_transparenthelloworld_list_by_id_get_list(const std::vector<TransparenthelloworldJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -293,7 +299,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> TransparenthelloworldA
 *
 */
 void
-TransparenthelloworldApiImpl::update_transparenthelloworld_loglevel_by_id(const std::string &name, const TransparenthelloworldLoglevelEnum &value) {
+update_transparenthelloworld_loglevel_by_id(const std::string &name, const TransparenthelloworldLoglevelEnum &value) {
   auto transparenthelloworld = get_cube(name);
 
   transparenthelloworld->setLoglevel(value);
@@ -302,6 +308,7 @@ TransparenthelloworldApiImpl::update_transparenthelloworld_loglevel_by_id(const 
 
 
 
+}
 }
 }
 }
