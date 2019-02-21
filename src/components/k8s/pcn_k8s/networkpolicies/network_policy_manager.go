@@ -3,6 +3,7 @@ package networkpolicies
 import (
 	//	TODO-ON-MERGE: change these two to the polycube path
 
+	"strings"
 	"sync"
 
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
@@ -150,6 +151,11 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 		"method": "checkNewPod",
 	})
 	l.Debugln("Going to check if new pod needs policies applied")
+
+	if strings.ToLower(pod.Namespace) == "kube-system" {
+		log.Debugln("This is a pod from kube-system. Exiting...")
+		return
+	}
 
 	if pod.Status.Phase != core_v1.PodRunning {
 		log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so, I'm not going to check it.")
