@@ -10,42 +10,60 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
+	core_v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewFirewall(t *testing.T) {
 	api := new(MockFirewallAPI)
 	//	Creation failed
-	nameFailCase := "to-be-failed"
-	api.On("CreateFirewallByID", nil, nameFailCase, k8sfirewall.Firewall{
-		Name:     nameFailCase,
+	failCase := core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			UID: "POD-UID-FAIL-CASE",
+		},
+	}
+	failCaseName := string("fw-" + failCase.UID)
+	api.On("CreateFirewallByID", nil, failCaseName, k8sfirewall.Firewall{
+		Name:     failCaseName,
 		Type_:    "TC",
 		Loglevel: "DEBUG",
 	}).Return(&http.Response{}, errors.New("fake-error"))
+
 	//	Interactive failed
-	interactiveFail := "to-be-failed-interactive"
+	interactiveFailCase := core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			UID: "POD-UID-INTERACTIVE-CASE",
+		},
+	}
+	interactiveFail := string("fw-" + interactiveFailCase.UID)
 	api.On("CreateFirewallByID", nil, interactiveFail, k8sfirewall.Firewall{
 		Name:     interactiveFail,
 		Type_:    "TC",
 		Loglevel: "DEBUG",
 	}).Return(&http.Response{}, nil)
 	api.On("UpdateFirewallInteractiveByID", nil, interactiveFail, false).Return(&http.Response{}, errors.New("fake-error"))
-	//	Success
-	//	Interactive failed
 
-	api.On("CreateFirewallByID", nil, FirewallName, k8sfirewall.Firewall{
-		Name:     FirewallName,
+	//	Success
+	successCase := core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			UID: "POD-UID-SUCCESS-CASE",
+		},
+	}
+	successCaseName := string("fw-" + successCase.UID)
+	api.On("CreateFirewallByID", nil, successCaseName, k8sfirewall.Firewall{
+		Name:     successCaseName,
 		Type_:    "TC",
 		Loglevel: "DEBUG",
 	}).Return(&http.Response{}, nil)
-	api.On("UpdateFirewallInteractiveByID", nil, FirewallName, false).Return(&http.Response{}, nil)
+	api.On("UpdateFirewallInteractiveByID", nil, successCaseName, false).Return(&http.Response{}, nil)
 
-	fw := newFirewall(nameFailCase, api)
+	fw := newFirewall(failCase, api)
 	assert.Nil(t, fw)
 
-	fw = newFirewall(interactiveFail, api)
+	fw = newFirewall(interactiveFailCase, api)
 	assert.NotNil(t, fw)
 
-	fw = newFirewall(FirewallName, api)
+	fw = newFirewall(successCase, api)
 	assert.NotNil(t, fw)
 }
 
@@ -109,6 +127,10 @@ func TestInjectRules(t *testing.T) {
 			},
 			k8sfirewall.ChainRule{
 				Id: lastID,
+				//	... not relevant
+			},
+			k8sfirewall.ChainRule{
+				Id: ^int32(0),
 				//	... not relevant
 			},
 		},

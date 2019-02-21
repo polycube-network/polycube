@@ -6,6 +6,7 @@ import (
 
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
+	core_v1 "k8s.io/api/core/v1"
 )
 
 type PcnFirewall interface {
@@ -49,7 +50,7 @@ type rulesContainer struct {
 type jsonFirewall struct {
 }
 
-func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
+func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 
 	//	This method is unexported by design: *only* the firewall manager is supposed to create new firewalls,
 	//	no one else should be able to do that.
@@ -58,6 +59,9 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 		"by":     "PcnFirewall",
 		"method": "New()",
 	})
+	//	The name of the firewall
+	//name := string("fw-" + pod.UID)
+	name := "fw-" + pod.Status.PodIP
 	l.Infoln("Starting a new firewall with name", name)
 
 	//-------------------------------------
@@ -67,7 +71,7 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 	deployedFw := DeployedFirewall{}
 
 	//	TODO: some of these parts should be done with a config
-	deployedFw.firewall = &k8sfirewall.Firewall{
+	/*deployedFw.firewall = &k8sfirewall.Firewall{
 		Name:  name,
 		Type_: "TC",
 		Ports: []k8sfirewall.Ports{},
@@ -75,7 +79,7 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 		//	... but it seems that the API don't even bother to consider it :( I'm leaving it here anyways...
 		//	This value is sent later with a new request
 		Interactive: false,
-	}
+	}*/
 
 	//	TODO: now create the ports
 
@@ -97,22 +101,27 @@ func newFirewall(name string, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 	deployedFw.fwAPI = API
 
 	//-------------------------------------
-	//	Create the firewall
+	//	Get the firewall
 	//-------------------------------------
 
 	//	Make the request
-	//	NOTE: response is always 500 in case of errors. So is there really a point in checking the response code?
-	//	That's why the response is not checked and this function just returns an error.
-	response, err := deployedFw.fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
+	/*response, err := deployedFw.fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
 		Name:     name,
 		Type_:    "TC",
 		Loglevel: "DEBUG",
-	})
+	})*/
+
+	fw, response, err := deployedFw.fwAPI.ReadFirewallByID(nil, name)
 
 	if err != nil {
-		l.Errorln("Could not create firewall with name", name, ":", err, response)
+		l.Errorln("Could not get firewall with name", name, ":", err, response)
 		return nil
 	}
+
+	deployedFw.firewall = &fw
+
+	//	Set the Ports (this is doen in the CNI)
+	//response, err := deployedFw.fwAPI.CreateFirewallPortsListByID(nil)
 
 	// Since Interactive is not sent in the request, we will do it again now
 	response, err = deployedFw.fwAPI.UpdateFirewallInteractiveByID(nil, name, false)
@@ -337,9 +346,16 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		return nil, err
 	}
 
-	if len(chain.Rule) > 0 {
-		//	TODO: are rules always sorted by ID? check this.
-		ID = chain.Rule[len(chain.Rule)-1].Id + 1
+	//	UPDATE: This is actually useless: from what I've tested all chains have at least one default rule,
+	//	but it has proven to be buggy anyway so I'll just leave it
+	length := len(chain.Rule)
+	if length > 0 {
+		if length > 1 {
+			//	-2 because the last one is the default one and its ID is close to overflow.
+			ID = chain.Rule[len(chain.Rule)-2].Id + 1
+			//ID = chain.Rule[len(chain.Rule)-1].Id + 1
+		}
+		// else just make them start from 1
 	}
 	for i := 0; i < len(rules); i++ {
 		//rules[i].Id = ID + i
