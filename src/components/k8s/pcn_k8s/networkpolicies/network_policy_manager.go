@@ -150,7 +150,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	})
 	l.Debugln("Going to check if new pod needs policies applied")
 
-	if pod.Status.Phase != "running" {
+	if pod.Status.Phase != core_v1.PodRunning {
 		log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so, I'm not going to check it.")
 		return
 	}
