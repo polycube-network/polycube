@@ -122,6 +122,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 					//	Inject the rules
 					//-------------------------------------
 
+					log.Debugf("--ingress: %+v\n --egress: %+v\n")
 					iErr, eErr := fw.EnforcePolicy(policy.Name, ingressChain.Rule, egressChain.Rule)
 
 					//-------------------------------------
