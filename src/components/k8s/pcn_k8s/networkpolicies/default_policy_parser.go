@@ -106,7 +106,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 			go func(currentPod pcn_types.Pod) {
 
 				defer podsWaitGroup.Done()
-
+				log.Debugf("pod found: %+v\n", currentPod)
 				//	Complete the rules by correctly adding the IPs
 				ingressChain, egressChain := d.FillChains(currentPod, ingressChain, egressChain)
 
