@@ -51,18 +51,14 @@ var AppPodSelector = meta_v1.LabelSelector{
 	},
 }
 
-var GlobalQuery1 = pcn_types.Query{
-	Pod: []pcn_types.QueryObject{
-		pcn_types.QueryObject{
-			By:     "labels",
-			Labels: AppPodSelector.MatchLabels,
-		},
+var GlobalQuery1 = pcn_types.PodQuery{
+	Pod: pcn_types.PodQueryObject{
+		By:     "labels",
+		Labels: AppPodSelector.MatchLabels,
 	},
-	Namespace: []pcn_types.QueryObject{
-		pcn_types.QueryObject{
-			By:   "name",
-			Name: ProductionNamespace,
-		},
+	Namespace: pcn_types.PodQueryObject{
+		By:   "name",
+		Name: ProductionNamespace,
 	},
 }
 
@@ -98,10 +94,10 @@ type MockPodController struct {
 
 func (m *MockPodController) Run()  {}
 func (m *MockPodController) Stop() {}
-func (m *MockPodController) Subscribe(event pcn_types.EventType, consumer func(*pcn_types.Pod)) (func(), error) {
+func (m *MockPodController) Subscribe(event pcn_types.EventType, consumer func(*core_v1.Pod)) (func(), error) {
 	return func() {}, nil
 }
-func (m *MockPodController) GetPods(query pcn_types.Query) ([]pcn_types.Pod, error) {
+func (m *MockPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, error) {
 	args := m.Called(query)
 	return args.Get(0).([]pcn_types.Pod), args.Error(1)
 }

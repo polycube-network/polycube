@@ -1,12 +1,12 @@
 package types
 
-type QueryObject struct {
+type PodQueryObject struct {
 	By     string
 	Name   string
 	Labels map[string]string
 }
 
-type Query struct {
-	Pod       []QueryObject
-	Namespace []QueryObject
+type PodQuery struct {
+	Pod       PodQueryObject
+	Namespace PodQueryObject
 }

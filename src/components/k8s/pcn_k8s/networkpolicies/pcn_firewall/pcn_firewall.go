@@ -60,7 +60,8 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 		"method": "New()",
 	})
 	//	The name of the firewall
-	name := string("fw-" + pod.UID)
+	//name := string("fw-" + pod.UID)
+	name := "fw-" + pod.Status.PodIP
 	l.Infoln("Starting a new firewall with name", name)
 
 	//-------------------------------------
@@ -70,7 +71,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	deployedFw := DeployedFirewall{}
 
 	//	TODO: some of these parts should be done with a config
-	deployedFw.firewall = &k8sfirewall.Firewall{
+	/*deployedFw.firewall = &k8sfirewall.Firewall{
 		Name:  name,
 		Type_: "TC",
 		Ports: []k8sfirewall.Ports{},
@@ -78,7 +79,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 		//	... but it seems that the API don't even bother to consider it :( I'm leaving it here anyways...
 		//	This value is sent later with a new request
 		Interactive: false,
-	}
+	}*/
 
 	//	TODO: now create the ports
 
@@ -100,22 +101,24 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	deployedFw.fwAPI = API
 
 	//-------------------------------------
-	//	Create the firewall
+	//	Get the firewall
 	//-------------------------------------
 
 	//	Make the request
-	//	NOTE: response is always 500 in case of errors. So is there really a point in checking the response code?
-	//	That's why the response is not checked and this function just returns an error.
-	response, err := deployedFw.fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
+	/*response, err := deployedFw.fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
 		Name:     name,
 		Type_:    "TC",
 		Loglevel: "DEBUG",
-	})
+	})*/
+
+	fw, response, err := deployedFw.fwAPI.ReadFirewallByID(nil, name)
 
 	if err != nil {
-		l.Errorln("Could not create firewall with name", name, ":", err, response)
+		l.Errorln("Could not get firewall with name", name, ":", err, response)
 		return nil
 	}
+
+	deployedFw.firewall = &fw
 
 	//	Set the Ports (this is doen in the CNI)
 	//response, err := deployedFw.fwAPI.CreateFirewallPortsListByID(nil)

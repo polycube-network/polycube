@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	//	TODO-ON-MERGE: change this to the polycube path
@@ -38,6 +39,9 @@ type DefaultNetworkPolicyController struct {
 	maxRetries int
 
 	logBy string
+
+	deployedPolicies map[string]*networking_v1.NetworkPolicy
+	lock             sync.Mutex
 }
 
 type eventDispatchers struct {
@@ -180,6 +184,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		logBy:                          logBy,
 		maxRetries:                     maxRetries,
 		stopCh:                         make(chan struct{}),
+		deployedPolicies:               map[string]*networking_v1.NetworkPolicy{},
 	}
 }
 
@@ -303,10 +308,14 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 	switch event.Type {
 
 	case pcn_types.New:
+		npc.addNewPolicy(policy)
 		npc.dispatchers.new.Dispatch(policy)
 	case pcn_types.Update:
+		npc.removePolicy(policy)
+		npc.addNewPolicy(policy)
 		npc.dispatchers.update.Dispatch(policy)
 	case pcn_types.Delete:
+		npc.removePolicy(policy)
 		npc.dispatchers.delete.Dispatch(policy)
 	}
 
@@ -316,6 +325,34 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 	}
 
 	return nil
+}
+
+func (npc *DefaultNetworkPolicyController) GetPolicy(name string) []networking_v1.NetworkPolicy {
+
+	policiesFound := []networking_v1.NetworkPolicy{}
+	if name == "*" {
+		for _, policy := range npc.deployedPolicies {
+			policiesFound = append(policiesFound, *policy)
+		}
+	} else {
+		if policy, exists := npc.deployedPolicies[name]; exists {
+			policiesFound = append(policiesFound, *policy)
+		}
+	}
+
+	return policiesFound
+}
+
+func (npc *DefaultNetworkPolicyController) addNewPolicy(policy *networking_v1.NetworkPolicy) {
+	npc.lock.Lock()
+	npc.deployedPolicies[policy.Name] = policy
+	npc.lock.Unlock()
+}
+
+func (npc *DefaultNetworkPolicyController) removePolicy(policy *networking_v1.NetworkPolicy) {
+	npc.lock.Lock()
+	delete(npc.deployedPolicies, policy.Name)
+	npc.lock.Unlock()
 }
 
 func (npc *DefaultNetworkPolicyController) Stop() {

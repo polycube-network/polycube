@@ -949,18 +949,14 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 			Veth: "veth123",
 		},
 	}
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: labels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: labels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: ProductionNamespace,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: ProductionNamespace,
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
@@ -1055,18 +1051,14 @@ func TestPodSelectorNoPodsFound(t *testing.T) {
 	}
 	testObj := new(MockPodController)
 	podsFound := []pcn_types.Pod{}
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: labels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: labels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: ProductionNamespace,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: ProductionNamespace,
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
@@ -1204,18 +1196,14 @@ func TestEmptyAndNilPodSelectorSelectsAllPodsInSameNamespace(t *testing.T) {
 		},
 	}
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: ProductionNamespace,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: ProductionNamespace,
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
@@ -1277,18 +1265,14 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 		},
 	}
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: namespaceLabels,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: namespaceLabels,
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
@@ -1425,18 +1409,14 @@ func TestBlockAllFromSpecificNamespace(t *testing.T) {
 		},
 	}
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: namespaceLabels,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: namespaceLabels,
 		},
 	}).Return(podsFound, nil)
 	manager := Init(testObj)
@@ -1543,18 +1523,14 @@ func TestPodsAffected(t *testing.T) {
 		},
 	}
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: podSelector.MatchLabels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: podSelector.MatchLabels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: ProductionNamespace,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: ProductionNamespace,
 		},
 	}).Return(podsFound, nil)
 	expectedPods := map[string][]pcn_types.Pod{
@@ -1609,18 +1585,14 @@ func TestPodsAffected(t *testing.T) {
 			Veth: "veth123",
 		},
 	}
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: podSelector.MatchLabels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: podSelector.MatchLabels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
 	}).Return(podsFound, nil)
 	expectedPods = map[string][]pcn_types.Pod{
@@ -1652,18 +1624,14 @@ func TestPodsAffected(t *testing.T) {
 			PodSelector: podSelector,
 		},
 	}
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: podSelector.MatchLabels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: podSelector.MatchLabels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: StagingNamespace,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: StagingNamespace,
 		},
 	}).Return([]pcn_types.Pod{}, nil)
 	podsAffected, err = manager.GetPodsAffected(&policy)
@@ -1935,46 +1903,34 @@ func TestComplexPolicy(t *testing.T) {
 	//---------------------------------
 
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: AppPodSelector.MatchLabels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: AppPodSelector.MatchLabels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
 	}).Return(allPods, nil)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:   "name",
-				Name: "*",
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
 		},
 	}).Return(allPods, nil)
-	testObj.On("GetPods", pcn_types.Query{
-		Pod: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: podLabels,
-			},
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: podLabels,
 		},
-		Namespace: []pcn_types.QueryObject{
-			pcn_types.QueryObject{
-				By:     "labels",
-				Labels: namespaceLabels,
-			},
+		Namespace: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: namespaceLabels,
 		},
 	}).Return(ProductionPods, nil)
 

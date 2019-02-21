@@ -1,13 +1,16 @@
 package controllers
 
 import (
-
 	//	TODO-ON-MERGE: change the path to polycube
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
+
+	"crypto/sha256"
+
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +28,7 @@ type PodController interface {
 	Stop()
 	Subscribe(pcn_types.EventType, func(*core_v1.Pod)) (func(), error)
 
-	GetPods(pcn_types.Query) ([]pcn_types.Pod, error)
+	GetPods(pcn_types.PodQuery) ([]pcn_types.Pod, error)
 }
 
 type PcnPodController struct {
@@ -47,7 +50,15 @@ type PcnPodController struct {
 
 	logBy string
 
-	//map[k8s_types.UID]*core_v1.Pod
+	pods map[string]podStore
+	lock sync.Mutex
+
+	//	TODO: map of pods by labels?
+}
+
+type podStore struct {
+	pod          *pcn_types.Pod
+	hashedLabels int
 }
 
 func NewPodController(nodeName string, clientset *kubernetes.Clientset) PodController {
@@ -175,6 +186,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset) PodContr
 		logBy:       logBy,
 		maxRetries:  maxRetries,
 		stopCh:      make(chan struct{}),
+		pods:        map[string]podStore{},
 	}
 }
 
@@ -234,7 +246,7 @@ func (p *PcnPodController) work() {
 
 		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
-		/*err := p.processPolicy(event)
+		err := p.process(event)
 
 		//	No errors?
 		if err == nil {
@@ -250,7 +262,7 @@ func (p *PcnPodController) work() {
 			l.Errorf("Error processing %s (giving up): %v", event.Key, err)
 			p.queue.Forget(_event)
 			utilruntime.HandleError(err)
-		}*/
+		}
 
 		stop = quit
 	}
@@ -291,10 +303,14 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 	switch event.Type {
 
 	case pcn_types.New:
+		p.addNewPod(pod)
 		p.dispatchers.new.Dispatch(pod)
 	case pcn_types.Update:
+		p.removePod(pod)
+		p.addNewPod(pod)
 		p.dispatchers.update.Dispatch(pod)
 	case pcn_types.Delete:
+		p.removePod(pod)
 		p.dispatchers.delete.Dispatch(pod)
 	}
 
@@ -304,6 +320,39 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 	}
 
 	return nil
+}
+
+func (p *PcnPodController) addNewPod(pod *core_v1.Pod) {
+	//	First calculate its labels
+	var _labels string
+	for key, val := range pod.Labels {
+		_labels += key + ":" + val + ";"
+	}
+	sha := sha256.New()
+	sha.Write([]byte(_labels))
+	labels, _ := fmt.Printf("%x", sha.Sum(nil))
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	//	Add it in the main map
+	p.pods[pod.Name] = podStore{
+		pod: &pcn_types.Pod{
+			Pod:  *pod,
+			Veth: "",
+		},
+		hashedLabels: labels,
+	}
+}
+
+func (p *PcnPodController) removePod(pod *core_v1.Pod) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	_, exists := p.pods[pod.Name]
+	if exists {
+		delete(p.pods, pod.Name)
+	}
 }
 
 func (p *PcnPodController) Stop() {
@@ -387,7 +436,51 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, consumer func(*c
 
 }
 
-func (p *PcnPodController) GetPods(query pcn_types.Query) ([]pcn_types.Pod, error) {
-	//	Temp
-	return []pcn_types.Pod{}, nil
+func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, error) {
+
+	//allNamespaces := true
+
+	result := []pcn_types.Pod{}
+
+	if strings.ToLower(query.Pod.By) == "name" {
+		//	If we query by name, we don't need the namespace...
+		if query.Pod.Name == "*" {
+			p.lock.Lock()
+			for _, pod := range p.pods {
+				result = append(result, *pod.pod)
+			}
+			p.lock.Unlock()
+			return result, nil
+		}
+
+		//	Get the pod with that name
+		if pod, exists := p.pods[query.Pod.Name]; exists {
+			result = append(result, *pod.pod)
+		}
+
+		return result, nil
+	}
+
+	if strings.ToLower(query.Pod.By) == "labels" {
+
+		var _labels string
+		for key, val := range query.Pod.Labels {
+			_labels += key + ":" + val + ";"
+		}
+		sha := sha256.New()
+		sha.Write([]byte(_labels))
+		labels, _ := fmt.Printf("%x", sha.Sum(nil))
+
+		podsFound := []pcn_types.Pod{}
+		p.lock.Lock()
+		for _, currentPod := range p.pods {
+			if currentPod.hashedLabels == labels {
+				podsFound = append(podsFound, *currentPod.pod)
+			}
+		}
+		p.lock.Unlock()
+		return podsFound, nil
+	}
+
+	return nil, nil
 }

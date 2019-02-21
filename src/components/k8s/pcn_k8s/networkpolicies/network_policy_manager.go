@@ -9,6 +9,7 @@ import (
 	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
+	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
 
@@ -47,6 +48,10 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 		deployedPolicies: map[string][]k8s_types.UID{},
 	}
 
+	//-------------------------------------
+	//	Subscribe to default policies events
+	//-------------------------------------
+
 	manager.defaultPolicyParser = newDefaultPolicyParser(podController, firewallManager, &manager)
 
 	//	Deploy a new default policy
@@ -58,6 +63,12 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//	Update a policy
 	dnpc.Subscribe(pcn_types.Delete, manager.UpdateDefaultPolicy)
 
+	//-------------------------------------
+	//	Subscribe to pod events
+	//-------------------------------------
+
+	podController.Subscribe(pcn_types.New, manager.checkNewPod)
+
 	return &manager
 }
 
@@ -68,14 +79,16 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 	})
 	l.Infoln("Going to deploy default policy", policy.Name)
 
-	for _, pods := range manager.defaultPolicyParser.Parse(policy, true) {
+	manager.defaultPolicyParser.Parse(policy, true)
+	//	UPDATE: ignore the returned value, we don't need it for now.
+	/*for _, pods := range manager.defaultPolicyParser.Parse(policy, true) {
 
 		manager.Lock()
 		for podID := range pods {
 			manager.deployedPolicies[policy.Name] = append(manager.deployedPolicies[policy.Name], podID)
 		}
 		manager.Unlock()
-	}
+	}*/
 
 	l.Debugln(policy.Name, "deployed.")
 }
@@ -93,7 +106,7 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 		return
 	}
 
-	podsInPolicy := []k8s_types.UID{}
+	//podsInPolicy := []k8s_types.UID{}
 
 	for _, pods := range podsAffected {
 		for _, pod := range pods {
@@ -103,12 +116,14 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 				fw.CeasePolicy(policy.Name)
 
 				//	Remove this pod from the deployed policies
-				podsInPolicy = append(podsInPolicy, pod.Pod.UID)
+				//	UPDATE: read below.
+				//podsInPolicy = append(podsInPolicy, pod.Pod.UID)
 			}
 		}
 	}
 
-	manager.Lock()
+	//	UPDATE: commenting this for now because it is not needed.
+	/*manager.Lock()
 	defer manager.Unlock()
 
 	//	Some of those policies were not removed successfully?
@@ -118,11 +133,66 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 	} else {
 		l.Debugln(policy.Name, "was successfully removed")
 		delete(manager.deployedPolicies, policy.Name)
-	}
+	}*/
 }
 
 func (manager *NetworkPolicyManager) UpdateDefaultPolicy(policy *networking_v1.NetworkPolicy) {
 
 	manager.RemoveDefaultPolicy(policy)
 	manager.DeployDefaultPolicy(policy)
+}
+
+func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
+	var l = log.WithFields(log.Fields{
+		"by":     PM,
+		"method": "checkNewPod",
+	})
+	l.Debugln("Going to check if new pod needs policies applied")
+
+	//	First start the firewall
+	manager.firewallManager.GetOrCreate(*pod)
+
+	/*	This is going to be tricky, so here is a brief explanation.
+		1) We must see if there are policies that must be applied to this pod.
+		2) We must see if there are policies which target this pod: there may be some pods which can accept connections from this new pod,
+			but since it is new, they don't have this pod in their rules list.
+	*/
+
+	//	Default Policies
+	for _, k8sPolicy := range manager.dnpc.GetPolicy("*") {
+
+		//	Does this policy affect this pod?
+		go func(currentPolicy networking_v1.NetworkPolicy) {
+			if manager.defaultPolicyParser.DoesPolicyAffectPod(&currentPolicy, pod) {
+
+				//	Deploy the policy just for this pod
+				ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&currentPolicy.Spec)
+				ingressChain, egressChain := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
+				ingressChain, egressChain = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
+					Pod:  *pod,
+					Veth: "",
+				}, ingressChain, egressChain)
+				fw := manager.firewallManager.GetOrCreate(*pod)
+				if fw == nil {
+					l.Panicln("Could not get firewall fw-", pod.Name, ". Will stop here.")
+					return
+				}
+				fw.EnforcePolicy(currentPolicy.Name, ingressChain.Rule, egressChain.Rule)
+			}
+		}(k8sPolicy)
+
+		//	Does this policy target this pod in some way?
+		go func(currentPolicy networking_v1.NetworkPolicy) {
+			iRules, eRules := manager.defaultPolicyParser.DoesPolicyTargetPod(&currentPolicy, pod)
+
+			if len(iRules) > 0 || len(eRules) > 0 {
+				for _, fw := range manager.firewallManager.GetAll() {
+					if fw.ImplementsPolicy(currentPolicy.Name) {
+						fw.EnforcePolicy(currentPolicy.Name, iRules, eRules)
+					}
+				}
+			}
+		}(k8sPolicy)
+	}
+
 }
