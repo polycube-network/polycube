@@ -309,9 +309,9 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 		p.removePod(pod)
 		p.addNewPod(pod)
 		p.dispatchers.update.Dispatch(pod)
-	case pcn_types.Delete:
+		/*case pcn_types.Delete:
 		p.removePod(pod)
-		p.dispatchers.delete.Dispatch(pod)
+		p.dispatchers.delete.Dispatch(pod)*/
 	}
 
 	//	Does not exist?
