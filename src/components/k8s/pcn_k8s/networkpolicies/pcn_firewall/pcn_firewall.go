@@ -352,7 +352,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		"method": "injectChain()",
 	})
 
-	var ID int32 = 1
+	//var ID int32 = 1
 
 	//	Just in case...
 	if rules == nil {
