@@ -475,7 +475,10 @@ func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, e
 		p.lock.Lock()
 		for _, currentPod := range p.pods {
 			if currentPod.hashedLabels == labels {
-				podsFound = append(podsFound, *currentPod.pod)
+				if query.Namespace.By == "name" && (query.Namespace.Name == "*" || query.Namespace.Name == currentPod.pod.Pod.Namespace) {
+					log.Debugln("namespace is", query.Namespace.Name, "found:", currentPod.pod.Pod.Name, "on", currentPod.pod.Pod.Namespace)
+					podsFound = append(podsFound, *currentPod.pod)
+				}
 			}
 		}
 		p.lock.Unlock()

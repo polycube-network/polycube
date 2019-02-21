@@ -69,6 +69,13 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 
 	nsPods, err := d.GetPodsAffected(policy)
 
+	for ns, pods := range nsPods {
+		log.Debugln("-- ns:", ns)
+		for _, p := range pods {
+			log.Debugln("---- pod affected:", p.Pod.Name, p.Pod.Namespace)
+		}
+	}
+
 	if err != nil {
 		l.Errorln("Error while trying to get pods affected", err)
 		return nil
@@ -106,7 +113,6 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 			go func(currentPod pcn_types.Pod) {
 
 				defer podsWaitGroup.Done()
-				log.Debugf("pod found: %+v\n", currentPod)
 				//	Complete the rules by correctly adding the IPs
 				ingressChain, egressChain := d.FillChains(currentPod, ingressChain, egressChain)
 
