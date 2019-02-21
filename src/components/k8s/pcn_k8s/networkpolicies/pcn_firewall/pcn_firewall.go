@@ -330,6 +330,18 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		//	Some rules were not delete. We can't delete the entry: we need to change it with the still active rules.
 		d.rules[policyName] = &failedRules
 	}
+	_fw, response, err := d.fwAPI.ReadFirewallByID(nil, d.firewall.Name)
+
+	if err != nil {
+		l.Errorln("Could not get firewall with name after cease", d.firewall.Name, ":", err, response)
+
+		if response.StatusCode != 200 {
+			l.Errorln("The firewall is nil. Will stop now. after cease")
+			return
+		}
+	}
+
+	l.Debugf("--- after ceasing policy, fw is %+v\n", _fw)
 	rules.Unlock()
 }
 
