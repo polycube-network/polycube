@@ -36,14 +36,19 @@ set(polycubed_sources
   management_lib.cpp
   polycubed_core.cpp
   rest_server.cpp
+  peer_iface.cpp
   port.cpp
   port_tc.cpp
   port_xdp.cpp
+  base_cube.cpp
   cube.cpp
   cube_tc.cpp
   cube_xdp.cpp
+  transparent_cube.cpp
+  transparent_cube_tc.cpp
+  transparent_cube_xdp.cpp
   controller.cpp
-  port_host.cpp
+  extiface.cpp
   extiface_tc.cpp
   extiface_xdp.cpp
   extiface_info.cpp

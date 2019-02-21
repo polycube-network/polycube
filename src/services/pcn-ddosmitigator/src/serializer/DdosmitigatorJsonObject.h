@@ -24,7 +24,6 @@
 #include "JsonObjectBase.h"
 
 #include "BlacklistDstJsonObject.h"
-#include "PortsJsonObject.h"
 #include "StatsJsonObject.h"
 #include "BlacklistSrcJsonObject.h"
 #include <vector>
@@ -103,13 +102,6 @@ public:
   static std::string DdosmitigatorLoglevelEnum_to_string(const DdosmitigatorLoglevelEnum &value);
   static DdosmitigatorLoglevelEnum string_to_DdosmitigatorLoglevelEnum(const std::string &str);
   polycube::LogLevel getPolycubeLoglevel() const;
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  const std::vector<PortsJsonObject>& getPorts() const;
-  void addPorts(PortsJsonObject value);
-  bool portsIsSet() const;
-  void unsetPorts();
 
   /// <summary>
   ///
@@ -118,14 +110,6 @@ public:
   void setStats(StatsJsonObject value);
   bool statsIsSet() const;
   void unsetStats();
-
-  /// <summary>
-  /// Port where the traffic is received
-  /// </summary>
-  std::string getActivePort() const;
-  void setActivePort(std::string value);
-  bool activePortIsSet() const;
-  void unsetActivePort();
 
   /// <summary>
   /// If set, this will be the port used to redirect traffic (instead of PASS it to STACK)
@@ -161,12 +145,8 @@ protected:
   bool m_typeIsSet;
   DdosmitigatorLoglevelEnum m_loglevel;
   bool m_loglevelIsSet;
-  std::vector<PortsJsonObject> m_ports;
-  bool m_portsIsSet;
   StatsJsonObject m_stats;
   bool m_statsIsSet;
-  std::string m_activePort;
-  bool m_activePortIsSet;
   std::string m_redirectPort;
   bool m_redirectPortIsSet;
   std::vector<BlacklistSrcJsonObject> m_blacklistSrc;
@@ -174,7 +154,7 @@ protected:
   std::vector<BlacklistDstJsonObject> m_blacklistDst;
   bool m_blacklistDstIsSet;
 
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ports", "stats", "active-port", "redirect-port", "blacklist-src", "blacklist-dst" };
+  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "stats", "active-port", "redirect-port", "blacklist-src", "blacklist-dst" };
 };
 
 }

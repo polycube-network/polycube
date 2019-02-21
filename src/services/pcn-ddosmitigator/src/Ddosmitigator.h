@@ -18,35 +18,34 @@
 
 #include "../interface/DdosmitigatorInterface.h"
 
-#include "polycube/services/cube.h"
 #include "polycube/services/port.h"
+#include "polycube/services/transparent_cube.h"
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
 
 #include "BlacklistDst.h"
 #include "BlacklistSrc.h"
-#include "Ports.h"
 #include "Stats.h"
 
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
 
-class Ddosmitigator : public polycube::service::Cube<Ports>,
+class Ddosmitigator : public polycube::service::TransparentCube,
                       public DdosmitigatorInterface {
-  friend class Ports;
-
  public:
   Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf,
                 CubeType type = CubeType::TC);
   virtual ~Ddosmitigator();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
-                 const std::vector<uint8_t> &packet) override;
 
   void update(const DdosmitigatorJsonObject &conf) override;
   DdosmitigatorJsonObject toJsonObject() override;
+
+  void packet_in(polycube::service::Sense sense,
+                 polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   /// <summary>
   ///
@@ -88,24 +87,6 @@ class Ddosmitigator : public polycube::service::Cube<Ports>,
   std::string getUuid() override;
 
   /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  std::shared_ptr<Ports> getPorts(const std::string &name) override;
-  std::vector<std::shared_ptr<Ports>> getPortsList() override;
-  void addPorts(const std::string &name, const PortsJsonObject &conf) override;
-  void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name,
-                    const PortsJsonObject &conf) override;
-  void delPorts(const std::string &name) override;
-  void delPortsList() override;
-
-  /// <summary>
-  /// Port where the traffic is received
-  /// </summary>
-  std::string getActivePort() override;
-  void setActivePort(const std::string &value) override;
-
-  /// <summary>
   /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
   /// </summary>
   CubeType getType() override;
@@ -124,13 +105,6 @@ class Ddosmitigator : public polycube::service::Cube<Ports>,
   void delBlacklistSrc(const std::string &ip) override;
   void delBlacklistSrcList() override;
 
-  /// <summary>
-  /// If set, this will be the port used to redirect traffic (instead of PASS it
-  /// to STACK)
-  /// </summary>
-  std::string getRedirectPort() override;
-  void setRedirectPort(const std::string &value) override;
-
   void replaceAll(std::string &str, const std::string &from,
                   const std::string &to);
 
@@ -141,25 +115,10 @@ class Ddosmitigator : public polycube::service::Cube<Ports>,
   void setSrcMatch(bool value);
   void setDstMatch(bool value);
 
-  void setInPort(std::string portName);
-  void setOutPort(std::string portName);
-
-  void addPort(std::string name);
-  void rmPort(std::string name);
-
   bool src_match_ = false;
   bool dst_match_ = false;
 
  private:
-  uint32_t in_port_ = 0;
-  uint32_t out_port_ = 1;
-
-  std::string in_port_str_ = "";
-  std::string out_port_str_ = "";
-
-  bool out_port_is_set_ = false;
-  bool redirect_ = false;
-
   // when code is reloaded it will be set to false
   bool is_code_changed_ = false;
 

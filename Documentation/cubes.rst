@@ -5,24 +5,66 @@ A ``Cube`` is a logical entity, composed by a ``data plane`` (which can include 
 
 In addition, a Cube may include also a ``slow path`` in case some additional data plane-related code is required to overcome some limitations of the eBPF data plane.
 
-Following is an example including instances of Router and Bridge Cubes, and a possible topology that interconnects them.
+Types of Cubes
+--------------
+
+Polycube has two diferent kind of cubes, **standard cubes** and **transparent cubes**.
+
+Standard cubes have forwarding capabilities, such router and bridge.
+
+A standard cube:
+  - defines a :ref:`ports <cube-ports>` concept, ports are *connected* to other ports or netdevs;
+  - makes a forwarding decision, i.e, sending the packet to another port;
 
 ::
 
+             standard cube
+           +--------------+
+           |              |
+           | +----------+ |
+   port1---|-|          |-|---port3
+           | |   core   | |
+   port2---|-|          |-|---port3
+           | +----------+ |
+           |              |
+           +--------------+
 
-     veth1                                                             veth3
-       |                                                                |
-       |                                                                |
-       |                                                                |
-  +----------+        +----------+             +----------+        +----------+
-  |   br1    |        |    r1    |             |    r2    |        |   br2    |
-  |  bridge  |--------|  router  |-------------|  router  |--------|  bridge  |---------veth5
-  |  (cube)  |        |  (cube)  |             |  (cube)  |        |  (cube)  |
-  +---------.+        +----------+             +----------+        +----------+
-       |                                                                |
-       |                                                                |
-       |                                                                |
-     veth2                                                            veth4
+A trasparent cube is a cube without any forwarding capability, such as a network monitor, NAT and a firewall.
+
+A trasparent cube:
+  - does not define any port, hence cannot be *connected* to other services, but has to be *attached* to an existing port such as the one of a normal service (e.g., port1 on router2) or a network interface in the host (e.g., veth0);
+  - it *inherits* all the parameters associated to ports (e.g., MAC/IPv4 addresses, link speed, etc.) from the actual port it is attached to (e.g., port 1 on router2, or veth0);
+
+::
+
+        transparent cube
+      +-------------------+
+      |    +---------+    |
+      |  ->| ingress |->  |
+      | /  +---------+  \ |
+ <--->|*                 *|<--->
+      | \  +---------+  / |
+      |  <-| egress  |<-  |
+      |    +-------- +    |
+      +-------------------+
+
+Following is example topology composed by standard and transparent cubes.
+
+::
+
+     veth1                                                                 veth3
+       |                                                                    |
+       |                                                                    |
+       |                                                                    |
+  +---------+                      +---------+           +---------+   +---------+
+  |         |   +-----------+------+         |   +-------+         |   |         |
+  | bridge1 |---| firewall0 | nat0 | router1 |---| ddos0 | router2 |---| bridge2 |---veth5
+  |         |   +-----------+------+         |   +-------+         |   |         |
+  +---------+                      +---------+           +---------+   +---------+
+      |                                                                     |
+      |                                                                     |
+      |                                                                     |
+    veth2                                                                 veth4
 
 ``polycubectl ?`` shows available cubes installed on your system.
 
@@ -39,6 +81,9 @@ Cubes are created by the ``polycubectl <cubetype> add <cubename>`` command, for 
   polycubectl router add r1
   # create a simplebridge instance br1
   polycubectl simplebridge add br1
+
+
+.. _cube-ports:
 
 Cubes Ports
 ^^^^^^^^^^^
@@ -94,14 +139,18 @@ Following is an example of how to set ports peer, referred to previous picture.
   polycubectl r1  ports port2 set peer=br1:port2
   polycubectl br1 ports port2 set peer=r1:port2
 
-Connect Disconnect primitive
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Connect and  Disconnect primitives
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Connect and disconnect API provides a short way to connect ports, without setting up peers explicitly.
 
+Attach and Detach primitives
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These primitives allow to associate transparent cubes to standard cube's ports or to netdevs on the system.
+
 ::
 
-  polycubectl connect r1:port1 veth1
-  polycubectl connect r1:port3 eth0
+  polycubectl attach firewall1 r1:port2
 
-  polycubectl connect r1:port2 br1:port2
+  polycubectl attach firewall0 veth1

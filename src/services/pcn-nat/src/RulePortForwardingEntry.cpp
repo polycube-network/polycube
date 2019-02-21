@@ -252,8 +252,8 @@ std::shared_ptr<spdlog::logger> RulePortForwardingEntry::logger() {
 }
 
 void RulePortForwardingEntry::injectToDatapath() {
-  auto dp_rules =
-      parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>(
+      "dp_rules", 0, ProgramType::INGRESS);
 
   dp_k key{
       .mask = 0, /* will be set later on */
@@ -285,8 +285,8 @@ void RulePortForwardingEntry::injectToDatapath() {
 }
 
 void RulePortForwardingEntry::removeFromDatapath() {
-  auto dp_rules =
-      parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>(
+      "dp_rules", 0, ProgramType::INGRESS);
 
   dp_k key{
       .mask = 0, /* will be set later on */

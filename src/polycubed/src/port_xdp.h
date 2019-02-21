@@ -28,7 +28,7 @@ namespace polycubed {
 class PortXDP : public Port {
  public:
   PortXDP(CubeIface &parent, const std::string &name, uint16_t id);
-  ~PortXDP();
+  virtual ~PortXDP();
 
   uint32_t get_parent_index() const;
   std::string get_cube_name() const;

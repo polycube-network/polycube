@@ -45,16 +45,11 @@ void DdosmitigatorApi::setup_routes() {
   Routes::Post(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_src_by_id_handler, this));
   Routes::Post(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_src_list_by_id_handler, this));
   Routes::Post(router, base + ":name/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_ports_list_by_id_handler, this));
   Routes::Delete(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_by_id_handler, this));
   Routes::Delete(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_list_by_id_handler, this));
   Routes::Delete(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_src_by_id_handler, this));
   Routes::Delete(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_src_list_by_id_handler, this));
   Routes::Delete(router, base + ":name/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/active-port/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_active_port_by_id_handler, this));
   Routes::Get(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_handler, this));
   Routes::Get(router, base + ":name/blacklist-dst/:ip/drop-pkts/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_drop_pkts_by_id_handler, this));
   Routes::Get(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_handler, this));
@@ -64,12 +59,6 @@ void DdosmitigatorApi::setup_routes() {
   Routes::Get(router, base + ":name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_by_id_handler, this));
   Routes::Get(router, base + "", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_list_by_id_handler, this));
   Routes::Get(router, base + ":name/loglevel/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/redirect-port/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_redirect_port_by_id_handler, this));
   Routes::Get(router, base + ":name/stats/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_by_id_handler, this));
   Routes::Get(router, base + ":name/stats/pkts/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_pkts_by_id_handler, this));
   Routes::Get(router, base + ":name/stats/pps/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_pps_by_id_handler, this));
@@ -80,9 +69,6 @@ void DdosmitigatorApi::setup_routes() {
   Routes::Put(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_src_by_id_handler, this));
   Routes::Put(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_src_list_by_id_handler, this));
   Routes::Put(router, base + ":name/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/active-port/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_active_port_by_id_handler, this));
   Routes::Patch(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_dst_by_id_handler, this));
   Routes::Patch(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_dst_list_by_id_handler, this));
   Routes::Patch(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_src_by_id_handler, this));
@@ -90,10 +76,6 @@ void DdosmitigatorApi::setup_routes() {
   Routes::Patch(router, base + ":name/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_by_id_handler, this));
   Routes::Patch(router, base + "", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_list_by_id_handler, this));
   Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_ports_peer_by_id_handler, this));
-  Routes::Patch(router, base + ":name/redirect-port/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_redirect_port_by_id_handler, this));
 
   Routes::Options(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_help, this));
   Routes::Options(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_help, this));
@@ -101,8 +83,6 @@ void DdosmitigatorApi::setup_routes() {
   Routes::Options(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_list_by_id_help, this));
   Routes::Options(router, base + ":name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_by_id_help, this));
   Routes::Options(router, base + "", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_ports_list_by_id_help, this));
   Routes::Options(router, base + ":name/stats/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_by_id_help, this));
 
 }
@@ -227,55 +207,6 @@ void DdosmitigatorApi::create_ddosmitigator_by_id_handler(
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
 }
-void DdosmitigatorApi::create_ddosmitigator_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_ddosmitigator_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::create_ddosmitigator_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_ddosmitigator_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
 void DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_by_id_handler(
   const polycube::service::Rest::Request &request,
   polycube::service::HttpHandleResponse &response) {
@@ -349,56 +280,6 @@ void DdosmitigatorApi::delete_ddosmitigator_by_id_handler(
 
     delete_ddosmitigator_by_id(name);
     response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_active_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_active_port_by_id(name);
-    nlohmann::json response_body;
-    response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
   } catch(const std::exception &e) {
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
@@ -576,126 +457,6 @@ void DdosmitigatorApi::read_ddosmitigator_loglevel_by_id_handler(
     auto x = read_ddosmitigator_loglevel_by_id(name);
     nlohmann::json response_body;
     response_body = DdosmitigatorJsonObject::DdosmitigatorLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_ports_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_ports_list_by_id(name);
-    nlohmann::json response_body;
-    for (auto &i : x) {
-      response_body += i.toJson();
-    }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_ports_peer_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_ports_status_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_ports_uuid_by_id(name, portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_redirect_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_redirect_port_by_id(name);
-    nlohmann::json response_body;
-    response_body = x;
     response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
 
   } catch(const std::exception &e) {
@@ -917,75 +678,6 @@ void DdosmitigatorApi::replace_ddosmitigator_by_id_handler(
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
 }
-void DdosmitigatorApi::replace_ddosmitigator_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_ddosmitigator_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::replace_ddosmitigator_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_ddosmitigator_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_active_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_ddosmitigator_active_port_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
 void DdosmitigatorApi::update_ddosmitigator_blacklist_dst_by_id_handler(
   const polycube::service::Rest::Request &request,
   polycube::service::HttpHandleResponse &response) {
@@ -1143,95 +835,6 @@ void DdosmitigatorApi::update_ddosmitigator_loglevel_by_id_handler(
     response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
 }
-void DdosmitigatorApi::update_ddosmitigator_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_ddosmitigator_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_ddosmitigator_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_ddosmitigator_ports_peer_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_redirect_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_ddosmitigator_redirect_port_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-
 void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_help(
   const polycube::service::Rest::Request &request,
   polycube::service::HttpHandleResponse &response) {
@@ -1466,88 +1069,6 @@ void DdosmitigatorApi::read_ddosmitigator_list_by_id_help(
     val["commands"] = {"add", "del", "show"};
     val["params"] = DdosmitigatorJsonObject::helpKeys();
     val["elements"] = read_ddosmitigator_list_by_id_get_list();
-  break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
-  }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
-}
-
-void DdosmitigatorApi::read_ddosmitigator_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  using polycube::service::HelpType;
-  nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
-  }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
-}
-
-void DdosmitigatorApi::read_ddosmitigator_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
-  nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_ports_list_by_id_get_list(name);
-  break;
-
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_ports_list_by_id_get_list(name);
-  break;
-
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_ports_list_by_id_get_list(name);
   break;
 
   case HelpType::NO_HELP:

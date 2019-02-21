@@ -17,14 +17,6 @@
 #define SRC_MATCH _SRC_MATCH
 #define DST_MATCH _DST_MATCH
 
-#define IN_PORT _IN_PORT
-// out port is used in redirect mode
-#define OUT_PORT _OUT_PORT
-
-// if redirect is defined ddos mitigator works as a passtrough.
-// else traffic not dropped is passed to stack
-#define REDIRECT _REDIRECT
-
 #include <uapi/linux/bpf.h>
 #include <uapi/linux/if_ether.h>
 #include <uapi/linux/if_packet.h>
@@ -105,19 +97,6 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
   void *data_end = (void *)(long)ctx->data_end;
   void *data = (void *)(long)ctx->data;
   struct ethhdr *eth = data;
-
-#if REDIRECT
-  if (md->in_port == OUT_PORT) {
-    pcn_log(ctx, LOG_DEBUG, "Redirect packet OUT_PORT -> IN_PORT %d -> %d ",
-            OUT_PORT, IN_PORT);
-    return pcn_pkt_redirect(ctx, md, IN_PORT);
-  }
-#endif
-
-  // if redirect mode is disabled, md->in_port should be IN_PORT for all packets
-  // no need to check it if control plane guarantees only one interface
-  // attached.
-
   uint64_t offset = 0;
   int result = 0;
   uint16_t ethtype;
@@ -147,12 +126,6 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
   return RX_DROP;
 
 PASS:
-#if REDIRECT
-  pcn_log(ctx, LOG_DEBUG, "Redirect packet IN_PORT -> OUT_PORT %d -> %d ",
-          IN_PORT, OUT_PORT);
-  return pcn_pkt_redirect(ctx, md, OUT_PORT);
-#else
-  pcn_log(ctx, LOG_DEBUG, "Passing packet to Stack ");
+  pcn_log(ctx, LOG_DEBUG, "Passing accepted");
   return RX_OK;
-#endif
 }

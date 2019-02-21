@@ -17,7 +17,6 @@
 #pragma once
 
 #include "cube.h"
-#include "node.h"
 #include "polycube/services/guid.h"
 
 #include <api/BPF.h>
@@ -35,10 +34,14 @@ namespace polycubed {
 
 class PortTC;
 class CubeXDP;
+class TransparentCubeTC;
+class TransparetCubeXDP;
 
 class CubeTC : public Cube {
   friend class PortTC;
   friend class CubeXDP;
+  friend class TransparentCubeTC;
+  friend class TransparentCubeXDP;
 
  public:
   explicit CubeTC(const std::string &name, const std::string &service_name,
@@ -47,6 +50,8 @@ class CubeTC : public Cube {
   virtual ~CubeTC();
 
  protected:
+  static std::string get_wrapper_code();
+
   static void do_compile(int module_index, ProgramType type, LogLevel level_,
                          ebpf::BPF &bpf, const std::string &code, int index);
   static int do_load(ebpf::BPF &bpf);
@@ -57,7 +62,9 @@ class CubeTC : public Cube {
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 
-  static const std::string WRAPPERC;
+ private:
+  static const std::string CUBE_TC_COMMON_WRAPPER;
+  static const std::string CUBETC_WRAPPER;
 };
 
 }  // namespace polycubed

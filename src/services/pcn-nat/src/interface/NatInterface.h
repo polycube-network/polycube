@@ -23,7 +23,6 @@
 #include "../serializer/NatJsonObject.h"
 
 #include "../NattingTable.h"
-#include "../Ports.h"
 #include "../Rule.h"
 
 using namespace io::swagger::server::model;
@@ -54,17 +53,6 @@ public:
   /// </summary>
   virtual NatLoglevelEnum getLoglevel() = 0;
   virtual void setLoglevel(const NatLoglevelEnum &value) = 0;
-
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  virtual std::shared_ptr<Ports> getPorts(const std::string &name) = 0;
-  virtual std::vector<std::shared_ptr<Ports>> getPortsList() = 0;
-  virtual void addPorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void addPortsList(const std::vector<PortsJsonObject> &conf) = 0;
-  virtual void replacePorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void delPorts(const std::string &name) = 0;
-  virtual void delPortsList() = 0;
 
   /// <summary>
   ///

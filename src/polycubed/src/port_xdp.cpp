@@ -40,7 +40,7 @@ std::string PortXDP::get_cube_name() const {
 }
 
 int PortXDP::get_attach_flags() const {
-  CubeXDP &p = static_cast<CubeXDP &>(parent_);
+  CubeXDP &p = dynamic_cast<CubeXDP &>(parent_);
   return p.attach_flags_;
 }
 

@@ -414,12 +414,6 @@ static void link_cb(struct nl_object *o, void *data_) {
 std::map<std::string, ExtIfaceInfo> Netlink::get_available_ifaces() {
   std::map<std::string, ExtIfaceInfo> ifaces;
 
-  ifaces.emplace(
-      ":host",
-      ExtIfaceInfo(
-          ":host",
-          "pseudo interface used to connect to the host network stack"));
-
   int err, ifindex;
   struct rtnl_link *link;
   struct nl_cache *link_cache, *addr_cache;

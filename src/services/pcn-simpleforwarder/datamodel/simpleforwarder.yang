@@ -3,17 +3,18 @@ module simpleforwarder {
   namespace "http://polycube.network/simpleforwarder";
   prefix "simpleforwarder";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Simple Forwarder service";
 
-  basemodel:service-description "Simple Forwarder Base Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "simpleforwarder";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Simple Forwarder Base Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "simpleforwarder";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
+  uses "polycube-standard-base:standard-base-yang-module";
 
   list actions {
     key "inport";

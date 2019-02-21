@@ -33,7 +33,6 @@ using polycube::service::PortIface;
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "polycube/services/management_interface.h"
-#include "port_host.h"
 #include "port_tc.h"
 #include "port_xdp.h"
 #include "utils.h"
@@ -65,16 +64,16 @@ class ServiceController {
   std::string get_swagger_codegen_git_repo_id() const;
   std::string get_servicecontroller() const;
   std::string get_datamodel() const;
-  std::vector<std::shared_ptr<CubeIface>> get_cubes();
+  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
 
   // Instantiate the managementGrpc Object, using the endpoint url
   void connect(std::string PolycubeEndpoint);
   ServiceControllerType get_type() const;
 
-  static std::shared_ptr<CubeIface> get_cube(const std::string &name);
-  static std::vector<std::shared_ptr<CubeIface>> get_all_cubes();
+  static std::shared_ptr<BaseCubeIface> get_cube(const std::string &name);
+  static std::vector<std::shared_ptr<BaseCubeIface>> get_all_cubes();
 
-  static void register_cube(std::shared_ptr<CubeIface> cube,
+  static void register_cube(std::shared_ptr<BaseCubeIface> cube,
                             const std::string &service);
   static void unregister_cube(const std::string &name);
 
@@ -83,6 +82,9 @@ class ServiceController {
   static void set_port_peer(Port &p, const std::string &peer_name);
 
   std::shared_ptr<ManagementInterface> managementInterface;
+
+  static std::unordered_map<std::string, std::shared_ptr<ExtIface>>
+      ports_to_ifaces;
 
  private:
   std::string name_;
@@ -98,8 +100,7 @@ class ServiceController {
                               std::string &port);
 
   // these objects save all the common objects accross different services
-  static std::unordered_map<std::string, std::shared_ptr<CubeIface>> cubes;
-  static std::unordered_map<Guid, std::unique_ptr<Node>> ports_to_ifaces;
+  static std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes;
   static std::unordered_map<std::string, std::string> ports_to_ports;
 
   static std::unordered_map<std::string, std::string> cubes_x_service;

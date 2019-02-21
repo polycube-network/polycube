@@ -23,7 +23,10 @@ namespace polycubed {
 
 PolycubedCore::PolycubedCore() : logger(spdlog::get("polycubed")) {}
 
-PolycubedCore::~PolycubedCore() {}
+PolycubedCore::~PolycubedCore() {
+  servicectrls_map_.clear();
+  ServiceController::ports_to_ifaces.clear();
+}
 
 void PolycubedCore::set_polycubeendpoint(std::string &polycube) {
   polycubeendpoint_ = polycube;
@@ -155,7 +158,7 @@ std::string PolycubedCore::get_cube(const std::string &name) {
     throw std::runtime_error("Cube does not exist");
   }
 
-  return cube->toJson().dump(4);
+  return cube->to_json().dump(4);
 }
 
 std::string PolycubedCore::get_cubes() {
@@ -165,7 +168,7 @@ std::string PolycubedCore::get_cubes() {
   for (auto &it : servicectrls_map_) {
     json j2 = json::array();
     for (auto &it2 : it.second.get_cubes()) {
-      j2 += it2->toJson();
+      j2 += it2->to_json();
     }
     if (j2.size()) {
       j[it.first] = j2;
@@ -201,7 +204,7 @@ std::string PolycubedCore::topology() {
   auto cubes = ServiceController::get_all_cubes();
 
   for (auto &it : cubes) {
-    j += it->toJson(true);
+    j += it->to_json();
   }
 
   return j.dump(4);
@@ -212,9 +215,13 @@ std::string get_port_peer(const std::string &port) {
   std::regex rule("(\\S+):(\\S+)");
 
   if (std::regex_match(port, match, rule)) {
-    auto cube = ServiceController::get_cube(match[1]);
-    if (cube == nullptr) {
+    auto cube_ = ServiceController::get_cube(match[1]);
+    if (cube_ == nullptr) {
       throw std::runtime_error("Cube does not exist");
+    }
+    auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+    if (!cube) {
+      throw std::runtime_error("Bad cube type");
     }
 
     auto port = cube->get_port(match[2]);
@@ -230,11 +237,14 @@ bool PolycubedCore::try_to_set_peer(const std::string &peer1,
   std::regex rule("(\\S+):(\\S+)");
 
   if (std::regex_match(peer1, match, rule)) {
-    auto cube = ServiceController::get_cube(match[1]);
-    if (cube == nullptr) {
+    auto cube_ = ServiceController::get_cube(match[1]);
+    if (cube_ == nullptr) {
       throw std::runtime_error("Cube does not exist");
     }
-
+    auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+    if (!cube) {
+      throw std::runtime_error("Bad cube type");
+    }
     auto port = cube->get_port(match[2]);
     port->set_peer(peer2);
     return true;
@@ -291,6 +301,183 @@ void PolycubedCore::disconnect(const std::string &peer1,
 
   try_to_set_peer(peer1, "");
   try_to_set_peer(peer2, "");
+}
+
+void PolycubedCore::attach(const std::string &cube_name,
+                           const std::string &port_name,
+                           const std::string &position,
+                           const std::string &other) {
+  std::shared_ptr<TransparentCube> cube;
+  std::shared_ptr<PeerIface> peer;
+
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    throw std::runtime_error("Cube " + cube_name + " does not exist");
+  }
+
+  cube = std::dynamic_pointer_cast<TransparentCube>(cube_);
+  if (!cube) {
+    throw std::runtime_error("Cube " + cube_name + " is not transparent");
+  }
+
+  if (cube->get_parent()) {
+    throw std::runtime_error("Cube " + cube_name + " is already attached");
+  }
+
+  std::smatch match;
+  std::regex rule("(\\S+):(\\S+)");
+
+  if (std::regex_match(port_name, match, rule)) {
+    auto cube2_ = ServiceController::get_cube(match[1]);
+    if (cube2_ == nullptr) {
+      throw std::runtime_error("Port " + port_name + " does not exist");
+    }
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    if (!cube2) {
+      throw std::runtime_error("Cube " + std::string(match[1]) +
+                               " is transparent");
+    }
+
+    auto port = cube2->get_port(match[2]);
+    switch (port->get_type()) {
+    case PortType::TC:
+      if (cube->get_type() != CubeType::TC) {
+        throw std::runtime_error(cube_name + " and " + port_name +
+                                 " have incompatible types");
+      }
+      break;
+    case PortType::XDP:
+      if (cube->get_type() != CubeType::XDP_DRV &&
+          cube->get_type() != CubeType::XDP_DRV) {
+        throw std::runtime_error(cube_name + " and " + port_name +
+                                 " have incompatible types");
+      }
+      break;
+    }
+
+    peer = std::dynamic_pointer_cast<PeerIface>(port);
+  } else {
+    std::unique_ptr<ExtIface> iface;
+    if (ServiceController::ports_to_ifaces.count(port_name) == 0) {
+      switch (cube->get_type()) {
+      case CubeType::TC:
+        iface.reset(new ExtIfaceTC(port_name));
+        break;
+      case CubeType::XDP_DRV:
+        iface.reset(new ExtIfaceXDP(port_name, 1U << 2));
+        break;
+      case CubeType::XDP_SKB:
+        iface.reset(new ExtIfaceXDP(port_name, 1U << 1));
+        break;
+      }
+
+      ServiceController::ports_to_ifaces.emplace(
+          std::piecewise_construct, std::forward_as_tuple(port_name),
+          std::forward_as_tuple(std::move(iface)));
+    }
+
+    // peer = dynamic_cast<PeerIface
+    // *>(ServiceController::ports_to_ifaces.at(port_name).get());
+    peer = std::dynamic_pointer_cast<PeerIface>(
+        ServiceController::ports_to_ifaces.at(port_name));
+  }
+
+  cube->set_parent(peer.get());
+  peer->add_cube(cube.get(), position, other);
+}
+
+void PolycubedCore::detach(const std::string &cube_name,
+                           const std::string &port_name) {
+  std::shared_ptr<TransparentCube> cube;
+  std::shared_ptr<PeerIface> peer;
+
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    throw std::runtime_error("Cube " + cube_name + " does not exist");
+  }
+
+  cube = std::dynamic_pointer_cast<TransparentCube>(cube_);
+  if (!cube) {
+    throw std::runtime_error("Cube " + cube_name + " is not transparent");
+  }
+
+  std::smatch match;
+  std::regex rule("(\\S+):(\\S+)");
+
+  if (std::regex_match(port_name, match, rule)) {
+    auto cube2_ = ServiceController::get_cube(match[1]);
+    if (cube2_ == nullptr) {
+      throw std::runtime_error("Port " + port_name + " does not exist");
+    }
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    if (!cube2) {
+      throw std::runtime_error("Cube " + std::string(match[1]) +
+                               " is transparent");
+    }
+
+    auto port = cube2->get_port(match[2]);
+    peer = std::dynamic_pointer_cast<PeerIface>(port);
+    peer->remove_cube(cube->get_name());
+  } else {
+    if (ServiceController::ports_to_ifaces.count(port_name) == 0) {
+      throw std::runtime_error("netdev " + port_name + " not found");
+    }
+    auto iface = ServiceController::ports_to_ifaces.at(port_name);
+    peer = std::dynamic_pointer_cast<PeerIface>(iface);
+    peer->remove_cube(cube->get_name());
+    if (!iface->is_used()) {
+      ServiceController::ports_to_ifaces.erase(port_name);
+    }
+  }
+
+  cube->set_parent(nullptr);
+}
+
+std::string PolycubedCore::get_cube_port_parameter(
+    const std::string &cube, const std::string &port,
+    const std::string &parameter) {
+  std::string service_name = ServiceController::get_cube_service(cube);
+  auto iter = servicectrls_map_.find(service_name);
+  if (iter == servicectrls_map_.end()) {
+    throw std::runtime_error("Service Controller does not exist");
+  }
+
+  ServiceController &s = iter->second;
+
+  std::string url("/" + service_name + "/" + cube + "/ports/" + port + "/" +
+                  parameter);
+  auto req = HttpHandleRequest(polycube::service::Http::Method::Get, url, "");
+  auto res = HttpHandleResponse();
+
+  s.managementInterface->control_handler(req, res);
+
+  if (res.code() != polycube::service::Http::Code::Ok) {
+    throw std::runtime_error("Error getting port parameter: " + res.body());
+  }
+
+  return res.body();
+}
+
+std::string PolycubedCore::set_cube_parameter(const std::string &cube,
+                                              const std::string &parameter,
+                                              const std::string &value) {
+  std::string service_name = ServiceController::get_cube_service(cube);
+  auto iter = servicectrls_map_.find(service_name);
+  if (iter == servicectrls_map_.end()) {
+    throw std::runtime_error("Service Controller does not exist");
+  }
+
+  ServiceController &s = iter->second;
+
+  std::string url("/" + service_name + "/" + cube + "/" + parameter);
+  auto req = HttpHandleRequest(polycube::service::Http::Method::Put, url, "");
+  auto res = HttpHandleResponse();
+
+  s.managementInterface->control_handler(req, res);
+
+  if (res.code() != polycube::service::Http::Code::Ok) {
+    throw std::runtime_error("Error setting cube parameter: " + res.body());
+  }
 }
 
 }  // namespace polycubed

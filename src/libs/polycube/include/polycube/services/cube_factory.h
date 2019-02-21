@@ -26,15 +26,8 @@ namespace polycube {
 namespace service {
 
 class CubeIface;
+class TransparentCubeIface;
 enum class CubeType;
-
-// TODO: this "packet" structure should probably be on the controller
-
-enum class Direction {
-  INGRESS, /**< The packet is received through an port of the Cube. */
-  EGRESS   /**< The packet is sent to the node connected to the port of the
-              Cube */
-};
 
 struct PacketInMetadata {
   uint32_t reason;
@@ -67,6 +60,8 @@ struct __attribute__((__packed__)) LogMsg {
 
 typedef std::function<void(const LogMsg *msg)> log_msg_cb;
 
+typedef std::function<void(void)> attach_cb;
+
 class CubeFactory {
  public:
   virtual std::shared_ptr<CubeIface> create_cube(
@@ -74,6 +69,12 @@ class CubeFactory {
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
       const CubeType type, const packet_in_cb &cb = empty_packet_in_cb,
       LogLevel level = LogLevel::OFF) = 0;
+
+  virtual std::shared_ptr<TransparentCubeIface> create_transparent_cube(
+      const std::string &name, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
+      LogLevel level) = 0;
 
   virtual void destroy_cube(const std::string &name) = 0;
 };

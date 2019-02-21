@@ -44,6 +44,8 @@ class PatchPanel {
   void update(Node &n);
   void update(uint16_t index, int fd);
 
+  static const int _POLYCUBE_MAX_NODES = 1024;
+
  private:
   PatchPanel(const std::string &map_name, int max_nodes);
   ebpf::BPF program_;

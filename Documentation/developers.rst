@@ -252,7 +252,7 @@ If the service is intended to receive data packets in the control path (using an
 Generating PacketOut events
 +++++++++++++++++++++++++++
 
-The `Port` class contains the `send_packet_out(const std::vector<uint8_t> &packet, Sense sense = Sense::EGRESS)` method that allows to inject packets into the datapath, the sense parameter allows to specify if the packet should be sent (`Sense::EGRESS`) or received through the port (`Sense::INGRESS`).
+The `Port` class contains the `send_packet_out(EthernetII &packet, bool recirculate = false)` method that allows to inject packets into the datapath, the recirculate parameter allows to specify if the packet should be sent out of the port (`recirculate = false`) or received through the port (`recirculate = true`).
 
 A reference to a port can be got using the `get_port` function of the Cube base class.
 

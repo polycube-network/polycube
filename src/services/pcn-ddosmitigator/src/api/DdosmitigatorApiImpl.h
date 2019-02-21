@@ -31,7 +31,6 @@
 #include "BlacklistDstJsonObject.h"
 #include "BlacklistSrcJsonObject.h"
 #include "DdosmitigatorJsonObject.h"
-#include "PortsJsonObject.h"
 #include "StatsJsonObject.h"
 #include <vector>
 
@@ -52,16 +51,11 @@ public:
   void create_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value);
   void create_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value);
   void create_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value);
-  void create_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void create_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void delete_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip);
   void delete_ddosmitigator_blacklist_dst_list_by_id(const std::string &name);
   void delete_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip);
   void delete_ddosmitigator_blacklist_src_list_by_id(const std::string &name);
   void delete_ddosmitigator_by_id(const std::string &name);
-  void delete_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName);
-  void delete_ddosmitigator_ports_list_by_id(const std::string &name);
-  std::string read_ddosmitigator_active_port_by_id(const std::string &name);
   BlacklistDstJsonObject read_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip);
   uint64_t read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std::string &name, const std::string &ip);
   std::vector<BlacklistDstJsonObject> read_ddosmitigator_blacklist_dst_list_by_id(const std::string &name);
@@ -74,13 +68,6 @@ public:
   std::vector<DdosmitigatorJsonObject> read_ddosmitigator_list_by_id();
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_list_by_id_get_list();
   DdosmitigatorLoglevelEnum read_ddosmitigator_loglevel_by_id(const std::string &name);
-  PortsJsonObject read_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName);
-  std::vector<PortsJsonObject> read_ddosmitigator_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_ports_list_by_id_get_list(const std::string &name);
-  std::string read_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName);
-  PortsStatusEnum read_ddosmitigator_ports_status_by_id(const std::string &name, const std::string &portsName);
-  std::string read_ddosmitigator_ports_uuid_by_id(const std::string &name, const std::string &portsName);
-  std::string read_ddosmitigator_redirect_port_by_id(const std::string &name);
   StatsJsonObject read_ddosmitigator_stats_by_id(const std::string &name);
   uint64_t read_ddosmitigator_stats_pkts_by_id(const std::string &name);
   uint64_t read_ddosmitigator_stats_pps_by_id(const std::string &name);
@@ -91,9 +78,6 @@ public:
   void replace_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value);
   void replace_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value);
   void replace_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value);
-  void replace_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void replace_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_ddosmitigator_active_port_by_id(const std::string &name, const std::string &value);
   void update_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip, const BlacklistDstJsonObject &value);
   void update_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value);
   void update_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip, const BlacklistSrcJsonObject &value);
@@ -101,10 +85,6 @@ public:
   void update_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value);
   void update_ddosmitigator_list_by_id(const std::vector<DdosmitigatorJsonObject> &value);
   void update_ddosmitigator_loglevel_by_id(const std::string &name, const DdosmitigatorLoglevelEnum &value);
-  void update_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
-  void update_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-  void update_ddosmitigator_redirect_port_by_id(const std::string &name, const std::string &value);
 
 private:
   std::unordered_map<std::string, std::shared_ptr<Ddosmitigator>> cubes;

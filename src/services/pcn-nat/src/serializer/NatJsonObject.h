@@ -23,7 +23,6 @@
 
 #include "JsonObjectBase.h"
 
-#include "PortsJsonObject.h"
 #include "RuleJsonObject.h"
 #include <vector>
 #include "NattingTableJsonObject.h"
@@ -102,13 +101,6 @@ public:
   static std::string NatLoglevelEnum_to_string(const NatLoglevelEnum &value);
   static NatLoglevelEnum string_to_NatLoglevelEnum(const std::string &str);
   polycube::LogLevel getPolycubeLoglevel() const;
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  const std::vector<PortsJsonObject>& getPorts() const;
-  void addPorts(PortsJsonObject value);
-  bool portsIsSet() const;
-  void unsetPorts();
 
   /// <summary>
   ///
@@ -136,14 +128,12 @@ protected:
   bool m_typeIsSet;
   NatLoglevelEnum m_loglevel;
   bool m_loglevelIsSet;
-  std::vector<PortsJsonObject> m_ports;
-  bool m_portsIsSet;
   RuleJsonObject m_rule;
   bool m_ruleIsSet;
   std::vector<NattingTableJsonObject> m_nattingTable;
   bool m_nattingTableIsSet;
 
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ports", "rule", "natting-table" };
+  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "rule", "natting-table" };
 };
 
 }

@@ -95,91 +95,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
   return r;
 }
 
-/*
-* Ports list related functions
-*/
-void DdosmitigatorApiImpl::create_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  auto m = get_cube(name);
-  m->addPortsList(ports);
-}
-
-std::vector<PortsJsonObject> DdosmitigatorApiImpl::read_ddosmitigator_ports_list_by_id(const std::string &name) {
-  std::vector<PortsJsonObject> vect;
-  auto m = get_cube(name);
-  for (auto &i : m->getPortsList()) {
-    vect.push_back(i->toJsonObject());
-  }
-  return vect;
-}
-
-void DdosmitigatorApiImpl::replace_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  throw std::runtime_error("Method not supported");
-}
-
-void DdosmitigatorApiImpl::delete_ddosmitigator_ports_list_by_id(const std::string &name) {
-  auto m = get_cube(name);
-  m->delPortsList();
-}
-
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::read_ddosmitigator_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto m = get_cube(name);
-  for(auto &i : m->getPortsList()){
-    nlohmann::fifo_map<std::string, std::string> m;
-    m["name"] = i->getName();
-    r.push_back(std::move(m));
-  }
-  return r;
-}
-
-/*
-* Ports related functions
-*/
-void DdosmitigatorApiImpl::create_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  return m->addPorts(portsName, ports);
-}
-
-PortsJsonObject DdosmitigatorApiImpl::read_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  return m->getPorts(portsName)->toJsonObject();
-}
-
-void DdosmitigatorApiImpl::replace_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  m->replacePorts(portsName, ports);
-}
-
-void DdosmitigatorApiImpl::delete_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  m->delPorts(portsName);
-}
-
-std::string DdosmitigatorApiImpl::read_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getPeer();
-}
-
-PortsStatusEnum DdosmitigatorApiImpl::read_ddosmitigator_ports_status_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getStatus();
-}
-
-std::string DdosmitigatorApiImpl::read_ddosmitigator_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getUuid();
-}
-
-void DdosmitigatorApiImpl::update_ddosmitigator_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  p->setPeer(peer);
-}
-
-
 /**
 * @brief   Create blacklist-dst by ID
 *
@@ -393,26 +308,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 
 
 /**
-* @brief   Read active-port by ID
-*
-* Read operation of resource: active-port*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-DdosmitigatorApiImpl::read_ddosmitigator_active_port_by_id(const std::string &name) {
-  auto ddosmitigator = get_cube(name);
-  return ddosmitigator->getActivePort();
-
-}
-
-
-
-
-/**
 * @brief   Read blacklist-dst by ID
 *
 * Read operation of resource: blacklist-dst*
@@ -612,26 +507,6 @@ DdosmitigatorApiImpl::read_ddosmitigator_loglevel_by_id(const std::string &name)
 
 
 /**
-* @brief   Read redirect-port by ID
-*
-* Read operation of resource: redirect-port*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-DdosmitigatorApiImpl::read_ddosmitigator_redirect_port_by_id(const std::string &name) {
-  auto ddosmitigator = get_cube(name);
-  return ddosmitigator->getRedirectPort();
-
-}
-
-
-
-
-/**
 * @brief   Read stats by ID
 *
 * Read operation of resource: stats*
@@ -805,26 +680,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::
 #endif
 
 
-/**
-* @brief   Update active-port by ID
-*
-* Update operation of resource: active-port*
-*
-* @param[in] name ID of name
-* @param[in] value Port where the traffic is received
-*
-* Responses:
-*
-*/
-void
-DdosmitigatorApiImpl::update_ddosmitigator_active_port_by_id(const std::string &name, const std::string &value) {
-  auto ddosmitigator = get_cube(name);
-
-  ddosmitigator->setActivePort(value);
-}
-
-
-
 
 /**
 * @brief   Update blacklist-dst by ID
@@ -981,77 +836,6 @@ DdosmitigatorApiImpl::update_ddosmitigator_loglevel_by_id(const std::string &nam
 
   ddosmitigator->setLoglevel(value);
 }
-
-
-
-
-/**
-* @brief   Update ports by ID
-*
-* Update operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-DdosmitigatorApiImpl::update_ddosmitigator_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
-  auto ddosmitigator = get_cube(name);
-  auto ports = ddosmitigator->getPorts(portsName);
-
-  ports->update(value);
-}
-
-
-
-
-/**
-* @brief   Update ports by ID
-*
-* Update operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-DdosmitigatorApiImpl::update_ddosmitigator_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  throw std::runtime_error("Method not supported");
-}
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> DdosmitigatorApiImpl::update_ddosmitigator_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
-
-/**
-* @brief   Update redirect-port by ID
-*
-* Update operation of resource: redirect-port*
-*
-* @param[in] name ID of name
-* @param[in] value If set, this will be the port used to redirect traffic (instead of PASS it to STACK)
-*
-* Responses:
-*
-*/
-void
-DdosmitigatorApiImpl::update_ddosmitigator_redirect_port_by_id(const std::string &name, const std::string &value) {
-  auto ddosmitigator = get_cube(name);
-
-  ddosmitigator->setRedirectPort(value);
-}
-
-
-
 
 }
 }

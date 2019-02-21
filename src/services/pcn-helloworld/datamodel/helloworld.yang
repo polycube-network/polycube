@@ -3,17 +3,18 @@ module helloworld {
   namespace "http://polycube.network/helloworld";
   prefix "helloworld";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
-   description "YANG data model for the Polycube Helloworld service";
+  description "YANG data model for the Polycube Helloworld service";
 
-  basemodel:service-description "Helloworld Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "helloworld";
-  basemodel:service-min-kernel-version "4.14.0";
+  polycube-base:service-description "Helloworld Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "helloworld";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "basemodel:base-yang-module";
+  uses "polycube-standard-base:standard-base-yang-module";
 
   leaf action {
     type enumeration {

@@ -34,8 +34,6 @@ NatJsonObject::NatJsonObject() {
   m_loglevel = NatLoglevelEnum::INFO;
   m_loglevelIsSet = false;
 
-  m_portsIsSet = false;
-
   m_ruleIsSet = false;
 
   m_nattingTableIsSet = false;
@@ -83,16 +81,6 @@ nlohmann::json NatJsonObject::toJson() const {
     val["loglevel"] = NatLoglevelEnum_to_string(m_loglevel);
   }
 
-  {
-    nlohmann::json jsonArray;
-    for (auto& item : m_ports) {
-      jsonArray.push_back(JsonObjectBase::toJson(item));
-    }
-
-    if (jsonArray.size() > 0) {
-      val["ports"] = jsonArray;
-    }
-  }
   if (m_ruleIsSet) {
     val["rule"] = JsonObjectBase::toJson(m_rule);
   }
@@ -134,15 +122,6 @@ void NatJsonObject::fromJson(nlohmann::json& val) {
 
   if (val.find("loglevel") != val.end()) {
     setLoglevel(string_to_NatLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
   }
 
 
@@ -197,11 +176,6 @@ nlohmann::json NatJsonObject::helpElements() {
   val["loglevel"]["simpletype"] = "string";
   val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
   val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "leaf"; // Suppose that type is leaf
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
   val["rule"]["name"] = "rule";
   val["rule"]["type"] = "leaf"; // Suppose that type is leaf
   val["rule"]["description"] = R"POLYCUBE()POLYCUBE";
@@ -229,10 +203,6 @@ nlohmann::json NatJsonObject::helpWritableLeafs() {
 nlohmann::json NatJsonObject::helpComplexElements() {
   nlohmann::json val = nlohmann::json::object();
 
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
   val["rule"]["name"] = "rule";
   val["rule"]["type"] = "complex";
   val["rule"]["description"] = R"POLYCUBE()POLYCUBE";
@@ -403,24 +373,6 @@ NatLoglevelEnum NatJsonObject::string_to_NatLoglevelEnum(const std::string &str)
         return polycube::LogLevel::OFF;
     }
   }
-const std::vector<PortsJsonObject>& NatJsonObject::getPorts() const{
-  return m_ports;
-}
-
-void NatJsonObject::addPorts(PortsJsonObject value) {
-  m_ports.push_back(value);
-}
-
-
-bool NatJsonObject::portsIsSet() const {
-  return m_portsIsSet;
-}
-
-void NatJsonObject::unsetPorts() {
-  m_portsIsSet = false;
-}
-
-
 
 RuleJsonObject NatJsonObject::getRule() const {
   return m_rule;

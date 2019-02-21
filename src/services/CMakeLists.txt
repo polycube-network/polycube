@@ -30,6 +30,7 @@ add_service(router pcn-router)
 add_service(simplebridge pcn-simplebridge)
 add_service(simpleforwarder pcn-simpleforwarder)
 add_service(iptables pcn-iptables)
+add_service(transparenthelloworld pcn-transparent-helloworld)
 
 # save string to create code that load the services
 SET_PROPERTY(GLOBAL PROPERTY LOAD_SERVICES_ ${LOAD_SERVICES})

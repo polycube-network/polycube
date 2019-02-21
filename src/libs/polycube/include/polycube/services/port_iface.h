@@ -24,8 +24,6 @@
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/guid.h"
 
-using polycube::service::Direction;
-
 namespace polycube {
 namespace service {
 
@@ -43,10 +41,11 @@ class PortIface {
 
  public:
   virtual void send_packet_out(const std::vector<uint8_t> &packet,
-                               Direction direction = Direction::EGRESS) = 0;
+                               bool recirculate = false) = 0;
   virtual uint16_t index() const = 0;
   virtual bool operator==(const PortIface &rhs) const = 0;
   virtual std::string name() const = 0;
+  virtual std::string get_path() const = 0;
   virtual void set_peer(const std::string &peer) = 0;
   virtual const std::string &peer() const = 0;
   virtual const Guid &uuid() const = 0;

@@ -6,6 +6,8 @@ include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/)
 add_definitions(-DGUID_LIBUUID)
 
 add_library(polycube STATIC
+  base_cube.cpp
+  transparent_cube.cpp
   port.cpp
   table.cpp
   http_router.cpp

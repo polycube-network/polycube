@@ -33,7 +33,7 @@ class Node {
     return index_;
   };
 
-  static const int _POLYCUBE_MAX_NODES = 1024;
+  // static const int _POLYCUBE_MAX_NODES = 1024;
 
  private:
   uint16_t index_;

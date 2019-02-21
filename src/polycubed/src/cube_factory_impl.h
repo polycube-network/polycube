@@ -28,10 +28,13 @@
 namespace polycube {
 namespace polycubed {
 
+using service::BaseCubeIface;
 using service::CubeIface;
+using service::TransparentCubeIface;
 using service::CubeFactory;
 using service::packet_in_cb;
 using service::log_msg_cb;
+using service::attach_cb;
 
 class CubeFactoryImpl : public CubeFactory {
  public:
@@ -43,13 +46,19 @@ class CubeFactoryImpl : public CubeFactory {
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
       const CubeType type, const packet_in_cb &cb, LogLevel level);
 
+  std::shared_ptr<TransparentCubeIface> create_transparent_cube(
+      const std::string &name, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
+      LogLevel level);
+
   void destroy_cube(const std::string &name);
 
-  std::vector<std::shared_ptr<CubeIface>> get_cubes();
+  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
 
  private:
   std::string service_name_;
-  std::unordered_map<std::string, std::shared_ptr<CubeIface>> cubes_;
+  std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes_;
   Controller &controller_tc_;
   Controller &controller_xdp_;
   DatapathLog &datapathlog_;

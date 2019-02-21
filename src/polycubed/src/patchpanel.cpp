@@ -26,12 +26,12 @@ BPF_TABLE_PUBLIC("prog", int, int, _MAP_NAME, _POLYCUBE_MAX_NODES);
 )";
 
 PatchPanel &PatchPanel::get_tc_instance() {
-  static PatchPanel tc_instance("nodes", Node::_POLYCUBE_MAX_NODES);
+  static PatchPanel tc_instance("nodes", PatchPanel::_POLYCUBE_MAX_NODES);
   return tc_instance;
 }
 
 PatchPanel &PatchPanel::get_xdp_instance() {
-  static PatchPanel xdp_instance("xdp_nodes", Node::_POLYCUBE_MAX_NODES);
+  static PatchPanel xdp_instance("xdp_nodes", PatchPanel::_POLYCUBE_MAX_NODES);
   return xdp_instance;
 }
 

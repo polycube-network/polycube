@@ -20,25 +20,25 @@
 
 std::string Nat::getName(){
   // This method retrieves the name value.
-  return Cube::get_name();
+  return get_name();
 }
 
 
 std::string Nat::getUuid(){
   // This method retrieves the uuid value.
-  return Cube::get_uuid().str();
+  return get_uuid().str();
 }
 
 
 CubeType Nat::getType(){
   // This method retrieves the type value.
-  return Cube::get_type();
+  return get_type();
 }
 
 
 NatLoglevelEnum Nat::getLoglevel(){
   // This method retrieves the loglevel value.
-    switch(Cube::get_log_level()){
+    switch(get_log_level()){
       case polycube::LogLevel::TRACE:
         return NatLoglevelEnum::TRACE;
       case polycube::LogLevel::DEBUG:
@@ -60,61 +60,27 @@ void Nat::setLoglevel(const NatLoglevelEnum &value){
   // This method sets the loglevel value.
     switch(value){
       case NatLoglevelEnum::TRACE:
-        Cube::set_log_level(polycube::LogLevel::TRACE);
+        set_log_level(polycube::LogLevel::TRACE);
         break;
       case NatLoglevelEnum::DEBUG:
-        Cube::set_log_level(polycube::LogLevel::DEBUG);
+        set_log_level(polycube::LogLevel::DEBUG);
         break;
       case NatLoglevelEnum::INFO:
-        Cube::set_log_level(polycube::LogLevel::INFO);
+        set_log_level(polycube::LogLevel::INFO);
         break;
       case NatLoglevelEnum::WARN:
-        Cube::set_log_level(polycube::LogLevel::WARN);
+        set_log_level(polycube::LogLevel::WARN);
         break;
       case NatLoglevelEnum::ERR:
-        Cube::set_log_level(polycube::LogLevel::ERR);
+        set_log_level(polycube::LogLevel::ERR);
         break;
       case NatLoglevelEnum::CRITICAL:
-        Cube::set_log_level(polycube::LogLevel::CRITICAL);
+        set_log_level(polycube::LogLevel::CRITICAL);
         break;
       case NatLoglevelEnum::OFF:
-        Cube::set_log_level(polycube::LogLevel::OFF);
+        set_log_level(polycube::LogLevel::OFF);
         break;
     }
-}
-
-std::shared_ptr<Ports> Nat::getPorts(const std::string &name){
-  return Ports::getEntry(*this, name);
-}
-
-std::vector<std::shared_ptr<Ports>> Nat::getPortsList(){
-  return Ports::get(*this);
-}
-
-void Nat::addPorts(const std::string &name, const PortsJsonObject &conf){
-  Ports::create(*this, name, conf);
-}
-
-void Nat::addPortsList(const std::vector<PortsJsonObject> &conf){
-  for(auto &i : conf){
-    std::string name_ = i.getName();
-    Ports::create(*this, name_,  i);
-  }
-}
-
-void Nat::replacePorts(const std::string &name, const PortsJsonObject &conf){
-  Ports::removeEntry(*this, name);
-  std::string name_ = conf.getName();
-  Ports::create(*this, name_, conf);
-
-}
-
-void Nat::delPorts(const std::string &name){
-  Ports::removeEntry(*this, name);
-}
-
-void Nat::delPortsList(){
-  Ports::remove(*this);
 }
 
 std::shared_ptr<Rule> Nat::getRule(){

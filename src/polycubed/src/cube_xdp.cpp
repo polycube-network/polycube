@@ -52,6 +52,15 @@ CubeXDP::~CubeXDP() {
   Cube::uninit();
 }
 
+int CubeXDP::get_attach_flags() const {
+  return attach_flags_;
+}
+
+std::string CubeXDP::get_wrapper_code() {
+  return Cube::get_wrapper_code() + CUBEXDP_COMMON_WRAPPER + CUBEXDP_WRAPPER +
+         CUBEXDP_HELPERS;
+}
+
 void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code, int index,
                       ProgramType type) {
   switch (type) {
@@ -89,12 +98,8 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
 }
 
 void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
-  std::string all_code(CUBE_H + XDP_HELPERS + XDP_WRAPPERC +
+  std::string all_code(get_wrapper_code() +
                        DatapathLog::get_instance().parse_log(code));
-
-#ifdef LOG_COMPILEED_CODE
-  Cube::log_compileed_code(all_code);
-#endif
 
   std::vector<std::string> cflags_(cflags);
   cflags_.push_back(std::string("-DMOD_NAME=") + std::string(name_));
@@ -104,18 +109,8 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
   cflags_.push_back(std::string("-DPOLYCUBE_XDP=1"));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("xdp_md"));
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.init: {0}s", elapsed_seconds.count());
-#endif
 
   if (init_res.code() != 0) {
     logger->error("failed to init XDP program: {0}", init_res.msg());
@@ -126,30 +121,16 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
 
 void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
   // compile ebpf program
-  std::string all_code(CubeTC::CUBE_H + CubeTC::WRAPPERC +
+  std::string all_code(CubeTC::get_wrapper_code() +
                        DatapathLog::get_instance().parse_log(code));
-
-#ifdef LOG_COMPILEED_CODE
-  Cube::log_compileed_code(all_code);
-#endif
 
   std::vector<std::string> cflags_(cflags);
   cflags_.push_back("-DCUBE_ID=" + std::to_string(get_id()));
   cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
 
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.init: {0}s", elapsed_seconds.count());
-#endif
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -158,51 +139,55 @@ void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
 }
 
 int CubeXDP::do_load(ebpf::BPF &bpf) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   int fd_;
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res =
       bpf.load_func("handle_rx_xdp_wrapper", BPF_PROG_TYPE_XDP, fd_);
 
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.load_func: {0}s", elapsed_seconds.count());
-#endif
-
   if (load_res.code() != 0) {
-    logger->error("failed to load XDP program: {0}", load_res.msg());
+    // logger->error("failed to load XDP program: {0}", load_res.msg());
     throw BPFError("Failed to load XDP program: " + load_res.msg());
   }
-  logger->debug("XDP program loaded with fd {0}", fd_);
+  // logger->debug("XDP program loaded with fd {0}", fd_);
 
   return fd_;
 }
 
 void CubeXDP::do_unload(ebpf::BPF &bpf) {
-#ifdef LOG_COMPILATION_TIME
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
-
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto load_res = bpf.unload_func("handle_rx_xdp_wrapper");
-
-#ifdef LOG_COMPILATION_TIME
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  logger->info("+bpf.unload_func: {0}s", elapsed_seconds.count());
-#endif
   // TODO: Remove also from the xdp_prog list?
-  logger->debug("XDP program unloaded");
+  // logger->debug("XDP program unloaded");
 }
 
-const std::string CubeXDP::XDP_WRAPPERC = R"(
+const std::string CubeXDP::CUBEXDP_COMMON_WRAPPER = R"(
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md, u16 reason) {
+  u32 inport_key = 0;
+  md->reason = reason;
+
+  port_md.update(&inport_key, md);
+
+  xdp_nodes.call(pkt, CONTROLLER_MODULE_INDEX);
+  //pcn_log(ctx, LOG_ERROR, md->module_index, 0, "to controller miss");
+  return XDP_DROP;
+}
+
+static __always_inline
+int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *md,
+                                     u16 reason, u32 metadata[3]) {
+  md->md[0] = metadata[0];
+  md->md[1] = metadata[1];
+  md->md[2] = metadata[2];
+
+  return pcn_pkt_controller(pkt, md, reason);
+}
+)";
+
+const std::string CubeXDP::CUBEXDP_WRAPPER = R"(
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
   u32 inport_key = 0;
   struct pkt_metadata *int_md;
@@ -241,31 +226,9 @@ int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port)
 
   return XDP_ABORTED;
 }
-
-static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md, u16 reason) {
-  u32 inport_key = 0;
-  md->reason = reason;
-
-  port_md.update(&inport_key, md);
-
-  xdp_nodes.call(pkt, CONTROLLER_MODULE_INDEX);
-  //pcn_log(ctx, LOG_ERROR, md->module_index, 0, "to controller miss");
-  return XDP_DROP;
-}
-
-static __always_inline
-int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *md,
-                                     u16 reason, u32 metadata[3]) {
-  md->md[0] = metadata[0];
-  md->md[1] = metadata[1];
-  md->md[2] = metadata[2];
-
-  return pcn_pkt_controller(pkt, md, reason);
-}
 )";
 
-const std::string CubeXDP::XDP_HELPERS = R"(
+const std::string CubeXDP::CUBEXDP_HELPERS = R"(
 #include <linux/errno.h>  // EIVNVAL
 #include <linux/string.h> // memmove
 #include <uapi/linux/if_ether.h>  // struct ethhdr

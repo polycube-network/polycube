@@ -181,17 +181,6 @@ void Ports::removeEntry(Router &parent, const std::string &name) {
 
   auto router_port = parent.get_hash_table<uint16_t, r_port>("router_port");
 
-  // remove the ArpEntry from the datapath, for this port
-  auto arp_table = parent.get_hash_table<uint32_t, arp_entry>("arp_table");
-  auto arp_entries = arp_table.get_all();
-  for (auto &entry : arp_entries) {
-    auto key = entry.first;
-    auto value = entry.second;
-
-    if (port->index() == value.port)
-      arp_table.remove(key);
-  }
-
   // remove the port from the datapath
   uint16_t index = port->index();
   router_port.remove(index);

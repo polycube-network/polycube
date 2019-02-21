@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "node.h"
+#include "extiface.h"
 #include "port_tc.h"
 
 #include <api/BPF.h>
@@ -30,40 +30,25 @@ namespace polycube {
 namespace polycubed {
 
 class PortTC;
+class ExtIface;
 class ExtIfaceXDP;
 
-class ExtIfaceTC : public Node {
+class ExtIfaceTC : public ExtIface {
+  friend class ExtIface;
   friend class ExtIfaceXDP;
 
  public:
-  ExtIfaceTC(const std::string &iface, const PortTC &port);
+  ExtIfaceTC(const std::string &iface);
   virtual ~ExtIfaceTC();
 
-  // It is not possible to copy nor assign an ext_iface.
-  ExtIfaceTC(const ExtIfaceTC &) = delete;
-  ExtIfaceTC &operator=(const ExtIfaceTC &) = delete;
-
-  int get_fd() const;
-
- private:
-  static std::set<std::string> used_ifaces;
-  void load_rx();
-  void load_tx();
-  void load_egress();
-
-  ebpf::BPF rx_;
-  ebpf::BPF tx_;
-  ebpf::BPF egress_;
-  std::string iface_;
-  const PortTC &port_;  // where is the iface_ connected to?
-  int fd_;              // fd_ of the tx_ program
+ protected:
+  virtual std::string get_ingress_code() const;
+  virtual std::string get_egress_code() const;
+  virtual std::string get_tx_code() const;
+  virtual bpf_prog_type get_program_type() const;
 
   static const std::string RX_CODE;
   static const std::string TX_CODE;
-
-  bool egress_loaded;
-
-  std::shared_ptr<spdlog::logger> logger;
 };
 
 }  // namespace polycubed
