@@ -30,7 +30,7 @@ import (
 
 	//	importing controllers
 	//	TODO-ON-MERGE: change the path here to polycube-network
-	"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+	//"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	networkpolicies "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies"
 	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
@@ -83,7 +83,8 @@ var (
 	nodesWatcher     watch.Interface
 
 	//	--- Controllers
-	defaultnpc *pcn_controllers.DefaultNetworkPolicyController
+	defaultnpc    *pcn_controllers.DefaultNetworkPolicyController
+	podController pcn_controllers.PodController
 	//	--- /Controllers
 
 	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
@@ -246,19 +247,25 @@ func main() {
 	}
 
 	//	Set up the network policy controller (for the kubernetes policies)
-	defaultnpc = controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
+	defaultnpc = pcn_controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
 
-	//	Start the firewall manager
-	firewallManager = pcn_firewall.StartFirewallManager(basePath)
-
-	//	Get the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, nil, firewallManager)
+	//	Get the pod controller
+	podController = pcn_controllers.NewPodController(nodeName, clientset)
 
 	// kv handler
 	go kvM.Loop()
 
 	//	Start the default network policy controller
 	go defaultnpc.Run()
+
+	//	Start the pod controller
+	go podController.Run()
+
+	//	Start the firewall manager
+	firewallManager = pcn_firewall.StartFirewallManager(basePath)
+
+	//	Start the policy manager
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, firewallManager)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
