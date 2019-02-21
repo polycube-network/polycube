@@ -2079,3 +2079,348 @@ func TestComplexPolicy(t *testing.T) {
 		fmt.Println("---")
 	}*/
 }
+
+func TestIsPodAffected(t *testing.T) {
+	//---------------------------------
+	//	The Policy
+	//---------------------------------
+
+	/*tcp := core_v1.ProtocolTCP
+	udp := core_v1.ProtocolUDP
+	port1 := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	port2 := &intstr.IntOrString{
+		IntVal: 8080,
+	}
+	port3 := &intstr.IntOrString{
+		IntVal: 80,
+	}
+	port4 := &intstr.IntOrString{
+		IntVal: 5000,
+	}
+	namespaceLabels := map[string]string{
+		"environment": "production",
+	}
+	podLabels := map[string]string{
+		"type":    "app",
+		"version": "2.0",
+	}*/
+	testLabels := map[string]string{
+		"test1": "1",
+		"test2": "2",
+	}
+	testLabels1 := map[string]string{
+		"test1": "1",
+		"test2": "2",
+		"test3": "3",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: TestDefaultPolicyName,
+			//Namespace: ProductionNamespace,
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			PodSelector: meta_v1.LabelSelector{
+				MatchLabels: testLabels,
+			},
+		},
+	}
+
+	//---------------------------------
+	//	The pods in this fake cluster
+	//---------------------------------
+
+	allPods := []pcn_types.Pod{}
+	testPod := pcn_types.Pod{
+		Pod: core_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Namespace: ProductionNamespace,
+				UID:       "PRODUCTION-POD-UID-1",
+				Labels:    testLabels,
+			},
+			Status: core_v1.PodStatus{
+				PodIP: "172.20.20.20",
+			},
+		},
+		Veth: "veth123",
+	}
+	testPod1 := pcn_types.Pod{
+		Pod: core_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Namespace: ProductionNamespace,
+				UID:       "PRODUCTION-POD-UID-2",
+				Labels:    testLabels1,
+			},
+			Status: core_v1.PodStatus{
+				PodIP: "172.20.20.20",
+			},
+		},
+		Veth: "veth123",
+	}
+
+	allPods = append(allPods, testPod)
+
+	//---------------------------------
+	//	Faking the Pod controller
+	//---------------------------------
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: testLabels,
+		},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
+		},
+	}).Return([]pcn_types.Pod{allPods[0]}, nil)
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: testLabels1,
+		},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
+		},
+	}).Return([]pcn_types.Pod{}, nil)
+
+	manager := Init(testObj)
+
+	result := manager.DoesPolicyAffectPod(policy, &testPod.Pod)
+	assert.True(t, result)
+
+	result = manager.DoesPolicyAffectPod(policy, &testPod1.Pod)
+	assert.False(t, result)
+}
+
+func TestPolicyTargetsPod(t *testing.T) {
+	//---------------------------------
+	//	The Policy
+	//---------------------------------
+
+	tcp := core_v1.ProtocolTCP
+	udp := core_v1.ProtocolUDP
+	port1 := &intstr.IntOrString{
+		IntVal: 6895,
+	}
+	port2 := &intstr.IntOrString{
+		IntVal: 8080,
+	}
+	port3 := &intstr.IntOrString{
+		IntVal: 80,
+	}
+	port4 := &intstr.IntOrString{
+		IntVal: 5000,
+	}
+	namespaceLabels := map[string]string{
+		"environment": "production",
+	}
+	podLabels := map[string]string{
+		"type":    "app",
+		"version": "2.0",
+	}
+	policy := &networking_v1.NetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: TestDefaultPolicyName,
+			//Namespace: ProductionNamespace,
+		},
+		Spec: networking_v1.NetworkPolicySpec{
+			PodSelector: AppPodSelector,
+			PolicyTypes: []networking_v1.PolicyType{
+				networking_v1.PolicyTypeIngress,
+				networking_v1.PolicyTypeEgress,
+			},
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				/*
+					Ingress - First rule
+					Block the following if it comes with TCP6895 Or UDP6895
+						- what comes from 192.168.2.0/24
+
+					Allow the following if it comes with TCP6895 & UDP6895
+						- what comes from 192.168.0.0/16 (see exceptions above)
+						- All pods that belong to all namespaces
+				*/
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.168.0.0/16",
+								Except: []string{
+									"192.168.2.0/24",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: map[string]string{},
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: map[string]string{},
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port1,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &udp,
+							Port:     port1,
+						},
+					},
+				},
+			},
+			Egress: []networking_v1.NetworkPolicyEgressRule{
+				/*
+					Egress - First Rule
+					Block the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.2.0/24
+
+					Allow the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.0.0/16 (see exceptions above)
+						- all pods with labels podLabels that belong to certain namespace (namespaceLabels)
+				*/
+				networking_v1.NetworkPolicyEgressRule{
+					To: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.169.0.0/16",
+								Except: []string{
+									"192.169.2.0/24",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: podLabels,
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: namespaceLabels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port2,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port3,
+						},
+					},
+				},
+				/*
+					Egress - Second Rule
+					Allow everything that goes to port 5000
+				*/
+				networking_v1.NetworkPolicyEgressRule{
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port4,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &udp,
+							Port:     port4,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	//---------------------------------
+	//	The pods in this fake cluster
+	//---------------------------------
+
+	allPods := []pcn_types.Pod{}
+	allPods = append(allPods, ProductionPods...)
+	allPods = append(allPods, BetaPods...)
+
+	//---------------------------------
+	//	Faking the Pod controller
+	//---------------------------------
+
+	testObj := new(MockPodController)
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: AppPodSelector.MatchLabels,
+		},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
+		},
+	}).Return(allPods, nil)
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
+		},
+		Namespace: pcn_types.PodQueryObject{
+			By:   "name",
+			Name: "*",
+		},
+	}).Return(allPods, nil)
+	testObj.On("GetPods", pcn_types.PodQuery{
+		Pod: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: podLabels,
+		},
+		Namespace: pcn_types.PodQueryObject{
+			By:     "labels",
+			Labels: namespaceLabels,
+		},
+	}).Return(ProductionPods, nil)
+
+	expectedIngress := []k8sfirewall.ChainRule{
+		k8sfirewall.ChainRule{
+			Src:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "TCP",
+			Sport:   6895,
+			Action:  "forward",
+		},
+		k8sfirewall.ChainRule{
+			Src:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "UDP",
+			Sport:   6895,
+			Action:  "forward",
+		},
+	}
+	expectedEgress := []k8sfirewall.ChainRule{
+		k8sfirewall.ChainRule{
+			Dst:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "UDP",
+			Dport:   5000,
+			Action:  "forward",
+		},
+		k8sfirewall.ChainRule{
+			Dst:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "TCP",
+			Dport:   5000,
+			Action:  "forward",
+		},
+		k8sfirewall.ChainRule{
+			Dst:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "TCP",
+			Dport:   80,
+			Action:  "forward",
+		},
+		k8sfirewall.ChainRule{
+			Dst:     ProductionPods[0].Pod.Status.PodIP,
+			L4proto: "TCP",
+			Dport:   8080,
+			Action:  "forward",
+		},
+	}
+
+	manager := Init(testObj)
+	ingress, egress := manager.DoesPolicyTargetPod(policy, &ProductionPods[0].Pod)
+
+	assert.NotEmpty(t, ingress)
+	assert.Len(t, ingress, 2)
+	assert.ElementsMatch(t, expectedIngress, ingress)
+	assert.NotEmpty(t, egress)
+	assert.ElementsMatch(t, expectedEgress, egress)
+}
