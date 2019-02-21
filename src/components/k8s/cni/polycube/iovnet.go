@@ -25,7 +25,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -211,7 +210,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if _, err := k8switchAPI.CreateK8switchPortsByID("k8switch0", portName, k8switchPort); err != nil {
 		return fmt.Errorf("Error creating port in k8switch: %s", err)
 	}
-	if err = createFirewallInBetween(hostInterface.Name, "k8switch0:"+portName, ip.String()); err != nil {
+	if err = createFirewallInBetween(hostInterface.Name, portName, ip.String()); err != nil {
 		log.Errorln("Could not create the firewall!")
 	}
 
@@ -358,7 +357,7 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 		//	Connect the firewall with the switch
 		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "egress-p", k8sfirewall.Ports{
 			Name:   "egress-p",
-			Peer:   switchPort,
+			Peer:   "k8switch0:" + switchPort,
 			Status: "up",
 		}); err != nil {
 			log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
@@ -368,9 +367,8 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 		log.Debugf("the firewall %s already existed %+v\n", fw)
 	}
 
-	ports := strings.Split(switchPort, ":")
 	//	try to set it to up
-	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", ports[1], k8switch.Ports{Status: "UP"})
+	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", switchPort, k8switch.Ports{Status: "UP"})
 	if err != nil {
 		log.Errorln("could not set port to up", err, response)
 	} else {
