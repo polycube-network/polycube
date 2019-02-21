@@ -334,33 +334,38 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 	//name := "temp-fw-" + ip
 	name := "fw-" + ip
 
-	//	First create the firewall
-	if response, err := fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
-		Name: name,
-	}); err != nil {
-		log.Errorln("An error occurred while trying to create firewall with name:", name, err, response)
-		return err
-	}
+	fw, _, err := fwAPI.ReadFirewallByID(nil, name)
+	if err != nil {
+		//	First create the firewall
+		if response, err := fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
+			Name: name,
+		}); err != nil {
+			log.Errorln("An error occurred while trying to create firewall with name:", name, err, response)
+			return err
+		}
 
-	//	Now create the ports
-	//	Connect the firewall with the pod
-	if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "ingress-p", k8sfirewall.Ports{
-		Name:   "ingress-p",
-		Peer:   containerPort,
-		Status: "up",
-	}); err != nil {
-		log.Errorln("An error occurred while trying to create ports for firewall:", name, containerPort, err, response)
-		return err
-	}
+		//	Now create the ports
+		//	Connect the firewall with the pod
+		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "ingress-p", k8sfirewall.Ports{
+			Name:   "ingress-p",
+			Peer:   containerPort,
+			Status: "up",
+		}); err != nil {
+			log.Errorln("An error occurred while trying to create ports for firewall:", name, containerPort, err, response)
+			return err
+		}
 
-	//	Connect the firewall with the switch
-	if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "egress-p", k8sfirewall.Ports{
-		Name:   "egress-p",
-		Peer:   switchPort,
-		Status: "up",
-	}); err != nil {
-		log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
-		return err
+		//	Connect the firewall with the switch
+		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "egress-p", k8sfirewall.Ports{
+			Name:   "egress-p",
+			Peer:   switchPort,
+			Status: "up",
+		}); err != nil {
+			log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
+			return err
+		}
+	} else {
+		log.Debugf("the firewall %s already existed %+v\n", fw)
 	}
 
 	ports := strings.Split(switchPort, ":")
@@ -368,6 +373,8 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", ports[1], k8switch.Ports{Status: "UP"})
 	if err != nil {
 		log.Errorln("could not set port to up", err, response)
+	} else {
+		log.Debugln("the call to set port to up has been successful")
 	}
 
 	return nil
