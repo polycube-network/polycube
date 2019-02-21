@@ -122,7 +122,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 		}
 	}
 
-	log.Debugf("-- got the firewall, is: %+v\n")
+	log.Debugf("-- got the firewall, is: %+v\n", fw)
 
 	deployedFw.firewall = &fw
 
@@ -183,7 +183,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		waitChains++
 	}
 	applyWait.Add(waitChains)
-
+	l.Debugln("firewall", d.firewall.Name, "finished waiting chains", policyName)
 	//-------------------------------------
 	//	Inject rules concurrently
 	//-------------------------------------
@@ -219,7 +219,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 	}
 
 	applyWait.Wait()
-
+	l.Debugln("firewall", d.firewall.Name, "finished waiting applywait", policyName)
 	//-------------------------------------
 	//	Update rules struct
 	//-------------------------------------
