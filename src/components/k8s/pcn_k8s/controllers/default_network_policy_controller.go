@@ -315,7 +315,7 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 		npc.addNewPolicy(policy)
 		npc.dispatchers.update.Dispatch(policy)
 	case pcn_types.Delete:
-		npc.removePolicy(policy)
+		//npc.removePolicy(policy)
 		npc.dispatchers.delete.Dispatch(policy)
 	}
 

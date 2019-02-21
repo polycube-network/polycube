@@ -379,6 +379,22 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 		}
 	}
 
+	//	replaceing
+	if response, err := fwAPI.ReplaceFirewallChainByID(nil, name, "ingress", k8sfirewall.Chain{
+		Default_: "forward",
+	}); err != nil {
+		log.Debugln("could not set ingress default to forward", err, response)
+	} else {
+		log.Debugln("successfully set ingress to forward")
+	}
+	if response, err := fwAPI.ReplaceFirewallChainByID(nil, name, "egress", k8sfirewall.Chain{
+		Default_: "forward",
+	}); err != nil {
+		log.Debugln("could not set egress default to forward", err, response)
+	} else {
+		log.Debugln("successfully set egress to forward")
+	}
+
 	return nil
 }
 

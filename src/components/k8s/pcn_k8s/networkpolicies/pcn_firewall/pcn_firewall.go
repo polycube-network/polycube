@@ -371,7 +371,21 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 
 	//	In order to be able to inject multiple IDs at once, we need to create the IDs, and to do that we need to check
 	//	the last one.
-	chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
+	for i := 0; i < len(rules); i++ {
+		appendRule := k8sfirewall.ChainAppendInput{
+			Src:     rules[i].Src,
+			Dst:     rules[i].Dst,
+			L4proto: rules[i].L4proto,
+			Sport:   rules[i].Sport,
+			Dport:   rules[i].Dport,
+		}
+
+		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err != nil {
+			log.Debugln("it was applied successfully")
+			rules[i].Id = out.Id
+		}
+	}
+	/*chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
 	if err != nil {
 		l.Errorln("Error while trying to get chain for firewall", d.firewall.Name, "in", direction, ":", err, response)
 		return nil, err
@@ -403,7 +417,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	if err != nil {
 		l.Errorln("Error while trying to inject rules for firewall", d.firewall.Name, "in", direction, ":", err, response)
 		return []k8sfirewall.ChainRule{}, err
-	}
+	}*/
 
 	return rules, nil
 }
