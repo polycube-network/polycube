@@ -69,7 +69,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
 	podController.Subscribe(pcn_types.Update, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Delete, manager.deleteFirewall)
+	//podController.Subscribe(pcn_types.Delete, manager.deleteFirewall)
 
 	return &manager
 }
