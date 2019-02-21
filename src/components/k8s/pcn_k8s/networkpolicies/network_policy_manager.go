@@ -67,7 +67,8 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//	Subscribe to pod events
 	//-------------------------------------
 
-	podController.Subscribe(pcn_types.New, manager.checkNewPod)
+	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Update, manager.checkNewPod)
 
 	return &manager
 }
@@ -148,6 +149,14 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 		"method": "checkNewPod",
 	})
 	l.Debugln("Going to check if new pod needs policies applied")
+
+	if pod.Status.Phase != "running" {
+		log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so, I'm not going to check it.")
+		return
+	}
+	log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase)
+	lastCondition := pod.Status.Conditions[len(pod.Status.Conditions)-1]
+	log.Debugf("last condition: %+v\n", lastCondition)
 
 	//	First start the firewall
 	manager.firewallManager.GetOrCreate(*pod)
