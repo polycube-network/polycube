@@ -1017,20 +1017,37 @@ func (d *DefaultPolicyParser) DoesPolicyTargetPod(policy *networking_v1.NetworkP
 		go func() {
 			defer parseWait.Done()
 			for _, rule := range ingress {
-				for _, from := range rule.From {
+				generatedPorts := []parsedProtoPort{}
+				proceed := true
 
-					generatedPorts := []parsedProtoPort{}
-					proceed := true
+				if rule.Ports != nil {
+					if len(rule.Ports) > 0 {
+						generatedPorts = d.ParsePorts(rule.Ports)
 
-					if rule.Ports != nil {
-						if len(rule.Ports) > 0 {
-							generatedPorts = d.ParsePorts(rule.Ports)
-
-							if len(generatedPorts) == 0 {
-								proceed = false
-							}
+						if len(generatedPorts) == 0 {
+							proceed = false
 						}
 					}
+				}
+
+				if len(rule.From) < 1 {
+					for _, generatedPort := range generatedPorts {
+						ingressRules = append(ingressRules, k8sfirewall.ChainRule{
+							Src:     pod.Status.PodIP,
+							L4proto: generatedPort.protocol,
+							Sport:   generatedPort.port,
+							Action:  "forward",
+						})
+					}
+					if len(generatedPorts) < 1 {
+						ingressRules = append(ingressRules, k8sfirewall.ChainRule{
+							Src:    pod.Status.PodIP,
+							Action: "forward",
+						})
+					}
+				}
+
+				for _, from := range rule.From {
 
 					if proceed {
 						if from.PodSelector != nil || from.NamespaceSelector != nil {
@@ -1080,20 +1097,38 @@ func (d *DefaultPolicyParser) DoesPolicyTargetPod(policy *networking_v1.NetworkP
 		go func() {
 			defer parseWait.Done()
 			for _, rule := range egress {
-				for _, to := range rule.To {
 
-					generatedPorts := []parsedProtoPort{}
-					proceed := true
+				generatedPorts := []parsedProtoPort{}
+				proceed := true
 
-					if rule.Ports != nil {
-						if len(rule.Ports) > 0 {
-							generatedPorts = d.ParsePorts(rule.Ports)
+				if rule.Ports != nil {
+					if len(rule.Ports) > 0 {
+						generatedPorts = d.ParsePorts(rule.Ports)
 
-							if len(generatedPorts) == 0 {
-								proceed = false
-							}
+						if len(generatedPorts) == 0 {
+							proceed = false
 						}
 					}
+				}
+
+				if len(rule.To) < 1 {
+					for _, generatedPort := range generatedPorts {
+						egressRules = append(egressRules, k8sfirewall.ChainRule{
+							Dst:     pod.Status.PodIP,
+							L4proto: generatedPort.protocol,
+							Dport:   generatedPort.port,
+							Action:  "forward",
+						})
+					}
+					if len(generatedPorts) < 1 {
+						egressRules = append(egressRules, k8sfirewall.ChainRule{
+							Dst:    pod.Status.PodIP,
+							Action: "forward",
+						})
+					}
+				}
+
+				for _, to := range rule.To {
 
 					if proceed {
 						if to.PodSelector != nil || to.NamespaceSelector != nil {

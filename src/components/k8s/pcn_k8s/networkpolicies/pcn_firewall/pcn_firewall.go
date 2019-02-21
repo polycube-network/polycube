@@ -115,7 +115,10 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 
 	if err != nil {
 		l.Errorln("Could not get firewall with name", name, ":", err, response)
-		return nil
+
+		if response.StatusCode != 200 {
+			return nil
+		}
 	}
 
 	deployedFw.firewall = &fw
