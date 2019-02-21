@@ -25,6 +25,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -360,6 +361,13 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 	}); err != nil {
 		log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
 		return err
+	}
+
+	ports := strings.Split(switchPort, ":")
+	//	try to set it to up
+	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", ports[1], k8switch.Ports{Status: "UP"})
+	if err != nil {
+		log.Errorln("could not set port to up")
 	}
 
 	return nil

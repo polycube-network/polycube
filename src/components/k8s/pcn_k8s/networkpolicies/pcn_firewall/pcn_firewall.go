@@ -236,6 +236,19 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		}
 	}
 
+	_fw, response, err := d.fwAPI.ReadFirewallByID(nil, d.firewall.Name)
+
+	if err != nil {
+		l.Errorln("Could not get firewall with name after enforce", d.firewall.Name, ":", err, response)
+
+		if response.StatusCode != 200 {
+			l.Errorln("The firewall is nil. Will stop now. after enforce")
+			return nil, nil
+		}
+	}
+
+	l.Debugf("--- after enforcing policy, fw is %+v\n", _fw)
+
 	d.Unlock()
 
 	return iError, eError
