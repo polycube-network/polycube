@@ -1,11 +1,11 @@
-set(pcn-iptables-files
-  pcn-iptables
-  pcn-iptables-init
-  pcn-iptables-clean
-  pcn-iptables-init-xdp
+set(bpf-iptables-files
+  bpf-iptables
+  bpf-iptables-init
+  bpf-iptables-clean
+  bpf-iptables-init-xdp
 )
 
-set(pcn-iptables-permissions
+set(bpf-iptables-permissions
   OWNER_READ
   OWNER_WRITE
   OWNER_EXECUTE
@@ -15,6 +15,6 @@ set(pcn-iptables-permissions
   WORLD_EXECUTE
 )
 
-install(FILES ${pcn-iptables-files}
-        PERMISSIONS ${pcn-iptables-permissions}
+install(FILES ${bpf-iptables-files}
+        PERMISSIONS ${bpf-iptables-permissions}
         DESTINATION /usr/local/bin/)

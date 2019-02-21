@@ -11,7 +11,7 @@ This folder contains the list of services (a.k.a. *cubes*) currently available i
     pcn-ddosmitigator/ddosmitigator
     pcn-firewall/firewall
     pcn-helloworld/helloworld
-    pcn-iptables/iptables
+    bpf-iptables/iptables
     pcn-k8sfilter/k8sfilter
     pcn-k8switch/k8switch
     pcn-loadbalancer-dsr/loadbalancer-dsr

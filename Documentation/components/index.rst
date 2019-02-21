@@ -5,5 +5,5 @@ Powerful applications based on polycube
     :maxdepth: 2
     :caption: Contents:
 
-    iptables/pcn-iptables
+    iptables/bpf-iptables
     k8s/pcn-kubernetes

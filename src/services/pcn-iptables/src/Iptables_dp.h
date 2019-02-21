@@ -29,7 +29,7 @@ const std::string iptables_code_ingress = R"POLYCUBE_DP(
 static __always_inline
 int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // Put your eBPF datapth code here
-  pcn_log(ctx, LOG_INFO, "Hello from pcn-iptables datapath INGRESS! :-)");
+  pcn_log(ctx, LOG_INFO, "Hello from bpf-iptables datapath INGRESS! :-)");
   return RX_OK;
 }
 )POLYCUBE_DP";
@@ -45,7 +45,7 @@ const std::string iptables_code_egress = R"POLYCUBE_DP(
 static __always_inline
 int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // Put your eBPF datapth code here
-  pcn_log(ctx, LOG_INFO, "Hello from pcn-iptables datapath EGRESS! :-)");
+  pcn_log(ctx, LOG_INFO, "Hello from bpf-iptables datapath EGRESS! :-)");
   return RX_OK;
 }
 )POLYCUBE_DP";

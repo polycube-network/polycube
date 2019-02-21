@@ -6,7 +6,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
 }
 trap iptablescleanup EXIT
 
@@ -18,42 +18,42 @@ launch_iptables
 
 ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain INPUT set default=ACCEPT
-polycubectl pcn-iptables chain OUTPUT set default=ACCEPT
+polycubectl bpf-iptables chain INPUT set default=ACCEPT
+polycubectl bpf-iptables chain OUTPUT set default=ACCEPT
 
 ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain INPUT set default=DROP
+polycubectl bpf-iptables chain INPUT set default=DROP
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain INPUT rule add 0 src=$ip dst=10.0.22.0/24 l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
+polycubectl bpf-iptables chain INPUT rule add 0 src=$ip dst=10.0.22.0/24 l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain INPUT rule add 1 src=$ip dst=$ip l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
+polycubectl bpf-iptables chain INPUT rule add 1 src=$ip dst=$ip l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain INPUT rule add 2 src=$ip l4proto=ICMP action=ACCEPT
+polycubectl bpf-iptables chain INPUT rule add 2 src=$ip l4proto=ICMP action=ACCEPT
 
 ping $ip -W 1 -c 2 -W 2
 
 
 
-polycubectl pcn-iptables chain OUTPUT set default=DROP
+polycubectl bpf-iptables chain OUTPUT set default=DROP
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain OUTPUT rule add 0 dst=$ip src=10.0.22.0/24 l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
+polycubectl bpf-iptables chain OUTPUT rule add 0 dst=$ip src=10.0.22.0/24 l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain OUTPUT rule add 1 src=$ip dst=$ip l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
+polycubectl bpf-iptables chain OUTPUT rule add 1 src=$ip dst=$ip l4proto=TCP sport=80 dport=90 tcpflags='SYN' action=ACCEPT
 
 test_fail ping $ip -W 1 -c 2 -W 2
 
-polycubectl pcn-iptables chain OUTPUT rule add 2 dst=$ip l4proto=ICMP action=ACCEPT
+polycubectl bpf-iptables chain OUTPUT rule add 2 dst=$ip l4proto=ICMP action=ACCEPT
 
 ping $ip -W 1 -c 2 -W 2
 

@@ -1,8 +1,8 @@
 add_subdirectory(scripts)
 
-set(IPTABLES_INSTALL_DIR /usr/local/share/polycube/pcn-iptables/)
+set(IPTABLES_INSTALL_DIR /usr/local/share/polycube/bpf-iptables/)
 
-if (ENABLE_PCN_IPTABLES)
+if (ENABLE_BPF_IPTABLES)
   include(ExternalProject)
   ExternalProject_Add(iptables
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/iptables/
@@ -12,4 +12,4 @@ if (ENABLE_PCN_IPTABLES)
   )
 
   install(CODE "execute_process(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/iptables COMMAND make install)")
-endif(ENABLE_PCN_IPTABLES)
+endif(ENABLE_BPF_IPTABLES)

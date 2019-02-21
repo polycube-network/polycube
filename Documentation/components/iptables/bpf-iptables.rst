@@ -1,9 +1,9 @@
-pcn-iptables: An iptables clone based on eBPF
+bpf-iptables: An iptables clone based on eBPF
 =============================================
 
 **Disclaimer**: this guide is still a draft
 
-Polycube comes with ``iptables`` application (in brief ``pcn-iptables``) that provides an iptables clone, with compatible syntax and semantic.
+Polycube comes with ``iptables`` application (in brief ``bpf-iptables``) that provides an iptables clone, with compatible syntax and semantic.
 The backend is based on `eBPF` programs, more efficient algorithms and runtime optimizations.
 The frontend provides same iptables CLI, users can setup security policies using same syntax.
 
@@ -53,64 +53,64 @@ Limitations
 Install
 -------
 
-For ``pcn-iptables`` support you should enable ``ENABLE_PCN_IPTABLES`` flag in CMakeFile.
+For ``bpf-iptables`` support you should enable ``ENABLE_BPF_IPTABLES`` flag in CMakeFile.
 ::
 
         cd polycube/build/
-        cmake .. -DENABLE_PCN_IPTABLES=ON
+        cmake .. -DENABLE_BPF_IPTABLES=ON
         make && make install
 
 
 Run
 ---
 
-1. Initialize pcn-iptables
+1. Initialize bpf-iptables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
         # Start polycubed, in other terminal (or background)
         sudo polycubed
-        # Initialize pcn-iptables
-        pcn-iptables-init
+        # Initialize bpf-iptables
+        bpf-iptables-init
 
 
-2. Use pcn-iptables
+2. Use bpf-iptables
 ^^^^^^^^^^^^^^^^^^^
 
-``pcn-iptables`` provides same iptables syntax. Please refer to ``iptables`` online docs for more info.
+``bpf-iptables`` provides same iptables syntax. Please refer to ``iptables`` online docs for more info.
 Following are just few examples of available commands.
 
 ::
 
         # E.g.
-        pcn-iptables -A INPUT -s 10.0.0.1 -j DROP # Append rule to INPUT chain
-        pcn-iptables -D INPUT -s 10.0.0.1 -j DROP # Delete rule from INPUT chain
-        pcn-iptables -I INPUT -s 10.0.0.2 -j DROP # Insert rule into INPUT chain
+        bpf-iptables -A INPUT -s 10.0.0.1 -j DROP # Append rule to INPUT chain
+        bpf-iptables -D INPUT -s 10.0.0.1 -j DROP # Delete rule from INPUT chain
+        bpf-iptables -I INPUT -s 10.0.0.2 -j DROP # Insert rule into INPUT chain
 
         # Example of a complex rule
-        pcn-iptables -A INPUT -s 10.0.0.0/8 -d 10.0.0.2 -p tcp --sport 9090 --dport 80 --tcpflags SYN,ACK ACK -j DROP
+        bpf-iptables -A INPUT -s 10.0.0.0/8 -d 10.0.0.2 -p tcp --sport 9090 --dport 80 --tcpflags SYN,ACK ACK -j DROP
 
         # Example of a conntrack rule
-        pcn-iptables -A OUTPUT -m conntrack --ctstate=ESTABLISHED -j ACCEPT
+        bpf-iptables -A OUTPUT -m conntrack --ctstate=ESTABLISHED -j ACCEPT
 
         # Show rules
-        pcn-iptables -S # dump rules
-        pcn-iptables -L INPUT # dump rules for INPUT chain
+        bpf-iptables -S # dump rules
+        bpf-iptables -L INPUT # dump rules for INPUT chain
 
-        pcn-iptables -P FORWARD DROP # set default policy for FORWARD chain
+        bpf-iptables -P FORWARD DROP # set default policy for FORWARD chain
 
 
 
-**NOTE**: do `not` use use ``sudo pcn-iptables ...``
+**NOTE**: do `not` use use ``sudo bpf-iptables ...``
 
-3. Stop pcn-iptables
+3. Stop bpf-iptables
 ^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-        # Stop and clean pcn-iptables
-        pcn-iptables-clean
+        # Stop and clean bpf-iptables
+        bpf-iptables-clean
 
 
 Advanced Features
@@ -119,11 +119,11 @@ Advanced Features
 XDP mode
 ^^^^^^^^
 
-``pcn-iptables`` can also be run in ``XDP`` mode. This mode comes with performance gain, especially when policy are configured to DROP traffic.
+``bpf-iptables`` can also be run in ``XDP`` mode. This mode comes with performance gain, especially when policy are configured to DROP traffic.
 
 ::
 
-        pcn-iptables-init-xdp
+        bpf-iptables-init-xdp
 
 Limitations
 ^^^^^^^^^^^

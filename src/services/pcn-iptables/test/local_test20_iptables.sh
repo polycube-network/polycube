@@ -5,7 +5,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -32,7 +32,7 @@ echo -e "\nTest $0 \n"
 set -e
 set -x
 
-polycubectl iptables add pcn-iptables loglevel=TRACE
+polycubectl iptables add bpf-iptables loglevel=TRACE
 
 enable_ip_forwarding
 
@@ -56,37 +56,37 @@ done
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 # sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT ACCEPT
-pcn-iptables -P OUTPUT ACCEPT
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P INPUT ACCEPT
+bpf-iptables -P OUTPUT ACCEPT
+bpf-iptables -P FORWARD DROP
 
 # test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 
 test_tcp_fail "81"
 
-pcn-iptables -A FORWARD -s 10.0.1.1 -d 10.0.2.1 -p tcp --dport 80 -j ACCEPT
-pcn-iptables -A FORWARD -d 10.0.1.1 -s 10.0.2.1 -p tcp --sport 80 -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.1.1 -d 10.0.2.1 -p tcp --dport 80 -j ACCEPT
+bpf-iptables -A FORWARD -d 10.0.1.1 -s 10.0.2.1 -p tcp --sport 80 -j ACCEPT
 
 test_tcp "80"
 
-pcn-iptables -D FORWARD -s 10.0.1.1 -d 10.0.2.1 -p tcp --dport 80 -j ACCEPT
-pcn-iptables -D FORWARD -d 10.0.1.1 -s 10.0.2.1 -p tcp --sport 80 -j ACCEPT
+bpf-iptables -D FORWARD -s 10.0.1.1 -d 10.0.2.1 -p tcp --dport 80 -j ACCEPT
+bpf-iptables -D FORWARD -d 10.0.1.1 -s 10.0.2.1 -p tcp --sport 80 -j ACCEPT
 
 test_tcp_fail "80"
 
-pcn-iptables -P FORWARD ACCEPT
+bpf-iptables -P FORWARD ACCEPT
 
 test_tcp "91"
 
-pcn-iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.1 -p tcp --dport 90 -j DROP
+bpf-iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.1 -p tcp --dport 90 -j DROP
 
 test_tcp_fail "90"

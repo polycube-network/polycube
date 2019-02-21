@@ -246,7 +246,7 @@ void Iptables::setInteractive(const bool &value) {
 //   implemented");
 // }
 
-// reload is not bpf::reload, but reload function managed by pcn-iptables on
+// reload is not bpf::reload, but reload function managed by bpf-iptables on
 // each prog of the chain
 void Iptables::reloadChain(ChainNameEnum chain) {
   for (auto it = programs_.begin(); it != programs_.end(); ++it) {
@@ -323,7 +323,7 @@ void Iptables::attachInterfaces() {
     }
   }
 
-  logger()->debug("Updating ports attached to pcn-iptables");
+  logger()->debug("Updating ports attached to bpf-iptables");
 }
 
 bool Iptables::connectPort(const std::string &name) {

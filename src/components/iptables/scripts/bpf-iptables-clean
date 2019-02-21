@@ -1,0 +1,12 @@
+#!/bin/bash
+
+polycubectl iptables del bpf-iptables >> /dev/null
+
+ret=$(echo $?)
+
+if [ $ret -ne 0 ]
+    then
+        echo "bpf-iptables already closed"
+else
+    echo "bpf-iptables closed"
+fi

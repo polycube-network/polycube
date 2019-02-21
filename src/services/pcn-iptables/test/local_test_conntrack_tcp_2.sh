@@ -5,7 +5,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     delete_veth 2
     sudo pkill -SIGTERM netcat
 }
@@ -33,33 +33,33 @@ create_veth_net 2
 
 enable_ip_forwarding
 
-polycubectl iptables add pcn-iptables loglevel=TRACE
+polycubectl iptables add bpf-iptables loglevel=TRACE
 
-#pcn-iptables -P INPUT DROP
-#pcn-iptables -P OUTPUT DROP
-pcn-iptables -P FORWARD DROP
+#bpf-iptables -P INPUT DROP
+#bpf-iptables -P OUTPUT DROP
+bpf-iptables -P FORWARD DROP
 
 test_tcp_fail "9090"
 
 # Allow connections to be started only from ns1->ns2
-pcn-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
+bpf-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
 
-pcn-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=NEW -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
+bpf-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=NEW -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
 
 test_tcp "9091"
 
 #Flush policies
-pcn-iptables -F FORWARD
+bpf-iptables -F FORWARD
 
 # Allow connections to be started only from ns2->ns1
-pcn-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
+bpf-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.1.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
 
-pcn-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=NEW -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
-pcn-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
+bpf-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=NEW -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=ESTABLISHED -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.2.1 -p tcp -m conntrack --ctstate=INVALID -j DROP
 
 test_tcp_fail "9092"

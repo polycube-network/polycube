@@ -1,3 +1,3 @@
-if (ENABLE_PCN_IPTABLES)
+if (ENABLE_BPF_IPTABLES)
   add_subdirectory(iptables)
-endif(ENABLE_PCN_IPTABLES)
+endif(ENABLE_BPF_IPTABLES)

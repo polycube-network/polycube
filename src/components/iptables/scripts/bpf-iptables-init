@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# check if polycubed is alive
+polycubed_alive=$(ps -el | grep polycubed)
+if [ -z "$polycubed_alive" ]; then
+    echo "bpf-iptables is not able to find any daemon running."
+    echo "please try to run:"
+    echo ""
+    echo "sudo polycubed"
+    exit 1
+fi
+
+ret=$(polycubectl iptables bpf-iptables show)
+ret=$(echo $?)
+
+if [ $ret -ne 0 ]
+    then
+        echo "Launching bpf-iptables ..."
+        polycubectl iptables add bpf-iptables
+        exit 0
+else
+    echo "bpf-iptables already launched ..."
+fi

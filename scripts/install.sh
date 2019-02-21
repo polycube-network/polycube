@@ -32,7 +32,7 @@ usage="$(basename "$0") [mode]
 Polycube installation script
 
 mode:
-  pcn-iptables: install only pcn-iptables service and related components
+  bpf-iptables: install only bpf-iptables service and related components
   pcn-k8s: install only pcn-k8s (Only to be used with docker build)
   default: install all available polycube services"
 echo "$usage"
@@ -128,8 +128,8 @@ mkdir -p build && cd build
 git log -1
 
 # depending on the mode different services are enabled
-if [ "$MODE" == "pcn-iptables" ]; then
-  cmake .. -DENABLE_PCN_IPTABLES=ON \
+if [ "$MODE" == "bpf-iptables" ]; then
+  cmake .. -DENABLE_BPF_IPTABLES=ON \
     -DENABLE_SERVICE_BRIDGE=OFF \
     -DENABLE_SERVICE_DDOSMITIGATOR=OFF \
     -DENABLE_SERVICE_FIREWALL=OFF \
@@ -161,7 +161,7 @@ elif [ "$MODE" == "pcn-k8s" ]; then
     -DENABLE_SERVICE_SIMPLEFORWARDER=OFF \
     -DINSTALL_CLI=OFF
 else
-  cmake .. -DENABLE_PCN_IPTABLES=ON
+  cmake .. -DENABLE_BPF_IPTABLES=ON
 fi
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install

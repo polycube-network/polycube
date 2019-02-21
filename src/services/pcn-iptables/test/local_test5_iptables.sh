@@ -6,7 +6,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -40,55 +40,55 @@ done
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P FORWARD DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -A FORWARD -d 10.0.2.1 -s 10.0.1.1 -j DROP
-
-test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
-test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
-
-pcn-iptables -I FORWARD -s 10.0.2.1 -d 10.0.1.1 -j DROP
+bpf-iptables -A FORWARD -d 10.0.2.1 -s 10.0.1.1 -j DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
 
-pcn-iptables -P INPUT ACCEPT
-pcn-iptables -P OUTPUT ACCEPT
+bpf-iptables -I FORWARD -s 10.0.2.1 -d 10.0.1.1 -j DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT ACCEPT
+bpf-iptables -P OUTPUT ACCEPT
 
-pcn-iptables -I FORWARD -s 10.0.2.1 -j ACCEPT
-pcn-iptables -I FORWARD -s 10.0.1.1 -j ACCEPT
+test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
+test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
+
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
+
+bpf-iptables -I FORWARD -s 10.0.2.1 -j ACCEPT
+bpf-iptables -I FORWARD -s 10.0.1.1 -j ACCEPT
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
 
-pcn-iptables -D FORWARD -s 10.0.2.1 -j ACCEPT
-pcn-iptables -D FORWARD -s 10.0.1.1 -j ACCEPT
+bpf-iptables -D FORWARD -s 10.0.2.1 -j ACCEPT
+bpf-iptables -D FORWARD -s 10.0.1.1 -j ACCEPT
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
 
-pcn-iptables -D FORWARD -d 10.0.2.1 -s 10.0.1.1 -j DROP
-pcn-iptables -D FORWARD -s 10.0.2.1 -d 10.0.1.1 -j DROP
+bpf-iptables -D FORWARD -d 10.0.2.1 -s 10.0.1.1 -j DROP
+bpf-iptables -D FORWARD -s 10.0.2.1 -d 10.0.1.1 -j DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 test_fail sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2
 
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P FORWARD DROP
 
-pcn-iptables -A FORWARD -p icmp -j ACCEPT
+bpf-iptables -A FORWARD -p icmp -j ACCEPT
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 sudo ip netns exec ns2 ping 10.0.1.1 -c 2 -W 2

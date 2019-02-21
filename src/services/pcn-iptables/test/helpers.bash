@@ -7,9 +7,9 @@ ip=8.8.8.8
 
 function launch_iptables {
   if [ -z "$TYPE" ]; then
-    polycubectl iptables add pcn-iptables loglevel=TRACE
+    polycubectl iptables add bpf-iptables loglevel=TRACE
   else
-    polycubectl iptables add pcn-iptables type=TYPE_XDP_DRV loglevel=TRACE
+    polycubectl iptables add bpf-iptables type=TYPE_XDP_DRV loglevel=TRACE
   fi
 }
 

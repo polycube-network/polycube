@@ -8,7 +8,7 @@ DEBUG=false
 # set -x
 set +x
 
-IPTABLES=/usr/local/share/polycube/pcn-iptables/sbin/iptables
+IPTABLES=/usr/local/share/polycube/bpf-iptables/sbin/iptables
 
 OUTPUT="$(sudo $IPTABLES "$@")"
 

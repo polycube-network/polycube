@@ -6,7 +6,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -40,11 +40,11 @@ done
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P FORWARD DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2

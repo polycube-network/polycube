@@ -1,50 +1,50 @@
 # Iptables Service
-`pcn-iptables` service is intended to emulate `iptables` using same semantic but different backend, based on `eBPF` programs and more efficients algorithms and runtime optimizations.
+`bpf-iptables` service is intended to emulate `iptables` using same semantic but different backend, based on `eBPF` programs and more efficients algorithms and runtime optimizations.
 
-## Steps to INSTALL pcn-iptables
+## Steps to INSTALL bpf-iptables
 
-For `pcn-iptables` support you should enable `ENABLE_PCN_IPTABLES` flag in CMakeFile.
+For `bpf-iptables` support you should enable `ENABLE_BPF_IPTABLES` flag in CMakeFile.
 ```
 cd polycube/build/
-cmake .. -DENABLE_PCN_IPTABLES=ON
+cmake .. -DENABLE_BPF_IPTABLES=ON
 make && make install
 ```
 
-## Steps to RUN pcn-iptables
+## Steps to RUN bpf-iptables
 
-### 1. Initialization, start `pcn-iptables` service
+### 1. Initialization, start `bpf-iptables` service
 
 ```
 # Start polycubed, in other terminal (or background)
 sudo polycubed
-# run pcn-iptables-init.
-pcn-iptables-init
+# run bpf-iptables-init.
+bpf-iptables-init
 ```
 
-### 2. Use pcn-iptables, with same syntax of iptables
+### 2. Use bpf-iptables, with same syntax of iptables
 ```
 # E.g.
-pcn-iptables -A INPUT -s 10.0.0.1 -j DROP # Append rule to INPUT chain
-pcn-iptables -D INPUT -s 10.0.0.1 -j DROP # Delete rule from INPUT chain
-pcn-iptables -I INPUT -s 10.0.0.2 -j DROP # Insert rule into INPUT chain
+bpf-iptables -A INPUT -s 10.0.0.1 -j DROP # Append rule to INPUT chain
+bpf-iptables -D INPUT -s 10.0.0.1 -j DROP # Delete rule from INPUT chain
+bpf-iptables -I INPUT -s 10.0.0.2 -j DROP # Insert rule into INPUT chain
 
-pcn-iptables -S # dump rules
-pcn-iptables -L INPUT # dump rules for INPUT chain
+bpf-iptables -S # dump rules
+bpf-iptables -L INPUT # dump rules for INPUT chain
 
-pcn-iptables -P FORWARD DROP # set default policy for FORWARD chain
+bpf-iptables -P FORWARD DROP # set default policy for FORWARD chain
 ```
 
-**NOTE**: do _not_ use use `sudo pcn-iptables ...`
+**NOTE**: do _not_ use use `sudo bpf-iptables ...`
 
-### 3. Cleanup, stop `pcn-iptables` service
+### 3. Cleanup, stop `bpf-iptables` service
 
 ```
-# run pcn-iptables-clean
-pcn-iptables-clean
+# run bpf-iptables-clean
+bpf-iptables-clean
 ```
 
 
-## pcn-iptables components
+## bpf-iptables components
 
 ### iptables submodule
 
@@ -53,5 +53,5 @@ We customized this version of iptables in order not to inject iptables command i
 
 ### scripts folder
 
-Scripts are used as a glue logic to make pcn-iptables run. Main purpose is initialize, cleanup and run pcn-iptables, pass pcn-iptables parameters through iptables (in charge of converting them), then pass converted commands to pcn-iptables service.
+Scripts are used as a glue logic to make bpf-iptables run. Main purpose is initialize, cleanup and run bpf-iptables, pass bpf-iptables parameters through iptables (in charge of converting them), then pass converted commands to bpf-iptables service.
 Scripts are installed under `/usr/local/bin`.

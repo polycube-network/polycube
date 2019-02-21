@@ -5,7 +5,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -15,7 +15,7 @@ function iptablescleanup {
 trap iptablescleanup EXIT
 
 function test_counters {
-    count=$(pcn-iptables -L FORWARD | grep stats -A 3 | tail -n 1 | awk '{print $2}')
+    count=$(bpf-iptables -L FORWARD | grep stats -A 3 | tail -n 1 | awk '{print $2}')
     #echo $count
     if [ "$count" -ne "5" ]; then
         echo "Expected count = 5"
@@ -31,11 +31,11 @@ echo -e "\nTest $0 \n"
 set -e
 set -x
 
-polycubectl iptables add pcn-iptables loglevel=TRACE
+polycubectl iptables add bpf-iptables loglevel=TRACE
 
 enable_ip_forwarding
 
-IPTABLES="pcn-iptables"
+IPTABLES="bpf-iptables"
 CHAIN="FORWARD"
 
 #create ns
@@ -58,16 +58,16 @@ test_udp
 $IPTABLES -A $CHAIN -m conntrack --ctstate ESTABLISHED -j ACCEPT
 $IPTABLES -A $CHAIN -m conntrack --ctstate NEW -s 10.0.2.1 -j ACCEPT
 
-pcn-iptables -L FORWARD
+bpf-iptables -L FORWARD
 
 test_udp
 
-pcn-iptables -L FORWARD
+bpf-iptables -L FORWARD
 
 test_counters
 
-pcn-iptables -F FORWARD
-polycubectl pcn-iptables set interactive=false
+bpf-iptables -F FORWARD
+polycubectl bpf-iptables set interactive=false
 
 $IPTABLES -A $CHAIN -m conntrack --ctstate ESTABLISHED -j ACCEPT
 $IPTABLES -A $CHAIN -m conntrack --ctstate NEW -s 10.0.2.1 -j ACCEPT
@@ -171,12 +171,12 @@ $IPTABLES -A $CHAIN -d 192.168.10.11 -p udp --dport 8086 -j ACCEPT
 $IPTABLES -A $CHAIN -d 192.168.10.11 -p udp --dport 8087 -j ACCEPT
 $IPTABLES -A $CHAIN -d 192.168.10.11 -p udp --dport 8088 -j ACCEPT
 
-polycubectl pcn-iptables chain $CHAIN apply-rules
+polycubectl bpf-iptables chain $CHAIN apply-rules
 
-pcn-iptables -L FORWARD
+bpf-iptables -L FORWARD
 
 test_udp
 
-pcn-iptables -L FORWARD
+bpf-iptables -L FORWARD
 
 test_counters

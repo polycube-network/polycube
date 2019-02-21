@@ -127,7 +127,7 @@ pipeline {
             }
             steps {
                 echo 'Start building polycube on testing machine'
-                sh 'export INSTALL_CLEAN_POLYCUBE=true && ./scripts/install.sh pcn-iptables'
+                sh 'export INSTALL_CLEAN_POLYCUBE=true && ./scripts/install.sh bpf-iptables'
 
                 echo 'Start testing polycube services'
                 sh 'cd tests/ && ./run-tests-iptables.sh'
@@ -148,7 +148,7 @@ pipeline {
                         int failed = total - passed
 
                         if(failed > 0) {
-                            def attachments = getSlackAttachment(currentBuild, new String("Testing pcn-iptables"))
+                            def attachments = getSlackAttachment(currentBuild, new String("Testing bpf-iptables"))
 
                             def final_string = attachments.toString()
                             echo "${final_string}"

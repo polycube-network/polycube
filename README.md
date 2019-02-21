@@ -14,7 +14,7 @@ Available cubes include `bridge`, `router`, `nat`, `load balancer`, `firewall`, 
 Cubes can be composed to build arbitrary **service chains** and provide custom network connectivity to **namespaces**, **containers**, **virtual machines**, and **physical hosts**.
 Polycube networks can be controlled by a coherent, uniform and simple command line, named `polycubectl`, which interacts with a REST-based daemon, `polycubed`.
 
-Polycube provides also some proof-of-concept **complex applications** based upon this framework, such as `pcn-k8s`, a brand new network plug-in for *Kubernetes*, which can handle the network of an entire datacenter and that outperforms existing solutions, and `pcn-iptables`, a much more efficient clone of *iptables*.
+Polycube provides also some proof-of-concept **complex applications** based upon this framework, such as `pcn-k8s`, a brand new network plug-in for *Kubernetes*, which can handle the network of an entire datacenter and that outperforms existing solutions, and `bpf-iptables`, a much more efficient clone of *iptables*.
 
 A brief overview of the Polycube layered structure is shown in the picture below.
 
@@ -30,12 +30,12 @@ A brief overview of the Polycube layered structure is shown in the picture below
  - [Quickstart](Documentation/quickstart.rst)
  - [Documentation](Documentation)
  - [pcn-k8s - Kubernetes network provider](Documentation/components/k8s/pcn-kubernetes.rst)
- - [pcn-iptables - Iptables clone](Documentation/components/iptables/pcn-iptables.rst)
+ - [bpf-iptables - Iptables clone](Documentation/components/iptables/bpf-iptables.rst)
 
 ## Main features
 
 ### Extremely fast
-Polycube enables extremely fast and efficient network services, thanks to its capability to run inside the Linux kernel and, whenever possible, as close as possible to the network interface card driver, which reduces the time spent in ancillary components. 
+Polycube enables extremely fast and efficient network services, thanks to its capability to run inside the Linux kernel and, whenever possible, as close as possible to the network interface card driver, which reduces the time spent in ancillary components.
 
 
 ### Service chaining
@@ -64,9 +64,9 @@ In addition, Polycube implements a *service agnostic* configuration mechanism, b
 
 
 ### Outstanding performance with real applications
-Two complex applications have been released to show the potential of Polycube, ``pcn-iptables`` and ``pcn-k8s``.
+Two complex applications have been released to show the potential of Polycube, ``bpf-iptables`` and ``pcn-k8s``.
 
-- `pcn-iptables`: The former is a clone of **iptables** that is able to filter packets passing through a Linux host, demonstrating how packet filtering can be achieved with impressive performance, while at the same time guaranteeing the same command line and the same external behavior of the original software.
+- `bpf-iptables`: The former is a clone of **iptables** that is able to filter packets passing through a Linux host, demonstrating how packet filtering can be achieved with impressive performance, while at the same time guaranteeing the same command line and the same external behavior of the original software.
 - `pcn-k8s`: The latter is a network plug-in for **Kubernetes**, i.e., a software that handles the entire virtual network of a Kubernetes cluster, which includes bridging, routing, NAT, load balancing and tunneling services. Our plug-in has been tested for scalability and guarantees outstanding performance in terms of network throughput.
 
 ## Powered by eBPF and XDP

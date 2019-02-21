@@ -5,7 +5,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -53,47 +53,47 @@ done
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
 test_tcp
 
-pcn-iptables -P INPUT ACCEPT
-pcn-iptables -P OUTPUT ACCEPT
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P INPUT ACCEPT
+bpf-iptables -P OUTPUT ACCEPT
+bpf-iptables -P FORWARD DROP
 
 test_tcp_fail
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
-pcn-iptables -A FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
+bpf-iptables -A FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
 
 test_tcp_fail
 
-pcn-iptables -I FORWARD -m conntrack --ctstate NEW -j ACCEPT
+bpf-iptables -I FORWARD -m conntrack --ctstate NEW -j ACCEPT
 
 test_tcp
 
-pcn-iptables -D FORWARD -m conntrack --ctstate NEW -j ACCEPT
+bpf-iptables -D FORWARD -m conntrack --ctstate NEW -j ACCEPT
 
 test_tcp_fail
 
-pcn-iptables -A FORWARD -m conntrack --ctstate NEW -j ACCEPT
+bpf-iptables -A FORWARD -m conntrack --ctstate NEW -j ACCEPT
 
 test_tcp
 
-pcn-iptables -D FORWARD -m conntrack --ctstate NEW -j ACCEPT
-pcn-iptables -D FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
+bpf-iptables -D FORWARD -m conntrack --ctstate NEW -j ACCEPT
+bpf-iptables -D FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
 
 test_tcp_fail
 
-pcn-iptables -A FORWARD -s 10.0.1.1 -d 10.0.2.1 -j ACCEPT
+bpf-iptables -A FORWARD -s 10.0.1.1 -d 10.0.2.1 -j ACCEPT
 
 test_tcp_fail
 
-pcn-iptables -I FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
+bpf-iptables -I FORWARD -m conntrack --ctstate ESTABLISHED -j ACCEPT
 
 test_tcp

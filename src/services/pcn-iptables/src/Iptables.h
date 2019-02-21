@@ -168,7 +168,7 @@ class Iptables : public polycube::service::Cube<Ports>,
   void netlinkNotificationCallbackIptables();
 
   // Loop through interfaces visible in root ns, and connect them to
-  // pcn-iptables
+  // bpf-iptables
   void attachInterfaces();
 
   // Connect and create a port with same name of the interface

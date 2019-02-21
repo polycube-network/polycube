@@ -6,7 +6,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 
 function iptablescleanup {
     set +e
-    polycubectl iptables del pcn-iptables
+    bpf-iptables-clean
     sudo ip netns del ns1
     sudo ip link del veth1
     sudo ip netns del ns2
@@ -39,34 +39,34 @@ done
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT DROP
-pcn-iptables -P OUTPUT DROP
+bpf-iptables -P INPUT DROP
+bpf-iptables -P OUTPUT DROP
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
 # test -i on FORWARD chain
 
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P FORWARD DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -A FORWARD -i veth1 -j ACCEPT
+bpf-iptables -A FORWARD -i veth1 -j ACCEPT
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -A FORWARD -i veth2 -j ACCEPT
+bpf-iptables -A FORWARD -i veth2 -j ACCEPT
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -D FORWARD -i veth1 -j ACCEPT
+bpf-iptables -D FORWARD -i veth1 -j ACCEPT
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -D FORWARD -i veth2 -j ACCEPT
+bpf-iptables -D FORWARD -i veth2 -j ACCEPT
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P FORWARD ACCEPT
+bpf-iptables -P FORWARD ACCEPT
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
@@ -75,31 +75,31 @@ sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 # obtain default route interface, e.g. ens3
 iface=$(sudo ip route | grep default | awk '{print $5}')
 
-pcn-iptables -F FORWARD
+bpf-iptables -F FORWARD
 
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P FORWARD DROP
+bpf-iptables -P FORWARD DROP
 
 test_fail sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -W 2
 
-pcn-iptables -P INPUT ACCEPT
-pcn-iptables -P OUTPUT ACCEPT
+bpf-iptables -P INPUT ACCEPT
+bpf-iptables -P OUTPUT ACCEPT
 
 ping $ip -c 2 -W 2
 
-pcn-iptables -A INPUT -i $iface -j DROP
+bpf-iptables -A INPUT -i $iface -j DROP
 
 test_fail ping $ip -c 2 -W 2
 
-pcn-iptables -D INPUT -i $iface -j DROP
+bpf-iptables -D INPUT -i $iface -j DROP
 
 ping $ip -c 2 -W 2
 
-pcn-iptables -A OUTPUT -o $iface -j DROP
+bpf-iptables -A OUTPUT -o $iface -j DROP
 
 test_fail ping $ip -c 2 -W 2
 
-pcn-iptables -D OUTPUT -o $iface -j DROP
+bpf-iptables -D OUTPUT -o $iface -j DROP
 
 ping $ip -c 2 -W 2

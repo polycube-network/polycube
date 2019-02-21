@@ -1,6 +1,6 @@
 option(INSTALL_CLI "installs the polycube CLI" ON)
 option(HAVE_POLYCUBE_TOOLS "uses the polycube-tools package" OFF)
-option(ENABLE_PCN_IPTABLES "enables the pcn-iptables" OFF)
+option(ENABLE_BPF_IPTABLES "enables the bpf-iptables" OFF)
 
 if (HAVE_POLYCUBE_TOOLS)
   add_definitions(-DHAVE_POLYCUBE_TOOLS)
