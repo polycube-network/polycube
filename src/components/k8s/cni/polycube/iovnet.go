@@ -367,7 +367,7 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 	//	try to set it to up
 	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", ports[1], k8switch.Ports{Status: "UP"})
 	if err != nil {
-		log.Errorln("could not set port to up")
+		log.Errorln("could not set port to up", err, response)
 	}
 
 	return nil
