@@ -69,6 +69,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
 	podController.Subscribe(pcn_types.Update, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Delete, manager.deleteFirewall)
 
 	return &manager
 }
@@ -204,4 +205,17 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 		}(k8sPolicy)
 	}
 
+}
+
+func (manager *NetworkPolicyManager) deleteFirewall(pod *core_v1.Pod) {
+	var l = log.WithFields(log.Fields{
+		"by":     PM,
+		"method": "deleteFirewall",
+	})
+	l.Debugln("Going to destroy the firewall for the pod")
+
+	fw := manager.firewallManager.GetOrCreate(*pod)
+	if fw != nil {
+		fw.Destroy()
+	}
 }
