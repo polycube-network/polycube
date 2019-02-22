@@ -315,8 +315,12 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 		npc.addNewPolicy(policy)
 		npc.dispatchers.update.Dispatch(policy)
 	case pcn_types.Delete:
-		//npc.removePolicy(policy)
-		npc.dispatchers.delete.Dispatch(policy)
+		_splitted := strings.Split(event.Key, "/")
+		policy, ok := npc.deployedPolicies[_splitted[1]]
+		if ok {
+			//npc.removePolicy(policy)
+			npc.dispatchers.delete.Dispatch(policy)
+		}
 	}
 
 	//	Does not exist?
