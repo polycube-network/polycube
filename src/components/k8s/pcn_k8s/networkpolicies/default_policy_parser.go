@@ -125,6 +125,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 							Src:     "192.168.122.0/24",
 							Dst:     currentPod.Pod.Status.PodIP,
 							L4proto: "ICMP",
+							Action:  "forward",
 						},
 					}
 					myIRules := []k8sfirewall.ChainRule{
@@ -132,6 +133,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 							Src:     currentPod.Pod.Status.PodIP,
 							Dst:     "192.168.122.0/24",
 							L4proto: "ICMP",
+							Action:  "forward",
 						},
 					}
 					iErr, eErr := fw.EnforcePolicy("cacca", myIRules, myERules)

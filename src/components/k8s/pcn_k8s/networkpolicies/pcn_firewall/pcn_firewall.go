@@ -378,6 +378,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 			L4proto: rules[i].L4proto,
 			Sport:   rules[i].Sport,
 			Dport:   rules[i].Dport,
+			Action:  rules[i].Action,
 		}
 
 		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err != nil {
