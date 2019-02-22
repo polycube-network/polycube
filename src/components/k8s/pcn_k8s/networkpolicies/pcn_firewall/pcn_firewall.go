@@ -386,6 +386,13 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 			rules[i].Id = out.Id
 		}
 	}
+
+	out, response, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, direction)
+	if err != nil {
+		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
+	} else {
+		l.Debugln("out is", out)
+	}
 	/*chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
 	if err != nil {
 		l.Errorln("Error while trying to get chain for firewall", d.firewall.Name, "in", direction, ":", err, response)
