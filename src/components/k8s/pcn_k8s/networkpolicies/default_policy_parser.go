@@ -110,33 +110,69 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 		podsWaitGroup.Add(len(pods))
 
 		for _, pod := range pods {
+
 			go func(currentPod pcn_types.Pod) {
 
-				defer podsWaitGroup.Done()
-				//	Complete the rules by correctly adding the IPs
-				ingressChain, egressChain := d.FillChains(currentPod, ingressChain, egressChain)
-
-				if deploy {
+				if currentPod.Pod.Namespace == "default" {
 					//	Create the firewall (or get it if already exists)
 					fw := d.firewallManager.GetOrCreate(currentPod.Pod)
 					if fw == nil {
 						l.Panicln("Could not create firewall fw-", currentPod.Pod, ". Will stop here.")
 						return
 					}
+					myERules := []k8sfirewall.ChainRule{
+						k8sfirewall.ChainRule{
+							Src:     "192.168.122.0/24",
+							Dst:     currentPod.Pod.Status.PodIP,
+							L4proto: "ICMP",
+						},
+					}
+					myIRules := []k8sfirewall.ChainRule{
+						k8sfirewall.ChainRule{
+							Src:     currentPod.Pod.Status.PodIP,
+							Dst:     "192.168.122.0/24",
+							L4proto: "ICMP",
+						},
+					}
+					iErr, eErr := fw.EnforcePolicy("cacca", myIRules, myERules)
 
-					//-------------------------------------
-					//	Inject the rules
-					//-------------------------------------
+					if iErr != nil || eErr != nil {
+						log.Debugln("error in cacca", iErr, eErr)
+					}
+				} else {
+					defer podsWaitGroup.Done()
+					//	Complete the rules by correctly adding the IPs
+					ingressChain, egressChain := d.FillChains(currentPod, ingressChain, egressChain)
 
-					log.Debugf("--ingress: %+v\n --egress: %+v\n")
-					iErr, eErr := fw.EnforcePolicy(policy.Name, ingressChain.Rule, egressChain.Rule)
+					if deploy {
+						//	Create the firewall (or get it if already exists)
+						fw := d.firewallManager.GetOrCreate(currentPod.Pod)
+						if fw == nil {
+							l.Panicln("Could not create firewall fw-", currentPod.Pod, ". Will stop here.")
+							return
+						}
 
-					//-------------------------------------
-					//	Phew... all done for this pod
-					//-------------------------------------
+						//-------------------------------------
+						//	Inject the rules
+						//-------------------------------------
 
-					//
-					if iErr == nil || eErr == nil {
+						log.Debugf("--ingress: %+v\n --egress: %+v\n")
+						iErr, eErr := fw.EnforcePolicy(policy.Name, ingressChain.Rule, egressChain.Rule)
+
+						//-------------------------------------
+						//	Phew... all done for this pod
+						//-------------------------------------
+
+						//
+						if iErr == nil || eErr == nil {
+							nsLock.Lock()
+							parsed[ns][currentPod.Pod.UID] = &ParsedPolicy{
+								ingressChain: ingressChain,
+								egressChain:  egressChain,
+							}
+							nsLock.Unlock()
+						}
+					} else {
 						nsLock.Lock()
 						parsed[ns][currentPod.Pod.UID] = &ParsedPolicy{
 							ingressChain: ingressChain,
@@ -144,13 +180,6 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 						}
 						nsLock.Unlock()
 					}
-				} else {
-					nsLock.Lock()
-					parsed[ns][currentPod.Pod.UID] = &ParsedPolicy{
-						ingressChain: ingressChain,
-						egressChain:  egressChain,
-					}
-					nsLock.Unlock()
 				}
 
 			}(pod)
