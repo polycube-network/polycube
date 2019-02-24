@@ -265,7 +265,7 @@ func main() {
 	firewallManager = pcn_firewall.StartFirewallManager(basePath)
 
 	//	Start the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, firewallManager)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, firewallManager, nodeName)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so

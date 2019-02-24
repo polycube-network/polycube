@@ -3,13 +3,11 @@ package networkpolicies
 import (
 	//	TODO-ON-MERGE: change these two to the polycube path
 
-	"strings"
 	"sync"
 
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
-	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
@@ -27,15 +25,11 @@ type NetworkPolicyManager struct {
 
 	defaultPolicyParser PcnDefaultPolicyParser
 	deployedPolicies    map[string][]k8s_types.UID
-	sync.Mutex
+	node                string
+	lock                sync.Mutex
 }
 
-type ParsedPolicy struct {
-	ingressChain k8sfirewall.Chain
-	egressChain  k8sfirewall.Chain
-}
-
-func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyController, podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager) PcnNetworkPolicyManager {
+func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyController, podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager, nodeName string) PcnNetworkPolicyManager {
 	var l = log.WithFields(log.Fields{
 		"by":     PM,
 		"method": "StartNetworkPolicyManager()",
@@ -47,13 +41,14 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 		podController:    podController,
 		firewallManager:  firewallManager,
 		deployedPolicies: map[string][]k8s_types.UID{},
+		node:             nodeName,
 	}
 
 	//-------------------------------------
 	//	Subscribe to default policies events
 	//-------------------------------------
 
-	manager.defaultPolicyParser = newDefaultPolicyParser(podController, firewallManager, &manager)
+	manager.defaultPolicyParser = newDefaultPolicyParser(podController, firewallManager, nodeName)
 
 	//	Deploy a new default policy
 	dnpc.Subscribe(pcn_types.New, manager.DeployDefaultPolicy)
@@ -113,14 +108,17 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 
 	for _, pods := range podsAffected {
 		for _, pod := range pods {
-			fw := manager.firewallManager.Get(pod.Pod)
 
-			if fw != nil {
-				fw.CeasePolicy(policy.Name)
+			if pod.Pod.Spec.NodeName == manager.node {
+				fw := manager.firewallManager.Get(pod.Pod)
 
-				//	Remove this pod from the deployed policies
-				//	UPDATE: read below.
-				//podsInPolicy = append(podsInPolicy, pod.Pod.UID)
+				if fw != nil {
+					fw.CeasePolicy(policy.Name)
+
+					//	Remove this pod from the deployed policies
+					//	UPDATE: read below.
+					//podsInPolicy = append(podsInPolicy, pod.Pod.UID)
+				}
 			}
 		}
 	}
@@ -146,7 +144,7 @@ func (manager *NetworkPolicyManager) UpdateDefaultPolicy(policy *networking_v1.N
 }
 
 func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
-	var l = log.WithFields(log.Fields{
+	/*var l = log.WithFields(log.Fields{
 		"by":     PM,
 		"method": "checkNewPod",
 	})
@@ -166,7 +164,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	log.Debugf("last condition: %+v\n", lastCondition)
 
 	//	First start the firewall
-	manager.firewallManager.GetOrCreate(*pod)
+	manager.firewallManager.GetOrCreate(*pod)*/
 
 	/*	This is going to be tricky, so here is a brief explanation.
 		1) We must see if there are policies that must be applied to this pod.
@@ -175,7 +173,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	*/
 
 	//	Default Policies
-	for _, k8sPolicy := range manager.dnpc.GetPolicy("*") {
+	/*for _, k8sPolicy := range manager.dnpc.GetPolicy("*") {
 
 		//	Does this policy affect this pod?
 		go func(currentPolicy networking_v1.NetworkPolicy) {
@@ -209,7 +207,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 				}
 			}
 		}(k8sPolicy)
-	}
+	}*/
 
 }
 
