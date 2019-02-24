@@ -580,7 +580,7 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 			for _, generatedPort := range generatedPorts {
 				parsed.Ingress = append(parsed.Ingress, k8sfirewall.ChainRule{
 					Src:     rule.Src,
-					Sport:   generatedPort.port,
+					Dport:   generatedPort.port,
 					L4proto: generatedPort.protocol,
 					Action:  rule.Action,
 				})
@@ -599,7 +599,7 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 			for _, generatedPort := range generatedPorts {
 				parsed.Egress = append(parsed.Egress, k8sfirewall.ChainRule{
 					Dst:     rule.Dst,
-					Dport:   generatedPort.port,
+					Sport:   generatedPort.port,
 					L4proto: generatedPort.protocol,
 					Action:  rule.Action,
 				})
