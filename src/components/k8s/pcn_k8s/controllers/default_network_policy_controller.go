@@ -311,15 +311,15 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 		npc.addNewPolicy(policy)
 		npc.dispatchers.new.Dispatch(policy)
 	case pcn_types.Update:
-		npc.removePolicy(policy)
-		npc.addNewPolicy(policy)
 		npc.dispatchers.update.Dispatch(policy)
+		//npc.removePolicy(policy)
+		npc.addNewPolicy(policy)
 	case pcn_types.Delete:
 		_splitted := strings.Split(event.Key, "/")
 		policy, ok := npc.deployedPolicies[_splitted[1]]
 		if ok {
-			//npc.removePolicy(policy)
 			npc.dispatchers.delete.Dispatch(policy)
+			npc.removePolicy(policy)
 		}
 	}
 

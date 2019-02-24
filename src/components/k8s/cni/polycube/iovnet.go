@@ -344,9 +344,28 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 		}
 
 		//	Now create the ports
-		//	Connect the firewall with the pod
+		//	Connect the firewall with the switch
 		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "ingress-p", k8sfirewall.Ports{
 			Name:   "ingress-p",
+			Peer:   "k8switch0:" + switchPort,
+			Status: "up",
+		}); err != nil {
+			log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
+			return err
+		}
+
+		//	try to set it to up
+		if response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", switchPort, k8switch.Ports{
+			Peer: name + ":ingress-p",
+		}); err != nil {
+			log.Errorln("could not set port to up", err, response)
+			return err
+		}
+		log.Debugln("Successfully set the k8switch port to up")
+
+		//	Connect the firewall with the pod
+		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "egress-p", k8sfirewall.Ports{
+			Name:   "egress-p",
 			Peer:   containerPort,
 			Status: "up",
 		}); err != nil {
@@ -354,45 +373,8 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 			return err
 		}
 
-		//	Connect the firewall with the switch
-		if response, err := fwAPI.CreateFirewallPortsByID(nil, name, "egress-p", k8sfirewall.Ports{
-			Name:   "egress-p",
-			Peer:   "k8switch0:" + switchPort,
-			Status: "up",
-		}); err != nil {
-			log.Errorln("An error occurred while trying to create ports for firewall:", name, switchPort, err, response)
-			return err
-		}
 	} else {
 		log.Debugf("the firewall %s already existed %+v\n", fw)
-	}
-
-	//	try to set it to up
-	response, err := k8switchAPI.UpdateK8switchPortsByID("k8switch0", switchPort, k8switch.Ports{Peer: name + ":egress-p"})
-	if err != nil {
-		log.Errorln("could not set port to up", err, response)
-	} else {
-		log.Debugln("the call to set port to up has been successful")
-		_fw, _, err := fwAPI.ReadFirewallByID(nil, name)
-		if err == nil {
-			log.Debugf("now firewall is %+v\n", _fw)
-		}
-	}
-
-	//	replaceing
-	if response, err := fwAPI.ReplaceFirewallChainByID(nil, name, "ingress", k8sfirewall.Chain{
-		Default_: "forward",
-	}); err != nil {
-		log.Debugln("could not set ingress default to forward", err, response)
-	} else {
-		log.Debugln("successfully set ingress to forward")
-	}
-	if response, err := fwAPI.ReplaceFirewallChainByID(nil, name, "egress", k8sfirewall.Chain{
-		Default_: "forward",
-	}); err != nil {
-		log.Debugln("could not set egress default to forward", err, response)
-	} else {
-		log.Debugln("successfully set egress to forward")
 	}
 
 	return nil
