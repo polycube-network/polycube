@@ -531,49 +531,49 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 			Src:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "UDP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[0],
 			Action:  "drop",
 			L4proto: "TCP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[0],
 			Action:  "drop",
 			L4proto: "UDP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[1],
 			Action:  "drop",
 			L4proto: "TCP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[1],
 			Action:  "drop",
 			L4proto: "UDP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[2],
 			Action:  "drop",
 			L4proto: "TCP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.Except[2],
 			Action:  "drop",
 			L4proto: "UDP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 	}
 	expectedEgress := []k8sfirewall.ChainRule{
@@ -581,17 +581,21 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 			Dst:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "UDP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 	}
 
 	result := manager.ParseIngress(ingress, "ns")
+	/*for i := 0; i < len(result.Ingress); i++ {
+		fmt.Printf("%+v\n", expectedIngress[i])
+		fmt.Printf("%+v\n\n", result.Ingress[i])
+	}*/
 	assert.ElementsMatch(t, expectedIngress, result.Ingress)
 	assert.ElementsMatch(t, expectedEgress, result.Egress)
 
@@ -614,49 +618,49 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 			Dst:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "UDP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[0],
 			Action:  "drop",
 			L4proto: "TCP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[0],
 			Action:  "drop",
 			L4proto: "UDP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[1],
 			Action:  "drop",
 			L4proto: "TCP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[1],
 			Action:  "drop",
 			L4proto: "UDP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[2],
 			Action:  "drop",
 			L4proto: "TCP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Dst:     ipBlock.Except[2],
 			Action:  "drop",
 			L4proto: "UDP",
-			Dport:   port.IntVal,
+			Sport:   port.IntVal,
 		},
 	}
 	expectedIngress = []k8sfirewall.ChainRule{
@@ -664,13 +668,13 @@ func TestSingleRuleIPBlockMultipleExceptionsWithMultipleProtocolAndPort(t *testi
 			Src:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 		k8sfirewall.ChainRule{
 			Src:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "UDP",
-			Sport:   port.IntVal,
+			Dport:   port.IntVal,
 		},
 	}
 
@@ -777,7 +781,7 @@ func TestGeneratedSupportedProtocolsWithUnsupported(t *testing.T) {
 			Src:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Sport:   int32(port.IntVal),
+			Dport:   int32(port.IntVal),
 		},
 	}
 	expectedEgress := []k8sfirewall.ChainRule{
@@ -785,7 +789,7 @@ func TestGeneratedSupportedProtocolsWithUnsupported(t *testing.T) {
 			Dst:     ipBlock.CIDR,
 			Action:  "forward",
 			L4proto: "TCP",
-			Dport:   int32(port.IntVal),
+			Sport:   int32(port.IntVal),
 		},
 	}
 
@@ -906,19 +910,19 @@ func TestProtocolIsNil(t *testing.T) {
 		k8sfirewall.ChainRule{
 			Src:    ipBlock.CIDR,
 			Action: "forward",
-			Sport:  int32(port.IntVal),
+			Dport:  int32(port.IntVal),
 		},
 		k8sfirewall.ChainRule{
 			Src:    ipBlock.Except[0],
 			Action: "drop",
-			Sport:  int32(port.IntVal),
+			Dport:  int32(port.IntVal),
 		},
 	}
 	expectedEgress := []k8sfirewall.ChainRule{
 		k8sfirewall.ChainRule{
 			Dst:    ipBlock.CIDR,
 			Action: "forward",
-			Dport:  int32(port.IntVal),
+			Sport:  int32(port.IntVal),
 		},
 	}
 
@@ -944,19 +948,19 @@ func TestProtocolIsNil(t *testing.T) {
 		k8sfirewall.ChainRule{
 			Dst:    ipBlock.CIDR,
 			Action: "forward",
-			Dport:  int32(port.IntVal),
+			Sport:  int32(port.IntVal),
 		},
 		k8sfirewall.ChainRule{
 			Dst:    ipBlock.Except[0],
 			Action: "drop",
-			Dport:  int32(port.IntVal),
+			Sport:  int32(port.IntVal),
 		},
 	}
 	expectedIngress = []k8sfirewall.ChainRule{
 		k8sfirewall.ChainRule{
 			Src:    ipBlock.CIDR,
 			Action: "forward",
-			Sport:  int32(port.IntVal),
+			Dport:  int32(port.IntVal),
 		},
 	}
 
@@ -1067,11 +1071,11 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 	withProtocols := expectedResult
 	for i := 0; i < len(withProtocols.Ingress); i++ {
 		withProtocols.Ingress[i].L4proto = "TCP"
-		withProtocols.Ingress[i].Sport = int32(port.IntVal)
+		withProtocols.Ingress[i].Dport = int32(port.IntVal)
 	}
 	for i := 0; i < len(withProtocols.Egress); i++ {
 		withProtocols.Egress[i].L4proto = "TCP"
-		withProtocols.Egress[i].Dport = int32(port.IntVal)
+		withProtocols.Egress[i].Sport = int32(port.IntVal)
 	}
 	assert.Equal(t, withProtocols, result)
 
@@ -1094,11 +1098,11 @@ func TestPodSelectorSameNamespace(t *testing.T) {
 	withProtocols = expectedResult
 	for i := 0; i < len(withProtocols.Ingress); i++ {
 		withProtocols.Ingress[i].L4proto = "TCP"
-		withProtocols.Ingress[i].Sport = int32(port.IntVal)
+		withProtocols.Ingress[i].Dport = int32(port.IntVal)
 	}
 	for i := 0; i < len(withProtocols.Egress); i++ {
 		withProtocols.Egress[i].L4proto = "TCP"
-		withProtocols.Egress[i].Dport = int32(port.IntVal)
+		withProtocols.Egress[i].Sport = int32(port.IntVal)
 	}
 	assert.Equal(t, withProtocols, result)
 }
@@ -1387,13 +1391,13 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 				Src:     podsFound[0].Pod.Status.PodIP,
 				Action:  "forward",
 				L4proto: "TCP",
-				Sport:   int32(port.IntVal),
+				Dport:   int32(port.IntVal),
 			},
 			k8sfirewall.ChainRule{
 				Src:     podsFound[1].Pod.Status.PodIP,
 				Action:  "forward",
 				L4proto: "TCP",
-				Sport:   int32(port.IntVal),
+				Dport:   int32(port.IntVal),
 			},
 		},
 		Egress: []k8sfirewall.ChainRule{
@@ -1401,13 +1405,13 @@ func TestSelectAllFromSpecificNamespace(t *testing.T) {
 				Dst:     podsFound[0].Pod.Status.PodIP,
 				Action:  "forward",
 				L4proto: "TCP",
-				Dport:   int32(port.IntVal),
+				Sport:   int32(port.IntVal),
 			},
 			k8sfirewall.ChainRule{
 				Dst:     podsFound[1].Pod.Status.PodIP,
 				Action:  "forward",
 				L4proto: "TCP",
-				Dport:   int32(port.IntVal),
+				Sport:   int32(port.IntVal),
 			},
 		},
 	}
@@ -1920,42 +1924,42 @@ func TestComplexPolicy(t *testing.T) {
 	expectedResult.Ingress = []k8sfirewall.ChainRule{
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     "192.168.2.0/24",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "drop",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     "192.168.2.0/24",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "drop",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     "192.168.0.0/16",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     "192.168.0.0/16",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     BetaPods[0].Pod.Status.PodIP,
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Sport:   port1.IntVal,
+			Dport:   port1.IntVal,
 			Src:     BetaPods[0].Pod.Status.PodIP,
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
@@ -1963,14 +1967,14 @@ func TestComplexPolicy(t *testing.T) {
 		//	2
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port2.IntVal,
+			Dport:   port2.IntVal,
 			Src:     "192.169.0.0/16",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port3.IntVal,
+			Dport:   port3.IntVal,
 			Src:     "192.169.0.0/16",
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
@@ -1978,13 +1982,13 @@ func TestComplexPolicy(t *testing.T) {
 		//3
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Sport:   port4.IntVal,
+			Dport:   port4.IntVal,
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Sport:   port4.IntVal,
+			Dport:   port4.IntVal,
 			Dst:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
@@ -1996,28 +2000,28 @@ func TestComplexPolicy(t *testing.T) {
 	expectedResult.Egress = []k8sfirewall.ChainRule{
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Dport:   port1.IntVal,
+			Sport:   port1.IntVal,
 			Dst:     "192.168.0.0/16",
 			Src:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Dport:   port1.IntVal,
+			Sport:   port1.IntVal,
 			Dst:     "192.168.0.0/16",
 			Src:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "TCP",
-			Dport:   port1.IntVal,
+			Sport:   port1.IntVal,
 			Dst:     BetaPods[0].Pod.Status.PodIP,
 			Src:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
 		},
 		k8sfirewall.ChainRule{
 			L4proto: "UDP",
-			Dport:   port1.IntVal,
+			Sport:   port1.IntVal,
 			Dst:     BetaPods[0].Pod.Status.PodIP,
 			Src:     productionPod.Pod.Status.PodIP,
 			Action:  "forward",
