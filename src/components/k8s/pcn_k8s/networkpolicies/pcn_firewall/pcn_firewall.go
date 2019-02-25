@@ -290,6 +290,7 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	//-------------------------------------
 	//	Remove the rules
 	//-------------------------------------
+	rules.Lock()
 
 	//	Ingress
 	if len(rules.ingress) > 0 {
@@ -321,7 +322,6 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	//	Update the implemented policies
 	//-------------------------------------
 
-	rules.Lock()
 	if len(failedRules.ingress) < 1 && len(failedRules.egress) < 1 {
 		//	All rules were delete successfully: we may delete the entry
 		delete(d.rules, policyName)
@@ -370,7 +370,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 			Action:  rules[i].Action,
 		}
 
-		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err != nil {
+		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err == nil {
 			log.Debugln("it was applied successfully")
 			rules[i].Id = out.Id
 		}
@@ -380,7 +380,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	if err != nil {
 		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
 	} else {
-		l.Debugln("out is", out)
+		l.Debugln("applying injection result", out)
 	}
 	/*chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
 	if err != nil {
@@ -467,6 +467,13 @@ func (d *DeployedFirewall) RemoveRules(direction string, rules []k8sfirewall.Cha
 	}
 
 	waitDelete.Wait()
+
+	out, response, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, direction)
+	if err != nil {
+		l.Errorln("Error while trying to apply rules deletion", d.firewall.Name, "in", direction, ":", err, response)
+	} else {
+		l.Debugln("applying deletion result:", out)
+	}
 
 	//	Hopefully this is empty
 	return failedRules
