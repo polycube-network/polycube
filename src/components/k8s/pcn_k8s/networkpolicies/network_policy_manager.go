@@ -57,7 +57,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	dnpc.Subscribe(pcn_types.Delete, manager.RemoveDefaultPolicy)
 
 	//	Update a policy
-	dnpc.Subscribe(pcn_types.Delete, manager.UpdateDefaultPolicy)
+	dnpc.Subscribe(pcn_types.Update, manager.UpdateDefaultPolicy)
 
 	//-------------------------------------
 	//	Subscribe to pod events
