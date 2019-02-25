@@ -16,89 +16,9 @@
 #define SERVICE_PYANG_GIT ""
 #define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 
-const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
-module lbdsr {
-  yang-version 1.1;
-  namespace "http://polycube.network/lbdsr";
-  prefix "lbdsr";
-
-  import polycube-base { prefix "polycube-base"; }
-  import polycube-standard-base { prefix "polycube-standard-base"; }
-
-  import ietf-inet-types { prefix "inet"; }
-  import ietf-yang-types { prefix "yang"; }
-
-  organization "Polycube open source project";
-  description "YANG data model for the Polycube Load Balancer (Direct Server Return)";
-
-  polycube-base:service-description "LoadBalancer Direct Server Return Service";
-  polycube-base:service-version "2.0.0";
-  polycube-base:service-name "lbdsr";
-  polycube-base:service-min-kernel-version "4.14.0";
-
-  uses "polycube-standard-base:standard-base-yang-module" {
-    augment ports {
-      leaf type {
-        type enumeration {
-          enum FRONTEND { description "Port connected to the clients"; }
-          enum BACKEND { description "Port connected to the backend servers"; }
-        }
-        mandatory true;
-        description "Type of the LB port (e.g. FRONTEND or BACKEND)";
-      }
-    }
-  }
-
-  leaf algorithm {
-    type string;
-    description "Defines the algorithm which LB use to direct requests to the node of the pool (Random, RoundRobin, ..)";
-    polycube-base:cli-example "Random";
-  }
-
-  container frontend {
-    description "public side of the loadbalancer, which receives requests from clients";
-
-    leaf vip {
-      type inet:ipv4-address;
-      description "IP address of the loadbalancer frontend";
-      polycube-base:cli-example "130.192.100.1";
-    }
-
-    leaf mac {
-      type yang:mac-address;
-      description "MAC address of the port";
-      polycube-base:cli-example "aa:bb:cc:dd:ee:ff";
-    }
-  }
-
-  container backend {
-    description "pool of servers that will answer requests coming from clients";
-
-    list pool {
-      key "id";
-      description "pool of backend servers serving requests";
-      leaf id {
-        type uint32;
-        description "id";
-      }
-
-      leaf mac {
-        type yang:mac-address;
-        mandatory true;
-        config true;
-        polycube-base:init-only-config;
-        description "MAC address of the backend server of the pool";
-        polycube-base:cli-example "aa:bb:cc:dd:ee:ff";
-      }
-    }
-  }
-}
-
-)POLYCUBE_DM";
+#include <polycube/services/shared_library.h>
+#include "../datamodel/lbdsr.h" // generated from datamodel
 
 extern "C" const char *data_model() {
-  return SERVICE_DATA_MODEL.c_str();
+  return lbdsr_datamodel.c_str();
 }
-
-
-#include <polycube/services/shared_library.h>

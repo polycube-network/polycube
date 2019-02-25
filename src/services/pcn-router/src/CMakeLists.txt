@@ -27,6 +27,9 @@ add_library(pcn-router SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-router Router_dp.c router_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-router ../datamodel/router.yang router_datamodel)
+
 target_link_libraries(pcn-router
   polycube
   tins

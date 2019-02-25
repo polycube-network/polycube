@@ -25,6 +25,9 @@ add_library(pcn-lbdsr SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-lbdsr Lbdsr_dp.c lbdsr_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-lbdsr ../datamodel/lbdsr.yang lbdsr_datamodel)
+
 target_link_libraries(pcn-lbdsr
   polycube
   uuid)

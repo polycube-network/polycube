@@ -23,6 +23,10 @@ add_library(pcn-simpleforwarder SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-simpleforwarder Simpleforwarder_dp.c simpleforwarder_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-simpleforwarder ../datamodel/simpleforwarder.yang
+    simpleforwarder_datamodel)
+
 target_link_libraries(pcn-simpleforwarder
   polycube
   uuid)

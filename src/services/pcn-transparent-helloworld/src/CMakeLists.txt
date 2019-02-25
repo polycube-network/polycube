@@ -28,6 +28,9 @@ load_file_as_variable(pcn-transparenthelloworld
 load_file_as_variable(pcn-transparenthelloworld
   TransparentHelloworld_dp_egress.c transparent_helloworld_code_egress)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-transparenthelloworld
+    ../datamodel/transparenthelloworld.yang transparenthelloworld_datamodel)
 
 # Specify shared library install directory
 

@@ -25,6 +25,9 @@ add_library(pcn-k8switch SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-k8switch K8switch_dp.c k8switch_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-k8switch ../datamodel/k8switch.yang k8switch_datamodel)
+
 target_link_libraries(pcn-k8switch
   polycube
   uuid)

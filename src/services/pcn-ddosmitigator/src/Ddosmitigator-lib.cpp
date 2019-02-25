@@ -16,82 +16,9 @@
 #define SERVICE_PYANG_GIT ""
 #define SERVICE_SWAGGER_CODEGEN_GIT "c757d44b71d48df9e381fc8d35ea69bd12268127/c757d44"
 
-const std::string SERVICE_DATA_MODEL = R"POLYCUBE_DM(
-module ddosmitigator {
-  yang-version 1.1;
-  namespace "http://polycube.network/ddosmitigator";
-  prefix "ddosmitigator";
-
-  import polycube-base { prefix "polycube-base"; }
-  import polycube-transparent-base { prefix "polycube-transparent-base"; }
-
-  organization "Polycube open source project";
-  description "YANG data model for the Polycube DDoS Mitigator service";
-
-  polycube-base:service-description "DDoS Mitigator Service";
-  polycube-base:service-version "2.0";
-  polycube-base:service-name "ddosmitigator";
-  polycube-base:service-min-kernel-version "4.14.0";
-
-  uses "polycube-transparent-base:transparent-base-yang-module";
-
-  container stats {
-    description "Statistics on dropped packets";
-    config false;
-
-    leaf pps {
-      type uint64;
-      config false;
-      description "Dropped Packets/s";
-    }
-
-    leaf pkts {
-      type uint64;
-      config false;
-      description "Total Dropped Packets";
-    }
-  }
-
-  list blacklist-src {
-      key "ip";
-      description "Blacklisted source IP addresses";
-
-      leaf ip {
-        type string;
-        description "Source IP Address";
-        polycube-base:cli-example "10.0.0.1";
-      }
-
-      leaf drop-pkts {
-        type uint64;
-        config false;
-        description "Dropped Packets";
-      }
-  }
-
-  list blacklist-dst {
-      key "ip";
-      description "Blacklisted destination IP addresses";
-
-      leaf ip {
-        type string;
-        description "Destination IP Address";
-        polycube-base:cli-example "10.0.0.2";
-      }
-
-      leaf drop-pkts {
-        type uint64;
-        config false;
-        description "Dropped Packets";
-      }
-  }
-}
-
-)POLYCUBE_DM";
+#include <polycube/services/shared_library.h>
+#include "../datamodel/ddosmitigator.h" // generated from datamodel
 
 extern "C" const char *data_model() {
-  return SERVICE_DATA_MODEL.c_str();
+  return ddosmitigator_datamodel.c_str();
 }
-
-
-#include <polycube/services/shared_library.h>

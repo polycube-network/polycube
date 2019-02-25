@@ -25,6 +25,9 @@ load_file_as_variable(pcn-pbforwarder Pbforwarder_dp_parsing.c pbforwarder_code_
 load_file_as_variable(pcn-pbforwarder Pbforwarder_dp_matching.c pbforwarder_code_matching)
 load_file_as_variable(pcn-pbforwarder Pbforwarder_dp_action.c pbforwarder_code_action)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-pbforwarder ../datamodel/pbforwarder.yang pbforwarder_datamodel)
+
 target_link_libraries(pcn-pbforwarder
   polycube
   uuid)
