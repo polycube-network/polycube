@@ -225,7 +225,7 @@ class Iptables : public polycube::service::Cube<Ports>,
     // Program type (INGRESS/EGRESS Hook)
     ProgramType program_type_;
     // only used in chainforwarder
-    std::map<std::string, Program *> hops_;
+    std::map<std::string, std::shared_ptr<Program>> hops_;
 
     // The relationship between inner and outer must be explictly made in C++
     // in the costructor
@@ -269,7 +269,7 @@ class Iptables : public polycube::service::Cube<Ports>,
     // <_NEXT_HOP_<INPUT/FORWARD/OUTPUT>_<hop_number>
     // E.g. _NEXT_HOP_INPUT_1
     // used in chainforwarder
-    void updateHop(int hop_number, Program *hop,
+    void updateHop(int hop_number, std::shared_ptr<Program> hop,
                    ChainNameEnum hop_chain = ChainNameEnum::INVALID_INGRESS);
 
     Program *getHop(std::string hop_name);
@@ -521,7 +521,9 @@ class Iptables : public polycube::service::Cube<Ports>,
   // Keeps the mapping between an index and the eBPF program, represented as a
   // child of the Program class. The index is <ModulesConstants, Chain>
   // maintains table of programs
-  std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> programs_;
+  std::map<std::pair<uint8_t, ChainNameEnum>,
+           std::shared_ptr<Iptables::Program>>
+      programs_;
 
   /*==========================
    *METHODS DECLARATION

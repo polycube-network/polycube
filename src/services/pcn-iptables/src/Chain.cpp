@@ -343,16 +343,17 @@ void Chain::deletes(ChainDeleteInputJsonObject input) {
 ChainResetCountersOutputJsonObject Chain::resetCounters() {
   ChainResetCountersOutputJsonObject result;
   try {
-    std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> &programs =
-        parent_.programs_;
+    std::map<std::pair<uint8_t, ChainNameEnum>,
+             std::shared_ptr<Iptables::Program>> &programs = parent_.programs_;
 
     if (programs.find(std::make_pair(ModulesConstants::ACTION, name)) ==
         programs.end()) {
       throw std::runtime_error("No action loaded yet.");
     }
 
-    auto actionProgram = dynamic_cast<Iptables::ActionLookup *>(
-        programs[std::make_pair(ModulesConstants::ACTION, name)]);
+    std::shared_ptr<Iptables::ActionLookup> actionProgram =
+        std::dynamic_pointer_cast<Iptables::ActionLookup>(
+            programs[std::make_pair(ModulesConstants::ACTION, name)]);
 
     for (auto cr : rules_) {
       actionProgram->flushCounters(cr->getId());
@@ -430,9 +431,10 @@ void Chain::updateChain() {
   // srarting index found
   int startingIndex = index;
   // save first program loaded, since parser needs to know how to point to it
-  Iptables::Program *firstProgramLoaded;
+  std::shared_ptr<Iptables::Program> firstProgramLoaded;
 
-  std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>
+  std::map<std::pair<uint8_t, ChainNameEnum>,
+           std::shared_ptr<Iptables::Program>>
       newProgramsChain;
 
   // containing various bitvector(s)
@@ -513,13 +515,13 @@ void Chain::updateChain() {
         // to switch index)
 
         // Horus Constructor is in charge to compile datapath with correct const
-        parent_.programs_.insert(
-            std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
-                std::make_pair(horus_index_new, ChainNameEnum::INVALID_INGRESS),
-                new Iptables::Horus(horus_index_new, parent_, horus)));
+        parent_.programs_.insert(std::pair<std::pair<uint8_t, ChainNameEnum>,
+                                           std::shared_ptr<Iptables::Program>>(
+            std::make_pair(horus_index_new, ChainNameEnum::INVALID_INGRESS),
+            new Iptables::Horus(horus_index_new, parent_, horus)));
 
         // Horus UpdateMap is in charge to update maps
-        dynamic_cast<Iptables::Horus *>(
+        std::dynamic_pointer_cast<Iptables::Horus>(
             parent_.programs_[std::make_pair(horus_index_new,
                                              ChainNameEnum::INVALID_INGRESS)])
             ->updateMap(horus);
@@ -535,7 +537,6 @@ void Chain::updateChain() {
         auto it = parent_.programs_.find(
             std::make_pair(horus_index_old, ChainNameEnum::INVALID_INGRESS));
         if (it != parent_.programs_.end()) {
-          delete it->second;
           parent_.programs_.erase(it);
         }
       }
@@ -553,7 +554,6 @@ void Chain::updateChain() {
     auto it = parent_.programs_.find(std::make_pair(
         ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
-      delete it->second;
       parent_.programs_.erase(it);
     }
 
@@ -561,7 +561,6 @@ void Chain::updateChain() {
     it = parent_.programs_.find(std::make_pair(
         ModulesConstants::HORUS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
     if (it != parent_.programs_.end()) {
-      delete it->second;
       parent_.programs_.erase(it);
     }
   }
@@ -614,7 +613,7 @@ void Chain::updateChain() {
               std::make_pair(ModulesConstants::CONNTRACKMATCH, name),
               new Iptables::ConntrackMatch(index, name, this->parent_)));
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::ConntrackMatch *>(
+      std::dynamic_pointer_cast<Iptables::ConntrackMatch>(
           newProgramsChain[std::make_pair(ModulesConstants::CONNTRACKMATCH,
                                           name)])
           ->updateMap(conntrack_map);
@@ -656,7 +655,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::IpLookup *>(
+      std::dynamic_pointer_cast<Iptables::IpLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::IPSOURCE, name)])
           ->updateMap(ipsrc_map);
     }
@@ -681,7 +680,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::IpLookup *>(
+      std::dynamic_pointer_cast<Iptables::IpLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::IPDESTINATION,
                                           name)])
           ->updateMap(ipdst_map);
@@ -708,7 +707,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4ProtocolLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4ProtocolLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::L4PROTO, name)])
           ->updateMap(protocol_map);
     }
@@ -734,7 +733,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4PortLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4PortLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::PORTSOURCE, name)])
           ->updateMap(portsrc_map);
     }
@@ -760,7 +759,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4PortLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4PortLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::PORTDESTINATION,
                                           name)])
           ->updateMap(portdst_map);
@@ -789,7 +788,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::InterfaceLookup *>(
+      std::dynamic_pointer_cast<Iptables::InterfaceLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)])
           ->updateMap(interface_map);
     }
@@ -813,7 +812,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::TcpFlagsLookup *>(
+      std::dynamic_pointer_cast<Iptables::TcpFlagsLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::TCPFLAGS, name)])
           ->updateMap(flags_map);
     }
@@ -840,7 +839,7 @@ void Chain::updateChain() {
           new Iptables::ActionLookup(index, name, this->parent_)));
 
   for (auto rule : getRuleList()) {
-    dynamic_cast<Iptables::ActionLookup *>(
+    std::dynamic_pointer_cast<Iptables::ActionLookup>(
         newProgramsChain[std::make_pair(ModulesConstants::ACTION, name)])
         ->updateTableValue(rule->getId(),
                            ChainRule::ActionEnumToInt(rule->getAction()));
@@ -877,7 +876,6 @@ void Chain::updateChain() {
   // Except parser for OUTPUT chain
   for (auto it = parent_.programs_.begin(); it != parent_.programs_.end();) {
     if (it->first.second == name) {
-      delete it->second;
       it = parent_.programs_.erase(it);
     } else {
       ++it;
