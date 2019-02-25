@@ -27,14 +27,12 @@
 
 #include "polycube/services/cube_factory.h"
 #include "polycube/services/cube_iface.h"
-#include "polycube/services/management_interface.h"
 #include "polycube/services/table.h"
 #include "polycube/services/utils.h"
 
 namespace polycube {
 namespace service {
 
-extern "C" ServiceMetadata init(CubeFactory *factory, const char *logfile);
 extern CubeFactory *factory_;
 extern std::string logfile_;
 

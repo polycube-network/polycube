@@ -24,9 +24,10 @@
 #include "../Resources/Data/AbstractFactory.h"
 
 polycube::polycubed::Rest::Parser::Yang::Yang(
+    const std::string &datamodel,
     std::unique_ptr<Resources::Data::AbstractFactory> &&factory)
     : factory_(std::move(factory)),
       module_(lys_parse_mem(ly_ctx_new("/usr/local/include/polycube/"
                                        "datamodel-common/",
                                        0),
-                            factory_->Yang().data(), LYS_IN_YANG)) {}
+                            datamodel.data(), LYS_IN_YANG)) {}

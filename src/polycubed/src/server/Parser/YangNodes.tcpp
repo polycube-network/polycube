@@ -540,26 +540,25 @@ const std::string Yang::ServiceName() {
   return std::string{module_->name};
 }
 
-const std::string Yang::DataModel() {
-  if (!module_) {
-    throw std::invalid_argument("Invalid yang data.");
-  }
-  return factory_->Yang();
-}
-
 const std::shared_ptr<Resources::Endpoint::Service> Yang::Parse(
-    const std::string &base, const std::string &name) {
+    const std::string &base, const std::string &name, ServiceMetadata *md) {
   if (!module_) {
     throw std::invalid_argument("Invalid yang data.");
   }
 
   for (std::uint8_t i = 0; i < module_->ext_size; ++i) {
-    if (!strncmp(module_->ext[i]->def->name, "service-min-kernel-version",
-                 26)) {
+    if (!strncmp(module_->ext[i]->def->name, "service-description", 19)) {
+      md->description = std::string(module_->ext[i]->arg_value);
+    } else if (!strncmp(module_->ext[i]->def->name, "service-version", 15)) {
+      md->version = std::string(module_->ext[i]->arg_value);
+    } else if (!strncmp(module_->ext[i]->def->name,
+                        "service-min-kernel-version", 26)) {
       if (!utils::check_kernel_version(module_->ext[i]->arg_value)) {
         throw std::runtime_error(
             "kernel version does not satisfy service requirement.");
       }
+
+      md->requiredKernelVersion = std::string(module_->ext[i]->arg_value);
     } else if (!strncmp(module_->ext[i]->def->name, "service-name", 12)) {
       if (strcmp(module_->name, name.data()) &&
           strcmp(module_->ext[i]->arg_value, module_->name)) {

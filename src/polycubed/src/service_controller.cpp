@@ -75,29 +75,28 @@ ServiceController::get_management_interface() const {
 }
 
 std::string ServiceController::get_description() const {
-  if (strcmp(service_md_.description, ""))
-    return service_md_.description;
-  std::string upper_service_name = get_name();
-  upper_service_name[0] = toupper(upper_service_name[0]);
-  return upper_service_name + " Service";
+  if (service_md_.description.empty())
+    return "Unknown";
+
+  return service_md_.description;
 }
 
 std::string ServiceController::get_version() const {
-  if (strcmp(service_md_.version, ""))
-    return service_md_.version;
-  return "Unknown";
+  if (service_md_.version.empty())
+    return "Unknown";
+  return service_md_.version;
 }
 
 std::string ServiceController::get_pyang_git_repo_id() const {
-  if (strcmp(service_md_.pyangGitRepoId, ""))
-    return service_md_.pyangGitRepoId;
-  return "Unknown";
+  if (service_md_.pyangGitRepoId.empty())
+    return "Unknown";
+  return service_md_.pyangGitRepoId;
 }
 
 std::string ServiceController::get_swagger_codegen_git_repo_id() const {
-  if (strcmp(service_md_.swaggerCodegenGitRepoId, ""))
-    return service_md_.swaggerCodegenGitRepoId;
-  return "Unknown";
+  if (service_md_.swaggerCodegenGitRepoId.empty())
+    return "Unknown";
+  return service_md_.swaggerCodegenGitRepoId;
 }
 
 void ServiceController::connect(PolycubedCore *core) {
@@ -112,9 +111,7 @@ void ServiceController::connect(PolycubedCore *core) {
     std::shared_ptr<ManagementLib> lib =
         std::dynamic_pointer_cast<ManagementLib>(management_interface_);
 
-    lib->load();
     service_md_ = lib->init(&factory_, configuration::config.getLogFile());
-    datamodel_ = service_md_.dataModel;
     break;
   }
   }
@@ -130,21 +127,11 @@ json ServiceController::to_json() const {
   return j;
 }
 
-std::string ServiceController::to_json_string() const {
-  std::string jsonString = to_json().dump();
-  return jsonString;
-}
-
 json ServiceController::to_json_datamodel() const {
   json j = {{"name", get_name()},
             {"servicecontroller", get_servicecontroller()},
             {"datamodel", get_datamodel()}};
   return j;
-}
-
-std::string ServiceController::to_json_string_datamodel() const {
-  std::string jsonString = to_json_datamodel().dump();
-  return jsonString;
 }
 
 std::string ServiceController::get_name() const {
@@ -156,7 +143,7 @@ std::string ServiceController::get_servicecontroller() const {
 }
 
 std::string ServiceController::get_datamodel() const {
-  return datamodel_;
+  return service_md_.dataModel;
 }
 
 std::shared_ptr<BaseCubeIface> ServiceController::get_cube(

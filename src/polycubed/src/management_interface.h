@@ -17,11 +17,19 @@
 
 #include <memory>
 
-#include "polycube/services/management_interface.h"
 #include "server/Resources/Endpoint/Service.h"
 
+struct ServiceMetadata {
+  std::string description;
+  std::string version;
+  std::string pyangGitRepoId;
+  std::string swaggerCodegenGitRepoId;
+  std::string dataModel;
+  std::string requiredKernelVersion;
+};
+
 namespace polycube::polycubed {
-class ManagementInterface : public service::ManagementInterface {
+class ManagementInterface {
  public:
   inline const std::shared_ptr<polycubed::Rest::Resources::Endpoint::Service>
   get_service() {
@@ -29,8 +37,10 @@ class ManagementInterface : public service::ManagementInterface {
   }
 
  protected:
-  ~ManagementInterface() override {
-    service_->ClearCubes();
+  virtual ~ManagementInterface() {
+    if (service_) {
+      service_->ClearCubes();
+    }
   };
   std::shared_ptr<polycubed::Rest::Resources::Endpoint::Service> service_;
 };

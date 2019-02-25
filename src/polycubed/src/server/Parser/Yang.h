@@ -26,6 +26,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "../../management_interface.h"
 #include "../Resources/Data/AbstractFactory.h"
 
 namespace polycube::polycubed::Rest::Validators {
@@ -48,11 +49,11 @@ using ValidatorsType =
 
 class Yang {
  public:
-  explicit Yang(std::unique_ptr<Resources::Data::AbstractFactory> &&factory);
+  explicit Yang(const std::string &datamodel,
+                std::unique_ptr<Resources::Data::AbstractFactory> &&factory);
   const std::string ServiceName();
-  const std::string DataModel();
   const std::shared_ptr<Resources::Endpoint::Service> Parse(
-      const std::string &base, const std::string &name);
+      const std::string &base, const std::string &name, ServiceMetadata *md);
 
  private:
   const std::unique_ptr<Resources::Data::AbstractFactory> factory_;

@@ -34,8 +34,6 @@
 #include "ParentResource.h"
 #include "Service.h"
 
-#include "polycube/services/service_metadata.h"
-
 namespace polycube::polycubed::Rest::Resources::Data::Lib {
 using EntryPoint::GenerateHandlerName;
 using EntryPoint::GenerateHelpName;
@@ -51,10 +49,6 @@ ConcreteFactory::ConcreteFactory(const std::string &file_name,
   if (!handle_) {
     throw std::logic_error("Cannot load service implementation " + file_name);
   }
-}
-
-const std::string ConcreteFactory::Yang() const {
-  return std::invoke(LoadHandler<const char *(void)>("data_model"));
 }
 
 template <typename T>
@@ -296,8 +290,7 @@ std::unique_ptr<Endpoint::Service> ConcreteFactory::RestService(
           update_whole);
 
   auto init_handler =
-      LoadHandler<ServiceMetadata(service::CubeFactory *, const char *)>(
-          "init");
+      LoadHandler<void(service::CubeFactory *, const char *)>("init");
 
   auto help_name = GenerateHelpName(tree_names);
   auto help =

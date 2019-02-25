@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "../../Endpoint/Service.h"
-#include "polycube/services/service_metadata.h"
 #include "polycube/services/shared_lib_elements.h"
 
 namespace polycube::polycubed::Rest::Resources::Data::Lib {
@@ -43,8 +42,7 @@ class Service : public Endpoint::Service {
           read_list_handler,
       std::function<Response(const char *, const Key *, size_t, const char *)>
           update_list_handler,
-      std::function<ServiceMetadata(service::CubeFactory *, const char *)>
-          init_handler,
+      std::function<void(service::CubeFactory *, const char *)> init_handler,
       std::function<Response(HelpType, const char *name, const Key *, size_t)>
           help,
       std::function<Response(HelpType, const char *name, const Key *, size_t)>
@@ -65,8 +63,7 @@ class Service : public Endpoint::Service {
   Response DeleteValue(const std::string &cube_name,
                        const ListKeyValues &keys) final;
 
-  ServiceMetadata init(service::CubeFactory *factory,
-                       const std::string &log_file) final;
+  void init(service::CubeFactory *factory, const std::string &log_file) final;
 
   Response Help(const std::string &cube_name, HelpType type,
                 const ListKeyValues &keys) final;
@@ -86,8 +83,7 @@ class Service : public Endpoint::Service {
       read_list_handler_;
   const std::function<Response(const char *, const Key *, size_t, const char *)>
       update_list_handler_;
-  const std::function<ServiceMetadata(service::CubeFactory *, const char *)>
-      init_handler_;
+  const std::function<void(service::CubeFactory *, const char *)> init_handler_;
   const std::function<Response(HelpType, const char *name, const Key *, size_t)>
       help_;
   const std::function<Response(HelpType, const char *name, const Key *, size_t)>

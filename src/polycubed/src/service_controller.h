@@ -53,9 +53,7 @@ class ServiceController {
   ~ServiceController();
 
   json to_json() const;
-  std::string to_json_string() const;
   json to_json_datamodel() const;
-  std::string to_json_string_datamodel() const;
 
   std::string get_name() const;
   std::string get_description() const;
@@ -96,7 +94,6 @@ class ServiceController {
   std::string name_;
   std::string servicecontroller_;
   std::string base_url_;
-  std::string datamodel_;
   ServiceMetadata service_md_;
   ServiceControllerType type_;  // daemon|library
   CubeFactoryImpl factory_;

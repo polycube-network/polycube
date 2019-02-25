@@ -37,8 +37,6 @@ namespace polycube::polycubed::Rest::Resources::Data {
 
 class AbstractFactory : public Body::AbstractFactory {
  public:
-  virtual const std::string Yang() const = 0;
-
   virtual std::unique_ptr<Endpoint::CaseResource> RestCase(
       const std::queue<std::string> &tree_names, const std::string &name,
       const std::string &description, const std::string &cli_example,

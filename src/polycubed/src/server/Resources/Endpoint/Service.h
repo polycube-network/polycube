@@ -26,7 +26,6 @@
 #include "../../Validators/InSetValidator.h"
 #include "../Body/Service.h"
 #include "ParentResource.h"
-#include "polycube/services/service_metadata.h"
 
 namespace polycube::service {
 class CubeFactory;
@@ -44,8 +43,8 @@ class Service : public ParentResource, public Body::Service {
 
   ~Service() override;
 
-  virtual ServiceMetadata init(service::CubeFactory *factory,
-                               const std::string &log_file) = 0;
+  virtual void init(service::CubeFactory *factory,
+                    const std::string &log_file) = 0;
 
   static const std::string Cube(const Pistache::Rest::Request &request);
 

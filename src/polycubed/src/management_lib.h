@@ -31,13 +31,13 @@ class ManagementLib : public ManagementInterface {
  public:
   ManagementLib(const std::string &uri, const std::string &base_url,
                 const std::string &name, PolycubedCore *core);
-  ~ManagementLib() final = default;
-
-  void load();
+  virtual ~ManagementLib();
 
   ServiceMetadata init(service::CubeFactory *factory, std::string logfile);
 
  private:
+  std::string get_lib_info(std::shared_ptr<void> handle,
+                           const std::string &field);
   const std::string uri_;
   const std::string base_url_;
   const std::string name_;
