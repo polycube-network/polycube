@@ -17,7 +17,7 @@
 #define SERVICE_SWAGGER_CODEGEN_GIT "polycube/a0059af"
 
 #include <polycube/services/shared_library.h>
-#include "../datamodel/transparenthelloworld.h" // generated from datamodel
+#include "../datamodel/transparent-helloworld.h" // generated from datamodel
 
 extern "C" const char *data_model() {
   return transparenthelloworld_datamodel.c_str();
