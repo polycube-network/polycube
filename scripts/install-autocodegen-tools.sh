@@ -95,7 +95,7 @@ mvn -T $(getconf _NPROCESSORS_ONLN) clean package -DskipTests
 
 cp modules/swagger-codegen-cli/target/swagger-codegen-cli.jar $POLYCUBE_HOME
 
-sudo cp $POLYCUBE_HOME/Documentation/devel/polycube-codegen.sh /usr/local/bin/polycube-codegen
+sudo cp $POLYCUBE_HOME/scripts/polycube-codegen.sh /usr/local/bin/polycube-codegen
 
 #Create configuration file for swagger-codegen
 cat > ${CONFIG_PATH}${SWAGGER_CODEGEN_CONFIG_FILENAME} << EOF

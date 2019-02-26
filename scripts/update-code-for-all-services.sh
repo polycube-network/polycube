@@ -3,10 +3,16 @@
 # This script updates the code for all the existing services.
 # Files present in swagger-codegen-ignore are not updated.
 
+if [ -z ${POLYCUBE_HOME+x} ]; then
+    echo "\$POLYCUBE_HOME is not set"
+    exit 1
+fi
+
 SERVICES=(#bridge
           ddosmitigator
           firewall
           helloworld
+          iptables
           k8sfilter
           k8switch
           #loadbalancer-dsr
@@ -15,12 +21,13 @@ SERVICES=(#bridge
           pbforwarder
           router
           simplebridge
-          simpleforwarder)
+          simpleforwarder
+          transparent-helloworld)
 
 for SERVICE in "${SERVICES[@]}"
 do
     echo $SERVICE
-    ./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE/resources/$SERVICE.yang \
+    ./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE/datamodel/$SERVICE.yang \
         -o $POLYCUBE_HOME/src/services/pcn-$SERVICE
 done
 
@@ -29,11 +36,11 @@ done
 SERVICE=lbrp
 SERVICE_PATH=loadbalancer-rp
 echo $SERVICE
-./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/resources/$SERVICE.yang \
+./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
     -o $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH
 
 SERVICE=lbdsr
 SERVICE_PATH=loadbalancer-dsr
 echo $SERVICE
-./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/resources/$SERVICE.yang \
+./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
     -o $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH
