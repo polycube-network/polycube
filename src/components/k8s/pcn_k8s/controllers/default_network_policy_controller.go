@@ -32,7 +32,7 @@ type DefaultNetworkPolicyController struct {
 
 	startedOn time.Time
 
-	dispatchers eventDispatchers
+	dispatchers EventDispatchersContainer
 
 	stopCh chan struct{}
 
@@ -42,12 +42,6 @@ type DefaultNetworkPolicyController struct {
 
 	deployedPolicies map[string]*networking_v1.NetworkPolicy
 	lock             sync.Mutex
-}
-
-type eventDispatchers struct {
-	new    *EventDispatcher
-	update *EventDispatcher
-	delete *EventDispatcher
 }
 
 func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Clientset) *DefaultNetworkPolicyController {
@@ -168,7 +162,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 	//	Set up the dispatchers
 	//------------------------------------------------
 
-	dispatchers := eventDispatchers{
+	dispatchers := EventDispatchersContainer{
 		new:    NewEventDispatcher("new-default-policy-event-dispatcher"),
 		update: NewEventDispatcher("update-default-policy-event-dispatcher"),
 		delete: NewEventDispatcher("delete-default-policy-event-dispatcher"),

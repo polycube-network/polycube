@@ -16,6 +16,12 @@ type EventDispatcher struct {
 	lock sync.RWMutex
 }
 
+type EventDispatchersContainer struct {
+	new    *EventDispatcher
+	update *EventDispatcher
+	delete *EventDispatcher
+}
+
 type subscriber func(interface{})
 type id uint
 

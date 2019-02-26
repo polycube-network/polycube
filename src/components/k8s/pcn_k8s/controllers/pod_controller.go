@@ -45,7 +45,7 @@ type PcnPodController struct {
 
 	startedOn time.Time
 
-	dispatchers eventDispatchers
+	dispatchers EventDispatchersContainer
 
 	stopCh chan struct{}
 
@@ -173,7 +173,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 	//	Set up the dispatchers
 	//------------------------------------------------
 
-	dispatchers := eventDispatchers{
+	dispatchers := EventDispatchersContainer{
 		new:    NewEventDispatcher("new-pod-event-dispatcher"),
 		update: NewEventDispatcher("update-pod-event-dispatcher"),
 		delete: NewEventDispatcher("delete-pod-event-dispatcher"),
