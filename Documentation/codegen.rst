@@ -94,6 +94,7 @@ swagger-codegen:
   git checkout polycube
   mvn clean package # it takes some time
 
+.. _codegen:
 
 Generating the REST API from the YANG datamodel
 ***********************************************

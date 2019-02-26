@@ -72,7 +72,7 @@ Documentation about YANG can be found on `RFC6020 <https://tools.ietf.org/html/r
 2. Generating (or updating) a service stub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Please follow the instructions available in :doc:`devel <devel/developers>` in order to understand how to generate code of your `Polycube` service using the automatic code generation.
+Please follow the instructions available in :ref:`codegen` in order to understand how to generate code of your `Polycube` service using the automatic code generation.
 
 Our tools for automatic code generation will automatically generate all the REST API of your service starting from the YANG, leaving only a few details to customize.
 This will save a lot of time since developers do not have to create the code that validates input parameters, or implement all the HTTP methods that provide access (create/read/update/delete) any object defined in the service YANG model.
