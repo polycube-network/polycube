@@ -313,9 +313,13 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 		p.removePod(pod)
 		p.addNewPod(pod)
 		p.dispatchers.update.Dispatch(pod)
-		/*case pcn_types.Delete:
-		p.removePod(pod)
-		p.dispatchers.delete.Dispatch(pod)*/
+	case pcn_types.Delete:
+		_splitted := strings.Split(event.Key, "/")
+		pod, ok := p.pods[_splitted[1]]
+		if ok {
+			p.dispatchers.delete.Dispatch(&pod.pod.Pod)
+			p.removePod(&pod.pod.Pod)
+		}
 	}
 
 	//	Does not exist?

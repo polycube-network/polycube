@@ -308,9 +308,13 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 		n.removeNamespace(ns)
 		n.addNewNamespace(ns)
 		n.dispatchers.update.Dispatch(ns)
-		/*case pcn_types.Delete:
-		n.removeNamespace(ns)
-		n.dispatchers.delete.Dispatch(ns)*/
+	case pcn_types.Delete:
+		_splitted := strings.Split(event.Key, "/")
+		ns, ok := n.namespaces[_splitted[0]]
+		if ok {
+			n.removeNamespace(ns.ns)
+			n.dispatchers.delete.Dispatch(ns.ns)
+		}
 	}
 
 	//	Does not exist?
