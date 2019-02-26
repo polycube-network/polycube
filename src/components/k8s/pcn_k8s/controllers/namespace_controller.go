@@ -43,7 +43,7 @@ type PcnNamespaceController struct {
 
 	startedOn time.Time
 
-	dispatchers eventDispatchers
+	dispatchers EventDispatchersContainer
 
 	stopCh chan struct{}
 
@@ -169,7 +169,7 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 	//	Set up the dispatchers
 	//------------------------------------------------
 
-	dispatchers := eventDispatchers{
+	dispatchers := EventDispatchersContainer{
 		new:    NewEventDispatcher("new-ns-event-dispatcher"),
 		update: NewEventDispatcher("update-ns-event-dispatcher"),
 		delete: NewEventDispatcher("delete-ns-event-dispatcher"),

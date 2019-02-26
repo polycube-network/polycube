@@ -85,6 +85,7 @@ var (
 	//	--- Controllers
 	defaultnpc    *pcn_controllers.DefaultNetworkPolicyController
 	podController pcn_controllers.PodController
+	nsController  pcn_controllers.NamespaceController
 	//	--- /Controllers
 
 	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
@@ -249,8 +250,11 @@ func main() {
 	//	Set up the network policy controller (for the kubernetes policies)
 	defaultnpc = pcn_controllers.NewDefaultNetworkPolicyController(nodeName, clientset)
 
+	//	Get the namespace controller
+	nsController = pcn_controllers.NewNsController(nodeName, clientset)
+
 	//	Get the pod controller
-	podController = pcn_controllers.NewPodController(nodeName, clientset)
+	podController = pcn_controllers.NewPodController(nodeName, clientset, nsController)
 
 	// kv handler
 	go kvM.Loop()
