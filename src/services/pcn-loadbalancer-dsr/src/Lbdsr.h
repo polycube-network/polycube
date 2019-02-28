@@ -111,8 +111,8 @@ class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
   bool reloadCode();
 
   void rmPort(std::string portName);
-  void setFrontendPort(std::string portName);
-  void setBackendPort(std::string portName);
+  void setFrontendPort(std::string portName, int index);
+  void setBackendPort(std::string portName, int index);
   void rmFrontendPort(std::string portName);
   void rmBackendPort(std::string portName);
 
