@@ -37,7 +37,7 @@ Iptables::Program::~Program() {
   }
 }
 
-void Iptables::Program::updateHop(int hop_number, Program *hop,
+void Iptables::Program::updateHop(int hop_number, std::shared_ptr<Program> hop,
                                   ChainNameEnum hop_chain) {
   std::string hop_name = "_NEXT_HOP_";
   if (hop_chain == ChainNameEnum::INPUT)

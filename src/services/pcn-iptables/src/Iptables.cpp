@@ -135,11 +135,11 @@ Iptables::Iptables(const std::string name, const IptablesJsonObject &conf,
 }
 
 Iptables::~Iptables() {
-  Iptables::Program *pr =
+  std::shared_ptr<Iptables::Program> pr =
       programs_[std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE_INGRESS,
                                ChainNameEnum::INVALID_INGRESS)];
-  Iptables::ConntrackTableUpdate *ctu =
-      static_cast<Iptables::ConntrackTableUpdate *>(pr);
+  std::shared_ptr<Iptables::ConntrackTableUpdate> ctu =
+      std::dynamic_pointer_cast<Iptables::ConntrackTableUpdate>(pr);
   ctu->quitAndJoin();
 
   netlink_instance_iptables_.unregisterObserver(
@@ -151,7 +151,7 @@ Iptables::~Iptables() {
 
   // Delete all eBPF programs
   for (auto it = programs_.begin(); it != programs_.end(); ++it) {
-    delete it->second;
+    programs_.erase(it);
   }
 }
 
