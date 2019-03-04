@@ -16,6 +16,10 @@
 
 #include "polycube/services/base_cube.h"
 
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/spdlog.h>
+
 namespace polycube {
 namespace service {
 
