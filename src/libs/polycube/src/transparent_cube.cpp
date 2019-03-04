@@ -54,7 +54,7 @@ TransparentCube::~TransparentCube() {
   // just in case
   dismount();
 
-  // handle_packet_in = nullptr;
+  handle_packet_in = nullptr;
 
   factory_->destroy_cube(get_name());
 }

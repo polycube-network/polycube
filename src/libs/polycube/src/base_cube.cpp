@@ -31,40 +31,12 @@ BaseCube::BaseCube(const std::string &name,
                         logfile_, 1048576 * 5, 3),
                     std::make_shared<spdlog::sinks::stdout_sink_mt>()})) {
   logger()->set_level(logLevelToSPDLog(level));
-  // TODO: move to function
-  /*
-  handle_packet_in = [&](const PacketIn *md,
-                         const std::vector<uint8_t> &packet) -> void {
-    // This lock guarantees:
-    // - port is not deleted while processing it
-    // - service implementation is not deleted wile processing it
-    std::lock_guard<std::mutex> guard(cube_mutex);
-    if (dismounted_)
-      return;
-
-    auto &p = *ports_by_id_.at(md->port_id);
-    PacketInMetadata md_;
-    md_.reason = md->reason;
-    md_.metadata[0] = md->metadata[0];
-    md_.metadata[1] = md->metadata[1];
-    md_.metadata[2] = md->metadata[2];
-    packet_in(p, md_, packet);
-  };
-  */
-
   handle_log_msg = [&](const LogMsg *msg) -> void { datapath_log_msg(msg); };
-
-  // TODO: where to create cube?, here or in derived classes?
-  // cube_ = factory_->create_cube(name, ingress_code, egress_code,
-  //                              handle_log_msg, type, handle_packet_in,
-  //                              level);
 }
 
 BaseCube::~BaseCube() {
   // just in case
   dismount();
-
-  // factory_->destroy_cube(get_name());
 }
 
 int BaseCube::get_table_fd(const std::string &table_name, int index,
@@ -152,7 +124,6 @@ void BaseCube::dismount() {
 
   dismounted_ = true;
   // invalidate handlers
-  // handle_packet_in = nullptr;
   handle_log_msg = nullptr;
 
   // TODO: remove from controller and datapathlog?

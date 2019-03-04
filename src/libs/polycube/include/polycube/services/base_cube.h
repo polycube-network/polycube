@@ -73,9 +73,6 @@ class BaseCube {
       const std::string &table_name, int index = 0,
       ProgramType type = ProgramType::INGRESS);
 
-  // virtual void packet_in(PortType &port, PacketInMetadata &md,
-  //                       const std::vector<uint8_t> &packet) = 0;
-
   virtual void datapath_log_msg(const LogMsg *msg);
 
   void set_log_level(LogLevel level);
@@ -94,7 +91,6 @@ class BaseCube {
   int get_table_fd(const std::string &table_name, int index, ProgramType type);
 
   std::shared_ptr<BaseCubeIface> cube_;  // pointer to the cube in polycubed
-  // packet_in_cb handle_packet_in;
   log_msg_cb handle_log_msg;
   CubeType type_;
   std::shared_ptr<spdlog::logger> logger_;
