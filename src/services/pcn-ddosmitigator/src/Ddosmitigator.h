@@ -29,13 +29,11 @@
 #include "Stats.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Ddosmitigator : public polycube::service::TransparentCube,
                       public DdosmitigatorInterface {
  public:
-  Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf,
-                CubeType type = CubeType::TC);
+  Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf);
   virtual ~Ddosmitigator();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -56,18 +54,6 @@ class Ddosmitigator : public polycube::service::TransparentCube,
   void delStats() override;
 
   /// <summary>
-  /// Name of the ddosmitigator service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: INFO
-  /// </summary>
-  DdosmitigatorLoglevelEnum getLoglevel() override;
-  void setLoglevel(const DdosmitigatorLoglevelEnum &value) override;
-
-  /// <summary>
   /// Blacklisted destination IP addresses
   /// </summary>
   std::shared_ptr<BlacklistDst> getBlacklistDst(const std::string &ip) override;
@@ -80,16 +66,6 @@ class Ddosmitigator : public polycube::service::TransparentCube,
                            const BlacklistDstJsonObject &conf) override;
   void delBlacklistDst(const std::string &ip) override;
   void delBlacklistDstList() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Blacklisted source IP addresses

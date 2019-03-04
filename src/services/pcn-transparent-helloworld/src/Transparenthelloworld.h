@@ -26,15 +26,13 @@
 #include <spdlog/spdlog.h>
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 using polycube::service::ProgramType;
 
 class Transparenthelloworld : public polycube::service::TransparentCube,
                               public TransparenthelloworldInterface {
  public:
   Transparenthelloworld(const std::string name,
-                        const TransparenthelloworldJsonObject &conf,
-                        CubeType type = CubeType::TC);
+                        const TransparenthelloworldJsonObject &conf);
   virtual ~Transparenthelloworld();
 
   void attach() override;
@@ -43,28 +41,6 @@ class Transparenthelloworld : public polycube::service::TransparentCube,
                  const std::vector<uint8_t> &packet) override;
   void update(const TransparenthelloworldJsonObject &conf) override;
   TransparenthelloworldJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the transparenthelloworld service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE)
-  /// </summary>
-  TransparenthelloworldLoglevelEnum getLoglevel() override;
-  void setLoglevel(const TransparenthelloworldLoglevelEnum &value) override;
 
   /// <summary>
   /// Action performed on ingress packets

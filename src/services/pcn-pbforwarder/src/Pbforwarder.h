@@ -28,7 +28,6 @@
 #include "Rules.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Pbforwarder : public polycube::service::Cube<Ports>,
                     public PbforwarderInterface {
@@ -36,8 +35,7 @@ class Pbforwarder : public polycube::service::Cube<Ports>,
   friend class Rules;
 
  public:
-  Pbforwarder(const std::string name, const PbforwarderJsonObject &conf,
-              CubeType type = CubeType::TC);
+  Pbforwarder(const std::string name, const PbforwarderJsonObject &conf);
   virtual ~Pbforwarder() override;
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -46,18 +44,6 @@ class Pbforwarder : public polycube::service::Cube<Ports>,
 
   void update(const PbforwarderJsonObject &conf) override;
   PbforwarderJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: OFF
-  /// </summary>
-  PbforwarderLoglevelEnum getLoglevel() override;
-  void setLoglevel(const PbforwarderLoglevelEnum &value) override;
 
   /// <summary>
   /// Rule that contains all possible matches and the action for a packet
@@ -71,11 +57,6 @@ class Pbforwarder : public polycube::service::Cube<Ports>,
   void delRulesList() override;
 
   /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
@@ -86,11 +67,6 @@ class Pbforwarder : public polycube::service::Cube<Ports>,
                     const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
-
-  /// <summary>
-  /// Name of the pbforwarder service
-  /// </summary>
-  std::string getName() override;
 
   std::string generate_code_matching(bool bootstrap = false);
   std::string generate_code_parsing(bool bootstrap = false);

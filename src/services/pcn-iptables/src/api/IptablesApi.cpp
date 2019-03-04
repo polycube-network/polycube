@@ -1224,23 +1224,6 @@ Response read_iptables_list_by_id_handler(
   }
 }
 
-Response read_iptables_loglevel_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_iptables_loglevel_by_id(unique_name);
-    nlohmann::json response_body;
-    response_body = IptablesJsonObject::IptablesLoglevelEnum_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response read_iptables_ports_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ) {
@@ -1279,81 +1262,6 @@ Response read_iptables_ports_list_by_id_handler(
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_iptables_ports_peer_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_iptables_ports_peer_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_iptables_ports_status_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_iptables_ports_status_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_iptables_ports_uuid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_iptables_ports_uuid_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
     return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };
@@ -1485,40 +1393,6 @@ Response read_iptables_session_table_state_by_id_handler(
   try {
 
     auto x = read_iptables_session_table_state_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_iptables_type_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_iptables_type_by_id(unique_name);
-    nlohmann::json response_body;
-    response_body = IptablesJsonObject::CubeType_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_iptables_uuid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_iptables_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
     return { kOk, ::strdup(response_body.dump().c_str()) };
@@ -2314,23 +2188,6 @@ Response update_iptables_list_by_id_handler(
   }
 }
 
-Response update_iptables_loglevel_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    IptablesLoglevelEnum unique_value_ = IptablesJsonObject::string_to_IptablesLoglevelEnum(request_body);
-    update_iptables_loglevel_by_id(unique_name, unique_value_);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response update_iptables_ports_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ,
@@ -2377,32 +2234,6 @@ Response update_iptables_ports_list_by_id_handler(
       unique_value.push_back(a);
     }
     update_iptables_ports_list_by_id(unique_name, unique_value);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response update_iptables_ports_peer_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    // The conversion is done automatically by the json library
-    std::string unique_value = request_body;
-    update_iptables_ports_peer_by_id(unique_name, unique_portsName, unique_value);
     return { kOk, nullptr };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };

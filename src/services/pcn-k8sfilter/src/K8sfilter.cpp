@@ -21,9 +21,8 @@
 
 #include <cinttypes>
 
-K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf,
-                     CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8sfilter] [%n] [%l] %v");
   logger()->info("Creating K8sfilter instance");
 
@@ -37,10 +36,8 @@ void K8sfilter::update(const K8sfilterJsonObject &conf) {
   // This method updates all the object/parameter in K8sfilter object specified
   // in the conf JsonObject.
   // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
   if (conf.portsIsSet()) {
     for (auto &i : conf.getPorts()) {
       auto name = i.getName();
@@ -55,14 +52,7 @@ void K8sfilter::update(const K8sfilterJsonObject &conf) {
 
 K8sfilterJsonObject K8sfilter::toJsonObject() {
   K8sfilterJsonObject conf;
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
-
-  conf.setType(getType());
-
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(Cube::to_json());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());

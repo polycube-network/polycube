@@ -26,8 +26,8 @@
 using namespace Tins;
 
 Simplebridge::Simplebridge(const std::string name,
-                           const SimplebridgeJsonObject &conf, CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()),
+                           const SimplebridgeJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}),
       quit_thread_(false) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simplebridge] [%n] [%l] %v");
   logger()->info("Creating Simplebridge instance");
@@ -79,13 +79,12 @@ void Simplebridge::update(const SimplebridgeJsonObject &conf) {
   // specified in the conf JsonObject.
   // You can modify this implementation.
 
+  // update base cube implementation
+  Cube::set_conf(conf.getBase());
+
   if (conf.fdbIsSet()) {
     auto m = getFdb();
     m->update(conf.getFdb());
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.portsIsSet()) {
@@ -99,17 +98,14 @@ void Simplebridge::update(const SimplebridgeJsonObject &conf) {
 
 SimplebridgeJsonObject Simplebridge::toJsonObject() {
   SimplebridgeJsonObject conf;
+  conf.setBase(Cube::to_json());
 
   conf.setFdb(getFdb()->toJsonObject());
-  conf.setUuid(getUuid());
-  conf.setLoglevel(getLoglevel());
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
 
-  conf.setName(getName());
   return conf;
 }
 

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -22,28 +22,36 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FdbJsonObject::FdbJsonObject() : 
-  m_agingTimeIsSet(false),
-  m_entryIsSet(false) { }
+FdbJsonObject::FdbJsonObject() {
+  m_agingTimeIsSet = false;
+  m_entryIsSet = false;
+}
 
-FdbJsonObject::FdbJsonObject(nlohmann::json &val) : 
-  m_agingTimeIsSet(false),
-  m_entryIsSet(false) { 
+FdbJsonObject::FdbJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_agingTimeIsSet = false;
+  m_entryIsSet = false;
+
+
   if (val.count("aging-time")) {
     setAgingTime(val.at("aging-time").get<uint32_t>());
   }
 
-  m_entry.clear();
-  for (auto& item : val["entry"]) { 
-    FdbEntryJsonObject newItem { item };
-    m_entry.push_back(newItem);
+  if (val.count("entry")) {
+    for (auto& item : val["entry"]) {
+      FdbEntryJsonObject newItem{ item };
+      m_entry.push_back(newItem);
+    }
+
+    m_entryIsSet = true;
   }
-  m_entryIsSet = !m_entry.empty();
-  
 }
 
 nlohmann::json FdbJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_agingTimeIsSet) {
     val["aging-time"] = m_agingTime;
@@ -54,6 +62,7 @@ nlohmann::json FdbJsonObject::toJson() const {
     for (auto& item : m_entry) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
+
     if (jsonArray.size() > 0) {
       val["entry"] = jsonArray;
     }
@@ -61,6 +70,42 @@ nlohmann::json FdbJsonObject::toJson() const {
 
   return val;
 }
+
+uint32_t FdbJsonObject::getAgingTime() const {
+  return m_agingTime;
+}
+
+void FdbJsonObject::setAgingTime(uint32_t value) {
+  m_agingTime = value;
+  m_agingTimeIsSet = true;
+}
+
+bool FdbJsonObject::agingTimeIsSet() const {
+  return m_agingTimeIsSet;
+}
+
+void FdbJsonObject::unsetAgingTime() {
+  m_agingTimeIsSet = false;
+}
+
+const std::vector<FdbEntryJsonObject>& FdbJsonObject::getEntry() const{
+  return m_entry;
+}
+
+void FdbJsonObject::addFdbEntry(FdbEntryJsonObject value) {
+  m_entry.push_back(value);
+  m_entryIsSet = true;
+}
+
+
+bool FdbJsonObject::entryIsSet() const {
+  return m_entryIsSet;
+}
+
+void FdbJsonObject::unsetEntry() {
+  m_entryIsSet = false;
+}
+
 
 nlohmann::json FdbJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -113,45 +158,6 @@ std::vector<std::string> FdbJsonObject::helpActions() {
   val.push_back("flush");
   return val;
 }
-
-uint32_t FdbJsonObject::getAgingTime() const {
-  return m_agingTime;
-}
-
-void FdbJsonObject::setAgingTime(uint32_t value) {
-  m_agingTime = value;
-  m_agingTimeIsSet = true;
-}
-
-bool FdbJsonObject::agingTimeIsSet() const {
-  return m_agingTimeIsSet;
-}
-
-void FdbJsonObject::unsetAgingTime() {
-  m_agingTimeIsSet = false;
-}
-
-
-
-const std::vector<FdbEntryJsonObject>& FdbJsonObject::getEntry() const{
-  return m_entry;
-}
-
-void FdbJsonObject::addFdbEntry(FdbEntryJsonObject value) {
-  m_entry.push_back(value);
-}
-
-
-bool FdbJsonObject::entryIsSet() const {
-  return m_entryIsSet;
-}
-
-void FdbJsonObject::unsetEntry() {
-  m_entryIsSet = false;
-}
-
-
-
 
 }
 }

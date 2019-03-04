@@ -38,8 +38,7 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   friend class SrcIpRewrite;
 
  public:
-  Lbrp(const std::string name, const LbrpJsonObject &conf,
-       CubeType type = CubeType::TC);
+  Lbrp(const std::string name, const LbrpJsonObject &conf);
   virtual ~Lbrp();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -48,11 +47,6 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
 
   void update(const LbrpJsonObject &conf) override;
   LbrpJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the lbrp service
-  /// </summary>
-  std::string getName() override;
 
   /// <summary>
   /// Services (i.e., virtual ip:port) exported to the client
@@ -73,24 +67,12 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   void delServiceList() override;
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: OFF
-  /// </summary>
-  LbrpLoglevelEnum getLoglevel() override;
-  void setLoglevel(const LbrpLoglevelEnum &value) override;
-
-  /// <summary>
   ///
   /// </summary>
   std::shared_ptr<SrcIpRewrite> getSrcIpRewrite() override;
   void addSrcIpRewrite(const SrcIpRewriteJsonObject &value) override;
   void replaceSrcIpRewrite(const SrcIpRewriteJsonObject &conf) override;
   void delSrcIpRewrite() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Entry of the ports table
@@ -103,11 +85,6 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
                     const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   void reloadCodeWithNewPorts();
   std::shared_ptr<Ports> getFrontendPort();

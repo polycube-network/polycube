@@ -86,10 +86,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     PortsSecondaryip::createInControlPlane(*this, addr.getIp(),
                                            addr.getNetmask(), addr);
   }
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
@@ -98,6 +94,7 @@ void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
+  Port::set_conf(conf.getBase());
 
   logger()->info("Updating port");
 
@@ -107,10 +104,6 @@ void Ports::update(const PortsJsonObject &conf) {
 
   if (conf.macIsSet()) {
     setMac(conf.getMac());
-  }
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
   }
 
   if (conf.secondaryipIsSet()) {
@@ -125,10 +118,7 @@ void Ports::update(const PortsJsonObject &conf) {
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-
-  conf.setName(getName());
+  conf.setBase(Port::to_json());
 
   conf.setIp(getIp());
 
@@ -136,14 +126,10 @@ PortsJsonObject Ports::toJsonObject() {
 
   conf.setMac(getMac());
 
-  conf.setPeer(getPeer());
-
   // Remove comments when you implement all sub-methods
   for (auto &i : getSecondaryipList()) {
     conf.addPortsSecondaryip(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
 
   return conf;
 }

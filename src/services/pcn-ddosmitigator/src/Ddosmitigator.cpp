@@ -18,9 +18,8 @@
 #include "Ddosmitigator_dp.h"
 
 Ddosmitigator::Ddosmitigator(const std::string name,
-                             const DdosmitigatorJsonObject &conf, CubeType type)
-    : TransparentCube(name, {generate_code()}, {}, type,
-                      conf.getPolycubeLoglevel()) {
+                             const DdosmitigatorJsonObject &conf)
+    : TransparentCube(conf.getBase(), {generate_code()}, {}) {
   logger()->info("Creating Ddosmitigator instance {0}", name);
 
   auto value = conf.getStats();
@@ -38,13 +37,11 @@ void Ddosmitigator::update(const DdosmitigatorJsonObject &conf) {
   // specified in the conf JsonObject.
   // You can modify this implementation.
 
+  TransparentCube::set_conf(conf.getBase());
+
   if (conf.statsIsSet()) {
     auto m = getStats();
     m->update(conf.getStats());
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.blacklistDstIsSet()) {
@@ -66,18 +63,13 @@ void Ddosmitigator::update(const DdosmitigatorJsonObject &conf) {
 
 DdosmitigatorJsonObject Ddosmitigator::toJsonObject() {
   DdosmitigatorJsonObject conf;
+  conf.setBase(TransparentCube::to_json());
 
   conf.setStats(getStats()->toJsonObject());
-  conf.setName(getName());
-  conf.setLoglevel(getLoglevel());
 
   for (auto &i : getBlacklistDstList()) {
     conf.addBlacklistDst(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
-
-  conf.setType(getType());
 
   for (auto &i : getBlacklistSrcList()) {
     conf.addBlacklistSrc(i->toJsonObject());

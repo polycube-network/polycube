@@ -48,7 +48,7 @@ enum class ActionEnum {
 class  ChainRuleJsonObject : public JsonObjectBase {
 public:
   ChainRuleJsonObject();
-  ChainRuleJsonObject(nlohmann::json& json);
+  ChainRuleJsonObject(const nlohmann::json &json);
   ~ChainRuleJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -70,7 +70,6 @@ public:
   uint32_t getId() const;
   void setId(uint32_t value);
   bool idIsSet() const;
-  void unsetId();
 
   /// <summary>
   /// Name of the interface via which the packet is received
@@ -155,7 +154,6 @@ public:
   void unsetAction();
   static std::string ActionEnum_to_string(const ActionEnum &value);
   static ActionEnum string_to_ActionEnum(const std::string &str);
-
 
 private:
   uint32_t m_id;

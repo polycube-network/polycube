@@ -20,9 +20,8 @@
 #include "Simpleforwarder_dp.h"
 
 Simpleforwarder::Simpleforwarder(const std::string name,
-                                 const SimpleforwarderJsonObject &conf,
-                                 CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+                                 const SimpleforwarderJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern(
       "[%Y-%m-%d %H:%M:%S.%e] [Simpleforwarder] [%n] [%l] %v");
   logger()->info("Creating Simpleforwarder instance");
@@ -38,10 +37,7 @@ void Simpleforwarder::update(const SimpleforwarderJsonObject &conf) {
   // This method updates all the object/parameter in Simpleforwarder object
   // specified in the conf JsonObject.
   // You can modify this implementation.
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  Cube::set_conf(conf.getBase());
 
   if (conf.actionsIsSet()) {
     for (auto &i : conf.getActions()) {
@@ -62,23 +58,16 @@ void Simpleforwarder::update(const SimpleforwarderJsonObject &conf) {
 
 SimpleforwarderJsonObject Simpleforwarder::toJsonObject() {
   SimpleforwarderJsonObject conf;
-
-  conf.setUuid(getUuid());
-
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(Cube::to_json());
 
   // Remove comments when you implement all sub-methods
   for (auto &i : getActionsList()) {
     conf.addActions(i->toJsonObject());
   }
 
-  conf.setType(getType());
-
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setName(getName());
 
   return conf;
 }

@@ -97,19 +97,13 @@ namespace IptablesApiImpl {
   bool read_iptables_interactive_by_id(const std::string &name);
   std::vector<IptablesJsonObject> read_iptables_list_by_id();
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_list_by_id_get_list();
-  IptablesLoglevelEnum read_iptables_loglevel_by_id(const std::string &name);
   PortsJsonObject read_iptables_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_iptables_ports_list_by_id(const std::string &name);
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name);
-  std::string read_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName);
-  PortsStatusEnum read_iptables_ports_status_by_id(const std::string &name, const std::string &portsName);
-  std::string read_iptables_ports_uuid_by_id(const std::string &name, const std::string &portsName);
   SessionTableJsonObject read_iptables_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   std::vector<SessionTableJsonObject> read_iptables_session_table_list_by_id(const std::string &name);
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name);
   std::string read_iptables_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
-  CubeType read_iptables_type_by_id(const std::string &name);
-  std::string read_iptables_uuid_by_id(const std::string &name);
   void replace_iptables_by_id(const std::string &name, const IptablesJsonObject &value);
   void replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value);
   void replace_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value);
@@ -137,10 +131,8 @@ namespace IptablesApiImpl {
   void update_iptables_horus_by_id(const std::string &name, const IptablesHorusEnum &value);
   void update_iptables_interactive_by_id(const std::string &name, const bool &value);
   void update_iptables_list_by_id(const std::vector<IptablesJsonObject> &value);
-  void update_iptables_loglevel_by_id(const std::string &name, const IptablesLoglevelEnum &value);
   void update_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
 }
 }
 }

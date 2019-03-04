@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -22,11 +22,15 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FdbFlushOutputJsonObject::FdbFlushOutputJsonObject() : 
-  m_flushedIsSet(false) { }
+FdbFlushOutputJsonObject::FdbFlushOutputJsonObject() {
+  m_flushedIsSet = false;
+}
 
-FdbFlushOutputJsonObject::FdbFlushOutputJsonObject(nlohmann::json &val) : 
-  m_flushedIsSet(false) { 
+FdbFlushOutputJsonObject::FdbFlushOutputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_flushedIsSet = false;
+
+
   if (val.count("flushed")) {
     setFlushed(val.at("flushed").get<bool>());
   }
@@ -34,14 +38,32 @@ FdbFlushOutputJsonObject::FdbFlushOutputJsonObject(nlohmann::json &val) :
 
 nlohmann::json FdbFlushOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_flushedIsSet) {
     val["flushed"] = m_flushed;
   }
 
-
   return val;
 }
+
+bool FdbFlushOutputJsonObject::getFlushed() const {
+  return m_flushed;
+}
+
+void FdbFlushOutputJsonObject::setFlushed(bool value) {
+  m_flushed = value;
+  m_flushedIsSet = true;
+}
+
+bool FdbFlushOutputJsonObject::flushedIsSet() const {
+  return m_flushedIsSet;
+}
+
+
+
 
 nlohmann::json FdbFlushOutputJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -84,24 +106,6 @@ std::vector<std::string> FdbFlushOutputJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-bool FdbFlushOutputJsonObject::getFlushed() const {
-  return m_flushed;
-}
-
-void FdbFlushOutputJsonObject::setFlushed(bool value) {
-  m_flushed = value;
-  m_flushedIsSet = true;
-}
-
-bool FdbFlushOutputJsonObject::flushedIsSet() const {
-  return m_flushedIsSet;
-}
-
-
-
-
-
 
 }
 }

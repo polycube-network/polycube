@@ -31,25 +31,15 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
 Ports::~Ports() {}
 
 void Ports::update(const PortsJsonObject &conf) {
+  Port::set_conf(conf.getBase());
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
+  conf.setBase(Port::to_json());
 
   return conf;
 }
@@ -84,10 +74,6 @@ void Ports::create(Helloworld &parent, const std::string &name,
   }
 
   ports_table.set(port_map_index, p->index());
-
-  if (conf.peerIsSet()) {
-    p->setPeer(conf.getPeer());
-  }
 }
 
 std::shared_ptr<Ports> Ports::getEntry(Helloworld &parent,

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -18,6 +18,8 @@ namespace io {
 namespace swagger {
 namespace server {
 namespace model {
+
+JsonObjectBase::JsonObjectBase(const nlohmann::json &base) : base_(base) {}
 
 bool JsonObjectBase::iequals(const std::string &a, const std::string &b) {
   if(a.size() != b.size())
@@ -57,6 +59,14 @@ bool JsonObjectBase::toJson(bool value) {
 
 nlohmann::json JsonObjectBase::toJson(const JsonObjectBase &content) {
   return content.toJson();
+}
+
+const nlohmann::json &JsonObjectBase::getBase() const {
+  return base_;
+}
+
+void JsonObjectBase::setBase(const nlohmann::json &base) {
+  base_ = base;
 }
 
 }

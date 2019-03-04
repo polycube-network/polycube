@@ -32,7 +32,6 @@
 #include <tins/tins.h>
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 using namespace Tins;
 using namespace polycube::service;
 
@@ -58,8 +57,7 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
   friend class Route;
 
  public:
-  Router(const std::string name, const RouterJsonObject &conf,
-         CubeType type = CubeType::TC);
+  Router(const std::string name, const RouterJsonObject &conf);
   virtual ~Router();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -68,18 +66,6 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
 
   void update(const RouterJsonObject &conf) override;
   RouterJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the router service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: OFF
-  /// </summary>
-  RouterLoglevelEnum getLoglevel() override;
-  void setLoglevel(const RouterLoglevelEnum &value) override;
 
   /// <summary>
   /// Entry associated with the ARP table
@@ -113,11 +99,6 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
   void delRouteList() override;
 
   /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
@@ -128,11 +109,6 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
                     const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   // The following methods have been added by hand
 

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -23,9 +23,6 @@ nlohmann::fifo_map<std::string, std::string>  FdbEntry::getKeys() {
 
   return r;
 }
-
-
-
 
 
 

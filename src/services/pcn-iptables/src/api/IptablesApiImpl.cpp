@@ -39,19 +39,15 @@ std::shared_ptr<Iptables> get_cube(const std::string &name) {
 
 }
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
 void create_iptables_by_id(const std::string &name, const IptablesJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already an Cube with name " + name);
+      throw std::runtime_error("There is already a cube with name " + name);
     }
   }
-  auto ptr = std::make_shared<Iptables>(name, jsonObject, jsonObject.getType());
+  auto ptr = std::make_shared<Iptables>(name, jsonObject);
   std::unordered_map<std::string, std::shared_ptr<Iptables>>::iterator iter;
   bool inserted;
 
@@ -59,7 +55,7 @@ void create_iptables_by_id(const std::string &name, const IptablesJsonObject &js
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already an Cube with name " + name);
+    throw std::runtime_error("There is already a cube with name " + name);
   }
 }
 
@@ -73,11 +69,6 @@ void delete_iptables_by_id(const std::string &name) {
     throw std::runtime_error("Cube " + name + " does not exist");
   }
   cubes.erase(name);
-}
-
-std::string read_iptables_uuid_by_id(const std::string &name) {
-  auto m = get_cube(name);
-  return m->getUuid();
 }
 
 std::vector<IptablesJsonObject> read_iptables_list_by_id() {
@@ -98,91 +89,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_list_by_
   }
   return r;
 }
-
-/*
-* Ports list related functions
-*/
-void create_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  auto m = get_cube(name);
-  m->addPortsList(ports);
-}
-
-std::vector<PortsJsonObject> read_iptables_ports_list_by_id(const std::string &name) {
-  std::vector<PortsJsonObject> vect;
-  auto m = get_cube(name);
-  for (auto &i : m->getPortsList()) {
-    vect.push_back(i->toJsonObject());
-  }
-  return vect;
-}
-
-void replace_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  throw std::runtime_error("Method not supported");
-}
-
-void delete_iptables_ports_list_by_id(const std::string &name) {
-  auto m = get_cube(name);
-  m->delPortsList();
-}
-
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto m = get_cube(name);
-  for(auto &i : m->getPortsList()){
-    nlohmann::fifo_map<std::string, std::string> m;
-    m["name"] = i->getName();
-    r.push_back(std::move(m));
-  }
-  return r;
-}
-
-/*
-* Ports related functions
-*/
-void create_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  return m->addPorts(portsName, ports);
-}
-
-PortsJsonObject read_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  return m->getPorts(portsName)->toJsonObject();
-}
-
-void replace_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  m->replacePorts(portsName, ports);
-}
-
-void delete_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  m->delPorts(portsName);
-}
-
-std::string read_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getPeer();
-}
-
-PortsStatusEnum read_iptables_ports_status_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getStatus();
-}
-
-std::string read_iptables_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getUuid();
-}
-
-void update_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  p->setPeer(peer);
-}
-
 
 /**
 * @brief   Create append by ID
@@ -411,6 +317,60 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_chain_
 
 
 /**
+* @brief   Create ports by ID
+*
+* Create operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+create_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+  auto iptables = get_cube(name);
+
+  iptables->addPorts(portsName, value);
+}
+
+
+
+
+/**
+* @brief   Create ports by ID
+*
+* Create operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+create_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  auto iptables = get_cube(name);
+  iptables->addPortsList(value);
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&ports = iptables->addPortsList(value);
+  for(auto &i : ports) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+
+/**
 * @brief   Delete chain by ID
 *
 * Delete operation of resource: chain*
@@ -512,6 +472,58 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_chain_
 
   auto &&rule = chain->delRuleList();
   for(auto &i : rule) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+
+/**
+* @brief   Delete ports by ID
+*
+* Delete operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+*
+* Responses:
+*
+*/
+void
+delete_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
+  auto iptables = get_cube(name);
+
+  iptables->delPorts(portsName);
+}
+
+
+
+
+/**
+* @brief   Delete ports by ID
+*
+* Delete operation of resource: ports*
+*
+* @param[in] name ID of name
+*
+* Responses:
+*
+*/
+void
+delete_iptables_ports_list_by_id(const std::string &name) {
+  auto iptables = get_cube(name);
+  iptables->delPortsList();
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&ports = iptables->delPortsList();
+  for(auto &i : ports) {
     r.push_back(i->getKeys());
   }
   return r;
@@ -1117,24 +1129,62 @@ read_iptables_interactive_by_id(const std::string &name) {
 
 
 /**
-* @brief   Read loglevel by ID
+* @brief   Read ports by ID
 *
-* Read operation of resource: loglevel*
+* Read operation of resource: ports*
 *
 * @param[in] name ID of name
+* @param[in] portsName ID of ports_name
 *
 * Responses:
-* IptablesLoglevelEnum
+* PortsJsonObject
 */
-IptablesLoglevelEnum
-read_iptables_loglevel_by_id(const std::string &name) {
+PortsJsonObject
+read_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
   auto iptables = get_cube(name);
-  return iptables->getLoglevel();
+  return iptables->getPorts(portsName)->toJsonObject();
 
 }
 
 
 
+
+/**
+* @brief   Read ports by ID
+*
+* Read operation of resource: ports*
+*
+* @param[in] name ID of name
+*
+* Responses:
+* std::vector<PortsJsonObject>
+*/
+std::vector<PortsJsonObject>
+read_iptables_ports_list_by_id(const std::string &name) {
+  auto iptables = get_cube(name);
+  auto &&ports = iptables->getPortsList();
+  std::vector<PortsJsonObject> m;
+  for(auto &i : ports)
+    m.push_back(i->toJsonObject());
+  return m;
+}
+
+#define IMPLEMENT_POLYCUBE_GET_LIST
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&ports = iptables->getPortsList();
+  for(auto &i : ports) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read session-table by ID
@@ -1218,26 +1268,6 @@ read_iptables_session_table_state_by_id(const std::string &name, const std::stri
   auto iptables = get_cube(name);
   auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
   return sessionTable->getState();
-
-}
-
-
-
-
-/**
-* @brief   Read type by ID
-*
-* Read operation of resource: type*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* CubeType
-*/
-CubeType
-read_iptables_type_by_id(const std::string &name) {
-  auto iptables = get_cube(name);
-  return iptables->getType();
 
 }
 
@@ -1334,6 +1364,52 @@ replace_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameE
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
 std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+}
+#endif
+
+
+/**
+* @brief   Replace ports by ID
+*
+* Replace operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+replace_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+  auto iptables = get_cube(name);
+
+  iptables->replacePorts(portsName, value);
+}
+
+
+
+
+/**
+* @brief   Replace ports by ID
+*
+* Replace operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+replace_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  throw std::runtime_error("Method not supported");
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1814,27 +1890,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_list_b
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
-
-
-/**
-* @brief   Update loglevel by ID
-*
-* Update operation of resource: loglevel*
-*
-* @param[in] name ID of name
-* @param[in] value Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
-*
-* Responses:
-*
-*/
-void
-update_iptables_loglevel_by_id(const std::string &name, const IptablesLoglevelEnum &value) {
-  auto iptables = get_cube(name);
-
-  iptables->setLoglevel(value);
-}
-
-
 
 
 /**

@@ -48,7 +48,7 @@ enum class ActionEnum {
 class  ChainAppendInputJsonObject : public JsonObjectBase {
 public:
   ChainAppendInputJsonObject();
-  ChainAppendInputJsonObject(nlohmann::json& json);
+  ChainAppendInputJsonObject(const nlohmann::json &json);
   ~ChainAppendInputJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -147,7 +147,6 @@ public:
   void unsetAction();
   static std::string ActionEnum_to_string(const ActionEnum &value);
   static ActionEnum string_to_ActionEnum(const std::string &str);
-
 
 private:
   std::string m_inIface;

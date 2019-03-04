@@ -37,7 +37,6 @@
 #include "defines.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Ports;
 class Chain;
@@ -65,8 +64,7 @@ class Firewall : public polycube::service::Cube<Ports>,
   friend class SessionTable;
 
  public:
-  Firewall(const std::string name, const FirewallJsonObject &conf,
-           CubeType type = CubeType::TC);
+  Firewall(const std::string name, const FirewallJsonObject &conf);
   virtual ~Firewall();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -75,11 +73,6 @@ class Firewall : public polycube::service::Cube<Ports>,
 
   void update(const FirewallJsonObject &conf) override;
   FirewallJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the firewall service
-  /// </summary>
-  std::string getName() override;
 
   /// <summary>
   ///
@@ -100,18 +93,6 @@ class Firewall : public polycube::service::Cube<Ports>,
   /// </summary>
   std::string getIngressPort() override;
   void setIngressPort(const std::string &value) override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: INFO
-  /// </summary>
-  FirewallLoglevelEnum getLoglevel() override;
-  void setLoglevel(const FirewallLoglevelEnum &value) override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   /// <summary>
   ///
@@ -158,11 +139,6 @@ class Firewall : public polycube::service::Cube<Ports>,
   /// </summary>
   FirewallConntrackEnum getConntrack() override;
   void setConntrack(const FirewallConntrackEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Entry of the ports table

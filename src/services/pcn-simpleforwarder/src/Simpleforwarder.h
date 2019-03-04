@@ -29,15 +29,13 @@
 #include "Ports.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Simpleforwarder : public polycube::service::Cube<Ports>,
                         public SimpleforwarderInterface {
   friend class Ports;
 
  public:
-  Simpleforwarder(const std::string name, const SimpleforwarderJsonObject &conf,
-                  CubeType type = CubeType::TC);
+  Simpleforwarder(const std::string name, const SimpleforwarderJsonObject &conf);
   virtual ~Simpleforwarder();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -46,28 +44,6 @@ class Simpleforwarder : public polycube::service::Cube<Ports>,
 
   void update(const SimpleforwarderJsonObject &conf) override;
   SimpleforwarderJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the simpleforwarder service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE)
-  /// </summary>
-  SimpleforwarderLoglevelEnum getLoglevel() override;
-  void setLoglevel(const SimpleforwarderLoglevelEnum &value) override;
 
   /// <summary>
   /// Entry of the ports table

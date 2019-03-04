@@ -19,10 +19,8 @@
 #include "./../../../polycubed/src/utils.h"
 #include "Iptables_dp.h"
 
-Iptables::Iptables(const std::string name, const IptablesJsonObject &conf,
-                   CubeType type)
-    : Cube(name, {iptables_code_ingress}, {iptables_code_egress}, type,
-           conf.getPolycubeLoglevel()) {
+Iptables::Iptables(const std::string name, const IptablesJsonObject &conf)
+    : Cube(conf.getBase(), {iptables_code_ingress}, {iptables_code_egress}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Iptables] [%n] [%l] %v");
   logger()->info("Creating Iptables instance");
 
@@ -164,6 +162,7 @@ void Iptables::update(const IptablesJsonObject &conf) {
   // This method updates all the object/parameter in Iptables object specified
   // in the conf JsonObject.
   // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
   if (conf.chainIsSet()) {
     for (auto &i : conf.getChain()) {
@@ -171,10 +170,6 @@ void Iptables::update(const IptablesJsonObject &conf) {
       auto m = getChain(name);
       m->update(i);
     }
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.interactiveIsSet()) {
@@ -196,25 +191,20 @@ void Iptables::update(const IptablesJsonObject &conf) {
 
 IptablesJsonObject Iptables::toJsonObject() {
   IptablesJsonObject conf;
-
-  conf.setName(getName());
+  conf.setBase(Cube::to_json());
 
   // Remove comments when you implement all sub-methods
   // for(auto &i : getChainList()){
   //  conf.addChain(i->toJsonObject());
   //}
 
-  conf.setLoglevel(getLoglevel());
   conf.setConntrack(getConntrack());
   conf.setHorus(getHorus());
   conf.setInteractive(getInteractive());
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
 
   return conf;
 }
@@ -329,10 +319,11 @@ void Iptables::attachInterfaces() {
 bool Iptables::connectPort(const std::string &name) {
   try {
     PortsJsonObject conf;
+    // TODO: is this right?
     conf.setName(name);
-    conf.setPeer(name);
-
     Ports::create(*this, name, conf);
+    auto port = get_port(name);
+    port->set_peer(name);
   } catch (...) {
     return false;
   }
@@ -465,7 +456,7 @@ bool Iptables::isContrackActive() {
 bool Iptables::fibLookupEnabled() {
   if (!fib_lookup_set_) {
     fib_lookup_enabled_ = true;
-    if (getType() == CubeType::TC) {
+    if (get_type() == CubeType::TC) {
       fib_lookup_enabled_ = false;
     }
 

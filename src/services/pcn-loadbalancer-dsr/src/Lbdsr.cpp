@@ -19,8 +19,8 @@
 #include "Lbdsr.h"
 #include "Lbdsr_dp.h"
 
-Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf, CubeType type)
-    : Cube(name, {generate_code(true)}, {}, type, conf.getPolycubeLoglevel()) {
+Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code(true)}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbdsr] [%n] [%l] %v");
   logger()->info("Creating Lbdsr instance");
 
@@ -39,6 +39,7 @@ void Lbdsr::update(const LbdsrJsonObject &conf) {
   // This method updates all the object/parameter in Lbdsr object specified in
   // the conf JsonObject.
   // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
   if (conf.frontendIsSet()) {
     auto m = getFrontend();
@@ -47,10 +48,6 @@ void Lbdsr::update(const LbdsrJsonObject &conf) {
 
   if (conf.algorithmIsSet()) {
     setAlgorithm(conf.getAlgorithm());
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.portsIsSet()) {
@@ -69,18 +66,11 @@ void Lbdsr::update(const LbdsrJsonObject &conf) {
 
 LbdsrJsonObject Lbdsr::toJsonObject() {
   LbdsrJsonObject conf;
+  conf.setBase(Cube::to_json());
 
   conf.setFrontend(getFrontend()->toJsonObject());
 
-  conf.setName(getName());
-
   conf.setAlgorithm(getAlgorithm());
-
-  conf.setLoglevel(getLoglevel());
-
-  conf.setUuid(getUuid());
-
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());

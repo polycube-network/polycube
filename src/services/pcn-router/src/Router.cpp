@@ -29,9 +29,8 @@ enum {
   SLOWPATH_PKT_FOR_ROUTER
 };
 
-Router::Router(const std::string name, const RouterJsonObject &conf,
-               CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+Router::Router(const std::string name, const RouterJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Router] [%n] [%l] %v");
   logger()->info("Creating Router instance");
 
@@ -47,10 +46,7 @@ void Router::update(const RouterJsonObject &conf) {
   // This method updates all the object/parameter in Router object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  Cube::set_conf(conf.getBase());
 
   if (conf.arpEntryIsSet()) {
     for (auto &i : conf.getArpEntry()) {
@@ -81,10 +77,7 @@ void Router::update(const RouterJsonObject &conf) {
 
 RouterJsonObject Router::toJsonObject() {
   RouterJsonObject conf;
-
-  conf.setName(getName());
-
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(Cube::to_json());
 
   for (auto &i : getArpEntryList()) {
     conf.addArpEntry(i->toJsonObject());
@@ -94,13 +87,9 @@ RouterJsonObject Router::toJsonObject() {
     conf.addRoute(i->toJsonObject());
   }
 
-  conf.setType(getType());
-
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
 
   return conf;
 }

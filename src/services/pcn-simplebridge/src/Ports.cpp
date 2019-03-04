@@ -24,9 +24,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
              const PortsJsonObject &conf)
     : Port(port), parent_(static_cast<Simplebridge &>(parent)) {
   logger()->info("Creating Ports instance");
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 
   // This MAC address is not used in the datapath. We set only the variable here
   if (conf.macIsSet()) {
@@ -64,19 +61,14 @@ void Ports::update(const PortsJsonObject &conf) {
   // the conf JsonObject.
   // You can modify this implementation.
 
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
+  conf.setBase(Port::to_json());
 
-  conf.setStatus(getStatus());
-  conf.setPeer(getPeer());
   conf.setMac(getMac());
-  conf.setName(getName());
-  conf.setUuid(getUuid());
 
   return conf;
 }

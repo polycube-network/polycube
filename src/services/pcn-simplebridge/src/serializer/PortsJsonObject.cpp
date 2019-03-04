@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -22,33 +22,19 @@ namespace swagger {
 namespace server {
 namespace model {
 
-PortsJsonObject::PortsJsonObject() : 
-  m_nameIsSet(false),
-  m_uuidIsSet(false),
-  m_statusIsSet(false),
-  m_peerIsSet(false),
-  m_macIsSet(false) { }
+PortsJsonObject::PortsJsonObject() {
+  m_nameIsSet = false;
+  m_macIsSet = false;
+}
 
-PortsJsonObject::PortsJsonObject(nlohmann::json &val) : 
-  m_nameIsSet(false),
-  m_uuidIsSet(false),
-  m_statusIsSet(false),
-  m_peerIsSet(false),
-  m_macIsSet(false) { 
+PortsJsonObject::PortsJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_nameIsSet = false;
+  m_macIsSet = false;
+
+
   if (val.count("name")) {
     setName(val.at("name").get<std::string>());
-  }
-
-  if (val.count("uuid")) {
-    setUuid(val.at("uuid").get<std::string>());
-  }
-
-  if (val.count("status")) {
-    setStatus(string_to_PortsStatusEnum(val.at("status").get<std::string>()));
-  }
-
-  if (val.count("peer")) {
-    setPeer(val.at("peer").get<std::string>());
   }
 
   if (val.count("mac")) {
@@ -58,30 +44,53 @@ PortsJsonObject::PortsJsonObject(nlohmann::json &val) :
 
 nlohmann::json PortsJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  if (m_uuidIsSet) {
-    val["uuid"] = m_uuid;
-  }
-
-  if (m_statusIsSet) {
-    val["status"] = PortsStatusEnum_to_string(m_status);
-  }
-
-  if (m_peerIsSet) {
-    val["peer"] = m_peer;
   }
 
   if (m_macIsSet) {
     val["mac"] = m_mac;
   }
 
-
   return val;
 }
+
+std::string PortsJsonObject::getName() const {
+  return m_name;
+}
+
+void PortsJsonObject::setName(std::string value) {
+  m_name = value;
+  m_nameIsSet = true;
+}
+
+bool PortsJsonObject::nameIsSet() const {
+  return m_nameIsSet;
+}
+
+
+
+std::string PortsJsonObject::getMac() const {
+  return m_mac;
+}
+
+void PortsJsonObject::setMac(std::string value) {
+  m_mac = value;
+  m_macIsSet = true;
+}
+
+bool PortsJsonObject::macIsSet() const {
+  return m_macIsSet;
+}
+
+void PortsJsonObject::unsetMac() {
+  m_macIsSet = false;
+}
+
 
 nlohmann::json PortsJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -144,118 +153,6 @@ std::vector<std::string> PortsJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-std::string PortsJsonObject::getName() const {
-  return m_name;
-}
-
-void PortsJsonObject::setName(std::string value) {
-  m_name = value;
-  m_nameIsSet = true;
-}
-
-bool PortsJsonObject::nameIsSet() const {
-  return m_nameIsSet;
-}
-
-
-
-
-
-std::string PortsJsonObject::getUuid() const {
-  return m_uuid;
-}
-
-void PortsJsonObject::setUuid(std::string value) {
-  m_uuid = value;
-  m_uuidIsSet = true;
-}
-
-bool PortsJsonObject::uuidIsSet() const {
-  return m_uuidIsSet;
-}
-
-void PortsJsonObject::unsetUuid() {
-  m_uuidIsSet = false;
-}
-
-
-
-PortsStatusEnum PortsJsonObject::getStatus() const {
-  return m_status;
-}
-
-void PortsJsonObject::setStatus(PortsStatusEnum value) {
-  m_status = value;
-  m_statusIsSet = true;
-}
-
-bool PortsJsonObject::statusIsSet() const {
-  return m_statusIsSet;
-}
-
-void PortsJsonObject::unsetStatus() {
-  m_statusIsSet = false;
-}
-
-std::string PortsJsonObject::PortsStatusEnum_to_string(const PortsStatusEnum &value){
-  switch(value){
-    case PortsStatusEnum::UP:
-      return std::string("up");
-    case PortsStatusEnum::DOWN:
-      return std::string("down");
-    default:
-      throw std::runtime_error("Bad Ports status");
-  }
-}
-
-PortsStatusEnum PortsJsonObject::string_to_PortsStatusEnum(const std::string &str){
-  if (JsonObjectBase::iequals("up", str))
-    return PortsStatusEnum::UP;
-  if (JsonObjectBase::iequals("down", str))
-    return PortsStatusEnum::DOWN;
-  throw std::runtime_error("Ports status is invalid");
-}
-
-
-std::string PortsJsonObject::getPeer() const {
-  return m_peer;
-}
-
-void PortsJsonObject::setPeer(std::string value) {
-  m_peer = value;
-  m_peerIsSet = true;
-}
-
-bool PortsJsonObject::peerIsSet() const {
-  return m_peerIsSet;
-}
-
-void PortsJsonObject::unsetPeer() {
-  m_peerIsSet = false;
-}
-
-
-
-std::string PortsJsonObject::getMac() const {
-  return m_mac;
-}
-
-void PortsJsonObject::setMac(std::string value) {
-  m_mac = value;
-  m_macIsSet = true;
-}
-
-bool PortsJsonObject::macIsSet() const {
-  return m_macIsSet;
-}
-
-void PortsJsonObject::unsetMac() {
-  m_macIsSet = false;
-}
-
-
-
 
 }
 }

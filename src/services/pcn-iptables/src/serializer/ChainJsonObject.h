@@ -48,7 +48,7 @@ enum class ActionEnum {
 class  ChainJsonObject : public JsonObjectBase {
 public:
   ChainJsonObject();
-  ChainJsonObject(nlohmann::json& json);
+  ChainJsonObject(const nlohmann::json &json);
   ~ChainJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -70,7 +70,6 @@ public:
   ChainNameEnum getName() const;
   void setName(ChainNameEnum value);
   bool nameIsSet() const;
-  void unsetName();
   static std::string ChainNameEnum_to_string(const ChainNameEnum &value);
   static ChainNameEnum string_to_ChainNameEnum(const std::string &str);
 
@@ -99,7 +98,6 @@ public:
   void addChainRule(ChainRuleJsonObject value);
   bool ruleIsSet() const;
   void unsetRule();
-
 
 private:
   ChainNameEnum m_name;

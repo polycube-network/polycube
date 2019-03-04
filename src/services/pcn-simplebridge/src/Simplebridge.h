@@ -30,7 +30,6 @@
 
 using namespace io::swagger::server::model;
 using namespace polycube::service;
-using polycube::service::CubeType;
 
 enum class SlowPathReason { FLOODING = 1 };
 
@@ -41,8 +40,7 @@ class Simplebridge : public polycube::service::Cube<Ports>,
   friend class FdbEntry;
 
  public:
-  Simplebridge(const std::string name, const SimplebridgeJsonObject &conf,
-               CubeType type = CubeType::TC);
+  Simplebridge(const std::string name, const SimplebridgeJsonObject &conf);
   virtual ~Simplebridge();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -61,23 +59,6 @@ class Simplebridge : public polycube::service::Cube<Ports>,
   void delFdb() override;
 
   /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: OFF
-  /// </summary>
-  SimplebridgeLoglevelEnum getLoglevel() override;
-  void setLoglevel(const SimplebridgeLoglevelEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
@@ -89,10 +70,6 @@ class Simplebridge : public polycube::service::Cube<Ports>,
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
-  /// <summary>
-  /// Name of the simplebridge service
-  /// </summary>
-  std::string getName() override;
   void reloadCodeWithAgingtime(uint32_t value);
 
  private:

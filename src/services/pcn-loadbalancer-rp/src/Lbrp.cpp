@@ -24,8 +24,8 @@
 
 using namespace Tins;
 
-Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf, CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbrp] [%n] [%l] %v");
   logger()->info("Creating Lbrp instance");
 
@@ -40,6 +40,7 @@ void Lbrp::update(const LbrpJsonObject &conf) {
   // This method updates all the object/parameter in Lbrp object specified in
   // the conf JsonObject.
   // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
   if (conf.serviceIsSet()) {
     for (auto &i : conf.getService()) {
@@ -49,10 +50,6 @@ void Lbrp::update(const LbrpJsonObject &conf) {
       auto m = getService(vip, vport, proto);
       m->update(i);
     }
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.srcIpRewriteIsSet()) {
@@ -71,22 +68,18 @@ void Lbrp::update(const LbrpJsonObject &conf) {
 
 LbrpJsonObject Lbrp::toJsonObject() {
   LbrpJsonObject conf;
-
-  conf.setName(getName());
+  conf.setBase(Cube::to_json());
 
   for (auto &i : getServiceList()) {
     conf.addService(i->toJsonObject());
   }
 
-  conf.setLoglevel(getLoglevel());
   conf.setSrcIpRewrite(getSrcIpRewrite()->toJsonObject());
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
 
-  conf.setUuid(getUuid());
   return conf;
 }
 

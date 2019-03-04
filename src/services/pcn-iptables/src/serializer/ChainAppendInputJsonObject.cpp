@@ -22,29 +22,33 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ChainAppendInputJsonObject::ChainAppendInputJsonObject() : 
-  m_inIfaceIsSet(false),
-  m_outIfaceIsSet(false),
-  m_srcIsSet(false),
-  m_dstIsSet(false),
-  m_l4protoIsSet(false),
-  m_sportIsSet(false),
-  m_dportIsSet(false),
-  m_tcpflagsIsSet(false),
-  m_conntrackIsSet(false),
-  m_actionIsSet(false) { }
+ChainAppendInputJsonObject::ChainAppendInputJsonObject() {
+  m_inIfaceIsSet = false;
+  m_outIfaceIsSet = false;
+  m_srcIsSet = false;
+  m_dstIsSet = false;
+  m_l4protoIsSet = false;
+  m_sportIsSet = false;
+  m_dportIsSet = false;
+  m_tcpflagsIsSet = false;
+  m_conntrackIsSet = false;
+  m_actionIsSet = false;
+}
 
-ChainAppendInputJsonObject::ChainAppendInputJsonObject(nlohmann::json &val) : 
-  m_inIfaceIsSet(false),
-  m_outIfaceIsSet(false),
-  m_srcIsSet(false),
-  m_dstIsSet(false),
-  m_l4protoIsSet(false),
-  m_sportIsSet(false),
-  m_dportIsSet(false),
-  m_tcpflagsIsSet(false),
-  m_conntrackIsSet(false),
-  m_actionIsSet(false) { 
+ChainAppendInputJsonObject::ChainAppendInputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_inIfaceIsSet = false;
+  m_outIfaceIsSet = false;
+  m_srcIsSet = false;
+  m_dstIsSet = false;
+  m_l4protoIsSet = false;
+  m_sportIsSet = false;
+  m_dportIsSet = false;
+  m_tcpflagsIsSet = false;
+  m_conntrackIsSet = false;
+  m_actionIsSet = false;
+
+
   if (val.count("in-iface")) {
     setInIface(val.at("in-iface").get<std::string>());
   }
@@ -88,6 +92,9 @@ ChainAppendInputJsonObject::ChainAppendInputJsonObject(nlohmann::json &val) :
 
 nlohmann::json ChainAppendInputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_inIfaceIsSet) {
     val["in-iface"] = m_inIface;
@@ -129,8 +136,226 @@ nlohmann::json ChainAppendInputJsonObject::toJson() const {
     val["action"] = ActionEnum_to_string(m_action);
   }
 
-
   return val;
+}
+
+std::string ChainAppendInputJsonObject::getInIface() const {
+  return m_inIface;
+}
+
+void ChainAppendInputJsonObject::setInIface(std::string value) {
+  m_inIface = value;
+  m_inIfaceIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::inIfaceIsSet() const {
+  return m_inIfaceIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetInIface() {
+  m_inIfaceIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::getOutIface() const {
+  return m_outIface;
+}
+
+void ChainAppendInputJsonObject::setOutIface(std::string value) {
+  m_outIface = value;
+  m_outIfaceIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::outIfaceIsSet() const {
+  return m_outIfaceIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetOutIface() {
+  m_outIfaceIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::getSrc() const {
+  return m_src;
+}
+
+void ChainAppendInputJsonObject::setSrc(std::string value) {
+  m_src = value;
+  m_srcIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::srcIsSet() const {
+  return m_srcIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetSrc() {
+  m_srcIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::getDst() const {
+  return m_dst;
+}
+
+void ChainAppendInputJsonObject::setDst(std::string value) {
+  m_dst = value;
+  m_dstIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::dstIsSet() const {
+  return m_dstIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetDst() {
+  m_dstIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::getL4proto() const {
+  return m_l4proto;
+}
+
+void ChainAppendInputJsonObject::setL4proto(std::string value) {
+  m_l4proto = value;
+  m_l4protoIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::l4protoIsSet() const {
+  return m_l4protoIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetL4proto() {
+  m_l4protoIsSet = false;
+}
+
+uint16_t ChainAppendInputJsonObject::getSport() const {
+  return m_sport;
+}
+
+void ChainAppendInputJsonObject::setSport(uint16_t value) {
+  m_sport = value;
+  m_sportIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::sportIsSet() const {
+  return m_sportIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetSport() {
+  m_sportIsSet = false;
+}
+
+uint16_t ChainAppendInputJsonObject::getDport() const {
+  return m_dport;
+}
+
+void ChainAppendInputJsonObject::setDport(uint16_t value) {
+  m_dport = value;
+  m_dportIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::dportIsSet() const {
+  return m_dportIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetDport() {
+  m_dportIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::getTcpflags() const {
+  return m_tcpflags;
+}
+
+void ChainAppendInputJsonObject::setTcpflags(std::string value) {
+  m_tcpflags = value;
+  m_tcpflagsIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::tcpflagsIsSet() const {
+  return m_tcpflagsIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetTcpflags() {
+  m_tcpflagsIsSet = false;
+}
+
+ConntrackstatusEnum ChainAppendInputJsonObject::getConntrack() const {
+  return m_conntrack;
+}
+
+void ChainAppendInputJsonObject::setConntrack(ConntrackstatusEnum value) {
+  m_conntrack = value;
+  m_conntrackIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::conntrackIsSet() const {
+  return m_conntrackIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetConntrack() {
+  m_conntrackIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::ConntrackstatusEnum_to_string(const ConntrackstatusEnum &value){
+  switch(value) {
+    case ConntrackstatusEnum::NEW:
+      return std::string("new");
+    case ConntrackstatusEnum::ESTABLISHED:
+      return std::string("established");
+    case ConntrackstatusEnum::RELATED:
+      return std::string("related");
+    case ConntrackstatusEnum::INVALID:
+      return std::string("invalid");
+    default:
+      throw std::runtime_error("Bad ChainAppendInput conntrack");
+  }
+}
+
+ConntrackstatusEnum ChainAppendInputJsonObject::string_to_ConntrackstatusEnum(const std::string &str){
+  if (JsonObjectBase::iequals("new", str))
+    return ConntrackstatusEnum::NEW;
+  if (JsonObjectBase::iequals("established", str))
+    return ConntrackstatusEnum::ESTABLISHED;
+  if (JsonObjectBase::iequals("related", str))
+    return ConntrackstatusEnum::RELATED;
+  if (JsonObjectBase::iequals("invalid", str))
+    return ConntrackstatusEnum::INVALID;
+  throw std::runtime_error("ChainAppendInput conntrack is invalid");
+}
+ActionEnum ChainAppendInputJsonObject::getAction() const {
+  return m_action;
+}
+
+void ChainAppendInputJsonObject::setAction(ActionEnum value) {
+  m_action = value;
+  m_actionIsSet = true;
+}
+
+bool ChainAppendInputJsonObject::actionIsSet() const {
+  return m_actionIsSet;
+}
+
+void ChainAppendInputJsonObject::unsetAction() {
+  m_actionIsSet = false;
+}
+
+std::string ChainAppendInputJsonObject::ActionEnum_to_string(const ActionEnum &value){
+  switch(value) {
+    case ActionEnum::DROP:
+      return std::string("drop");
+    case ActionEnum::LOG:
+      return std::string("log");
+    case ActionEnum::ACCEPT:
+      return std::string("accept");
+    default:
+      throw std::runtime_error("Bad ChainAppendInput action");
+  }
+}
+
+ActionEnum ChainAppendInputJsonObject::string_to_ActionEnum(const std::string &str){
+  if (JsonObjectBase::iequals("drop", str))
+    return ActionEnum::DROP;
+  if (JsonObjectBase::iequals("log", str))
+    return ActionEnum::LOG;
+  if (JsonObjectBase::iequals("accept", str))
+    return ActionEnum::ACCEPT;
+  throw std::runtime_error("ChainAppendInput action is invalid");
 }
 
 nlohmann::json ChainAppendInputJsonObject::helpKeys() {
@@ -255,245 +480,6 @@ std::vector<std::string> ChainAppendInputJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-std::string ChainAppendInputJsonObject::getInIface() const {
-  return m_inIface;
-}
-
-void ChainAppendInputJsonObject::setInIface(std::string value) {
-  m_inIface = value;
-  m_inIfaceIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::inIfaceIsSet() const {
-  return m_inIfaceIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetInIface() {
-  m_inIfaceIsSet = false;
-}
-
-
-
-std::string ChainAppendInputJsonObject::getOutIface() const {
-  return m_outIface;
-}
-
-void ChainAppendInputJsonObject::setOutIface(std::string value) {
-  m_outIface = value;
-  m_outIfaceIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::outIfaceIsSet() const {
-  return m_outIfaceIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetOutIface() {
-  m_outIfaceIsSet = false;
-}
-
-
-
-std::string ChainAppendInputJsonObject::getSrc() const {
-  return m_src;
-}
-
-void ChainAppendInputJsonObject::setSrc(std::string value) {
-  m_src = value;
-  m_srcIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::srcIsSet() const {
-  return m_srcIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetSrc() {
-  m_srcIsSet = false;
-}
-
-
-
-std::string ChainAppendInputJsonObject::getDst() const {
-  return m_dst;
-}
-
-void ChainAppendInputJsonObject::setDst(std::string value) {
-  m_dst = value;
-  m_dstIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::dstIsSet() const {
-  return m_dstIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetDst() {
-  m_dstIsSet = false;
-}
-
-
-
-std::string ChainAppendInputJsonObject::getL4proto() const {
-  return m_l4proto;
-}
-
-void ChainAppendInputJsonObject::setL4proto(std::string value) {
-  m_l4proto = value;
-  m_l4protoIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::l4protoIsSet() const {
-  return m_l4protoIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetL4proto() {
-  m_l4protoIsSet = false;
-}
-
-
-
-uint16_t ChainAppendInputJsonObject::getSport() const {
-  return m_sport;
-}
-
-void ChainAppendInputJsonObject::setSport(uint16_t value) {
-  m_sport = value;
-  m_sportIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::sportIsSet() const {
-  return m_sportIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetSport() {
-  m_sportIsSet = false;
-}
-
-
-
-uint16_t ChainAppendInputJsonObject::getDport() const {
-  return m_dport;
-}
-
-void ChainAppendInputJsonObject::setDport(uint16_t value) {
-  m_dport = value;
-  m_dportIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::dportIsSet() const {
-  return m_dportIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetDport() {
-  m_dportIsSet = false;
-}
-
-
-
-std::string ChainAppendInputJsonObject::getTcpflags() const {
-  return m_tcpflags;
-}
-
-void ChainAppendInputJsonObject::setTcpflags(std::string value) {
-  m_tcpflags = value;
-  m_tcpflagsIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::tcpflagsIsSet() const {
-  return m_tcpflagsIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetTcpflags() {
-  m_tcpflagsIsSet = false;
-}
-
-
-
-ConntrackstatusEnum ChainAppendInputJsonObject::getConntrack() const {
-  return m_conntrack;
-}
-
-void ChainAppendInputJsonObject::setConntrack(ConntrackstatusEnum value) {
-  m_conntrack = value;
-  m_conntrackIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::conntrackIsSet() const {
-  return m_conntrackIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetConntrack() {
-  m_conntrackIsSet = false;
-}
-
-std::string ChainAppendInputJsonObject::ConntrackstatusEnum_to_string(const ConntrackstatusEnum &value){
-  switch(value){
-    case ConntrackstatusEnum::NEW:
-      return std::string("new");
-    case ConntrackstatusEnum::ESTABLISHED:
-      return std::string("established");
-    case ConntrackstatusEnum::RELATED:
-      return std::string("related");
-    case ConntrackstatusEnum::INVALID:
-      return std::string("invalid");
-    default:
-      throw std::runtime_error("Bad ChainAppendInput conntrack");
-  }
-}
-
-ConntrackstatusEnum ChainAppendInputJsonObject::string_to_ConntrackstatusEnum(const std::string &str){
-  if (JsonObjectBase::iequals("new", str))
-    return ConntrackstatusEnum::NEW;
-  if (JsonObjectBase::iequals("established", str))
-    return ConntrackstatusEnum::ESTABLISHED;
-  if (JsonObjectBase::iequals("related", str))
-    return ConntrackstatusEnum::RELATED;
-  if (JsonObjectBase::iequals("invalid", str))
-    return ConntrackstatusEnum::INVALID;
-  throw std::runtime_error("ChainAppendInput conntrack is invalid");
-}
-
-
-ActionEnum ChainAppendInputJsonObject::getAction() const {
-  return m_action;
-}
-
-void ChainAppendInputJsonObject::setAction(ActionEnum value) {
-  m_action = value;
-  m_actionIsSet = true;
-}
-
-bool ChainAppendInputJsonObject::actionIsSet() const {
-  return m_actionIsSet;
-}
-
-void ChainAppendInputJsonObject::unsetAction() {
-  m_actionIsSet = false;
-}
-
-std::string ChainAppendInputJsonObject::ActionEnum_to_string(const ActionEnum &value){
-  switch(value){
-    case ActionEnum::DROP:
-      return std::string("drop");
-    case ActionEnum::LOG:
-      return std::string("log");
-    case ActionEnum::ACCEPT:
-      return std::string("accept");
-    default:
-      throw std::runtime_error("Bad ChainAppendInput action");
-  }
-}
-
-ActionEnum ChainAppendInputJsonObject::string_to_ActionEnum(const std::string &str){
-  if (JsonObjectBase::iequals("drop", str))
-    return ActionEnum::DROP;
-  if (JsonObjectBase::iequals("log", str))
-    return ActionEnum::LOG;
-  if (JsonObjectBase::iequals("accept", str))
-    return ActionEnum::ACCEPT;
-  throw std::runtime_error("ChainAppendInput action is invalid");
-}
-
-
 
 }
 }

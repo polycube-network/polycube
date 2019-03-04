@@ -36,7 +36,7 @@ namespace model {
 class  SessionTableJsonObject : public JsonObjectBase {
 public:
   SessionTableJsonObject();
-  SessionTableJsonObject(nlohmann::json& json);
+  SessionTableJsonObject(const nlohmann::json &json);
   ~SessionTableJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -58,7 +58,6 @@ public:
   std::string getSrc() const;
   void setSrc(std::string value);
   bool srcIsSet() const;
-  void unsetSrc();
 
   /// <summary>
   /// Destination IP
@@ -66,7 +65,6 @@ public:
   std::string getDst() const;
   void setDst(std::string value);
   bool dstIsSet() const;
-  void unsetDst();
 
   /// <summary>
   /// Level 4 Protocol.
@@ -74,7 +72,6 @@ public:
   std::string getL4proto() const;
   void setL4proto(std::string value);
   bool l4protoIsSet() const;
-  void unsetL4proto();
 
   /// <summary>
   /// Source Port
@@ -82,7 +79,6 @@ public:
   uint16_t getSport() const;
   void setSport(uint16_t value);
   bool sportIsSet() const;
-  void unsetSport();
 
   /// <summary>
   /// Destination
@@ -90,7 +86,6 @@ public:
   uint16_t getDport() const;
   void setDport(uint16_t value);
   bool dportIsSet() const;
-  void unsetDport();
 
   /// <summary>
   /// Connection state.
@@ -99,7 +94,6 @@ public:
   void setState(std::string value);
   bool stateIsSet() const;
   void unsetState();
-
 
 private:
   std::string m_src;
