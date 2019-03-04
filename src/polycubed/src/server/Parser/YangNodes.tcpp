@@ -318,11 +318,14 @@ void Yang::ParseLeaf(
   std::unique_ptr<Resources::Body::LeafResource> leaf_res;
   std::string description =
       (leaf->dsc == nullptr) ? "" : std::string{leaf->dsc};
+
   if (generate_endpoint) {
     const auto &e_parent =
         std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
     auto endpoint = e_parent->Endpoint() + '/' + leaf->name;
-    leaf_res = factory_->RestLeaf(
+    auto base_model = base_model_factory_->IsBaseModel(parsed_names);
+    auto &&factory__ = base_model ? dynamic_cast<Resources::Data::AbstractFactory*>(base_model_factory_.get()) : factory_.get();
+    leaf_res = factory__->RestLeaf(
         std::move(parsed_names), leaf->name, description, cli_example, endpoint,
         parent.get(), std::move(value_field), node_fields,
         configuration, init_only_config, mandatory,

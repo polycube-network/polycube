@@ -32,7 +32,8 @@ using namespace configuration;
 namespace polycube {
 namespace polycubed {
 
-PolycubedCore::PolycubedCore() : logger(spdlog::get("polycubed")) {}
+PolycubedCore::PolycubedCore(BaseModel *base_model)
+    : base_model_(base_model), logger(spdlog::get("polycubed")) {}
 
 PolycubedCore::~PolycubedCore() {
   servicectrls_map_.clear();
@@ -483,6 +484,10 @@ void PolycubedCore::set_rest_server(RestServer *rest_server) {
 
 RestServer *PolycubedCore::get_rest_server() {
   return rest_server_;
+}
+
+BaseModel *PolycubedCore::base_model() {
+  return base_model_;
 }
 
 }  // namespace polycubed

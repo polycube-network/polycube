@@ -33,6 +33,7 @@ set(polycubed_sources
   bcc_mutex.cpp
   config.cpp
   polycubed.cpp
+  base_model.cpp
   cube_factory_impl.cpp
   management_lib.cpp
   polycubed_core.cpp
