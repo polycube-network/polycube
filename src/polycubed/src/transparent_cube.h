@@ -42,6 +42,9 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   void send_packet_out(const std::vector<uint8_t> &packet, service::Sense sense,
                        bool recirculate = false);
 
+  void set_conf(const nlohmann::json &conf);
+  nlohmann::json to_json() const;
+
  protected:
   void uninit();
   service::attach_cb attach_;

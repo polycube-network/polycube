@@ -41,10 +41,9 @@ namespace service {
 
 class TransparentCube : public BaseCube {
  public:
-  TransparentCube(const std::string &name,
+  TransparentCube(const nlohmann::json &conf,
                   const std::vector<std::string> &ingress_code,
-                  const std::vector<std::string> &egress_code,
-                  const CubeType type, LogLevel level = LogLevel::OFF);
+                  const std::vector<std::string> &egress_code);
   virtual ~TransparentCube();
 
   virtual void packet_in(Sense sense, PacketInMetadata &md,
@@ -54,6 +53,9 @@ class TransparentCube : public BaseCube {
 
   void send_packet_out(EthernetII &packet, Sense sense,
                        bool recirculate = false);
+
+  void set_conf(const nlohmann::json &conf);
+  nlohmann::json to_json() const;
 
   virtual void attach();
 

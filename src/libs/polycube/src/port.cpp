@@ -40,6 +40,9 @@ class Port::impl {
   PortStatus get_status() const;
   PortType get_type() const;
 
+  void set_conf(const nlohmann::json &conf);
+  nlohmann::json to_json() const;
+
  private:
   std::shared_ptr<PortIface> port_;  // port in polycubed
   // FIXME: Two different constructor needed. Look at BridgePort example
@@ -109,6 +112,14 @@ PortType Port::impl::get_type() const {
   return port_->get_type();
 }
 
+void Port::impl::set_conf(const nlohmann::json &conf) {
+  return port_->set_conf(conf);
+}
+
+nlohmann::json Port::impl::to_json() const {
+  return port_->to_json();
+}
+
 // PIMPL
 Port::Port(std::shared_ptr<PortIface> port) : pimpl_(new Port::impl(port)) {}
 
@@ -144,6 +155,14 @@ PortStatus Port::get_status() const {
 
 PortType Port::get_type() const {
   return pimpl_->get_type();
+}
+
+void Port::set_conf(const nlohmann::json &conf) {
+  return pimpl_->set_conf(conf);
+}
+
+nlohmann::json Port::to_json() const {
+  return pimpl_->to_json();
 }
 
 }  // namespace service

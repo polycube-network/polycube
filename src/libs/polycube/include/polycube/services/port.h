@@ -48,6 +48,9 @@ class Port {
   PortStatus get_status() const;
   PortType get_type() const;
 
+  virtual void set_conf(const nlohmann::json &conf);
+  virtual nlohmann::json to_json() const;
+
  private:
   class impl;
   std::unique_ptr<impl> pimpl_;

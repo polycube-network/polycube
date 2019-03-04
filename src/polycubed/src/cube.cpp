@@ -48,13 +48,14 @@ std::string Cube::get_wrapper_code() {
   return BaseCube::get_wrapper_code() + CUBE_WRAPPER;
 }
 
-json Cube::to_json() const {
-  // TODO: would BaseCube::to_json() + work?
+void Cube::set_conf(const nlohmann::json &conf) {
+  // Ports are handled in the service implementation directly
+  return BaseCube::set_conf(conf);
+}
 
-  json j = {
-      {"name", name_}, {"uuid", uuid_.str()}, {"service", service_name_},
-      //{"type", type_},
-  };
+nlohmann::json Cube::to_json() const {
+  nlohmann::json j;
+  j.update(BaseCube::to_json());
 
   json ports_json = json::array();
 
@@ -91,7 +92,8 @@ void Cube::release_port_id(uint16_t id) {
   free_ports_.insert(id);
 }
 
-std::shared_ptr<PortIface> Cube::add_port(const std::string &name) {
+std::shared_ptr<PortIface> Cube::add_port(const std::string &name,
+                                          const nlohmann::json &conf) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (ports_by_name_.count(name) != 0) {
     throw std::runtime_error("Port " + name + " already exists");
@@ -102,16 +104,24 @@ std::shared_ptr<PortIface> Cube::add_port(const std::string &name) {
 
   switch (type_) {
   case CubeType::TC:
-    port = std::make_shared<PortTC>(*this, name, id);
+    port = std::make_shared<PortTC>(*this, name, id, conf);
     break;
   case CubeType::XDP_SKB:
   case CubeType::XDP_DRV:
-    port = std::make_shared<PortXDP>(*this, name, id);
+    port = std::make_shared<PortXDP>(*this, name, id, conf);
     break;
   }
 
   ports_by_name_.emplace(name, port);
   ports_by_index_.emplace(id, port);
+
+  // TODO: is this valid?
+  cube_mutex_.unlock();
+
+  if (conf.count("peer")) {
+    port->set_peer(conf.at("peer").get<std::string>());
+  }
+
   return std::move(port);
 }
 

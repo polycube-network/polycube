@@ -38,10 +38,9 @@ extern std::string logfile_;
 
 class BaseCube {
  public:
-  BaseCube(const std::string &name,
+  BaseCube(const nlohmann::json &conf,
            const std::vector<std::string> &ingress_code,
-           const std::vector<std::string> &egress_code, const CubeType type,
-           LogLevel level = LogLevel::OFF);
+           const std::vector<std::string> &egress_code);
   virtual ~BaseCube();
 
   // TODO: implement move constructor, forbid copy and asignment
@@ -85,6 +84,8 @@ class BaseCube {
   std::shared_ptr<spdlog::logger> logger();
 
   void dismount();
+
+  nlohmann::json to_json() const;
 
  protected:
   int get_table_fd(const std::string &table_name, int index, ProgramType type);

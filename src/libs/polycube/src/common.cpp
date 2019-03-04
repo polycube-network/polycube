@@ -15,10 +15,23 @@
  */
 
 #include "polycube/common.h"
+#include "polycube/services/cube_iface.h"
+#include "polycube/services/port_iface.h"
 
 #include <api/BPFTable.h>
 
 namespace polycube {
+
+// https://stackoverflow.com/a/4119881
+bool iequals(const std::string &a, const std::string &b) {
+  unsigned int sz = a.size();
+  if (b.size() != sz)
+    return false;
+  for (unsigned int i = 0; i < sz; ++i)
+    if (tolower(a[i]) != tolower(b[i]))
+      return false;
+  return true;
+}
 
 static std::string level_names[]{"TRACE", "DEBUG",    "INFO", "WARN",
                                  "ERR",   "CRITICAL", "OFF"};
@@ -29,7 +42,7 @@ std::string logLevelString(polycube::LogLevel l) {
 
 polycube::LogLevel stringLogLevel(const std::string &level) {
   for (int i = 0; i < sizeof(level_names) / sizeof(level_names[0]); i++) {
-    if (level_names[i] == level)
+    if (iequals(level_names[i], level))
       return static_cast<polycube::LogLevel>(i);
   }
 }
@@ -55,6 +68,44 @@ spdlog::level::level_enum logLevelToSPDLog(polycube::LogLevel level) {
 
 size_t get_possible_cpu_count() {
   return ebpf::BPFTable::get_possible_cpu_count();
+}
+
+std::string cube_type_to_string(CubeType type) {
+  switch (type) {
+    case CubeType::TC:
+      return "TC";
+    case CubeType::XDP_DRV:
+      return "XDP_DRV";
+    case CubeType::XDP_SKB:
+      return "XDP_SKB";
+  }
+}
+
+CubeType string_to_cube_type(const std::string &type_str) {
+  if (iequals(type_str, "TC")) {
+    return CubeType::TC;
+  } else if (iequals(type_str, "XDP_DRV")) {
+    return CubeType::XDP_DRV;
+  } else if (iequals(type_str, "XDP_SKB")) {
+    return CubeType::XDP_SKB;
+  }
+}
+
+std::string port_status_to_string(PortStatus status) {
+  switch (status) {
+  case PortStatus::UP:
+    return "UP";
+  case PortStatus::DOWN:
+    return "DOWN";
+  }
+}
+
+PortStatus string_to_port_status(const std::string &status) {
+  if (iequals(status, "UP")) {
+    return PortStatus::UP;
+  } else if (iequals(status, "DOWN")) {
+    return PortStatus::DOWN;
+  }
 }
 
 }  // namespace polycube

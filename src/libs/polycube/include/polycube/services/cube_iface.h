@@ -26,8 +26,6 @@
 
 #include "polycube/services/json.hpp"
 
-using json = nlohmann::json;
-
 namespace polycube {
 namespace service {
 
@@ -71,16 +69,21 @@ class BaseCubeIface {
   virtual const Guid &uuid() const = 0;
   virtual const std::string get_name() const = 0;
 
-  virtual json to_json() const = 0;
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
 };
 
 class CubeIface : virtual public BaseCubeIface {
  public:
-  virtual std::shared_ptr<PortIface> add_port(const std::string &name) = 0;
+  virtual std::shared_ptr<PortIface> add_port(const std::string &name,
+    const nlohmann::json &conf) = 0;
   virtual void remove_port(const std::string &name) = 0;
   virtual std::shared_ptr<PortIface> get_port(const std::string &name) = 0;
 
   virtual void update_forwarding_table(int index, int value) = 0;
+
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
 };
 
 class TransparentCubeIface : virtual public BaseCubeIface {
@@ -91,6 +94,9 @@ class TransparentCubeIface : virtual public BaseCubeIface {
                              const std::string &value) = 0;
   virtual void send_packet_out(const std::vector<uint8_t> &packet, Sense sense,
                                bool recirculate = false) = 0;
+
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
 };
 }
 }

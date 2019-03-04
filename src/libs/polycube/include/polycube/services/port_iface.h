@@ -51,6 +51,9 @@ class PortIface {
   virtual const Guid &uuid() const = 0;
   virtual PortStatus get_status() const = 0;
   virtual PortType get_type() const = 0;
+
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
 };
 }
 }

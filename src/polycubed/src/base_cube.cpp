@@ -16,6 +16,8 @@
 
 #include "base_cube.h"
 
+#include "polycube/common.h"
+
 namespace polycube {
 namespace polycubed {
 
@@ -363,11 +365,20 @@ LogLevel BaseCube::get_log_level() const {
   return level_;
 }
 
-json BaseCube::to_json() const {
-  json j = {
-      {"name", name_}, {"uuid", uuid_.str()}, {"service", service_name_},
-      //{"type", type_},
-  };
+void BaseCube::set_conf(const nlohmann::json &conf) {
+  if (conf.count("loglevel")) {
+    set_log_level(stringLogLevel(conf.at("loglevel").get<std::string>()));
+  }
+}
+
+nlohmann::json BaseCube::to_json() const {
+  nlohmann::json j;
+
+  j["name"] = name_;
+  j["uuid"] = uuid_.str();
+  j["service"] = service_name_;
+  j["type"] = cube_type_to_string(type_);
+  j["loglevel"] = logLevelString(level_);
 
   return j;
 }
