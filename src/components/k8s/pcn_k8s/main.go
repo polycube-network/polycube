@@ -108,6 +108,12 @@ func cleanup() {
 	if defaultnpc != nil {
 		defaultnpc.Stop()
 	}
+	if podController != nil {
+		podController.Stop()
+	}
+	if nsController != nil {
+		nsController.Stop()
+	}
 }
 
 func main() {
@@ -262,11 +268,14 @@ func main() {
 	//	Start the default network policy controller
 	go defaultnpc.Run()
 
+	//	Start the namespace controller
+	go nsController.Run()
+
 	//	Start the pod controller
 	go podController.Run()
 
 	//	Start the firewall manager
-	firewallManager = pcn_firewall.StartFirewallManager(basePath)
+	firewallManager = pcn_firewall.StartFirewallManager(basePath, nodeName, podController)
 
 	//	Start the policy manager
 	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, firewallManager, nodeName)
@@ -306,5 +315,7 @@ func main() {
 	deleteNodes()
 	k8sNode.Uninit()
 	defaultnpc.Stop()
+	nsController.Stop()
+	podController.Stop()
 	log.Debugf("Bye bye")
 }
