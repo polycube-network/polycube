@@ -373,9 +373,21 @@ func createFirewallInBetween(containerPort, switchPort, ip string) error {
 			return err
 		}
 
+		if response, err := fwAPI.UpdateFirewallChainDefaultByID(nil, name, "ingress", "forward"); err != nil {
+			log.Errorln("Could not set default ingress action to forward for firewall", name, ":", err, response)
+		}
+
+		if response, err := fwAPI.UpdateFirewallChainDefaultByID(nil, name, "egress", "forward"); err != nil {
+			log.Errorln("Could not set default egress action to forward for firewall", name, ":", err, response)
+		}
+
 	} else {
 		log.Debugf("the firewall %s already existed %+v\n", fw)
 	}
+
+	log.Debugln("Container port:", containerPort)
+	log.Debugln("Switch port:", switchPort)
+	log.Debugln("ip port:", ip)
 
 	return nil
 }
