@@ -1,6 +1,8 @@
 package networkpolicies
 
 import (
+	"strings"
+
 	//	TODO-ON-MERGE: change these two to the polycube path
 
 	"sync"
@@ -25,22 +27,30 @@ type NetworkPolicyManager struct {
 
 	defaultPolicyParser PcnDefaultPolicyParser
 	deployedPolicies    map[string][]k8s_types.UID
+	checkedPods         map[k8s_types.UID]*checkedPod
 	node                string
 	lock                sync.Mutex
+	checkPodsLock       sync.Mutex
+}
+
+type checkedPod struct {
+	lastKnownIP string
+	sync.Mutex
 }
 
 func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyController, podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager, nodeName string) PcnNetworkPolicyManager {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
+	/*var l = log.WithFields(log.Fields{
+		"by":     networkpolicies.PM,
 		"method": "StartNetworkPolicyManager()",
 	})
-	l.Infoln("Starting Network Policy Manager")
+	l.Infoln("Starting Network Policy Manager")*/
 
 	manager := NetworkPolicyManager{
 		dnpc:             dnpc,
 		podController:    podController,
 		firewallManager:  firewallManager,
 		deployedPolicies: map[string][]k8s_types.UID{},
+		checkedPods:      map[k8s_types.UID]*checkedPod{},
 		node:             nodeName,
 	}
 
@@ -64,18 +74,55 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//-------------------------------------
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
-	//podController.Subscribe(pcn_types.Update, manager.checkNewPod)
-	//podController.Subscribe(pcn_types.Delete, manager.deleteFirewall)
+	podController.Subscribe(pcn_types.Update, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Delete, manager.manageDeletedPod)
 
 	return &manager
 }
 
 func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.NetworkPolicy) {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
+	/*var l = log.WithFields(log.Fields{
+		"by":     networkpolicies.PM,
 		"method": "DeployDefaultPolicy",
 	})
-	l.Infoln("Going to deploy default policy", policy.Name)
+	l.Infoln("Going to deploy default policy", policy.Name)*/
+
+	//	for each pod...
+	//	if pod is in my node
+	//	if policy affects pod
+	//	parse & get rules back
+
+	/*manager.podController.GetPods(pcn_types.)
+
+	if pod.Spec.NodeName != manager.node {
+		l.Infoln("pod", pod.Name, "is not in my node: no point in injecting rules. Will stop here.")
+		return
+	}
+
+	//	First start the firewall
+	fw := manager.firewallManager.GetOrCreate(*pod)
+	if fw == nil {
+		l.Errorln("Could not get firewall for pod", pod.Name, ": I won't be able to inject rules. Will stop here.")
+		return
+	}
+
+	for _, k8sPolicy := range policiesList {
+		//	Make sure it doesn't already enforce this policy
+		if !fw.ImplementsPolicy(k8sPolicy.Name) {
+			if manager.defaultPolicyParser.DoesPolicyAffectPod(&k8sPolicy, pod) {
+				//l.Debugln("pod", pod.Name, "is affected by", k8sPolicy.Name)
+				//	Deploy the policy just for this pod
+				ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
+				parsed := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
+				parsed = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
+					Pod:  *pod,
+					Veth: "",
+				}, parsed.Ingress, parsed.Egress)
+
+				fw.EnforcePolicy(k8sPolicy.Name, parsed.Ingress, parsed.Egress)
+				//l.Debugln("pod", pod.Name, "should now enforce", k8sPolicy.Name)
+			}
+		}*/
 
 	manager.defaultPolicyParser.Parse(policy, true)
 	//	UPDATE: ignore the returned value, we don't need it for now.
@@ -88,15 +135,15 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 		manager.Unlock()
 	}*/
 
-	l.Debugln(policy.Name, "deployed.")
+	//l.Debugln(policy.Name, "deployed.")
 }
 
 func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.NetworkPolicy) {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
+	/*var l = log.WithFields(log.Fields{
+		"by":     networkpolicies.PM,
 		"method": "RemoveDefaultPolicy",
 	})
-	l.Infoln("Going to remove default policy", policy.Name)
+	l.Infoln("Going to remove default policy", policy.Name)*/
 	podsAffected, err := manager.defaultPolicyParser.GetPodsAffected(policy)
 
 	if err != nil {
@@ -144,82 +191,172 @@ func (manager *NetworkPolicyManager) UpdateDefaultPolicy(policy *networking_v1.N
 }
 
 func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
-	/*var l = log.WithFields(log.Fields{
+	var l = log.WithFields(log.Fields{
 		"by":     PM,
-		"method": "checkNewPod",
+		"method": "checkNewPod(" + pod.Name + ")",
 	})
-	l.Debugln("Going to check if new pod needs policies applied")
 
-	if strings.ToLower(pod.Namespace) == "kube-system" {
-		log.Debugln("This is a pod from kube-system. Exiting...")
+	//-------------------------------------
+	//	Basic Checks
+	//-------------------------------------
+
+	//	This is actually useless but who knows....
+	if pod == nil {
+		l.Errorln("Called with a nil pod! Will stop here.")
 		return
 	}
 
+	//	Is this pod from the kube-system?
+	//	TODO: does checking pods inside kube-system make sense actually?
+	if pod.Namespace == "kube-system" {
+		l.Infoln("Pod", pod.Name, "belongs to the kube-system namespaces: no point in checking for policies. Will stop here.")
+		return
+	}
+
+	//	A hack way to detect if the pod is terminating: APIs do not have a way to do that :(
+	if pod.ObjectMeta.DeletionTimestamp != nil {
+		l.Debugln("Pod", pod.Name, "is terminating. Will not do anything else.")
+		return
+	}
+
+	//	Is it running? (if not, it wouldn't have a valid ip yet)
 	if pod.Status.Phase != core_v1.PodRunning {
-		log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so, I'm not going to check it.")
+		l.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so I'm not going to check it.")
 		return
 	}
-	log.Debugln("Pod", pod.Name, "is in", pod.Status.Phase)
-	lastCondition := pod.Status.Conditions[len(pod.Status.Conditions)-1]
-	log.Debugf("last condition: %+v\n", lastCondition)
 
-	//	First start the firewall
-	manager.firewallManager.GetOrCreate(*pod)*/
+	manager.checkPodsLock.Lock()
+	checked, ok := manager.checkedPods[pod.UID]
+	if !ok {
+		checked = &checkedPod{}
+		manager.checkedPods[pod.UID] = checked
+	}
+	manager.checkPodsLock.Unlock()
 
-	/*	This is going to be tricky, so here is a brief explanation.
+	checked.Lock()
+	defer checked.Unlock()
+
+	//	Already checked before?
+	if checked.lastKnownIP == pod.Status.PodIP {
+		l.Debugln("pod", pod.Name, "has already been checked before: no point in checking it again. Will stop here.")
+		return
+	}
+
+	l.Debugln("Ok,", pod.Name, "Has never been checked.")
+
+	var policyWait sync.WaitGroup
+	policyWait.Add(2)
+	k8sPolicies, _ := manager.dnpc.GetPolicies(pcn_types.ObjectQuery{By: "name", Name: "*"})
+
+	//	The most recently deployed policies should have precedence, but I still have to test it with the firewall...
+	//sort.Slice(k8sPolicies, func(i, j int) bool {return k8sPolicies[i].ObjectMeta.CreationTimestamp < k8sPolicies[j].ObjectMeta.CreationTimestamp})
+
+	/*	This is going to be a bit tricky, so here is a brief explanation.
 		1) We must see if there are policies that must be applied to this pod.
 		2) We must see if there are policies which target this pod: there may be some pods which can accept connections from this new pod,
 			but since it is new, they don't have this pod in their rules list.
 	*/
 
-	//	Default Policies
-	/*for _, k8sPolicy := range manager.dnpc.GetPolicy("*") {
+	//-------------------------------------
+	//	Check if needs policies applied
+	//-------------------------------------
+	go func(policiesList []networking_v1.NetworkPolicy) {
+		defer policyWait.Done()
+		if pod.Spec.NodeName != manager.node {
+			l.Infoln("pod", pod.Name, "is not in my node: no point in injecting rules. Will stop here.")
+			return
+		}
 
-		//	Does this policy affect this pod?
-		go func(currentPolicy networking_v1.NetworkPolicy) {
-			if manager.defaultPolicyParser.DoesPolicyAffectPod(&currentPolicy, pod) {
+		//	First start the firewall
+		fw := manager.firewallManager.GetOrCreate(*pod)
+		if fw == nil {
+			l.Errorln("Could not get firewall for pod", pod.Name, ": I won't be able to inject rules. Will stop here.")
+			return
+		}
 
-				//	Deploy the policy just for this pod
-				ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&currentPolicy.Spec)
-				ingressChain, egressChain := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
-				ingressChain, egressChain = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
-					Pod:  *pod,
-					Veth: "",
-				}, ingressChain, egressChain)
-				fw := manager.firewallManager.GetOrCreate(*pod)
-				if fw == nil {
-					l.Panicln("Could not get firewall fw-", pod.Name, ". Will stop here.")
-					return
+		for _, k8sPolicy := range policiesList {
+			//	Make sure it doesn't already enforce this policy
+			if !fw.ImplementsPolicy(k8sPolicy.Name) {
+				if manager.defaultPolicyParser.DoesPolicyAffectPod(&k8sPolicy, pod) {
+					//l.Debugln("pod", pod.Name, "is affected by", k8sPolicy.Name)
+					//	Deploy the policy just for this pod
+					ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
+					parsed := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
+					parsed = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
+						Pod:  *pod,
+						Veth: "",
+					}, parsed.Ingress, parsed.Egress)
+
+					fw.EnforcePolicy(k8sPolicy.Name, parsed.Ingress, parsed.Egress)
+					//l.Debugln("pod", pod.Name, "should now enforce", k8sPolicy.Name)
 				}
-				fw.EnforcePolicy(currentPolicy.Name, ingressChain.Rule, egressChain.Rule)
 			}
-		}(k8sPolicy)
+		}
+	}(k8sPolicies)
 
-		//	Does this policy target this pod in some way?
-		go func(currentPolicy networking_v1.NetworkPolicy) {
-			iRules, eRules := manager.defaultPolicyParser.DoesPolicyTargetPod(&currentPolicy, pod)
+	//-------------------------------------
+	//	Check if a policy targets it
+	//-------------------------------------
+	go func(policiesList []networking_v1.NetworkPolicy) {
+		defer policyWait.Done()
 
-			if len(iRules) > 0 || len(eRules) > 0 {
-				for _, fw := range manager.firewallManager.GetAll() {
-					if fw.ImplementsPolicy(currentPolicy.Name) {
-						fw.EnforcePolicy(currentPolicy.Name, iRules, eRules)
+		for _, currentPolicy := range policiesList {
+			doesIt := manager.defaultPolicyParser.DoesPolicyTargetPod(&currentPolicy, pod)
+
+			if len(doesIt.Ingress) > 0 || len(doesIt.Egress) > 0 {
+				for _, currentFw := range manager.firewallManager.GetAll() {
+					if currentFw.ForPod() != pod.UID {
+						if currentFw.ImplementsPolicy(currentPolicy.Name) {
+							//l.Debugln("going to update a firewall")
+							currentFw.EnforcePolicy(currentPolicy.Name, doesIt.Ingress, doesIt.Egress)
+						}
 					}
 				}
 			}
-		}(k8sPolicy)
-	}*/
+		}
 
+	}(k8sPolicies)
+
+	policyWait.Wait()
+
+	checked.lastKnownIP = pod.Status.PodIP
+	return
 }
 
-func (manager *NetworkPolicyManager) deleteFirewall(pod *core_v1.Pod) {
+func (manager *NetworkPolicyManager) manageDeletedPod(pod *core_v1.Pod) {
 	var l = log.WithFields(log.Fields{
 		"by":     PM,
-		"method": "deleteFirewall",
+		"method": "manageDeletedPod",
 	})
-	l.Debugln("Going to destroy the firewall for the pod")
 
-	fw := manager.firewallManager.GetOrCreate(*pod)
-	if fw != nil {
-		fw.Destroy()
+	if pod == nil {
+		l.Errorln("Called with a nil pod! Will stop here.")
+		return
 	}
+
+	if strings.HasPrefix(pod.Name, "polycube-") {
+		l.Infoln("Pod", pod.Name, "is a core polycube component: no point in deleting its ips from other firewalls. Will stop here.")
+		return
+	}
+
+	l.Debugln("Pod ip to remove", pod.Status.PodIP, pod.Name)
+	log.Debugln("###manageDeletedPod:", pod.Name, "with ip", pod.Status.PodIP, "on phase", pod.Status.Phase, pod.Status.Message, pod.Status.Reason)
+	log.Debugf("###manageDeletedPod: %s, last status %+v\n", pod.Name, pod.Status.Conditions[len(pod.Status.Conditions)-1])
+
+	fws := manager.firewallManager.GetAll()
+	//var fwWait sync.WaitGroup
+	for _, fw := range fws {
+		if fw.ForPod() != pod.UID {
+			fw.RemoveIPReferences(pod.Status.PodIP)
+		}
+	}
+
+	l.Debugln("Ok, now i'm going to remove pod", pod.Name, "from checkedpods")
+
+	manager.checkPodsLock.Lock()
+	delete(manager.checkedPods, pod.UID)
+	//	firewall manager, remove entry
+	manager.checkPodsLock.Unlock()
+
+	l.Debugln(pod.Name, "correctly removed from checkedpods")
 }

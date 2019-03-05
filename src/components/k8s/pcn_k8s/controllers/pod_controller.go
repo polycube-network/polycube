@@ -10,8 +10,6 @@ import (
 
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 
-	"crypto/sha256"
-
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,39 +27,22 @@ type PodController interface {
 	Stop()
 	Subscribe(pcn_types.EventType, func(*core_v1.Pod)) (func(), error)
 
-	GetPods(pcn_types.PodQuery) ([]pcn_types.Pod, error)
+	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]pcn_types.Pod, error)
 }
 
 type PcnPodController struct {
-	nodeName string
-
+	nodeName     string
 	nsController NamespaceController
-
 	//clientset *kubernetes.Clientset
-
-	queue workqueue.RateLimitingInterface
-
-	informer cache.SharedIndexInformer
-
-	startedOn time.Time
-
+	queue       workqueue.RateLimitingInterface
+	informer    cache.SharedIndexInformer
+	startedOn   time.Time
 	dispatchers EventDispatchersContainer
-
-	stopCh chan struct{}
-
-	maxRetries int
-
-	logBy string
-
-	pods map[string]podStore
-	lock sync.Mutex
-
-	//	TODO: map of pods by labels?
-}
-
-type podStore struct {
-	pod          *pcn_types.Pod
-	hashedLabels string
+	stopCh      chan struct{}
+	maxRetries  int
+	logBy       string
+	pods        map[string]*pcn_types.Pod
+	lock        sync.Mutex
 }
 
 func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsController NamespaceController) PodController {
@@ -72,13 +53,13 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 	maxRetries := 5
 
 	//	Let them know we're starting
-	log.SetLevel(log.DebugLevel)
+	/*log.SetLevel(log.DebugLevel)
 	var l = log.WithFields(log.Fields{
 		"by":     logBy,
 		"method": "NewPodController()",
-	})
+	})*/
 
-	l.Infof("Pod Controller called on node %s", nodeName)
+	//l.Infof("Pod Controller called on node %s", nodeName)
 
 	//------------------------------------------------
 	//	Set up the Pod Controller
@@ -112,10 +93,10 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "AddFunc()",
-			}).Infof("Something has been added! Workspaces is %s", key)
+			}).Infof("Something has been added! Workspaces is %s", key)*/
 
 			//	Set up the event
 			event := pcn_types.Event{
@@ -130,10 +111,10 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "UpdateFunc()",
-			}).Info("Something has been updated!")
+			}).Info("Something has been updated!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(new)
 
@@ -149,10 +130,10 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "DeleteFunc()",
-			}).Info("Something has been deleted!")
+			}).Info("Something has been deleted!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 
@@ -190,7 +171,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 		logBy:       logBy,
 		maxRetries:  maxRetries,
 		stopCh:      make(chan struct{}),
-		pods:        map[string]podStore{},
+		pods:        map[string]*pcn_types.Pod{},
 	}
 }
 
@@ -201,7 +182,7 @@ func (p *PcnPodController) Run() {
 		"method": "Start()",
 	})
 
-	l.Info("Pod Controller starting")
+	//l.Info("Pod Controller starting")
 
 	//	Don't let panics crash the process
 	defer utilruntime.HandleCrash()
@@ -218,10 +199,12 @@ func (p *PcnPodController) Run() {
 		return
 	}
 
+	l.Infoln("Pod controller started.")
+
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
 	wait.Until(p.work, time.Second, p.stopCh)
-	l.Infoln("Run method exiting...")
+	//l.Infoln("Run method exiting...")
 }
 
 func (p *PcnPodController) work() {
@@ -232,23 +215,23 @@ func (p *PcnPodController) work() {
 		"method": "work()",
 	})
 
-	l.Info("Starting method work...")
+	//l.Info("Starting method work...")
 
 	for !stop {
 
-		l.Infof("Ok, I'm going to get a new item from the queue...")
+		//l.Infof("Ok, I'm going to get a new item from the queue...")
 
 		//	Get the item's key from the queue
 		_event, quit := p.queue.Get()
 
 		if quit {
-			l.Infoln("Quit requested... worker going to exit.")
+			//l.Infoln("Quit requested... worker going to exit.")
 			return
 		}
 
 		event := _event.(pcn_types.Event)
 
-		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
+		//l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
 		err := p.process(event)
 
@@ -256,7 +239,7 @@ func (p *PcnPodController) work() {
 		if err == nil {
 			//	Then reset the ratelimit counters
 			p.queue.Forget(_event)
-			l.Infof("Item with key %s has been forgotten from the queue", event.Key)
+			//l.Infof("Item with key %s has been forgotten from the queue", event.Key)
 		} else if p.queue.NumRequeues(_event) < p.maxRetries {
 			//	Tried less than the maximum retries?
 			l.Warningf("Error processing item with key %s (will retry): %v", event.Key, err)
@@ -282,7 +265,7 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 
 	defer p.queue.Done(event)
 
-	l.Infof("Starting to process pod")
+	//l.Infof("Starting to process pod")
 
 	//	Get the policy by querying the key that kubernetes has assigned to this in its cache
 	_pod, exists, err := p.informer.GetIndexer().GetByKey(event.Key)
@@ -310,21 +293,21 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 		p.addNewPod(pod)
 		p.dispatchers.new.Dispatch(pod)
 	case pcn_types.Update:
-		p.removePod(pod)
+		//p.removePod(pod)
 		p.addNewPod(pod)
 		p.dispatchers.update.Dispatch(pod)
 	case pcn_types.Delete:
-		_splitted := strings.Split(event.Key, "/")
-		pod, ok := p.pods[_splitted[1]]
+		splitted := strings.Split(event.Key, "/")
+		pod, ok := p.pods[splitted[1]]
 		if ok {
-			p.dispatchers.delete.Dispatch(&pod.pod.Pod)
-			p.removePod(&pod.pod.Pod)
+			p.dispatchers.delete.Dispatch(&pod.Pod)
+			p.removePod(&pod.Pod)
 		}
 	}
 
 	//	Does not exist?
 	if !exists {
-		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
+		//l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
 	}
 
 	return nil
@@ -332,20 +315,16 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 
 func (p *PcnPodController) addNewPod(pod *core_v1.Pod) {
 
-	//	First hash its labels
-	hashedLabels := p.hashLabels(pod.Labels)
-
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	//	Add it in the main map
-	p.pods[pod.Name] = podStore{
-		pod: &pcn_types.Pod{
-			Pod:  *pod,
-			Veth: "",
-		},
-		hashedLabels: hashedLabels,
+	p.pods[pod.Name] = &pcn_types.Pod{
+		Pod:  *pod,
+		Veth: "",
 	}
+
+	//log.Debugln("---Pod", p.pods[pod.Name], "has been added, there are now", len(p.pods), "elements")
 }
 
 func (p *PcnPodController) removePod(pod *core_v1.Pod) {
@@ -439,33 +418,13 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, consumer func(*c
 
 }
 
-func (p *PcnPodController) hashLabels(l map[string]string) string {
-	//	No labels?
-	if len(l) < 1 {
-		return ""
-	}
-
-	implodedLabels := ""
-	hashedLabels := ""
-
-	for key, val := range l {
-		implodedLabels += key + ":" + val + ";"
-	}
-
-	sha := sha256.New()
-	sha.Write([]byte(implodedLabels))
-	hashedLabels = fmt.Sprintf("%x", sha.Sum(nil))
-
-	return hashedLabels
-}
-
-func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, error) {
+func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_types.ObjectQuery) ([]pcn_types.Pod, error) {
 
 	//	The namespaces the pods must be found on
 	ns := []string{}
 
 	//	First get the namespace
-	found, err := p.nsController.GetNamespaces(query.Namespace)
+	found, err := p.nsController.GetNamespaces(queryNs)
 	if err != nil {
 		return []pcn_types.Pod{}, err
 	}
@@ -478,24 +437,24 @@ func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, e
 	}
 
 	//	Query by name
-	if strings.ToLower(query.Pod.By) == "name" {
+	if strings.ToLower(queryPod.By) == "name" {
 		//	If we query by name, we don't need the namespace...
 		list := []pcn_types.Pod{}
-		if len(query.Pod.Name) < 0 {
+		if len(queryPod.Name) < 0 {
 			return list, errors.New("Pod name not provided")
 		}
 
 		p.lock.Lock()
 		defer p.lock.Unlock()
 
-		if query.Pod.Name == "*" {
+		if queryPod.Name == "*" {
 			for _, pod := range p.pods {
 				if len(ns) < 1 {
-					list = append(list, *pod.pod)
+					list = append(list, *pod)
 				}
 				for _, namespace := range ns {
-					if pod.pod.Pod.Namespace == namespace {
-						list = append(list, *pod.pod)
+					if pod.Pod.Namespace == namespace {
+						list = append(list, *pod)
 					}
 				}
 
@@ -504,22 +463,21 @@ func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, e
 		}
 
 		//	Get the pod with that name
-		if pod, exists := p.pods[query.Pod.Name]; exists {
-			return []pcn_types.Pod{*pod.pod}, nil
+		if pod, exists := p.pods[queryPod.Name]; exists {
+			return []pcn_types.Pod{*pod}, nil
 		}
 
 		return []pcn_types.Pod{}, nil
 	}
 
 	//	Query by labels
-	if strings.ToLower(query.Pod.By) == "labels" {
+	if strings.ToLower(queryPod.By) == "labels" {
 
-		if query.Pod.Labels == nil {
+		if queryPod.Labels == nil {
 			return []pcn_types.Pod{}, errors.New("Pod labels is nil")
 		}
 
-		hashedLabels := p.hashLabels(query.Pod.Labels)
-		if len(hashedLabels) < 1 {
+		if len(queryPod.Labels) < 1 {
 			return []pcn_types.Pod{}, errors.New("No pod labels provided")
 		}
 
@@ -529,7 +487,32 @@ func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, e
 
 		//	Loop through all my pods to find them
 		for _, currentPod := range p.pods {
-			if currentPod.hashedLabels == hashedLabels {
+			remainingLabels := len(queryPod.Labels)
+			for keyNeeded, valNeeded := range queryPod.Labels {
+				if valFound, ok := currentPod.Pod.Labels[keyNeeded]; ok {
+					if valFound == valNeeded {
+
+						//	Now check the namespace
+						if len(ns) < 1 {
+							remainingLabels--
+						}
+
+						for _, namespace := range ns {
+							if currentPod.Pod.Namespace == namespace {
+								remainingLabels--
+							}
+						}
+
+						if remainingLabels == 0 {
+							list = append(list, *currentPod)
+							break
+						}
+					}
+				}
+			}
+
+			/*if currentPod.hashedLabels == hashedLabels {
+				log.Debugf("labels match")
 				//	Labels match, let's see if this pod is in the namespace we want.
 				//	This means if we have to find them on any namespace or on a particular one
 				if len(ns) < 0 {
@@ -540,8 +523,7 @@ func (p *PcnPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, e
 						list = append(list, *currentPod.pod)
 					}
 				}
-
-			}
+			}*/
 		}
 
 		return list, nil

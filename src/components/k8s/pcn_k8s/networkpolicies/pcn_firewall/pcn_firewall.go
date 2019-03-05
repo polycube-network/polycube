@@ -4,6 +4,9 @@ import (
 	"errors"
 	"sync"
 
+	k8s_types "k8s.io/apimachinery/pkg/types"
+
+	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
@@ -15,7 +18,9 @@ type PcnFirewall interface {
 	//	UPDATE: it's better to always inject with a policy instead of doing it anonymously.
 	//	That's why it is now unexported
 	//InjectRules(string, []k8sfirewall.ChainRule) ([]k8sfirewall.ChainRule, error)
+	ForPod() k8s_types.UID
 	RemoveRules(string, []k8sfirewall.ChainRule) []k8sfirewall.ChainRule
+	RemoveIPReferences(string)
 	ImplementsPolicy(string) bool
 	Destroy() error
 }
@@ -25,44 +30,37 @@ type DeployedFirewall struct {
 	rules        map[string]*rulesContainer
 	ingressChain *k8sfirewall.Chain
 	egressChain  *k8sfirewall.Chain
-
-	//fwAPI *k8sfirewall.FirewallApiService
-	fwAPI k8sfirewall.FirewallAPI
+	fwAPI        k8sfirewall.FirewallAPI
+	podUID       k8s_types.UID
+	podIP        string
 	//	For caching.
-	//	UPDATE: this sounds like a good idea, but I need to discover why injection fails sometimes
-	//	before being able to do this, otherwise IDs can be very wrong!
 	/*lastIngressID int32
 	lastEgressID int32*/
-
-	sync.Mutex
+	lock sync.Mutex
 }
 
 type rulesContainer struct {
 	ingress []k8sfirewall.ChainRule
 	egress  []k8sfirewall.ChainRule
-	sync.Mutex
-
 	//	UPDATE: think I don't actually need these
+	//	sync.Mutex
 	//	iLock sync.Mutex
 	//	eLock sync.Mutex
 }
 
-type jsonFirewall struct {
-}
-
 func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall {
 
-	//	This method is unexported by design: *only* the firewall manager is supposed to create new firewalls,
+	//	This method is unexported by design: *only* the firewall manager is supposed to get new firewalls,
 	//	no one else should be able to do that.
 
 	var l = log.WithFields(log.Fields{
 		"by":     "PcnFirewall",
 		"method": "New()",
 	})
+
 	//	The name of the firewall
-	//name := string("fw-" + pod.UID)
 	name := "fw-" + pod.Status.PodIP
-	l.Infoln("Starting a new firewall with name", name)
+	//l.Infoln("Starting a new firewall with name", name)
 
 	//-------------------------------------
 	//	Init
@@ -70,21 +68,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 
 	deployedFw := DeployedFirewall{}
 
-	//	TODO: some of these parts should be done with a config
-	/*deployedFw.firewall = &k8sfirewall.Firewall{
-		Name:  name,
-		Type_: "TC",
-		Ports: []k8sfirewall.Ports{},
-		//	This is important because this way rules are applied asynchronously!...
-		//	... but it seems that the API don't even bother to consider it :( I'm leaving it here anyways...
-		//	This value is sent later with a new request
-		Interactive: false,
-	}*/
-
-	//	TODO: now create the ports
-
 	//	The chains are here just for storing a default action (and maybe contain stats in future)
-	//	TODO: some of these parts should be done with a config
 	deployedFw.ingressChain = &k8sfirewall.Chain{
 		Name:     "ingress",
 		Default_: "drop",
@@ -100,16 +84,15 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	//	The firewall API
 	deployedFw.fwAPI = API
 
+	//	The pod this firewall is intended for
+	deployedFw.podUID = pod.UID
+
+	//	The pod's ip
+	deployedFw.podIP = pod.Status.PodIP
+
 	//-------------------------------------
 	//	Get the firewall
 	//-------------------------------------
-
-	//	Make the request
-	/*response, err := deployedFw.fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
-		Name:     name,
-		Type_:    "TC",
-		Loglevel: "DEBUG",
-	})*/
 
 	fw, response, err := deployedFw.fwAPI.ReadFirewallByID(nil, name)
 
@@ -122,12 +105,9 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 		}
 	}
 
-	log.Debugf("-- got the firewall, is: %+v\n", fw)
+	//log.Debugf("### got the firewall, is: %+v\n", fw)
 
 	deployedFw.firewall = &fw
-
-	//	Set the Ports (this is doen in the CNI)
-	//response, err := deployedFw.fwAPI.CreateFirewallPortsListByID(nil)
 
 	// Since Interactive is not sent in the request, we will do it again now
 	response, err = deployedFw.fwAPI.UpdateFirewallInteractiveByID(nil, name, false)
@@ -141,6 +121,10 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	return &deployedFw
 }
 
+func (d *DeployedFirewall) ForPod() k8s_types.UID {
+	return d.podUID
+}
+
 func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8sfirewall.ChainRule) (error, error) {
 
 	//-------------------------------------
@@ -152,7 +136,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		"method": "InjectRules()",
 	})
 
-	l.Debugln("firewall", d.firewall.Name, "is going to enforce policy", policyName)
+	//l.Debugln("firewall", d.firewall.Name, "is going to enforce policy", policyName)
 
 	//	Ingress and egress can be empty (e.g.: when having default rules), but cannot be nil
 	if ingress == nil && egress == nil {
@@ -183,14 +167,19 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		waitChains++
 	}
 	applyWait.Add(waitChains)
-	l.Debugln("firewall", d.firewall.Name, "finished waiting chains", policyName)
+	//l.Debugln("firewall", d.firewall.Name, "finished waiting chains", policyName)
 	//-------------------------------------
 	//	Inject rules concurrently
 	//-------------------------------------
 
-	//	Locking here, becase unfortunately we need to build IDs in order to inject multiple rules at once.
-	//	We may even not do this, but we would be forced to make an HTTP request for every single rule!
-	d.Lock()
+	//	Only one policy at a time, please
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	if !d.isFirewallOk() {
+		l.Errorln("Firewall seems not to be ok! Will not inject rules.")
+		return errors.New("Firewall is not ok"), errors.New("Firewall is not ok")
+	}
 
 	//	Ingress
 	if ingress != nil && len(ingress) > 0 {
@@ -219,7 +208,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 	}
 
 	applyWait.Wait()
-	l.Debugln("firewall", d.firewall.Name, "finished waiting applywait", policyName)
+	//l.Debugln("firewall", d.firewall.Name, "finished waiting applywait", policyName)
 	//-------------------------------------
 	//	Update rules struct
 	//-------------------------------------
@@ -236,7 +225,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		}
 	}
 
-	_fw, response, err := d.fwAPI.ReadFirewallByID(nil, d.firewall.Name)
+	/*_fw, response, err := d.fwAPI.ReadFirewallByID(nil, d.firewall.Name)
 
 	if err != nil {
 		l.Errorln("Could not get firewall with name after enforce", d.firewall.Name, ":", err, response)
@@ -247,9 +236,13 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 		}
 	}
 
-	l.Debugf("--- after enforcing policy, fw is %+v\n", _fw)
+	l.Debugf("### after enforcing policy, fw is %+v\n", _fw)*/
 
-	d.Unlock()
+	//	If these are the first rules, it means that a policy exists for this pod.
+	//	Which also means that now we have to change the default action
+	if len(d.rules) == 1 {
+		d.updateDefaultActions(pcn_types.ActionDrop)
+	}
 
 	return iError, eError
 }
@@ -257,7 +250,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	var l = log.WithFields(log.Fields{
 		"by":     d.firewall.Name,
-		"method": "RemoveRules(" + policyName + ")",
+		"method": "CeasePolicy(" + policyName + ")",
 	})
 
 	var deleteWait sync.WaitGroup
@@ -276,6 +269,13 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	rules := d.rules[policyName]
 	if len(rules.ingress) < 1 && len(rules.egress) < 1 {
 		l.Infoln("fw", d.firewall.Name, "has no ingress nor egress rules for policy", policyName)
+		d.lock.Lock()
+		defer d.lock.Unlock()
+
+		delete(d.rules, policyName)
+		if len(d.rules) < 1 {
+			d.updateDefaultActions(pcn_types.ActionForward)
+		}
 		return
 	}
 
@@ -290,7 +290,14 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	//-------------------------------------
 	//	Remove the rules
 	//-------------------------------------
-	rules.Lock()
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	if !d.isFirewallOk() {
+		l.Errorln("Firewall seems not to be ok! Will not remove rules.")
+		return
+	}
 
 	//	Ingress
 	if len(rules.ingress) > 0 {
@@ -327,32 +334,58 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		delete(d.rules, policyName)
 
 	} else {
-		//	Some rules were not delete. We can't delete the entry: we need to change it with the still active rules.
+		//	Some rules were not deleted. We can't delete the entry: we need to change it with the still active rules.
 		d.rules[policyName] = &failedRules
 	}
 
-	rules.Unlock()
+	//	If this pod doesn't enfoce any policy, we must change the default action to forward.
+	if len(d.rules) < 1 {
+		d.updateDefaultActions(pcn_types.ActionForward)
+	}
+}
+
+func (d *DeployedFirewall) updateDefaultActions(to string) (error, error) {
+	var l = log.WithFields(log.Fields{
+		"by":     d.firewall.Name,
+		"method": "updateDefaultAction(" + to + ")",
+	})
+	//l.Debugln("###Going to set", to, "default")
+	var iErr error
+	var eErr error
+	if response, err := d.fwAPI.UpdateFirewallChainDefaultByID(nil, d.firewall.Name, "ingress", to); err != nil {
+		l.Errorln("Could not set default ingress action to forward for firewall", d.firewall.Name, ":", err, response)
+		iErr = err
+	}
+	//l.Debugln("Successfully set default ingress action to forward for firewall", d.firewall.Name)
+
+	if response, err := d.fwAPI.UpdateFirewallChainDefaultByID(nil, d.firewall.Name, "egress", to); err != nil {
+		l.Errorln("Could not set default egress action to forward for firewall", d.firewall.Name, ":", err, response)
+		eErr = err
+	}
+	//l.Debugln("Successfully set default egress action to forward for firewall", d.firewall.Name)
+
+	return iErr, eErr
 }
 
 func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.ChainRule) ([]k8sfirewall.ChainRule, error) {
 
 	var l = log.WithFields(log.Fields{
 		"by":     d.firewall.Name,
-		"method": "injectChain()",
+		"method": "injectRules()",
 	})
-
-	//var ID int32 = 1
 
 	//	Just in case...
 	if rules == nil {
-		l.Errorln("Rules is nil")
+		//l.Errorln("Rules is nil")
 		return nil, errors.New("Rules is nil")
 	}
 
 	if len(rules) < 1 {
-		l.Errorln("No rules to inject")
+		//l.Errorln("No rules to inject")
 		return nil, errors.New("No rules to inject")
 	}
+
+	var ID int32 = 1
 
 	//-------------------------------------
 	//	Build the IDs
@@ -360,7 +393,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 
 	//	In order to be able to inject multiple IDs at once, we need to create the IDs, and to do that we need to check
 	//	the last one.
-	for i := 0; i < len(rules); i++ {
+	/*for i := 0; i < len(rules); i++ {
 		appendRule := k8sfirewall.ChainAppendInput{
 			Src:     rules[i].Src,
 			Dst:     rules[i].Dst,
@@ -371,8 +404,8 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		}
 
 		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err == nil {
-			log.Debugln("it was applied successfully")
 			rules[i].Id = out.Id
+			l.Debugf("###", direction, " applied rule %+v\n", rules[i])
 		}
 	}
 
@@ -381,24 +414,18 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
 	} else {
 		l.Debugln("applying injection result", out)
-	}
-	/*chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
+	}*/
+	chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
 	if err != nil {
 		l.Errorln("Error while trying to get chain for firewall", d.firewall.Name, "in", direction, ":", err, response)
 		return nil, err
 	}
 
-	//	UPDATE: This is actually useless: from what I've tested all chains have at least one default rule,
-	//	but it has proven to be buggy anyway so I'll just leave it
-	length := len(chain.Rule)
-	if length > 0 {
-		if length > 1 {
-			//	-2 because the last one is the default one and its ID is close to overflow.
-			ID = chain.Rule[len(chain.Rule)-2].Id + 1
-			//ID = chain.Rule[len(chain.Rule)-1].Id + 1
-		}
-		// else just make them start from 1
+	//	The last ID is always the default one's, which always increments by one as we push rules.
+	if ID = chain.Rule[len(chain.Rule)-1].Id; ID == 0 {
+		ID++
 	}
+
 	for i := 0; i < len(rules); i++ {
 		//rules[i].Id = ID + i
 		rules[i].Id = ID
@@ -409,12 +436,18 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	//	Actually Inject
 	//-------------------------------------
 
-	//	TODO: UPDATE firewall chain rule list?
 	response, err = d.fwAPI.CreateFirewallChainRuleListByID(nil, d.firewall.Name, direction, rules)
 	if err != nil {
 		l.Errorln("Error while trying to inject rules for firewall", d.firewall.Name, "in", direction, ":", err, response)
 		return []k8sfirewall.ChainRule{}, err
-	}*/
+	}
+
+	out, response, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, direction)
+	if err != nil {
+		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
+	} else {
+		l.Debugln("applying injection result", out)
+	}
 
 	return rules, nil
 }
@@ -458,9 +491,7 @@ func (d *DeployedFirewall) RemoveRules(direction string, rules []k8sfirewall.Cha
 				l.Errorln("Error while trying to delete rule", currentRule.Id, "in", direction, "for firewall", d.firewall.Name, err, response)
 
 				mutex.Lock()
-				l.Debugln("In the lock in", direction, "for firewall", d.firewall.Name)
 				failedRules = append(failedRules, currentRule)
-				l.Debugln("after lock in", direction, "for firewall", d.firewall.Name)
 				mutex.Unlock()
 			}
 		}(rule)
@@ -479,9 +510,94 @@ func (d *DeployedFirewall) RemoveRules(direction string, rules []k8sfirewall.Cha
 	return failedRules
 }
 
+func (d *DeployedFirewall) RemoveIPReferences(ip string) {
+
+	log.Debugln("###remove-ip, on fw-", d.podIP)
+	ingressIDs := []k8sfirewall.ChainRule{}
+	egressIDs := []k8sfirewall.ChainRule{}
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	for _, policy := range d.rules {
+		var directionsWait sync.WaitGroup
+		directionsWait.Add(2)
+
+		go func(ingress []k8sfirewall.ChainRule) {
+			defer directionsWait.Done()
+			for _, i := range ingress {
+				log.Debugln("###delete-ingress, checking", i.Src, "with", ip)
+				if i.Src == ip {
+					log.Debugln("###delete-ingress,match!", i.Src, "with", ip)
+					ingressIDs = append(ingressIDs, i)
+				}
+			}
+		}(policy.ingress)
+
+		go func(egress []k8sfirewall.ChainRule) {
+			defer directionsWait.Done()
+			for _, i := range egress {
+				log.Debugln("###delete-egress, checking", i.Dst, "with", ip)
+				if i.Dst == ip {
+					log.Debugln("###delete-egress, match!", i.Dst, "with", ip)
+					egressIDs = append(egressIDs, i)
+				}
+			}
+		}(policy.egress)
+		directionsWait.Wait()
+	}
+
+	if len(ingressIDs) < 1 && len(egressIDs) < 1 {
+		return
+	}
+	/*var removeWait sync.WaitGroup
+	removeWait.Add(2)*/
+
+	log.Debugf("###ingress-rules-to-remove %+v\n", ingressIDs)
+	log.Debugf("###egress-rules-to-remove %+v\n", egressIDs)
+
+	if len(ingressIDs) > 0 {
+		d.RemoveRules("ingress", ingressIDs)
+	}
+	if len(egressIDs) > 0 {
+		d.RemoveRules("egress", egressIDs)
+	}
+	/*go func() {
+	defer removeWait.Done()
+	if len(ingressIDs) < 1 {
+		return
+	}
+	d.RemoveRules("ingress", ingressIDs)
+	}()
+	go func() {
+		defer removeWait.Done()
+	if len(egressIDs) < 1 {
+		return
+	}
+	d.RemoveRules("egress", egressIDs)
+	}()
+	removeWait.Wait()*/
+}
+
 func (d *DeployedFirewall) ImplementsPolicy(name string) bool {
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	_, exists := d.rules[name]
 	return exists
+}
+
+func (d *DeployedFirewall) isFirewallOk() bool {
+	//	This should be done *before* injecting/remove rules:
+	//	polycube crashes if you try to delete a rule on a firewall that does not exist.
+	//	(this will happen when you remove a policy *while* a pod is in terminating phase)
+	//	NOTE: we are not going to Read the whole firewall just for this. Let's make this fast.
+	if _, _, err := d.fwAPI.ReadFirewallUuidByID(nil, d.firewall.Name); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (d *DeployedFirewall) Destroy() error {
