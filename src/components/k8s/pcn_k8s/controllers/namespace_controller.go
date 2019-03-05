@@ -1,16 +1,14 @@
 package controllers
 
 import (
-	//	TODO-ON-MERGE: change the path to polycube
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	//	TODO-ON-MERGE: change the path to polycube
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
-
-	"crypto/sha256"
 
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
@@ -29,35 +27,21 @@ type NamespaceController interface {
 	Stop()
 	Subscribe(pcn_types.EventType, func(*core_v1.Namespace)) (func(), error)
 
-	GetNamespaces(pcn_types.PodQueryObject) ([]core_v1.Namespace, error)
+	GetNamespaces(pcn_types.ObjectQuery) ([]core_v1.Namespace, error)
 }
 
 type PcnNamespaceController struct {
 	nodeName string
-
 	//clientset *kubernetes.Clientset
-
-	queue workqueue.RateLimitingInterface
-
-	informer cache.SharedIndexInformer
-
-	startedOn time.Time
-
+	queue       workqueue.RateLimitingInterface
+	informer    cache.SharedIndexInformer
+	startedOn   time.Time
 	dispatchers EventDispatchersContainer
-
-	stopCh chan struct{}
-
-	maxRetries int
-
-	logBy string
-
-	namespaces map[string]nsStore
-	lock       sync.Mutex
-}
-
-type nsStore struct {
-	ns           *core_v1.Namespace
-	hashedLabels string
+	stopCh      chan struct{}
+	maxRetries  int
+	logBy       string
+	namespaces  map[string]*core_v1.Namespace
+	lock        sync.Mutex
 }
 
 func NewNsController(nodeName string, clientset *kubernetes.Clientset) NamespaceController {
@@ -68,13 +52,13 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 	maxRetries := 5
 
 	//	Let them know we're starting
-	log.SetLevel(log.DebugLevel)
+	/*log.SetLevel(log.DebugLevel)
 	var l = log.WithFields(log.Fields{
 		"by":     logBy,
 		"method": "NewNsController()",
-	})
+	})*/
 
-	l.Infof("Namespace Controller called on node %s", nodeName)
+	//l.Infof("Namespace Controller called on node %s", nodeName)
 
 	//------------------------------------------------
 	//	Set up the Namespace Controller
@@ -108,10 +92,10 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "AddFunc()",
-			}).Infof("Something has been added! Workspaces is %s", key)
+			}).Infof("Something has been added! Workspaces is %s", key)*/
 
 			//	Set up the event
 			event := pcn_types.Event{
@@ -126,10 +110,10 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "UpdateFunc()",
-			}).Info("Something has been updated!")
+			}).Info("Something has been updated!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(new)
 
@@ -145,10 +129,10 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "DeleteFunc()",
-			}).Info("Something has been deleted!")
+			}).Info("Something has been deleted!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 
@@ -185,7 +169,7 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 		logBy:       logBy,
 		maxRetries:  maxRetries,
 		stopCh:      make(chan struct{}),
-		namespaces:  map[string]nsStore{},
+		namespaces:  map[string]*core_v1.Namespace{},
 	}
 }
 
@@ -195,8 +179,6 @@ func (n *PcnNamespaceController) Run() {
 		"by":     n.logBy,
 		"method": "Start()",
 	})
-
-	l.Infoln("Namespace controller starting")
 
 	//	Don't let panics crash the process
 	defer utilruntime.HandleCrash()
@@ -213,10 +195,12 @@ func (n *PcnNamespaceController) Run() {
 		return
 	}
 
+	l.Infoln("Namespace controller started.")
+
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
 	wait.Until(n.work, time.Second, n.stopCh)
-	l.Infoln("Run method exiting...")
+	//l.Infoln("Run method exiting...")
 }
 
 func (n *PcnNamespaceController) work() {
@@ -227,11 +211,11 @@ func (n *PcnNamespaceController) work() {
 		"method": "work()",
 	})
 
-	l.Info("Starting method work...")
+	//l.Info("Starting method work...")
 
 	for !stop {
 
-		l.Infof("Ok, I'm going to get a new item from the queue...")
+		//l.Infof("Ok, I'm going to get a new item from the queue...")
 
 		//	Get the item's key from the queue
 		_event, quit := n.queue.Get()
@@ -243,7 +227,7 @@ func (n *PcnNamespaceController) work() {
 
 		event := _event.(pcn_types.Event)
 
-		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
+		//l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
 		err := n.process(event)
 
@@ -251,7 +235,7 @@ func (n *PcnNamespaceController) work() {
 		if err == nil {
 			//	Then reset the ratelimit counters
 			n.queue.Forget(_event)
-			l.Infof("Item with key %s has been forgotten from the queue", event.Key)
+			//l.Infof("Item with key %s has been forgotten from the queue", event.Key)
 		} else if n.queue.NumRequeues(_event) < n.maxRetries {
 			//	Tried less than the maximum retries?
 			l.Warningf("Error processing item with key %s (will retry): %v", event.Key, err)
@@ -277,7 +261,7 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 
 	defer n.queue.Done(event)
 
-	l.Infof("Starting to process namespace")
+	//l.Infof("Starting to process namespace")
 
 	//	Get the policy by querying the key that kubernetes has assigned to this in its cache
 	_ns, exists, err := n.informer.GetIndexer().GetByKey(event.Key)
@@ -305,21 +289,20 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 		n.addNewNamespace(ns)
 		n.dispatchers.new.Dispatch(ns)
 	case pcn_types.Update:
-		n.removeNamespace(ns)
+		//n.removeNamespace(ns)
 		n.addNewNamespace(ns)
 		n.dispatchers.update.Dispatch(ns)
 	case pcn_types.Delete:
-		_splitted := strings.Split(event.Key, "/")
-		ns, ok := n.namespaces[_splitted[0]]
+		ns, ok := n.namespaces[event.Namespace]
 		if ok {
-			n.removeNamespace(ns.ns)
-			n.dispatchers.delete.Dispatch(ns.ns)
+			n.removeNamespace(ns)
+			n.dispatchers.delete.Dispatch(ns)
 		}
 	}
 
 	//	Does not exist?
 	if !exists {
-		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
+		//l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
 	}
 
 	return nil
@@ -327,17 +310,11 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 
 func (n *PcnNamespaceController) addNewNamespace(ns *core_v1.Namespace) {
 
-	//	Hash its labels
-	hashedLabels := n.hashLabels(ns.Labels)
-
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
 	//	Add it in the main map
-	n.namespaces[ns.Name] = nsStore{
-		ns:           ns,
-		hashedLabels: hashedLabels,
-	}
+	n.namespaces[ns.Name] = ns
 }
 
 func (n *PcnNamespaceController) removeNamespace(ns *core_v1.Namespace) {
@@ -352,10 +329,10 @@ func (n *PcnNamespaceController) removeNamespace(ns *core_v1.Namespace) {
 
 func (n *PcnNamespaceController) Stop() {
 
-	log.WithFields(log.Fields{
+	l := log.WithFields(log.Fields{
 		"by":     n.logBy,
 		"method": "Stop())",
-	}).Info("Namespace controller going to shutdown!")
+	})
 
 	//	Make them know that exit has been requested
 	close(n.stopCh)
@@ -367,6 +344,8 @@ func (n *PcnNamespaceController) Stop() {
 	n.dispatchers.new.CleanUp()
 	n.dispatchers.update.CleanUp()
 	n.dispatchers.delete.CleanUp()
+
+	l.Infoln("Namespace controller stopped.")
 }
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
@@ -430,27 +409,7 @@ func (n *PcnNamespaceController) Subscribe(event pcn_types.EventType, consumer f
 	}
 }
 
-func (n *PcnNamespaceController) hashLabels(l map[string]string) string {
-	//	No labels?
-	if len(l) < 1 {
-		return ""
-	}
-
-	implodedLabels := ""
-	hashedLabels := ""
-
-	for key, val := range l {
-		implodedLabels += key + ":" + val + ";"
-	}
-
-	sha := sha256.New()
-	sha.Write([]byte(implodedLabels))
-	hashedLabels = fmt.Sprintf("%x", sha.Sum(nil))
-
-	return hashedLabels
-}
-
-func (n *PcnNamespaceController) GetNamespaces(query pcn_types.PodQueryObject) ([]core_v1.Namespace, error) {
+func (n *PcnNamespaceController) GetNamespaces(query pcn_types.ObjectQuery) ([]core_v1.Namespace, error) {
 
 	//	Query by name
 	if strings.ToLower(query.By) == "name" {
@@ -467,7 +426,7 @@ func (n *PcnNamespaceController) GetNamespaces(query pcn_types.PodQueryObject) (
 
 			list := []core_v1.Namespace{}
 			for _, ns := range n.namespaces {
-				list = append(list, *ns.ns)
+				list = append(list, *ns)
 			}
 
 			return list, nil
@@ -475,7 +434,7 @@ func (n *PcnNamespaceController) GetNamespaces(query pcn_types.PodQueryObject) (
 
 		//	Particular namespace?
 		if ns, exists := n.namespaces[query.Name]; exists {
-			return []core_v1.Namespace{*ns.ns}, nil
+			return []core_v1.Namespace{*ns}, nil
 		}
 
 		return []core_v1.Namespace{}, nil
@@ -490,16 +449,29 @@ func (n *PcnNamespaceController) GetNamespaces(query pcn_types.PodQueryObject) (
 		}
 
 		//	If you provide an empty map, I assume you want all namespaces with no labels
-		hashedLabels := n.hashLabels(query.Labels)
 
 		n.lock.Lock()
 		defer n.lock.Unlock()
 
 		for _, ns := range n.namespaces {
-			if ns.hashedLabels == hashedLabels {
+			remainingLabels := len(query.Labels)
+			for keyNeeded, valNeeded := range query.Labels {
+				if valFound, ok := ns.Labels[keyNeeded]; ok {
+					if valFound == valNeeded {
+						remainingLabels--
+
+						if remainingLabels == 0 {
+							list = append(list, *ns)
+							break
+						}
+					}
+				}
+			}
+
+			/*if ns.hashedLabels == hashedLabels {
 				//	Found it!
 				list = append(list, *ns.ns)
-			}
+			}*/
 		}
 
 		return list, nil

@@ -26,6 +26,7 @@ ChainRule::ChainRule(Chain &parent, const ChainRuleJsonObject &conf)
 ChainRule::~ChainRule() {}
 
 void ChainRule::update(const ChainRuleJsonObject &conf) {
+  id = conf.getId();
   if (conf.conntrackIsSet()) {
     if (!parent_.parent_.isContrackActive()) {
       throw new std::runtime_error(

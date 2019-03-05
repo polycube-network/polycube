@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -52,13 +53,13 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 	maxRetries := 5
 
 	//	Let them know we're starting
-	log.SetLevel(log.DebugLevel)
+	/*log.SetLevel(log.DebugLevel)
 	var l = log.WithFields(log.Fields{
 		"by":     logBy,
 		"method": "NewNetworkPolicyController()",
-	})
+	})*/
 
-	l.Infof("Network Policy Controller just called on node %s", nodeName)
+	//l.Infof("Network Policy Controller just called on node %s", nodeName)
 
 	//------------------------------------------------
 	//	Set up the default network policies informer
@@ -80,16 +81,12 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		cache.Indexers{},
 	)
 
-	l.Info("Just set up the informer!")
-
 	//------------------------------------------------
 	//	Set up the queue
 	//------------------------------------------------
 
 	//	Start the queue
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-
-	l.Info("Just set up the queue")
 
 	//------------------------------------------------
 	//	Set up the event handlers
@@ -99,10 +96,10 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 	npcInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "AddFunc()",
-			}).Infof("Something has been added! Workspaces is %s", key)
+			}).Infof("Something has been added! Workspaces is %s", key)*/
 
 			//	Set up the event
 			event := pcn_types.Event{
@@ -117,10 +114,10 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "UpdateFunc()",
-			}).Info("Something has been updated!")
+			}).Info("Something has been updated!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(new)
 
@@ -136,10 +133,10 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			log.WithFields(log.Fields{
+			/*log.WithFields(log.Fields{
 				"by":     logBy,
 				"method": "DeleteFunc()",
-			}).Info("Something has been deleted!")
+			}).Info("Something has been deleted!")*/
 
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 
@@ -156,7 +153,7 @@ func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Cl
 		},
 	})
 
-	l.Info("Just set up the event handlers")
+	//l.Info("Just set up the event handlers")
 
 	//------------------------------------------------
 	//	Set up the dispatchers
@@ -189,8 +186,6 @@ func (npc *DefaultNetworkPolicyController) Run() {
 		"method": "Start()",
 	})
 
-	l.Info("Network Policy Controller starting")
-
 	//	Channel will be closed by Stop().
 	//defer close(npc.stopCh)
 
@@ -213,10 +208,11 @@ func (npc *DefaultNetworkPolicyController) Run() {
 		return
 	}
 
+	l.Info("Network Policy Controller started")
+
 	//	Work *until* something bad happens. If that's the case, wait one second and then re-work again.
 	//	Well, except when someone tells us to stop... in that case, just stop, man
 	wait.Until(npc.work, time.Second, npc.stopCh)
-	l.Infoln("Run method exiting...")
 }
 
 func (npc *DefaultNetworkPolicyController) work() {
@@ -227,11 +223,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 		"method": "work()",
 	})
 
-	l.Info("Starting method work...")
-
 	for !stop {
-
-		l.Infof("Ok, I'm going to get a new item from the queue...")
 
 		//	Get the item's key from the queue
 		_event, quit := npc.queue.Get()
@@ -243,7 +235,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 
 		event := _event.(pcn_types.Event)
 
-		l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
+		//l.Infof("Just got the item: its key is %s on namespace %s", event.Key, event.Namespace)
 
 		err := npc.processPolicy(event)
 
@@ -251,7 +243,7 @@ func (npc *DefaultNetworkPolicyController) work() {
 		if err == nil {
 			//	Then reset the ratelimit counters
 			npc.queue.Forget(_event)
-			l.Infof("Item with key %s has been forgotten from the queue", event.Key)
+			//l.Infof("Item with key %s has been forgotten from the queue", event.Key)
 		} else if npc.queue.NumRequeues(_event) < npc.maxRetries {
 			//	Tried less than the maximum retries?
 			l.Warningf("Error processing item with key %s (will retry): %v", event.Key, err)
@@ -277,7 +269,7 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 
 	defer npc.queue.Done(event)
 
-	l.Infof("Starting to process policy")
+	//l.Infof("Starting to process policy")
 
 	//	Get the policy by querying the key that kubernetes has assigned to this in its cache
 	_policy, exists, err := npc.defaultNetworkPoliciesInformer.GetIndexer().GetByKey(event.Key)
@@ -319,13 +311,23 @@ func (npc *DefaultNetworkPolicyController) processPolicy(event pcn_types.Event) 
 
 	//	Does not exist?
 	if !exists {
-		l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
+		//l.Infof("Object with key %s does not exist. Going to trigger a onDelete function", event.Key)
 	}
 
 	return nil
 }
 
-func (npc *DefaultNetworkPolicyController) GetPolicy(name string) []networking_v1.NetworkPolicy {
+func (npc *DefaultNetworkPolicyController) GetPolicies(query pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
+
+	if query.By != "name" {
+		return []networking_v1.NetworkPolicy{}, errors.New("Query type not supported")
+	}
+
+	if len(query.Name) < 1 {
+		return []networking_v1.NetworkPolicy{}, errors.New("No name provided")
+	}
+
+	name := query.Name
 
 	policiesFound := []networking_v1.NetworkPolicy{}
 	if name == "*" {
@@ -338,27 +340,29 @@ func (npc *DefaultNetworkPolicyController) GetPolicy(name string) []networking_v
 		}
 	}
 
-	return policiesFound
+	return policiesFound, nil
 }
 
 func (npc *DefaultNetworkPolicyController) addNewPolicy(policy *networking_v1.NetworkPolicy) {
 	npc.lock.Lock()
+	defer npc.lock.Unlock()
+
 	npc.deployedPolicies[policy.Name] = policy
-	npc.lock.Unlock()
 }
 
 func (npc *DefaultNetworkPolicyController) removePolicy(policy *networking_v1.NetworkPolicy) {
 	npc.lock.Lock()
+	defer npc.lock.Unlock()
+
 	delete(npc.deployedPolicies, policy.Name)
-	npc.lock.Unlock()
 }
 
 func (npc *DefaultNetworkPolicyController) Stop() {
 
-	log.WithFields(log.Fields{
+	l := log.WithFields(log.Fields{
 		"by":     npc.logBy,
 		"method": "Stop())",
-	}).Info("Default network policy controller going to shutdown!")
+	})
 
 	//	Make them know that exit has been requested
 	close(npc.stopCh)
@@ -370,6 +374,8 @@ func (npc *DefaultNetworkPolicyController) Stop() {
 	npc.dispatchers.new.CleanUp()
 	npc.dispatchers.update.CleanUp()
 	npc.dispatchers.delete.CleanUp()
+
+	l.Info("Default network policy controller exited.")
 }
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.

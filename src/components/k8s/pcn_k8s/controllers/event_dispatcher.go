@@ -6,16 +6,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// EventDispatcher dispatches the event to all subscribers
 type EventDispatcher struct {
-	name string
-
-	n id
-
+	name        string
+	n           id
 	subscribers map[id]subscriber
-
-	lock sync.RWMutex
+	lock        sync.Mutex
 }
 
+// EventDispatchersContainer contains the three basic EventDispatcher-s: New, Update, Delete
 type EventDispatchersContainer struct {
 	new    *EventDispatcher
 	update *EventDispatcher
@@ -25,15 +24,16 @@ type EventDispatchersContainer struct {
 type subscriber func(interface{})
 type id uint
 
+// NewEventDispatcher starts a new event dispatcher
 func NewEventDispatcher(name string) *EventDispatcher {
 
 	//	Let them know we're starting
-	log.SetLevel(log.DebugLevel)
+	/*log.SetLevel(log.DebugLevel)
 	var l = log.WithFields(log.Fields{
 		"by":     name,
 		"method": "NewEventDispatcher()",
 	})
-	l.Printf("%s starting...", name)
+	l.Printf("%s starting...", name)*/
 
 	return &EventDispatcher{
 		name:        name,
@@ -49,7 +49,7 @@ func (d *EventDispatcher) Dispatch(item interface{}) {
 		"method": "Dispatch()",
 	})
 
-	l.Println("Dispatching the event...")
+	//l.Println("Dispatching the event...")
 
 	//	Are there any subscribers?
 	if (len(d.subscribers)) < 1 {
@@ -69,16 +69,16 @@ func (d *EventDispatcher) Dispatch(item interface{}) {
 
 func (d *EventDispatcher) Add(s subscriber) id {
 
-	var l = log.WithFields(log.Fields{
+	/*var l = log.WithFields(log.Fields{
 		"by":     d.name,
 		"method": "Add()",
 	})
-	l.Println("Adding a new subscriber")
+	l.Println("Adding a new subscriber")*/
 
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	l.Println("Going to add a new subscriber with id %d", d.n+1)
+	//l.Println("Going to add a new subscriber with id %d", d.n+1)
 
 	d.subscribers[d.n+1] = s
 	d.n++
@@ -89,11 +89,11 @@ func (d *EventDispatcher) Add(s subscriber) id {
 
 func (d *EventDispatcher) Remove(i id) {
 
-	var l = log.WithFields(log.Fields{
+	/*var l = log.WithFields(log.Fields{
 		"by":     d.name,
 		"method": "Remove()",
 	})
-	l.Println("Going to delete")
+	l.Println("Going to delete")*/
 
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -101,18 +101,18 @@ func (d *EventDispatcher) Remove(i id) {
 	if _, exists := d.subscribers[i]; exists {
 		delete(d.subscribers, i)
 
-		l.Println("subscriber has been deleted")
+		//l.Println("subscriber has been deleted")
 	}
 
 }
 
 func (d *EventDispatcher) CleanUp() {
 
-	var l = log.WithFields(log.Fields{
+	/*var l = log.WithFields(log.Fields{
 		"by":     d.name,
 		"method": "CleanUp()",
 	})
-	l.Println("Going to clean")
+	l.Println("Going to clean")*/
 
 	d.lock.Lock()
 	defer d.lock.Unlock()
