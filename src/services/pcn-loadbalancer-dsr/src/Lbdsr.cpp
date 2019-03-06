@@ -160,11 +160,7 @@ bool Lbdsr::reloadCode() {
   return true;
 }
 
-void Lbdsr::setFrontendPort(std::string portName) {
-  auto p = get_port(portName);
-
-  int index = p->index();
-
+void Lbdsr::setFrontendPort(std::string portName, int index) {
   if (frontend_port_ != -1) {
     throw std::runtime_error("Frontend port already set");
   }
@@ -176,11 +172,7 @@ void Lbdsr::setFrontendPort(std::string portName) {
   reloadCode();
 }
 
-void Lbdsr::setBackendPort(std::string portName) {
-  auto p = get_port(portName);
-
-  int index = p->index();
-
+void Lbdsr::setBackendPort(std::string portName, int index) {
   if (backend_port_ != -1) {
     throw std::runtime_error("Backend port already set");
   }

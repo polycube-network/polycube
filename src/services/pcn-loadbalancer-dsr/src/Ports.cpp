@@ -33,11 +33,11 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
 
   switch (port_type_) {
   case PortsTypeEnum::FRONTEND:
-    parent_.setFrontendPort(port->name());
+    parent_.setFrontendPort(port->name(), this->index());
     break;
 
   case PortsTypeEnum::BACKEND:
-    parent_.setBackendPort(port->name());
+    parent_.setBackendPort(port->name(), this->index());
     break;
   }
 
