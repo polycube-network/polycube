@@ -3,13 +3,11 @@
 # check if polycubed is alive
 polycubed_alive=$(ps -el | grep polycubed)
 if [ -z "$polycubed_alive" ]; then
-    echo "polycubed is NOT running."
-    echo "please launch it using ..."
-    echo "'sudo polycubed'"
+    echo "pcn-iptables is not able to find any daemon running."
+    echo "please try to run:"
+    echo ""
+    echo "sudo polycubed"
     exit 1
-    # sudo polycubed
-else
-    echo "polycubed already launched ..."
 fi
 
 ret=$(polycubectl iptables pcn-iptables show)
@@ -17,12 +15,9 @@ ret=$(echo $?)
 
 if [ $ret -ne 0 ]
     then
-        echo "Launching pcn-iptables ..."
+        echo "starting pcn-iptables ..."
         polycubectl iptables add pcn-iptables
-        echo "DONE! pcn-iptables launched"
         exit 0
 else
-    echo "pcn-iptables already launched ..."
+    echo "pcn-iptables already running ..."
 fi
-
-echo "DONE"
