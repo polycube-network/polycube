@@ -928,6 +928,9 @@ func (d *DefaultPolicyParser) getPodsFromSelectors(podSelector, namespaceSelecto
 		}
 	}
 
+	log.Debugf("###podquery: %+v\n", queryPod)
+	log.Debugf("###nsquery: %+v\n", queryNs)
+
 	//	Now get the pods
 	podsFound, err := d.podController.GetPods(queryPod, queryNs)
 
@@ -955,6 +958,10 @@ func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolic
 
 	//	Get the pods this policy must be applied to
 	podsAffected, err := d.getPodsFromSelectors(&policy.Spec.PodSelector, nil, namespace)
+
+	for _, podAffected := range podsAffected {
+		l.Debugln("###PodAffected:", podAffected.Pod.Name)
+	}
 
 	//	Something happened?
 	if err != nil {
