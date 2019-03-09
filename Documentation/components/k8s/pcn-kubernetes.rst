@@ -26,7 +26,7 @@ See `Configuring pcn-k8s`_ to get more info about how to configure the different
 
 Installation:
 -------------
-You may either choose either of the below options.
+You may choose either of the below options.
 
 1. Quick setup with ``vagrant`` (development environment)
 2. Using ``kubeadm`` on Bare-Metal or VMs (Single or HA cluster)
@@ -42,11 +42,9 @@ Download and set up the following packages.
 - `Vagrant <https://www.vagrantup.com/downloads.html>`_ (Tested on 2.2.4)
 - `VirtualBox <https://www.virtualbox.org/wiki/Downloads>`_ (Tested on 6.0.4)
 
-#TODO: update the URL to download the Vagrantfile
-
 **Follow the instruction below, after the pre-requisite:**
 
-1. Use this `PCN-K8S Vagrantfile <http://a.b.c>`_ for your setup.
+1. Use this `PCN-K8S Vagrantfile <https://raw.githubusercontent.com/polycube-network/polycube/2a23469853bed0ce38774512d0180629f13fe7fb/tests/vagrant/pcn-k8s/Vagrantfile>`_ for your setup.
 2. Execute ``vagrant up`` to bring all the nodes up and running.
 3. ``vagrant status`` to check all the nodes and it's status
 4. ``vagrant ssh <node-name>`` to SSH to the node.
