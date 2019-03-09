@@ -24,15 +24,44 @@ The ``pcn-k8s`` solution supports different methods to communicate pods running 
 
 See `Configuring pcn-k8s`_ to get more info about how to configure the different modes.
 
-Testing with ``kubeadm``
-------------------------
+Installation:
+-------------
+You may either choose either of the below options.
 
-The easiest way to test ``pcn-k8s`` is by using ``kubeadm``.
+1. Quick setup with ``vagrant`` (development environment)
+2. Using ``kubeadm`` on Bare-Metal or VMs (Single or HA cluster)
+
+1. Quick Setup with ``vagrant``
+-------------------------------
+- The fastest mode to test ``pcn-k8s`` including setup.
+
+**Pre-requisite:** 
+
+Download and set up the following packages.
+
+- `Vagrant <https://www.vagrantup.com/downloads.html>`_ (Tested on 2.2.4)
+- `VirtualBox <https://www.virtualbox.org/wiki/Downloads>`_ (Tested on 6.0.4)
+
+#TODO: update the URL to download the Vagrantfile
+
+**Follow the instruction below, after the pre-requisite:**
+
+1. Use this `PCN-K8S Vagrantfile <http://a.b.c>`_ for your setup.
+2. Execute ``vagrant up`` to bring all the nodes up and running.
+3. ``vagrant status`` to check all the nodes and it's status
+4. ``vagrant ssh <node-name>`` to SSH to the node.
+
+Note: This vagrant setup takes care of setting up the kubeadm and joining the nodes along with the ``pcn-k8s`` CNI.
+
+2. Using ``kubeadm`` on Bare-Metal or VMs (Single or HA cluster)
+----------------------------------------------------------------
+
+The easiest way to get started with ``pcn-k8s`` using ``kubeadm``.
 
 Please follow the `kubeadm installation guide <https://kubernetes.io/docs/setup/independent/install-kubeadm/>`_ for the most up-to-date instructions.
 
-Once kubeadm is installed, you can create the cluster.
-The following commands are intended to be used as a quick guide; please refer to the official `setup guide <https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/>`_ for more detailed information.
+Once ``kubeadm`` is installed, you can create the cluster.
+The following commands are intended to be used as a quick guide; please refer to the official `single cluster setup guide <https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/>`_ or `HA cluster setup guide <https://kubernetes.io/docs/setup/independent/high-availability/>`_ for more detailed information.
 
 Initialize master
 ^^^^^^^^^^^^^^^^^
