@@ -45,17 +45,13 @@ enum class SimpleforwarderLoglevelEnum {
 class  SimpleforwarderJsonObject : public JsonObjectBase {
 public:
   SimpleforwarderJsonObject();
-  virtual ~SimpleforwarderJsonObject();
+  SimpleforwarderJsonObject(nlohmann::json& json);
+  ~SimpleforwarderJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -118,7 +114,7 @@ public:
   void unsetActions();
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_uuid;
@@ -131,8 +127,6 @@ protected:
   bool m_portsIsSet;
   std::vector<ActionsJsonObject> m_actions;
   bool m_actionsIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ports", "actions" };
 };
 
 }

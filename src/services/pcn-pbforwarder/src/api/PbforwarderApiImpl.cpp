@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-PbforwarderApiImpl::PbforwarderApiImpl() {}
+namespace PbforwarderApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Pbforwarder>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Pbforwarder> PbforwarderApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Pbforwarder> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Pbforwarder> PbforwarderApiImpl::get_cube(const std::string &nam
   return iter->second;
 }
 
-void PbforwarderApiImpl::create_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Pbforwarder>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void PbforwarderApiImpl::create_pbforwarder_by_id(const std::string &name, const
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void PbforwarderApiImpl::replace_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &bridge){
+void replace_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void PbforwarderApiImpl::delete_pbforwarder_by_id(const std::string &name) {
+void delete_pbforwarder_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void PbforwarderApiImpl::delete_pbforwarder_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string PbforwarderApiImpl::read_pbforwarder_uuid_by_id(const std::string &name) {
+std::string read_pbforwarder_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<PbforwarderJsonObject> PbforwarderApiImpl::read_pbforwarder_list_by_id() {
+std::vector<PbforwarderJsonObject> read_pbforwarder_list_by_id() {
   std::vector<PbforwarderJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<PbforwarderJsonObject> PbforwarderApiImpl::read_pbforwarder_list_by_
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::read_pbforwarder_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::re
 /*
 * Ports list related functions
 */
-void PbforwarderApiImpl::create_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> PbforwarderApiImpl::read_pbforwarder_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_pbforwarder_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> PbforwarderApiImpl::read_pbforwarder_ports_list_by_
   return vect;
 }
 
-void PbforwarderApiImpl::replace_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void PbforwarderApiImpl::delete_pbforwarder_ports_list_by_id(const std::string &name) {
+void delete_pbforwarder_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::read_pbforwarder_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::re
 /*
 * Ports related functions
 */
-void PbforwarderApiImpl::create_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject PbforwarderApiImpl::read_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void PbforwarderApiImpl::replace_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void PbforwarderApiImpl::delete_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string PbforwarderApiImpl::read_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum PbforwarderApiImpl::read_pbforwarder_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_pbforwarder_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string PbforwarderApiImpl::read_pbforwarder_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_pbforwarder_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void PbforwarderApiImpl::update_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -193,7 +197,7 @@ void PbforwarderApiImpl::update_pbforwarder_ports_peer_by_id(const std::string &
 *
 */
 void
-PbforwarderApiImpl::create_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
+create_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
   auto pbforwarder = get_cube(name);
 
   pbforwarder->addRules(id, value);
@@ -214,14 +218,14 @@ PbforwarderApiImpl::create_pbforwarder_rules_by_id(const std::string &name, cons
 *
 */
 void
-PbforwarderApiImpl::create_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
+create_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
   auto pbforwarder = get_cube(name);
   pbforwarder->addRulesList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::create_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&pbforwarder = get_cube(name);
 
@@ -246,7 +250,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::cr
 *
 */
 void
-PbforwarderApiImpl::delete_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
+delete_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
 
   pbforwarder->delRules(id);
@@ -266,14 +270,14 @@ PbforwarderApiImpl::delete_pbforwarder_rules_by_id(const std::string &name, cons
 *
 */
 void
-PbforwarderApiImpl::delete_pbforwarder_rules_list_by_id(const std::string &name) {
+delete_pbforwarder_rules_list_by_id(const std::string &name) {
   auto pbforwarder = get_cube(name);
   pbforwarder->delRulesList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::delete_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&pbforwarder = get_cube(name);
 
@@ -297,7 +301,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::de
 * PbforwarderJsonObject
 */
 PbforwarderJsonObject
-PbforwarderApiImpl::read_pbforwarder_by_id(const std::string &name) {
+read_pbforwarder_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -316,7 +320,7 @@ PbforwarderApiImpl::read_pbforwarder_by_id(const std::string &name) {
 * PbforwarderLoglevelEnum
 */
 PbforwarderLoglevelEnum
-PbforwarderApiImpl::read_pbforwarder_loglevel_by_id(const std::string &name) {
+read_pbforwarder_loglevel_by_id(const std::string &name) {
   auto pbforwarder = get_cube(name);
   return pbforwarder->getLoglevel();
 
@@ -337,7 +341,7 @@ PbforwarderApiImpl::read_pbforwarder_loglevel_by_id(const std::string &name) {
 * RulesActionEnum
 */
 RulesActionEnum
-PbforwarderApiImpl::read_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getAction();
@@ -359,7 +363,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_action_by_id(const std::string &name,
 * RulesJsonObject
 */
 RulesJsonObject
-PbforwarderApiImpl::read_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   return pbforwarder->getRules(id)->toJsonObject();
 
@@ -380,7 +384,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_by_id(const std::string &name, const 
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getDstIp();
@@ -402,7 +406,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_dst_ip_by_id(const std::string &name,
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getDstMac();
@@ -424,7 +428,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_dst_mac_by_id(const std::string &name
 * uint16_t
 */
 uint16_t
-PbforwarderApiImpl::read_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getDstPort();
@@ -446,7 +450,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_dst_port_by_id(const std::string &nam
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getInPort();
@@ -468,7 +472,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_in_port_by_id(const std::string &name
 * RulesL4ProtoEnum
 */
 RulesL4ProtoEnum
-PbforwarderApiImpl::read_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getL4Proto();
@@ -489,7 +493,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_l4_proto_by_id(const std::string &nam
 * std::vector<RulesJsonObject>
 */
 std::vector<RulesJsonObject>
-PbforwarderApiImpl::read_pbforwarder_rules_list_by_id(const std::string &name) {
+read_pbforwarder_rules_list_by_id(const std::string &name) {
   auto pbforwarder = get_cube(name);
   auto &&rules = pbforwarder->getRulesList();
   std::vector<RulesJsonObject> m;
@@ -501,7 +505,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::read_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&pbforwarder = get_cube(name);
 
@@ -527,7 +531,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::re
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getOutPort();
@@ -549,7 +553,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_out_port_by_id(const std::string &nam
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getSrcIp();
@@ -571,7 +575,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_src_ip_by_id(const std::string &name,
 * std::string
 */
 std::string
-PbforwarderApiImpl::read_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getSrcMac();
@@ -593,7 +597,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_src_mac_by_id(const std::string &name
 * uint16_t
 */
 uint16_t
-PbforwarderApiImpl::read_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getSrcPort();
@@ -615,7 +619,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_src_port_by_id(const std::string &nam
 * uint32_t
 */
 uint32_t
-PbforwarderApiImpl::read_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id) {
+read_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
   return rules->getVlan();
@@ -636,7 +640,7 @@ PbforwarderApiImpl::read_pbforwarder_rules_vlan_by_id(const std::string &name, c
 * CubeType
 */
 CubeType
-PbforwarderApiImpl::read_pbforwarder_type_by_id(const std::string &name) {
+read_pbforwarder_type_by_id(const std::string &name) {
   auto pbforwarder = get_cube(name);
   return pbforwarder->getType();
 
@@ -658,7 +662,7 @@ PbforwarderApiImpl::read_pbforwarder_type_by_id(const std::string &name) {
 *
 */
 void
-PbforwarderApiImpl::replace_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
+replace_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
   auto pbforwarder = get_cube(name);
 
   pbforwarder->replaceRules(id, value);
@@ -679,13 +683,13 @@ PbforwarderApiImpl::replace_pbforwarder_rules_by_id(const std::string &name, con
 *
 */
 void
-PbforwarderApiImpl::replace_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
+replace_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::replace_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -703,7 +707,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::re
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value) {
+update_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value) {
   auto pbforwarder = get_cube(name);
 
   pbforwarder->update(value);
@@ -723,13 +727,13 @@ PbforwarderApiImpl::update_pbforwarder_by_id(const std::string &name, const Pbfo
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_list_by_id(const std::vector<PbforwarderJsonObject> &value) {
+update_pbforwarder_list_by_id(const std::vector<PbforwarderJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::update_pbforwarder_list_by_id_get_list(const std::vector<PbforwarderJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_list_by_id_get_list(const std::vector<PbforwarderJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -747,7 +751,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::up
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_loglevel_by_id(const std::string &name, const PbforwarderLoglevelEnum &value) {
+update_pbforwarder_loglevel_by_id(const std::string &name, const PbforwarderLoglevelEnum &value) {
   auto pbforwarder = get_cube(name);
 
   pbforwarder->setLoglevel(value);
@@ -769,7 +773,7 @@ PbforwarderApiImpl::update_pbforwarder_loglevel_by_id(const std::string &name, c
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto pbforwarder = get_cube(name);
   auto ports = pbforwarder->getPorts(portsName);
 
@@ -791,13 +795,13 @@ PbforwarderApiImpl::update_pbforwarder_ports_by_id(const std::string &name, cons
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::update_pbforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -816,7 +820,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::up
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id, const RulesActionEnum &value) {
+update_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id, const RulesActionEnum &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -839,7 +843,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_action_by_id(const std::string &nam
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
+update_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -862,7 +866,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_by_id(const std::string &name, cons
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -885,7 +889,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_dst_ip_by_id(const std::string &nam
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -908,7 +912,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_dst_mac_by_id(const std::string &na
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) {
+update_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -931,7 +935,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_dst_port_by_id(const std::string &n
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -948,13 +952,13 @@ PbforwarderApiImpl::update_pbforwarder_rules_in_port_by_id(const std::string &na
 *
 * @param[in] name ID of name
 * @param[in] id ID of id
-* @param[in] value Level 4 Protocol (i.e. UDP, TCP; default: TCP)
+* @param[in] value Level 4 Protocol (i.e. UDP, TCP)
 *
 * Responses:
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id, const RulesL4ProtoEnum &value) {
+update_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id, const RulesL4ProtoEnum &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -976,13 +980,13 @@ PbforwarderApiImpl::update_pbforwarder_rules_l4_proto_by_id(const std::string &n
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
+update_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::update_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1001,7 +1005,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> PbforwarderApiImpl::up
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -1024,7 +1028,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_out_port_by_id(const std::string &n
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -1047,7 +1051,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_src_ip_by_id(const std::string &nam
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
+update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -1070,7 +1074,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_src_mac_by_id(const std::string &na
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) {
+update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -1093,7 +1097,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_src_port_by_id(const std::string &n
 *
 */
 void
-PbforwarderApiImpl::update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id, const uint32_t &value) {
+update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id, const uint32_t &value) {
   auto pbforwarder = get_cube(name);
   auto rules = pbforwarder->getRules(id);
 
@@ -1103,6 +1107,7 @@ PbforwarderApiImpl::update_pbforwarder_rules_vlan_by_id(const std::string &name,
 
 
 
+}
 }
 }
 }

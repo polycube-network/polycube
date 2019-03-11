@@ -1,0 +1,591 @@
+/*
+ * Copyright 2018 The Polycube Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma once
+
+#include <memory>
+#include <queue>
+#include <string>
+
+#include "../Validators/WhenValidator.h"
+
+#include "../Resources/Body/CaseResource.h"
+#include "../Resources/Body/ChoiceResource.h"
+#include "../Resources/Body/JsonNodeField.h"
+#include "../Resources/Body/LeafListResource.h"
+#include "../Resources/Body/LeafResource.h"
+#include "../Resources/Body/ListKey.h"
+#include "../Resources/Body/ListResource.h"
+#include "../Resources/Body/ParentResource.h"
+
+#include "../Resources/Endpoint/CaseResource.h"
+#include "../Resources/Endpoint/ChoiceResource.h"
+#include "../Resources/Endpoint/LeafListResource.h"
+#include "../Resources/Endpoint/LeafResource.h"
+#include "../Resources/Endpoint/ListResource.h"
+#include "../Resources/Endpoint/ParentResource.h"
+#include "../Resources/Endpoint/Service.h"
+
+#include "server/../utils.h"
+
+namespace polycube::polycubed::Rest::Parser {
+std::int16_t Yang::GetExtensionIndex(lys_ext_instance **extensions,
+                                     std::uint8_t extensions_length,
+                                     const char *name,
+                                     unsigned name_length) const {
+  for (std::int16_t i = 0; i < extensions_length; ++i) {
+    if (!strncmp(extensions[i]->def->name, name, name_length)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+std::string Yang::FetchExtensionByIndex(lys_ext_instance **extensions,
+                                        std::int16_t index) const {
+  if (index == -1)
+    return "";
+  else
+    return std::string{extensions[index]->arg_value};
+}
+
+void Yang::ParseModule(
+    const lys_module *module, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Endpoint::Service> &cube) {
+  auto typedefs = module->tpdf;
+  for (auto i = 0; i < module->tpdf_size; ++i) {
+    const auto &current_typedef = typedefs[i];
+    const auto &validators = ParseType(current_typedef.type);
+    typedef_validators_[current_typedef.type.base].emplace(current_typedef.name,
+                                                           validators.first);
+  }
+  auto data = module->data;
+  while (data) {
+    ParseNode(data, parsed_names,
+              std::static_pointer_cast<Resources::Body::ParentResource>(cube),
+              true);
+    data = data->next;
+  }
+}
+
+void Yang::ParseNode(
+    const lys_node *data, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    bool generate_endpoint) const {
+  switch (data->nodetype) {
+  case LYS_UNKNOWN:
+    break;
+  case LYS_CONTAINER:
+    ParseContainer(reinterpret_cast<const lys_node_container *>(data),
+                   std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_CHOICE:
+    ParseChoice(reinterpret_cast<const lys_node_choice *>(data),
+                std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_LEAF:
+    ParseLeaf(reinterpret_cast<const lys_node_leaf *>(data),
+              std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_LEAFLIST:
+    ParseLeafList(reinterpret_cast<const lys_node_leaflist *>(data),
+                  std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_LIST:
+    ParseList(reinterpret_cast<const lys_node_list *>(data),
+              std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_ANYXML:
+    ParseAny(reinterpret_cast<const lys_node_anydata *>(data),
+             std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_CASE:
+    ParseCase(reinterpret_cast<const lys_node_case *>(data),
+              std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_NOTIF:
+    throw std::invalid_argument("notification not supported");
+  case LYS_RPC:
+    ParseRpcAction(reinterpret_cast<const lys_node_rpc_action *>(data),
+                   std::move(parsed_names), parent);
+    break;
+  case LYS_INPUT:
+    ParseInput(reinterpret_cast<const lys_node_inout *>(data),
+               std::move(parsed_names), parent);
+    break;
+  case LYS_OUTPUT:
+    break;
+  case LYS_GROUPING:
+    break;
+  case LYS_USES:
+    ParseUses(reinterpret_cast<const lys_node_uses *>(data),
+              std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_AUGMENT:
+    break;
+  case LYS_ACTION:
+    ParseRpcAction(reinterpret_cast<const lys_node_rpc_action *>(data),
+                   std::move(parsed_names), parent);
+    break;
+  case LYS_ANYDATA:
+    ParseAny(reinterpret_cast<const lys_node_anydata *>(data),
+             std::move(parsed_names), parent, generate_endpoint);
+    break;
+  case LYS_EXT:
+    break;
+  }
+}
+
+void Yang::ParseContainer(
+    const lys_node_container *data, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    bool generate_endpoint) const {
+  std::shared_ptr<Resources::Body::ParentResource> resource;
+  parsed_names.emplace(data->name);
+  std::string description =
+      (data->dsc == nullptr) ? "" : std::string{data->dsc};
+  std::vector<Resources::Body::JsonNodeField> node_fields;
+  if (data->when != nullptr) {
+    std::vector<std::shared_ptr<Validators::NodeValidator>> fields{
+        std::make_shared<Validators::WhenValidator>(data->when->cond)};
+    node_fields.emplace_back(std::move(fields));
+  }
+  const auto &cli_example = FetchExtensionByIndex(
+      data->ext,
+      GetExtensionIndex(data->ext, data->ext_size, "cli-example", 11));
+  bool configuration = ((data->flags & LYS_CONFIG_MASK) ^ 2) != 0;
+  bool init_only_config = (configuration)
+                              ? GetExtensionIndex(data->ext, data->ext_size,
+                                                  "init-only-config", 16) != -1
+                              : false;
+  if (generate_endpoint) {
+    const auto &e_parent =
+        std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
+    auto endpoint = e_parent->Endpoint() + '/' + data->name;
+    resource = factory_->RestGeneric(
+        parsed_names, data->name, description, cli_example, endpoint,
+        parent.get(), node_fields, configuration, init_only_config,
+        data->presence != nullptr, false);
+  } else {
+    resource = factory_->BodyGeneric(data->name, description, cli_example,
+                                     parent.get(), node_fields,
+                                     configuration, init_only_config,
+                                     data->presence != nullptr);
+  }
+  auto child = data->child;
+  while (child != nullptr) {
+    ParseNode(child, parsed_names, resource, generate_endpoint);
+    child = child->next;
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseUses(
+    const lys_node_uses *group, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  auto child = group->child;
+  while (child) {
+    ParseNode(child, parsed_names, parent, generate_endpoint);
+    child = child->next;
+  }
+}
+
+void Yang::ParseList(
+    const lys_node_list *list, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  std::vector<Resources::Body::ListKey> keys{};
+  // maps the original key name with the one fixed (in case of duplicate
+  // names in the YANG tree
+  auto key_name_fixed = std::unordered_map<std::string, std::string>();
+  std::string rest_endpoint;
+  std::string rest_endpoint_multiple;
+  parsed_names.emplace(list->name);
+  if (generate_endpoint) {
+    rest_endpoint_multiple =
+        std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent)
+            ->Endpoint() + '/' +
+        list->name;
+    rest_endpoint = rest_endpoint_multiple;
+  }
+  if (list->keys_size != 0) {
+    keys.reserve(list->keys_size);
+    std::string item;
+    auto stream = std::stringstream(list->keys_str);
+    while (std::getline(stream, item, ' ')) {
+      auto original_name = item;
+      if (generate_endpoint) {
+        // check if there already was a key with the same name
+        if (rest_endpoint.find(":" + item) != std::string::npos) {
+          item = std::string{list->name} + '_' + item;
+        }
+        rest_endpoint += "/:" + item;
+        key_name_fixed.emplace(original_name, item);
+      }
+    }
+  }
+  // get all keys
+  auto child = list->child;
+  for (uint8_t parsed_keys = 0;
+       parsed_keys < list->keys_size && child != nullptr; child = child->next) {
+    if (key_name_fixed.count(child->name) != 0) {
+      const auto &key = reinterpret_cast<const lys_node_leaf *>(child);
+      auto validator = GetValidators(key->type);
+      keys.emplace_back(key->type.base, key_name_fixed.at(child->name),
+                        std::move(validator));
+      parsed_keys++;
+    }
+  }
+
+  std::shared_ptr<Resources::Body::ListResource> resource;
+  std::string description =
+      (list->dsc == nullptr) ? "" : std::string{list->dsc};
+  std::vector<Resources::Body::JsonNodeField> node_fields;
+  if (list->when != nullptr) {
+    std::vector<std::shared_ptr<Validators::NodeValidator>> fields{
+        std::make_shared<Validators::WhenValidator>(list->when->cond)};
+    node_fields.emplace_back(std::move(fields));
+  }
+  const auto &cli_example = FetchExtensionByIndex(
+      list->ext,
+      GetExtensionIndex(list->ext, list->ext_size, "cli-example", 11));
+  bool configuration = ((list->flags & LYS_CONFIG_MASK) ^ 2) != 0;
+  bool init_only_config = (configuration)
+                              ? GetExtensionIndex(list->ext, list->ext_size,
+                                                  "init-only-config", 16) != -1
+                              : false;
+  if (generate_endpoint) {
+    resource = factory_->RestList(
+        parsed_names, list->name, description, cli_example, rest_endpoint,
+        rest_endpoint_multiple, parent.get(), configuration, init_only_config,
+        std::move(keys), node_fields);
+  } else {
+    resource = factory_->BodyList(
+        list->name, description, cli_example, parent.get(), std::move(keys),
+        node_fields, configuration, init_only_config);
+  }
+  // parse each child using the generic "node" parsing function
+  child = list->child;
+  while (child != nullptr) {
+    if (key_name_fixed.count(child->name) == 0) {
+      ParseNode(child, parsed_names, resource, generate_endpoint);
+    }
+    child = child->next;
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseLeaf(
+    const lys_node_leaf *leaf, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  const auto &cli_example = FetchExtensionByIndex(
+      leaf->ext,
+      GetExtensionIndex(leaf->ext, leaf->ext_size, "cli-example", 11));
+  bool configuration = ((leaf->flags & LYS_CONFIG_MASK) ^ 2) != 0;
+  bool init_only_config = (configuration)
+                              ? GetExtensionIndex(leaf->ext, leaf->ext_size,
+                                                  "init-only-config", 16) != -1
+                              : false;
+  bool mandatory = (leaf->flags & LYS_MAND_MASK) != 0;
+  auto validators = GetValidators(leaf->type);
+  auto value_field =
+      factory_->JsonValueField(leaf->type.base, std::move(validators));
+  parsed_names.emplace(leaf->name);
+  std::unique_ptr<const std::string> default_value = nullptr;
+  if (leaf->dflt != nullptr) {
+    default_value = std::make_unique<const std::string>(leaf->dflt);
+  }
+  std::vector<Resources::Body::JsonNodeField> node_fields;
+  if (leaf->when != nullptr) {
+    std::vector<std::shared_ptr<Validators::NodeValidator>> fields{
+        std::make_shared<Validators::WhenValidator>(leaf->when->cond)};
+    node_fields.emplace_back(std::move(fields));
+  }
+  std::unique_ptr<Resources::Body::LeafResource> leaf_res;
+  std::string description =
+      (leaf->dsc == nullptr) ? "" : std::string{leaf->dsc};
+  if (generate_endpoint) {
+    const auto &e_parent =
+        std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
+    auto endpoint = e_parent->Endpoint() + '/' + leaf->name;
+    leaf_res = factory_->RestLeaf(
+        std::move(parsed_names), leaf->name, description, cli_example, endpoint,
+        parent.get(), std::move(value_field), node_fields,
+        configuration, init_only_config, mandatory,
+        Types::ScalarFromYang(leaf->type.base), std::move(default_value));
+  } else {
+    leaf_res = factory_->BodyLeaf(
+        leaf->name, description, cli_example, parent.get(),
+        std::move(value_field), node_fields, configuration,
+        init_only_config, mandatory, Types::ScalarFromYang(leaf->type.base),
+        std::move(default_value));
+  }
+  parent->AddChild(std::move(leaf_res));
+}
+
+void Yang::ParseLeafList(
+    const lys_node_leaflist *leaflist, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  const auto &cli_example = FetchExtensionByIndex(
+      leaflist->ext,
+      GetExtensionIndex(leaflist->ext, leaflist->ext_size, "cli-example", 11));
+  bool configuration = ((leaflist->flags & LYS_CONFIG_MASK) ^ 2) != 0;
+  bool init_only_config =
+      (configuration) ? GetExtensionIndex(leaflist->ext, leaflist->ext_size,
+                                          "init-only-config", 16) != -1
+                      : false;
+  bool mandatory = (leaflist->flags & LYS_MAND_MASK) != 0;
+  auto validators = GetValidators(leaflist->type);
+  auto value_field =
+      factory_->JsonValueField(leaflist->type.base, std::move(validators));
+  parsed_names.emplace(leaflist->name);
+  std::vector<std::string> default_value;
+  if (leaflist->dflt != nullptr) {
+    const auto defaults = leaflist->dflt;
+    for (std::uint8_t i = 0; i < leaflist->dflt_size; ++i) {
+      default_value.emplace_back(defaults[i]);
+    }
+  }
+
+  std::string description =
+      (leaflist->dsc == nullptr) ? "" : std::string{leaflist->dsc};
+  std::vector<Resources::Body::JsonNodeField> node_fields;
+  if (leaflist->when != nullptr) {
+    std::vector<std::shared_ptr<Validators::NodeValidator>> fields{
+        std::make_shared<Validators::WhenValidator>(leaflist->when->cond)};
+    node_fields.emplace_back(std::move(fields));
+  }
+  std::shared_ptr<Resources::Body::LeafListResource> resource;
+  if (generate_endpoint) {
+    const auto &e_parent =
+        std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
+    auto endpoint = e_parent->Endpoint() + '/' + leaflist->name;
+    resource = factory_->RestLeafList(
+        std::move(parsed_names), leaflist->name, description, cli_example,
+        endpoint, parent.get(), std::move(value_field), node_fields,
+        configuration, init_only_config, mandatory,
+        Types::ScalarFromYang(leaflist->type.base), std::move(default_value));
+  } else {
+    resource = factory_->BodyLeafList(
+        leaflist->name, description, cli_example, parent.get(),
+        std::move(value_field), node_fields, configuration,
+        init_only_config, mandatory, Types::ScalarFromYang(leaflist->type.base),
+        std::move(default_value));
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseChoice(
+    const lys_node_choice *choice, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  // TODO not clear how to manage parsed_names here
+  bool mandatory = (choice->flags & LYS_MAND_MASK) != 0;
+  std::unique_ptr<const std::string> default_case = nullptr;
+  if (choice->dflt != nullptr) {
+    default_case = std::make_unique<const std::string>(choice->dflt->name);
+  }
+
+  const auto &cli_example = FetchExtensionByIndex(
+      choice->ext,
+      GetExtensionIndex(choice->ext, choice->ext_size, "cli-example", 11));
+  std::string description =
+      (choice->dsc == nullptr) ? "" : std::string{choice->dsc};
+  std::shared_ptr<Resources::Body::ChoiceResource> resource;
+  if (generate_endpoint) {
+    resource = factory_->RestChoice(parsed_names, choice->name, description,
+                                    cli_example, parent.get(), mandatory,
+                                    std::move(default_case));
+  } else {
+    resource =
+        factory_->BodyChoice(choice->name, description, cli_example,
+                             parent.get(), mandatory, std::move(default_case));
+  }
+  auto child = choice->child;
+  while (child != nullptr) {
+    ParseNode(child, parsed_names, resource, generate_endpoint);
+    child = child->next;
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseCase(
+    const lys_node_case *case_node, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    const bool generate_endpoint) const {
+  const auto &cli_example = FetchExtensionByIndex(
+      case_node->ext, GetExtensionIndex(case_node->ext, case_node->ext_size,
+                                        "cli-example", 11));
+  std::string description =
+      (case_node->dsc == nullptr) ? "" : std::string{case_node->dsc};
+  // TODO not clear how to manage parsed_names here
+  std::shared_ptr<Resources::Body::CaseResource> resource;
+  if (generate_endpoint) {
+    resource = factory_->RestCase(parsed_names, case_node->name, description,
+                                  cli_example, parent.get());
+  } else {
+    resource = factory_->BodyCase(case_node->name, description, cli_example,
+                                  parent.get());
+  }
+  auto child = case_node->child;
+  while (child != nullptr) {
+    ParseNode(child, parsed_names, resource, generate_endpoint);
+    child = child->next;
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseInput(
+    const lys_node_inout *data, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent) const {
+  parsed_names.emplace(data->name);
+  auto child = data->child;
+  while (child != nullptr) {
+    ParseNode(child, parsed_names, parent, false);
+    child = child->next;
+   }
+}
+
+void Yang::ParseAny(
+    const lys_node_anydata *data, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent,
+    bool generate_endpoint) const {
+  const auto &cli_example = FetchExtensionByIndex(
+      data->ext,
+      GetExtensionIndex(data->ext, data->ext_size, "cli-example", 11));
+  bool configuration = ((data->flags & LYS_CONFIG_MASK) ^ 2) != 0;
+  bool init_only_config = (configuration)
+                              ? GetExtensionIndex(data->ext, data->ext_size,
+                                                  "init-only-config", 16) != -1
+                              : false;
+  bool mandatory = (data->flags & LYS_MAND_MASK) != 0;
+
+  parsed_names.emplace(data->name);
+
+  std::string description =
+      (data->dsc == nullptr) ? "" : std::string{data->dsc};
+  std::vector<Resources::Body::JsonNodeField> node_fields;
+  if (data->when != nullptr) {
+    std::vector<std::shared_ptr<Validators::NodeValidator>> fields{
+        std::make_shared<Validators::WhenValidator>(data->when->cond)};
+    node_fields.emplace_back(std::move(fields));
+  }
+  std::unique_ptr<Resources::Body::LeafResource> resource;
+  if (generate_endpoint) {
+    const auto &e_parent =
+        std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
+    auto endpoint = e_parent->Endpoint() + '/' + data->name;
+    resource = factory_->RestLeaf(
+        std::move(parsed_names), data->name, description, cli_example, endpoint,
+        parent.get(), factory_->JsonValueField(),
+        std::vector<Resources::Body::JsonNodeField>{}, configuration,
+        init_only_config, mandatory, Types::Scalar::String,
+        nullptr);
+  } else {
+    resource =
+        factory_->BodyLeaf(data->name, description, cli_example, parent.get(),
+                           factory_->JsonValueField(),
+                           std::vector<Resources::Body::JsonNodeField>{},
+                           configuration, init_only_config, mandatory,
+                           Types::Scalar::String, nullptr);
+  }
+  parent->AddChild(std::move(resource));
+}
+
+void Yang::ParseRpcAction(
+    const lys_node_rpc_action *data, std::queue<std::string> parsed_names,
+    const std::shared_ptr<Resources::Body::ParentResource> &parent) const {
+  parsed_names.emplace(data->name);
+  const auto &cli_example = FetchExtensionByIndex(
+      data->ext,
+      GetExtensionIndex(data->ext, data->ext_size, "cli-example", 11));
+
+  const auto &e_parent =
+      std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
+  std::string description =
+      (data->dsc == nullptr) ? "" : std::string{data->dsc};
+  std::shared_ptr<Resources::Body::ParentResource> action =
+      factory_->RestGeneric(parsed_names, data->name, description, cli_example,
+                            e_parent->Endpoint() + '/' + data->name,
+                            parent.get(),
+                            std::vector<Resources::Body::JsonNodeField>{},
+                            false, false, false, true);
+  auto child = data->child;
+  while (child != nullptr) {
+    ParseNode(child, parsed_names, action, false);
+    child = child->next;
+  }
+  parent->AddChild(std::move(action));
+}
+
+const std::string Yang::ServiceName() {
+  if (!module_) {
+    throw std::invalid_argument("Invalid yang data.");
+  }
+  return std::string{module_->name};
+}
+
+const std::shared_ptr<Resources::Endpoint::Service> Yang::Parse(
+    const std::string &base, const std::string &name, ServiceMetadata *md) {
+  if (!module_) {
+    throw std::invalid_argument("Invalid yang data.");
+  }
+
+  for (std::uint8_t i = 0; i < module_->ext_size; ++i) {
+    if (!strncmp(module_->ext[i]->def->name, "service-description", 19)) {
+      md->description = std::string(module_->ext[i]->arg_value);
+    } else if (!strncmp(module_->ext[i]->def->name, "service-version", 15)) {
+      md->version = std::string(module_->ext[i]->arg_value);
+    } else if (!strncmp(module_->ext[i]->def->name,
+                        "service-min-kernel-version", 26)) {
+      if (!utils::check_kernel_version(module_->ext[i]->arg_value)) {
+        throw std::runtime_error(
+            "kernel version does not satisfy service requirement.");
+      }
+
+      md->requiredKernelVersion = std::string(module_->ext[i]->arg_value);
+    } else if (!strncmp(module_->ext[i]->def->name, "service-name", 12)) {
+      if (strcmp(module_->name, name.data()) &&
+          strcmp(module_->ext[i]->arg_value, module_->name)) {
+        throw std::invalid_argument(
+            "Inconsistent module name, service-name, and request name.");
+      }
+    }
+  }
+
+  std::queue<std::string> parsed_names;
+  parsed_names.emplace(module_->name);
+  std::string description =
+      (module_->dsc == nullptr) ? "" : std::string{module_->dsc};
+  std::shared_ptr<Resources::Endpoint::Service> cube = factory_->RestService(
+      parsed_names, module_->name, description,
+      FetchExtensionByIndex(module_->ext,
+                            GetExtensionIndex(module_->ext, module_->ext_size,
+                                              "cli-example", 11)),
+      base,
+      FetchExtensionByIndex(module_->ext,
+                            GetExtensionIndex(module_->ext, module_->ext_size,
+                                              "service-version", 15)));
+  for (auto i = 0; i < module_->imp_size; ++i) {
+    ParseModule(module_->imp[i].module, parsed_names, cube);
+  }
+  ParseModule(module_, parsed_names, cube);
+  typedef_validators_->clear();
+  return std::move(cube);
+}
+}  // namespace polycube::polycubed::Rest::Parser

@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-IptablesApiImpl::IptablesApiImpl() {}
+namespace IptablesApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Iptables>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Iptables> IptablesApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Iptables> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,7 +37,13 @@ std::shared_ptr<Iptables> IptablesApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void IptablesApiImpl::create_iptables_by_id(const std::string &name, const IptablesJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_iptables_by_id(const std::string &name, const IptablesJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
@@ -59,11 +63,11 @@ void IptablesApiImpl::create_iptables_by_id(const std::string &name, const Iptab
   }
 }
 
-void IptablesApiImpl::replace_iptables_by_id(const std::string &name, const IptablesJsonObject &bridge){
+void replace_iptables_by_id(const std::string &name, const IptablesJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void IptablesApiImpl::delete_iptables_by_id(const std::string &name) {
+void delete_iptables_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void IptablesApiImpl::delete_iptables_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string IptablesApiImpl::read_iptables_uuid_by_id(const std::string &name) {
+std::string read_iptables_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<IptablesJsonObject> IptablesApiImpl::read_iptables_list_by_id() {
+std::vector<IptablesJsonObject> read_iptables_list_by_id() {
   std::vector<IptablesJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<IptablesJsonObject> IptablesApiImpl::read_iptables_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 /*
 * Ports list related functions
 */
-void IptablesApiImpl::create_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> IptablesApiImpl::read_iptables_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_iptables_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> IptablesApiImpl::read_iptables_ports_list_by_id(con
   return vect;
 }
 
-void IptablesApiImpl::replace_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void IptablesApiImpl::delete_iptables_ports_list_by_id(const std::string &name) {
+void delete_iptables_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 /*
 * Ports related functions
 */
-void IptablesApiImpl::create_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject IptablesApiImpl::read_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void IptablesApiImpl::replace_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void IptablesApiImpl::delete_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_iptables_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string IptablesApiImpl::read_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum IptablesApiImpl::read_iptables_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_iptables_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string IptablesApiImpl::read_iptables_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_iptables_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void IptablesApiImpl::update_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_iptables_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -193,7 +197,7 @@ void IptablesApiImpl::update_iptables_ports_peer_by_id(const std::string &name, 
 * ChainAppendOutputJsonObject
 */
 ChainAppendOutputJsonObject
-IptablesApiImpl::create_iptables_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value) {
+create_iptables_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 return chain->append(value);
@@ -215,7 +219,7 @@ return chain->append(value);
 * ChainApplyRulesOutputJsonObject
 */
 ChainApplyRulesOutputJsonObject
-IptablesApiImpl::create_iptables_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName) {
+create_iptables_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 return chain->applyRules();
@@ -238,7 +242,7 @@ return chain->applyRules();
 *
 */
 void
-IptablesApiImpl::create_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+create_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto iptables = get_cube(name);
 
   iptables->addChain(chainName, value);
@@ -260,7 +264,7 @@ IptablesApiImpl::create_iptables_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-IptablesApiImpl::create_iptables_chain_delete_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainDeleteInputJsonObject &value) {
+create_iptables_chain_delete_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainDeleteInputJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -283,7 +287,7 @@ IptablesApiImpl::create_iptables_chain_delete_by_id(const std::string &name, con
 * ChainInsertOutputJsonObject
 */
 ChainInsertOutputJsonObject
-IptablesApiImpl::create_iptables_chain_insert_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainInsertInputJsonObject &value) {
+create_iptables_chain_insert_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainInsertInputJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 return chain->insert(value);
@@ -305,14 +309,14 @@ return chain->insert(value);
 *
 */
 void
-IptablesApiImpl::create_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+create_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   auto iptables = get_cube(name);
   iptables->addChainList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::create_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
 
@@ -337,7 +341,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::creat
 * ChainResetCountersOutputJsonObject
 */
 ChainResetCountersOutputJsonObject
-IptablesApiImpl::create_iptables_chain_reset_counters_by_id(const std::string &name, const ChainNameEnum &chainName) {
+create_iptables_chain_reset_counters_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 return chain->resetCounters();
@@ -361,7 +365,7 @@ return chain->resetCounters();
 *
 */
 void
-IptablesApiImpl::create_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+create_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -384,7 +388,7 @@ IptablesApiImpl::create_iptables_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-IptablesApiImpl::create_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+create_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   chain->addRuleList(value);
@@ -392,7 +396,7 @@ IptablesApiImpl::create_iptables_chain_rule_list_by_id(const std::string &name, 
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::create_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
   auto &&chain = iptables->getChain(chainName);
@@ -418,7 +422,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::creat
 *
 */
 void
-IptablesApiImpl::delete_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
+delete_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
 
   iptables->delChain(chainName);
@@ -438,14 +442,14 @@ IptablesApiImpl::delete_iptables_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-IptablesApiImpl::delete_iptables_chain_list_by_id(const std::string &name) {
+delete_iptables_chain_list_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   iptables->delChainList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::delete_iptables_chain_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_chain_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
 
@@ -471,7 +475,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::delet
 *
 */
 void
-IptablesApiImpl::delete_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+delete_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -493,7 +497,7 @@ IptablesApiImpl::delete_iptables_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-IptablesApiImpl::delete_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+delete_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   chain->delRuleList();
@@ -501,7 +505,7 @@ IptablesApiImpl::delete_iptables_chain_rule_list_by_id(const std::string &name, 
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::delete_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
   auto &&chain = iptables->getChain(chainName);
@@ -526,7 +530,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::delet
 * IptablesJsonObject
 */
 IptablesJsonObject
-IptablesApiImpl::read_iptables_by_id(const std::string &name) {
+read_iptables_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -546,7 +550,7 @@ IptablesApiImpl::read_iptables_by_id(const std::string &name) {
 * ChainJsonObject
 */
 ChainJsonObject
-IptablesApiImpl::read_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   return iptables->getChain(chainName)->toJsonObject();
 
@@ -567,7 +571,7 @@ IptablesApiImpl::read_iptables_chain_by_id(const std::string &name, const ChainN
 * ActionEnum
 */
 ActionEnum
-IptablesApiImpl::read_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   return chain->getDefault();
@@ -588,7 +592,7 @@ IptablesApiImpl::read_iptables_chain_default_by_id(const std::string &name, cons
 * std::vector<ChainJsonObject>
 */
 std::vector<ChainJsonObject>
-IptablesApiImpl::read_iptables_chain_list_by_id(const std::string &name) {
+read_iptables_chain_list_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   auto &&chain = iptables->getChainList();
   std::vector<ChainJsonObject> m;
@@ -600,7 +604,7 @@ IptablesApiImpl::read_iptables_chain_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_chain_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
 
@@ -627,7 +631,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 * ActionEnum
 */
 ActionEnum
-IptablesApiImpl::read_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -651,7 +655,7 @@ IptablesApiImpl::read_iptables_chain_rule_action_by_id(const std::string &name, 
 * ChainRuleJsonObject
 */
 ChainRuleJsonObject
-IptablesApiImpl::read_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   return chain->getRule(id)->toJsonObject();
@@ -674,7 +678,7 @@ IptablesApiImpl::read_iptables_chain_rule_by_id(const std::string &name, const C
 * ConntrackstatusEnum
 */
 ConntrackstatusEnum
-IptablesApiImpl::read_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -698,7 +702,7 @@ IptablesApiImpl::read_iptables_chain_rule_conntrack_by_id(const std::string &nam
 * uint16_t
 */
 uint16_t
-IptablesApiImpl::read_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -722,7 +726,7 @@ IptablesApiImpl::read_iptables_chain_rule_dport_by_id(const std::string &name, c
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -746,7 +750,7 @@ IptablesApiImpl::read_iptables_chain_rule_dst_by_id(const std::string &name, con
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -770,7 +774,7 @@ IptablesApiImpl::read_iptables_chain_rule_in_iface_by_id(const std::string &name
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -793,7 +797,7 @@ IptablesApiImpl::read_iptables_chain_rule_l4proto_by_id(const std::string &name,
 * std::vector<ChainRuleJsonObject>
 */
 std::vector<ChainRuleJsonObject>
-IptablesApiImpl::read_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto &&rule = chain->getRuleList();
@@ -806,7 +810,7 @@ IptablesApiImpl::read_iptables_chain_rule_list_by_id(const std::string &name, co
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
   auto &&chain = iptables->getChain(chainName);
@@ -834,7 +838,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -858,7 +862,7 @@ IptablesApiImpl::read_iptables_chain_rule_out_iface_by_id(const std::string &nam
 * uint16_t
 */
 uint16_t
-IptablesApiImpl::read_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -882,7 +886,7 @@ IptablesApiImpl::read_iptables_chain_rule_sport_by_id(const std::string &name, c
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -906,7 +910,7 @@ IptablesApiImpl::read_iptables_chain_rule_src_by_id(const std::string &name, con
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -930,7 +934,7 @@ IptablesApiImpl::read_iptables_chain_rule_tcpflags_by_id(const std::string &name
 * ChainStatsJsonObject
 */
 ChainStatsJsonObject
-IptablesApiImpl::read_iptables_chain_stats_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_stats_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   return chain->getStats(id)->toJsonObject();
@@ -953,11 +957,35 @@ IptablesApiImpl::read_iptables_chain_stats_by_id(const std::string &name, const 
 * uint64_t
 */
 uint64_t
-IptablesApiImpl::read_iptables_chain_stats_bytes_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_stats_bytes_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto stats = chain->getStats(id);
   return stats->getBytes();
+
+}
+
+
+
+
+/**
+* @brief   Read description by ID
+*
+* Read operation of resource: description*
+*
+* @param[in] name ID of name
+* @param[in] chainName ID of chain_name
+* @param[in] id ID of id
+*
+* Responses:
+* std::string
+*/
+std::string
+read_iptables_chain_stats_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+  auto iptables = get_cube(name);
+  auto chain = iptables->getChain(chainName);
+  auto stats = chain->getStats(id);
+  return stats->getDescription();
 
 }
 
@@ -976,7 +1004,7 @@ IptablesApiImpl::read_iptables_chain_stats_bytes_by_id(const std::string &name, 
 * std::vector<ChainStatsJsonObject>
 */
 std::vector<ChainStatsJsonObject>
-IptablesApiImpl::read_iptables_chain_stats_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_iptables_chain_stats_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto &&stats = chain->getStatsList();
@@ -989,7 +1017,7 @@ IptablesApiImpl::read_iptables_chain_stats_list_by_id(const std::string &name, c
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
   auto &&chain = iptables->getChain(chainName);
@@ -1017,7 +1045,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 * uint64_t
 */
 uint64_t
-IptablesApiImpl::read_iptables_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_iptables_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1039,7 +1067,7 @@ IptablesApiImpl::read_iptables_chain_stats_pkts_by_id(const std::string &name, c
 * IptablesConntrackEnum
 */
 IptablesConntrackEnum
-IptablesApiImpl::read_iptables_conntrack_by_id(const std::string &name) {
+read_iptables_conntrack_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   return iptables->getConntrack();
 
@@ -1059,7 +1087,7 @@ IptablesApiImpl::read_iptables_conntrack_by_id(const std::string &name) {
 * IptablesHorusEnum
 */
 IptablesHorusEnum
-IptablesApiImpl::read_iptables_horus_by_id(const std::string &name) {
+read_iptables_horus_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   return iptables->getHorus();
 
@@ -1079,7 +1107,7 @@ IptablesApiImpl::read_iptables_horus_by_id(const std::string &name) {
 * bool
 */
 bool
-IptablesApiImpl::read_iptables_interactive_by_id(const std::string &name) {
+read_iptables_interactive_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   return iptables->getInteractive();
 
@@ -1099,7 +1127,7 @@ IptablesApiImpl::read_iptables_interactive_by_id(const std::string &name) {
 * IptablesLoglevelEnum
 */
 IptablesLoglevelEnum
-IptablesApiImpl::read_iptables_loglevel_by_id(const std::string &name) {
+read_iptables_loglevel_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   return iptables->getLoglevel();
 
@@ -1124,7 +1152,7 @@ IptablesApiImpl::read_iptables_loglevel_by_id(const std::string &name) {
 * SessionTableJsonObject
 */
 SessionTableJsonObject
-IptablesApiImpl::read_iptables_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+read_iptables_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
   auto iptables = get_cube(name);
   return iptables->getSessionTable(src, dst, l4proto, sport, dport)->toJsonObject();
 
@@ -1144,7 +1172,7 @@ IptablesApiImpl::read_iptables_session_table_by_id(const std::string &name, cons
 * std::vector<SessionTableJsonObject>
 */
 std::vector<SessionTableJsonObject>
-IptablesApiImpl::read_iptables_session_table_list_by_id(const std::string &name) {
+read_iptables_session_table_list_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   auto &&sessionTable = iptables->getSessionTableList();
   std::vector<SessionTableJsonObject> m;
@@ -1156,7 +1184,7 @@ IptablesApiImpl::read_iptables_session_table_list_by_id(const std::string &name)
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_iptables_session_table_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&iptables = get_cube(name);
 
@@ -1186,7 +1214,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::read_
 * std::string
 */
 std::string
-IptablesApiImpl::read_iptables_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+read_iptables_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
   auto iptables = get_cube(name);
   auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
   return sessionTable->getState();
@@ -1207,7 +1235,7 @@ IptablesApiImpl::read_iptables_session_table_state_by_id(const std::string &name
 * CubeType
 */
 CubeType
-IptablesApiImpl::read_iptables_type_by_id(const std::string &name) {
+read_iptables_type_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   return iptables->getType();
 
@@ -1229,7 +1257,7 @@ IptablesApiImpl::read_iptables_type_by_id(const std::string &name) {
 *
 */
 void
-IptablesApiImpl::replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto iptables = get_cube(name);
 
   iptables->replaceChain(chainName, value);
@@ -1250,13 +1278,13 @@ IptablesApiImpl::replace_iptables_chain_by_id(const std::string &name, const Cha
 *
 */
 void
-IptablesApiImpl::replace_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+replace_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::replace_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1276,7 +1304,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::repla
 *
 */
 void
-IptablesApiImpl::replace_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+replace_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -1299,13 +1327,13 @@ IptablesApiImpl::replace_iptables_chain_rule_by_id(const std::string &name, cons
 *
 */
 void
-IptablesApiImpl::replace_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+replace_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::replace_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1323,7 +1351,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::repla
 *
 */
 void
-IptablesApiImpl::update_iptables_by_id(const std::string &name, const IptablesJsonObject &value) {
+update_iptables_by_id(const std::string &name, const IptablesJsonObject &value) {
   auto iptables = get_cube(name);
 
   iptables->update(value);
@@ -1345,7 +1373,7 @@ IptablesApiImpl::update_iptables_by_id(const std::string &name, const IptablesJs
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+update_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -1368,7 +1396,7 @@ IptablesApiImpl::update_iptables_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName, const ActionEnum &value) {
+update_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName, const ActionEnum &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
 
@@ -1390,13 +1418,13 @@ IptablesApiImpl::update_iptables_chain_default_by_id(const std::string &name, co
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+update_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::update_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1416,7 +1444,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::updat
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ActionEnum &value) {
+update_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ActionEnum &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1441,7 +1469,7 @@ IptablesApiImpl::update_iptables_chain_rule_action_by_id(const std::string &name
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+update_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1466,7 +1494,7 @@ IptablesApiImpl::update_iptables_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ConntrackstatusEnum &value) {
+update_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ConntrackstatusEnum &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1491,7 +1519,7 @@ IptablesApiImpl::update_iptables_chain_rule_conntrack_by_id(const std::string &n
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const uint16_t &value) {
+update_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const uint16_t &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1516,7 +1544,7 @@ IptablesApiImpl::update_iptables_chain_rule_dport_by_id(const std::string &name,
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1541,7 +1569,7 @@ IptablesApiImpl::update_iptables_chain_rule_dst_by_id(const std::string &name, c
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1566,7 +1594,7 @@ IptablesApiImpl::update_iptables_chain_rule_in_iface_by_id(const std::string &na
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1590,13 +1618,13 @@ IptablesApiImpl::update_iptables_chain_rule_l4proto_by_id(const std::string &nam
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+update_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::update_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1616,7 +1644,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::updat
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1641,7 +1669,7 @@ IptablesApiImpl::update_iptables_chain_rule_out_iface_by_id(const std::string &n
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const uint16_t &value) {
+update_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const uint16_t &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1666,7 +1694,7 @@ IptablesApiImpl::update_iptables_chain_rule_sport_by_id(const std::string &name,
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1691,7 +1719,7 @@ IptablesApiImpl::update_iptables_chain_rule_src_by_id(const std::string &name, c
 *
 */
 void
-IptablesApiImpl::update_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
+update_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const std::string &value) {
   auto iptables = get_cube(name);
   auto chain = iptables->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1714,7 +1742,7 @@ IptablesApiImpl::update_iptables_chain_rule_tcpflags_by_id(const std::string &na
 *
 */
 void
-IptablesApiImpl::update_iptables_conntrack_by_id(const std::string &name, const IptablesConntrackEnum &value) {
+update_iptables_conntrack_by_id(const std::string &name, const IptablesConntrackEnum &value) {
   auto iptables = get_cube(name);
 
   iptables->setConntrack(value);
@@ -1735,7 +1763,7 @@ IptablesApiImpl::update_iptables_conntrack_by_id(const std::string &name, const 
 *
 */
 void
-IptablesApiImpl::update_iptables_horus_by_id(const std::string &name, const IptablesHorusEnum &value) {
+update_iptables_horus_by_id(const std::string &name, const IptablesHorusEnum &value) {
   auto iptables = get_cube(name);
 
   iptables->setHorus(value);
@@ -1756,7 +1784,7 @@ IptablesApiImpl::update_iptables_horus_by_id(const std::string &name, const Ipta
 *
 */
 void
-IptablesApiImpl::update_iptables_interactive_by_id(const std::string &name, const bool &value) {
+update_iptables_interactive_by_id(const std::string &name, const bool &value) {
   auto iptables = get_cube(name);
 
   iptables->setInteractive(value);
@@ -1776,13 +1804,13 @@ IptablesApiImpl::update_iptables_interactive_by_id(const std::string &name, cons
 *
 */
 void
-IptablesApiImpl::update_iptables_list_by_id(const std::vector<IptablesJsonObject> &value) {
+update_iptables_list_by_id(const std::vector<IptablesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::update_iptables_list_by_id_get_list(const std::vector<IptablesJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_list_by_id_get_list(const std::vector<IptablesJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1800,7 +1828,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::updat
 *
 */
 void
-IptablesApiImpl::update_iptables_loglevel_by_id(const std::string &name, const IptablesLoglevelEnum &value) {
+update_iptables_loglevel_by_id(const std::string &name, const IptablesLoglevelEnum &value) {
   auto iptables = get_cube(name);
 
   iptables->setLoglevel(value);
@@ -1822,7 +1850,7 @@ IptablesApiImpl::update_iptables_loglevel_by_id(const std::string &name, const I
 *
 */
 void
-IptablesApiImpl::update_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto iptables = get_cube(name);
   auto ports = iptables->getPorts(portsName);
 
@@ -1844,18 +1872,19 @@ IptablesApiImpl::update_iptables_ports_by_id(const std::string &name, const std:
 *
 */
 void
-IptablesApiImpl::update_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> IptablesApiImpl::update_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
 
 
+}
 }
 }
 }

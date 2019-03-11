@@ -22,46 +22,74 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ChainRuleJsonObject::ChainRuleJsonObject() {
+ChainRuleJsonObject::ChainRuleJsonObject() : 
+  m_idIsSet(false),
+  m_inIfaceIsSet(false),
+  m_outIfaceIsSet(false),
+  m_srcIsSet(false),
+  m_dstIsSet(false),
+  m_l4protoIsSet(false),
+  m_sportIsSet(false),
+  m_dportIsSet(false),
+  m_tcpflagsIsSet(false),
+  m_conntrackIsSet(false),
+  m_actionIsSet(false) { }
 
-  m_idIsSet = false;
-
-  m_inIfaceIsSet = false;
-
-  m_outIfaceIsSet = false;
-
-  m_srcIsSet = false;
-
-  m_dstIsSet = false;
-
-  m_l4protoIsSet = false;
-
-  m_sportIsSet = false;
-
-  m_dportIsSet = false;
-
-  m_tcpflagsIsSet = false;
-
-  m_conntrackIsSet = false;
-
-  m_actionIsSet = false;
-}
-
-ChainRuleJsonObject::~ChainRuleJsonObject() {}
-
-void ChainRuleJsonObject::validateKeys() {
-
-  if (!m_idIsSet) {
-    throw std::runtime_error("Variable id is required");
+ChainRuleJsonObject::ChainRuleJsonObject(nlohmann::json &val) : 
+  m_idIsSet(false),
+  m_inIfaceIsSet(false),
+  m_outIfaceIsSet(false),
+  m_srcIsSet(false),
+  m_dstIsSet(false),
+  m_l4protoIsSet(false),
+  m_sportIsSet(false),
+  m_dportIsSet(false),
+  m_tcpflagsIsSet(false),
+  m_conntrackIsSet(false),
+  m_actionIsSet(false) { 
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
   }
-}
 
-void ChainRuleJsonObject::validateMandatoryFields() {
+  if (val.count("in-iface")) {
+    setInIface(val.at("in-iface").get<std::string>());
+  }
 
-}
+  if (val.count("out-iface")) {
+    setOutIface(val.at("out-iface").get<std::string>());
+  }
 
-void ChainRuleJsonObject::validateParams() {
+  if (val.count("src")) {
+    setSrc(val.at("src").get<std::string>());
+  }
 
+  if (val.count("dst")) {
+    setDst(val.at("dst").get<std::string>());
+  }
+
+  if (val.count("l4proto")) {
+    setL4proto(val.at("l4proto").get<std::string>());
+  }
+
+  if (val.count("sport")) {
+    setSport(val.at("sport").get<uint16_t>());
+  }
+
+  if (val.count("dport")) {
+    setDport(val.at("dport").get<uint16_t>());
+  }
+
+  if (val.count("tcpflags")) {
+    setTcpflags(val.at("tcpflags").get<std::string>());
+  }
+
+  if (val.count("conntrack")) {
+    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack").get<std::string>()));
+  }
+
+  if (val.count("action")) {
+    setAction(string_to_ActionEnum(val.at("action").get<std::string>()));
+  }
 }
 
 nlohmann::json ChainRuleJsonObject::toJson() const {
@@ -113,61 +141,6 @@ nlohmann::json ChainRuleJsonObject::toJson() const {
 
 
   return val;
-}
-
-void ChainRuleJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("id") != val.end()) {
-    setId(val.at("id"));
-  }
-
-  if (val.find("in-iface") != val.end()) {
-    setInIface(val.at("in-iface"));
-  }
-
-  if (val.find("out-iface") != val.end()) {
-    setOutIface(val.at("out-iface"));
-  }
-
-  if (val.find("src") != val.end()) {
-    setSrc(val.at("src"));
-  }
-
-  if (val.find("dst") != val.end()) {
-    setDst(val.at("dst"));
-  }
-
-  if (val.find("l4proto") != val.end()) {
-    setL4proto(val.at("l4proto"));
-  }
-
-  if (val.find("sport") != val.end()) {
-    setSport(val.at("sport"));
-  }
-
-  if (val.find("dport") != val.end()) {
-    setDport(val.at("dport"));
-  }
-
-  if (val.find("tcpflags") != val.end()) {
-    setTcpflags(val.at("tcpflags"));
-  }
-
-  if (val.find("conntrack") != val.end()) {
-    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack")));
-  }
-
-  if (val.find("action") != val.end()) {
-    setAction(string_to_ActionEnum(val.at("action")));
-  }
 }
 
 nlohmann::json ChainRuleJsonObject::helpKeys() {
@@ -311,9 +284,7 @@ bool ChainRuleJsonObject::idIsSet() const {
   return m_idIsSet;
 }
 
-void ChainRuleJsonObject::unsetId() {
-  m_idIsSet = false;
-}
+
 
 
 

@@ -24,6 +24,9 @@ add_library(pcn-simplebridge SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-simplebridge Simplebridge_dp.c simplebridge_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-simplebridge ../datamodel/simplebridge.yang simplebridge_datamodel)
+
 target_link_libraries(pcn-simplebridge
   polycube
   uuid)

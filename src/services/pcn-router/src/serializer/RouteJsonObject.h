@@ -36,17 +36,13 @@ namespace model {
 class  RouteJsonObject : public JsonObjectBase {
 public:
   RouteJsonObject();
-  virtual ~RouteJsonObject();
+  RouteJsonObject(nlohmann::json& json);
+  ~RouteJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -97,7 +93,7 @@ public:
   void unsetPathcost();
 
 
-protected:
+private:
   std::string m_network;
   bool m_networkIsSet;
   std::string m_netmask;
@@ -108,8 +104,6 @@ protected:
   bool m_interfaceIsSet;
   int32_t m_pathcost;
   bool m_pathcostIsSet;
-
-  std::vector<std::string> allowedParameters_{ "network", "netmask", "nexthop", "interface", "pathcost" };
 };
 
 }

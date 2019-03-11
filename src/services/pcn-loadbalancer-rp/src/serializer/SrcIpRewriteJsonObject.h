@@ -36,17 +36,13 @@ namespace model {
 class  SrcIpRewriteJsonObject : public JsonObjectBase {
 public:
   SrcIpRewriteJsonObject();
-  virtual ~SrcIpRewriteJsonObject();
+  SrcIpRewriteJsonObject(nlohmann::json& json);
+  ~SrcIpRewriteJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -73,13 +69,11 @@ public:
   void unsetNewIpRange();
 
 
-protected:
+private:
   std::string m_ipRange;
   bool m_ipRangeIsSet;
   std::string m_newIpRange;
   bool m_newIpRangeIsSet;
-
-  std::vector<std::string> allowedParameters_{ "ip-range", "new_ip_range" };
 };
 
 }

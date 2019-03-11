@@ -22,628 +22,87 @@
 #define POLYCUBE_SERVICE_NAME "pbforwarder"
 
 
-#include <polycube/services/http_router.h>
-#include <polycube/services/management_interface.h>
-#include <vector>
+#include "polycube/services/response.h"
+#include "polycube/services/shared_lib_elements.h"
 
 #include "PbforwarderJsonObject.h"
 #include "PortsJsonObject.h"
 #include "RulesJsonObject.h"
 #include <vector>
 
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
 
-using namespace io::swagger::server::model;
-using namespace polycube::service;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class  PbforwarderApi : public ManagementInterface {
- public:
-  PbforwarderApi();
-  virtual ~PbforwarderApi() {};
+Response create_pbforwarder_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_pbforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_pbforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_pbforwarder_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_pbforwarder_rules_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response delete_pbforwarder_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_pbforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_pbforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_pbforwarder_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_pbforwarder_rules_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_action_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_dst_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_dst_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_dst_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_in_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_l4_proto_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_out_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_src_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_src_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_src_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_rules_vlan_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_pbforwarder_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response replace_pbforwarder_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_pbforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_pbforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_pbforwarder_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_pbforwarder_rules_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_action_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_dst_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_dst_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_dst_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_in_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_l4_proto_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_out_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_src_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_src_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_src_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_pbforwarder_rules_vlan_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-  const std::string base = "/" + std::string(POLYCUBE_SERVICE_NAME) + "/";
-
- protected:
-  void setup_routes();
-  void control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) override;
-
-  void create_pbforwarder_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_pbforwarder_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_pbforwarder_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_pbforwarder_rules_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_pbforwarder_rules_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_pbforwarder_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_pbforwarder_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_pbforwarder_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_pbforwarder_rules_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_pbforwarder_rules_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_action_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_dst_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_dst_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_dst_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_in_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_l4_proto_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_out_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_src_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_src_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_src_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_vlan_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_pbforwarder_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_pbforwarder_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_pbforwarder_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_pbforwarder_rules_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_pbforwarder_rules_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_action_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_dst_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_dst_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_dst_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_in_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_l4_proto_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_out_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_src_ip_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_src_mac_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_src_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_pbforwarder_rules_vlan_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-
-  void read_pbforwarder_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_pbforwarder_rules_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
+Response pbforwarder_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_rules_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_rules_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 
 
-  polycube::service::Rest::Router router;
 
-  /// <summary>
-  /// Create pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">pbforwarderbody object</param>
-  virtual void create_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Create rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void create_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) = 0;
-  /// <summary>
-  /// Create rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void create_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) = 0;
-  /// <summary>
-  /// Delete pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_pbforwarder_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_pbforwarder_ports_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual void delete_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Delete rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_pbforwarder_rules_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual PbforwarderJsonObject read_pbforwarder_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: pbforwarder
-  /// </remarks>
-  virtual std::vector<PbforwarderJsonObject> read_pbforwarder_list_by_id() = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_list_by_id_get_list() = 0;
-  /// <summary>
-  /// Read loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual PbforwarderLoglevelEnum read_pbforwarder_loglevel_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_pbforwarder_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_pbforwarder_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_pbforwarder_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read action by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: action
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual RulesActionEnum read_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual RulesJsonObject read_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read dst_ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: dst_ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read dst_mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: dst_mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read dst_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: dst_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual uint16_t read_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read in_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: in_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read l4_proto by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: l4_proto
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual RulesL4ProtoEnum read_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<RulesJsonObject> read_pbforwarder_rules_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read out_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: out_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read src_ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: src_ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read src_mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: src_mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual std::string read_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read src_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: src_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual uint16_t read_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read vlan by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: vlan
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  virtual uint32_t read_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual CubeType read_pbforwarder_type_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_pbforwarder_uuid_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Replace pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">pbforwarderbody object</param>
-  virtual void replace_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void replace_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) = 0;
-  /// <summary>
-  /// Replace rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void replace_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) = 0;
-  /// <summary>
-  /// Update pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">pbforwarderbody object</param>
-  virtual void update_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &value) = 0;
-  /// <summary>
-  /// Update pbforwarder by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: pbforwarder
-  /// </remarks>
-  /// <param name="value">pbforwarderbody object</param>
-  virtual void update_pbforwarder_list_by_id(const std::vector<PbforwarderJsonObject> &value) = 0;
-  /// <summary>
-  /// Update loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)</param>
-  virtual void update_pbforwarder_loglevel_by_id(const std::string &name, const PbforwarderLoglevelEnum &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_pbforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update action by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: action
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Action associated to the rule(i.e., DROP, SLOWPATH, or FORWARD; default: DROP)</param>
-  virtual void update_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id, const RulesActionEnum &value) = 0;
-  /// <summary>
-  /// Update rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void update_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, const RulesJsonObject &value) = 0;
-  /// <summary>
-  /// Update dst_ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: dst_ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Destination IP Address in the form AA.BB.CC.DD</param>
-  virtual void update_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update dst_mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: dst_mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Destination MAC Address in the form AA:BB:CC:DD:EE:FF</param>
-  virtual void update_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update dst_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: dst_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Destination L4 Port</param>
-  virtual void update_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) = 0;
-  /// <summary>
-  /// Update in_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: in_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Ingress port</param>
-  virtual void update_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update l4_proto by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: l4_proto
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Level 4 Protocol (i.e. UDP, TCP; default: TCP)</param>
-  virtual void update_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id, const RulesL4ProtoEnum &value) = 0;
-  /// <summary>
-  /// Update rules by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: rules
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">rulesbody object</param>
-  virtual void update_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) = 0;
-  /// <summary>
-  /// Update out_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: out_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Output port (used only when action is FORWARD)</param>
-  virtual void update_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update src_ip by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: src_ip
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Source IP Address in the form AA.BB.CC.DD</param>
-  virtual void update_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update src_mac by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: src_mac
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Source MAC Address in the form AA:BB:CC:DD:EE:FF</param>
-  virtual void update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value) = 0;
-  /// <summary>
-  /// Update src_port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: src_port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">Source L4 Port</param>
-  virtual void update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value) = 0;
-  /// <summary>
-  /// Update vlan by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: vlan
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="id">ID of id</param>
-  /// <param name="value">VLAN Identifier</param>
-  virtual void update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id, const uint32_t &value) = 0;
-};
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

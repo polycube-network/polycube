@@ -161,6 +161,8 @@ module iptables {
         enum FORWARD;
         enum OUTPUT;
         enum INVALID;
+        enum INVALID_INGRESS; // TODO Nico
+        enum INVALID_EGRESS; // TODO Nico
       }
       description "Chain in which the rule will be inserted. Default: FORWARD.";
       polycube-base:cli-example "INPUT, FORWARD, OUTPUT.";
@@ -190,6 +192,12 @@ module iptables {
       leaf bytes {
         type uint64;
         description "Number of bytes matching the rule";
+        config false;
+      }
+
+      leaf description {
+        type string;
+        description "Description";
         config false;
       }
     }

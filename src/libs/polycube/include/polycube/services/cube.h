@@ -26,7 +26,6 @@
 #include "polycube/common.h"
 
 #include "polycube/services/cube_factory.h"
-#include "polycube/services/management_interface.h"
 #include "polycube/services/port.h"
 #include "polycube/services/utils.h"
 

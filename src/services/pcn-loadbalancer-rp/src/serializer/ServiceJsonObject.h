@@ -41,17 +41,13 @@ enum class ServiceProtoEnum {
 class  ServiceJsonObject : public JsonObjectBase {
 public:
   ServiceJsonObject();
-  virtual ~ServiceJsonObject();
+  ServiceJsonObject(nlohmann::json& json);
+  ~ServiceJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -104,7 +100,7 @@ public:
   void unsetBackend();
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_vip;
@@ -115,8 +111,6 @@ protected:
   bool m_protoIsSet;
   std::vector<ServiceBackendJsonObject> m_backend;
   bool m_backendIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "vip", "vport", "proto", "backend" };
 };
 
 }

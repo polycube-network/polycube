@@ -15,6 +15,9 @@
  */
 
 #include <bcc/helpers.h>
+// #include <uapi/linux/in.h>
+#define IPPROTO_TCP 6
+#define IPPROTO_UDP 17
 
 struct packetHeaders {
   uint64_t srcMac;

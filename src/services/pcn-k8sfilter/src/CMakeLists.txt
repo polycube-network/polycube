@@ -22,6 +22,9 @@ add_library(pcn-k8sfilter SHARED
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-k8sfilter K8sfilter_dp.c k8sfilter_code)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-k8sfilter ../datamodel/k8sfilter.yang k8sfilter_datamodel)
+
 target_link_libraries(pcn-k8sfilter
   polycube
   uuid)

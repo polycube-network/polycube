@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "HelloworldApi.h"
-
 
 #include <memory>
 #include <map>
@@ -39,11 +37,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class HelloworldApiImpl : public io::swagger::server::api::HelloworldApi {
-public:
-  HelloworldApiImpl();
-  ~HelloworldApiImpl() { };
-
+namespace HelloworldApiImpl {
   void create_helloworld_by_id(const std::string &name, const HelloworldJsonObject &value);
   void create_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void create_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
@@ -73,13 +67,7 @@ public:
   void update_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_helloworld_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Helloworld>> cubes;
-  std::shared_ptr<Helloworld> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

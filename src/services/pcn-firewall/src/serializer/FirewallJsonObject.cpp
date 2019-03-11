@@ -22,57 +22,95 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FirewallJsonObject::FirewallJsonObject() {
+FirewallJsonObject::FirewallJsonObject() : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_type(CubeType::TC),
+  m_typeIsSet(true),
+  m_loglevel(FirewallLoglevelEnum::INFO),
+  m_loglevelIsSet(true),
+  m_portsIsSet(false),
+  m_ingressPortIsSet(false),
+  m_egressPortIsSet(false),
+  m_conntrackIsSet(false),
+  m_acceptEstablishedIsSet(false),
+  m_interactive(true),
+  m_interactiveIsSet(true),
+  m_sessionTableIsSet(false),
+  m_chainIsSet(false) { }
 
-  m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_type = CubeType::TC;
-  m_typeIsSet = false;
-
-  m_loglevel = FirewallLoglevelEnum::INFO;
-  m_loglevelIsSet = false;
-
-  m_portsIsSet = false;
-
-  m_ingressPortIsSet = false;
-
-  m_egressPortIsSet = false;
-
-  m_conntrackIsSet = false;
-
-  m_acceptEstablishedIsSet = false;
-
-  m_interactive = true;
-  m_interactiveIsSet = false;
-
-  m_sessionTableIsSet = false;
-
-  m_chainIsSet = false;
-}
-
-FirewallJsonObject::~FirewallJsonObject() {}
-
-void FirewallJsonObject::validateKeys() {
-
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+FirewallJsonObject::FirewallJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_uuidIsSet(false),
+  m_typeIsSet(false),
+  m_loglevelIsSet(false),
+  m_portsIsSet(false),
+  m_ingressPortIsSet(false),
+  m_egressPortIsSet(false),
+  m_conntrackIsSet(false),
+  m_acceptEstablishedIsSet(false),
+  m_interactiveIsSet(false),
+  m_sessionTableIsSet(false),
+  m_chainIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void FirewallJsonObject::validateMandatoryFields() {
-
-}
-
-void FirewallJsonObject::validateParams() {
-
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  if (val.count("uuid")) {
+    setUuid(val.at("uuid").get<std::string>());
   }
+
+  if (val.count("type")) {
+    setType(string_to_CubeType(val.at("type").get<std::string>()));
+  }
+
+  if (val.count("loglevel")) {
+    setLoglevel(string_to_FirewallLoglevelEnum(val.at("loglevel").get<std::string>()));
+  }
+
+  m_ports.clear();
+  for (auto& item : val["ports"]) { 
+    PortsJsonObject newItem { item };
+    m_ports.push_back(newItem);
+  }
+  m_portsIsSet = !m_ports.empty();
+  
+
+  if (val.count("ingress-port")) {
+    setIngressPort(val.at("ingress-port").get<std::string>());
+  }
+
+  if (val.count("egress-port")) {
+    setEgressPort(val.at("egress-port").get<std::string>());
+  }
+
+  if (val.count("conntrack")) {
+    setConntrack(string_to_FirewallConntrackEnum(val.at("conntrack").get<std::string>()));
+  }
+
+  if (val.count("accept-established")) {
+    setAcceptEstablished(string_to_FirewallAcceptEstablishedEnum(val.at("accept-established").get<std::string>()));
+  }
+
+  if (val.count("interactive")) {
+    setInteractive(val.at("interactive").get<bool>());
+  }
+
+  m_sessionTable.clear();
+  for (auto& item : val["session-table"]) { 
+    SessionTableJsonObject newItem { item };
+    m_sessionTable.push_back(newItem);
+  }
+  m_sessionTableIsSet = !m_sessionTable.empty();
+  
+
+  m_chain.clear();
+  for (auto& item : val["chain"]) { 
+    ChainJsonObject newItem { item };
+    m_chain.push_back(newItem);
+  }
+  m_chainIsSet = !m_chain.empty();
+  
 }
 
 nlohmann::json FirewallJsonObject::toJson() const {
@@ -99,7 +137,6 @@ nlohmann::json FirewallJsonObject::toJson() const {
     for (auto& item : m_ports) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["ports"] = jsonArray;
     }
@@ -129,7 +166,6 @@ nlohmann::json FirewallJsonObject::toJson() const {
     for (auto& item : m_sessionTable) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["session-table"] = jsonArray;
     }
@@ -139,90 +175,12 @@ nlohmann::json FirewallJsonObject::toJson() const {
     for (auto& item : m_chain) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["chain"] = jsonArray;
     }
   }
 
   return val;
-}
-
-void FirewallJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_CubeType(val.at("type")));
-  }
-
-  if (val.find("loglevel") != val.end()) {
-    setLoglevel(string_to_FirewallLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
-
-  if (val.find("ingress-port") != val.end()) {
-    setIngressPort(val.at("ingress-port"));
-  }
-
-  if (val.find("egress-port") != val.end()) {
-    setEgressPort(val.at("egress-port"));
-  }
-
-  if (val.find("conntrack") != val.end()) {
-    setConntrack(string_to_FirewallConntrackEnum(val.at("conntrack")));
-  }
-
-  if (val.find("accept-established") != val.end()) {
-    setAcceptEstablished(string_to_FirewallAcceptEstablishedEnum(val.at("accept-established")));
-  }
-
-  if (val.find("interactive") != val.end()) {
-    setInteractive(val.at("interactive"));
-  }
-
-  m_sessionTable.clear();
-  for (auto& item : val["session-table"]) {
-
-    SessionTableJsonObject newItem;
-    newItem.fromJson(item);
-    m_sessionTable.push_back(newItem);
-    m_sessionTableIsSet = true;
-  }
-
-
-  m_chain.clear();
-  for (auto& item : val["chain"]) {
-
-    ChainJsonObject newItem;
-    newItem.fromJson(item);
-    m_chain.push_back(newItem);
-    m_chainIsSet = true;
-  }
-
 }
 
 nlohmann::json FirewallJsonObject::helpKeys() {
@@ -367,9 +325,7 @@ bool FirewallJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void FirewallJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
+
 
 
 
@@ -412,22 +368,22 @@ void FirewallJsonObject::unsetType() {
 std::string FirewallJsonObject::CubeType_to_string(const CubeType &value){
   switch(value){
     case CubeType::TC:
-      return std::string("TC");
+      return std::string("tc");
     case CubeType::XDP_SKB:
-      return std::string("XDP_SKB");
+      return std::string("xdp_skb");
     case CubeType::XDP_DRV:
-      return std::string("XDP_DRV");
+      return std::string("xdp_drv");
     default:
       throw std::runtime_error("Bad Firewall type");
   }
 }
 
 CubeType FirewallJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("TC", str))
+  if (JsonObjectBase::iequals("tc", str))
     return CubeType::TC;
-  if (JsonObjectBase::iequals("XDP_SKB", str))
+  if (JsonObjectBase::iequals("xdp_skb", str))
     return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("XDP_DRV", str))
+  if (JsonObjectBase::iequals("xdp_drv", str))
     return CubeType::XDP_DRV;
   throw std::runtime_error("Firewall type is invalid");
 }

@@ -58,8 +58,7 @@ module pbforwarder {
         enum UDP;
         enum TCP;
       }
-      default TCP;
-      description "Level 4 Protocol (i.e. UDP, TCP; default: TCP)";
+      description "Level 4 Protocol (i.e. UDP, TCP)";
     }
 
     leaf src_port {

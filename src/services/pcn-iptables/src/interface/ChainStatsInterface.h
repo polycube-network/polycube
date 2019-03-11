@@ -45,5 +45,10 @@ public:
   /// Number of bytes matching the rule
   /// </summary>
   virtual uint64_t getBytes() = 0;
+
+  /// <summary>
+  /// Description
+  /// </summary>
+  virtual std::string getDescription() = 0;
 };
 

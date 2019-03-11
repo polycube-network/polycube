@@ -39,17 +39,13 @@ enum class ActionsActionEnum {
 class  ActionsJsonObject : public JsonObjectBase {
 public:
   ActionsJsonObject();
-  virtual ~ActionsJsonObject();
+  ActionsJsonObject(nlohmann::json& json);
+  ~ActionsJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -86,15 +82,13 @@ public:
   void unsetOutport();
 
 
-protected:
+private:
   std::string m_inport;
   bool m_inportIsSet;
   ActionsActionEnum m_action;
   bool m_actionIsSet;
   std::string m_outport;
   bool m_outportIsSet;
-
-  std::vector<std::string> allowedParameters_{ "inport", "action", "outport" };
 };
 
 }

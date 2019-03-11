@@ -45,6 +45,9 @@ load_file_as_variable(pcn-iptables datapaths/Iptables_L4ProtocolLookup_dp.c ipta
 load_file_as_variable(pcn-iptables datapaths/Iptables_Parser_dp.c iptables_code_parser)
 load_file_as_variable(pcn-iptables datapaths/Iptables_TcpFlagsLookup_dp.c iptables_code_tcpflagslookup)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-iptables ../datamodel/iptables.yang iptables_datamodel)
+
 target_link_libraries(pcn-iptables
   polycube
   uuid)

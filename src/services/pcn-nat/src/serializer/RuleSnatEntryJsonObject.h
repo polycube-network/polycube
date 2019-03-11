@@ -36,17 +36,13 @@ namespace model {
 class  RuleSnatEntryJsonObject : public JsonObjectBase {
 public:
   RuleSnatEntryJsonObject();
-  virtual ~RuleSnatEntryJsonObject();
+  RuleSnatEntryJsonObject(nlohmann::json& json);
+  ~RuleSnatEntryJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -81,15 +77,13 @@ public:
   void unsetExternalIp();
 
 
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
   std::string m_internalNet;
   bool m_internalNetIsSet;
   std::string m_externalIp;
   bool m_externalIpIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id", "internal-net", "external-ip" };
 };
 
 }

@@ -38,17 +38,13 @@ namespace model {
 class  BackendJsonObject : public JsonObjectBase {
 public:
   BackendJsonObject();
-  virtual ~BackendJsonObject();
+  BackendJsonObject(nlohmann::json& json);
+  ~BackendJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -67,11 +63,9 @@ public:
   void unsetPool();
 
 
-protected:
+private:
   std::vector<BackendPoolJsonObject> m_pool;
   bool m_poolIsSet;
-
-  std::vector<std::string> allowedParameters_{ "pool" };
 };
 
 }

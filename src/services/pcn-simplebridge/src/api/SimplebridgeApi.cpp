@@ -14,1352 +14,1240 @@
 
 
 #include "SimplebridgeApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "SimplebridgeApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::SimplebridgeApiImpl;
 
-SimplebridgeApi::SimplebridgeApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void SimplebridgeApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
+Response create_simplebridge_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
   try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    SimplebridgeJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_simplebridge_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_simplebridge_fdb_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    FdbJsonObject unique_value { request_body };
+
+    create_simplebridge_fdb_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_simplebridge_fdb_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
-
-void SimplebridgeApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/", Routes::bind(&SimplebridgeApi::create_simplebridge_by_id_handler, this));
-  Routes::Post(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::create_simplebridge_fdb_by_id_handler, this));
-  Routes::Post(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::create_simplebridge_fdb_entry_by_id_handler, this));
-  Routes::Post(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::create_simplebridge_fdb_entry_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/fdb/flush/", Routes::bind(&SimplebridgeApi::create_simplebridge_fdb_flush_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::create_simplebridge_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::create_simplebridge_ports_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&SimplebridgeApi::delete_simplebridge_by_id_handler, this));
-  Routes::Delete(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::delete_simplebridge_fdb_by_id_handler, this));
-  Routes::Delete(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::delete_simplebridge_fdb_entry_by_id_handler, this));
-  Routes::Delete(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::delete_simplebridge_fdb_entry_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::delete_simplebridge_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::delete_simplebridge_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&SimplebridgeApi::read_simplebridge_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/aging-time/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_aging_time_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/entry/:address/age/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_age_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/fdb/entry/:address/port/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_port_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&SimplebridgeApi::read_simplebridge_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&SimplebridgeApi::read_simplebridge_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/mac/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_mac_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&SimplebridgeApi::read_simplebridge_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&SimplebridgeApi::read_simplebridge_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&SimplebridgeApi::replace_simplebridge_by_id_handler, this));
-  Routes::Put(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::replace_simplebridge_fdb_by_id_handler, this));
-  Routes::Put(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::replace_simplebridge_fdb_entry_by_id_handler, this));
-  Routes::Put(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::replace_simplebridge_fdb_entry_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::replace_simplebridge_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::replace_simplebridge_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&SimplebridgeApi::update_simplebridge_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fdb/aging-time/", Routes::bind(&SimplebridgeApi::update_simplebridge_fdb_aging_time_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::update_simplebridge_fdb_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::update_simplebridge_fdb_entry_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::update_simplebridge_fdb_entry_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/fdb/entry/:address/port/", Routes::bind(&SimplebridgeApi::update_simplebridge_fdb_entry_port_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&SimplebridgeApi::update_simplebridge_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&SimplebridgeApi::update_simplebridge_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::update_simplebridge_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::update_simplebridge_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&SimplebridgeApi::update_simplebridge_ports_peer_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/", Routes::bind(&SimplebridgeApi::read_simplebridge_by_id_help, this));
-  Routes::Options(router, base + ":name/fdb/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_by_id_help, this));
-  Routes::Options(router, base + ":name/fdb/entry/:address/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_by_id_help, this));
-  Routes::Options(router, base + ":name/fdb/entry/", Routes::bind(&SimplebridgeApi::read_simplebridge_fdb_entry_list_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&SimplebridgeApi::read_simplebridge_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&SimplebridgeApi::read_simplebridge_ports_list_by_id_help, this));
-
-  Routes::Options(router, base + ":name/fdb/flush/", Routes::bind(&SimplebridgeApi::create_simplebridge_fdb_flush_by_id_help, this));
-}
-
-void SimplebridgeApi::create_simplebridge_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimplebridgeJsonObject value;
+    FdbEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simplebridge_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setAddress(unique_address);
+    create_simplebridge_fdb_entry_by_id(unique_name, unique_address, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::create_simplebridge_fdb_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_simplebridge_fdb_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    FdbJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simplebridge_fdb_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::create_simplebridge_fdb_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    FdbEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simplebridge_fdb_entry_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::create_simplebridge_fdb_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<FdbEntryJsonObject> value;
+  std::vector<FdbEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FdbEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      FdbEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      FdbEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_simplebridge_fdb_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_simplebridge_fdb_entry_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::create_simplebridge_fdb_flush_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_simplebridge_fdb_flush_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = create_simplebridge_fdb_flush_by_id(name);
+    auto x = create_simplebridge_fdb_flush_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::create_simplebridge_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_simplebridge_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_simplebridge_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::create_simplebridge_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
     }
-    create_simplebridge_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void SimplebridgeApi::delete_simplebridge_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    PortsJsonObject unique_value { request_body };
 
-    delete_simplebridge_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    create_simplebridge_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::delete_simplebridge_fdb_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_simplebridge_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_simplebridge_ports_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simplebridge_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simplebridge_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simplebridge_fdb_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simplebridge_fdb_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simplebridge_fdb_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_simplebridge_fdb_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_simplebridge_fdb_entry_by_id(unique_name, unique_address);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::delete_simplebridge_fdb_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_simplebridge_fdb_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_simplebridge_fdb_entry_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_simplebridge_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_simplebridge_fdb_entry_by_id(name, address);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_simplebridge_ports_by_id(unique_name, unique_portsName);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::delete_simplebridge_fdb_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response delete_simplebridge_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_simplebridge_ports_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_simplebridge_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-    delete_simplebridge_fdb_entry_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::delete_simplebridge_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-    delete_simplebridge_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::delete_simplebridge_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_simplebridge_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::read_simplebridge_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_simplebridge_by_id(name);
+    auto x = read_simplebridge_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_aging_time_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_fdb_aging_time_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_fdb_aging_time_by_id(name);
+    auto x = read_simplebridge_fdb_aging_time_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_fdb_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_fdb_by_id(name);
+    auto x = read_simplebridge_fdb_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_entry_age_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_fdb_entry_age_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_fdb_entry_age_by_id(name, address);
+    auto x = read_simplebridge_fdb_entry_age_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_fdb_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_fdb_entry_by_id(name, address);
+    auto x = read_simplebridge_fdb_entry_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_fdb_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_fdb_entry_list_by_id(name);
+    auto x = read_simplebridge_fdb_entry_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_fdb_entry_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_fdb_entry_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_fdb_entry_port_by_id(name, address);
+    auto x = read_simplebridge_fdb_entry_port_by_id(unique_name, unique_address);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_simplebridge_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_loglevel_by_id(name);
+    auto x = read_simplebridge_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = SimplebridgeJsonObject::SimplebridgeLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_ports_by_id(name, portsName);
+    auto x = read_simplebridge_ports_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_ports_list_by_id(name);
+    auto x = read_simplebridge_ports_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_mac_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_ports_mac_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_ports_mac_by_id(name, portsName);
+    auto x = read_simplebridge_ports_mac_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_ports_peer_by_id(name, portsName);
+    auto x = read_simplebridge_ports_peer_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_ports_status_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_ports_status_by_id(name, portsName);
+    auto x = read_simplebridge_ports_status_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_simplebridge_ports_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_simplebridge_ports_uuid_by_id(name, portsName);
+    auto x = read_simplebridge_ports_uuid_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_type_by_id(name);
+    auto x = read_simplebridge_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = SimplebridgeJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::read_simplebridge_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_simplebridge_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_simplebridge_uuid_by_id(name);
+    auto x = read_simplebridge_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::replace_simplebridge_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response replace_simplebridge_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimplebridgeJsonObject value;
+    SimplebridgeJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simplebridge_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_name);
+    replace_simplebridge_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::replace_simplebridge_fdb_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response replace_simplebridge_fdb_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    FdbJsonObject value;
+    FdbJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simplebridge_fdb_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    replace_simplebridge_fdb_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::replace_simplebridge_fdb_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simplebridge_fdb_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    FdbEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simplebridge_fdb_entry_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::replace_simplebridge_fdb_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<FdbEntryJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      FdbEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
     }
-    replace_simplebridge_fdb_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void SimplebridgeApi::replace_simplebridge_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    PortsJsonObject value;
+    FdbEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_simplebridge_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setAddress(unique_address);
+    replace_simplebridge_fdb_entry_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::replace_simplebridge_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response replace_simplebridge_fdb_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<FdbEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FdbEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      FdbEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_simplebridge_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    replace_simplebridge_fdb_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_simplebridge_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimplebridgeJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_simplebridge_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    replace_simplebridge_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_fdb_aging_time_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response replace_simplebridge_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    uint32_t value;
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_simplebridge_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+Response update_simplebridge_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    SimplebridgeJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    update_simplebridge_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simplebridge_fdb_aging_time_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_simplebridge_fdb_aging_time_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    uint32_t unique_value = request_body;
+    update_simplebridge_fdb_aging_time_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_fdb_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_simplebridge_fdb_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    FdbJsonObject value;
+    FdbJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_simplebridge_fdb_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_simplebridge_fdb_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_fdb_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simplebridge_fdb_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    FdbEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setAddress(address);
-    value.validateParams();
-    update_simplebridge_fdb_entry_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::update_simplebridge_fdb_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<FdbEntryJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      FdbEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
     }
-    update_simplebridge_fdb_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void SimplebridgeApi::update_simplebridge_fdb_entry_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    std::string value;
+    FdbEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    unique_value.setAddress(unique_address);
+    update_simplebridge_fdb_entry_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simplebridge_fdb_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<FdbEntryJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<FdbEntryJsonObject> unique_value;
+    for (auto &j : request_body) {
+      FdbEntryJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_simplebridge_fdb_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simplebridge_fdb_entry_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_simplebridge_fdb_entry_port_by_id(name, address, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_simplebridge_fdb_entry_port_by_id(unique_name, unique_address, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simplebridge_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<SimplebridgeJsonObject> value;
+  std::vector<SimplebridgeJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<SimplebridgeJsonObject> unique_value;
     for (auto &j : request_body) {
-      SimplebridgeJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      SimplebridgeJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_simplebridge_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_simplebridge_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simplebridge_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    SimplebridgeLoglevelEnum unique_value_ = SimplebridgeJsonObject::string_to_SimplebridgeLoglevelEnum(request_body);
+    update_simplebridge_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_simplebridge_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    SimplebridgeLoglevelEnum value_;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = SimplebridgeJsonObject::string_to_SimplebridgeLoglevelEnum(request_body);
-    update_simplebridge_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    update_simplebridge_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simplebridge_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_simplebridge_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void SimplebridgeApi::update_simplebridge_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_simplebridge_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_simplebridge_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void SimplebridgeApi::update_simplebridge_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_simplebridge_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_simplebridge_ports_peer_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_simplebridge_ports_peer_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
 
-void SimplebridgeApi::read_simplebridge_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response simplebridge_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SimplebridgeJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = SimplebridgeJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = SimplebridgeJsonObject::helpComplexElements();
     val["actions"] = SimplebridgeJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_fdb_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_fdb_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = FdbJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = FdbJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = FdbJsonObject::helpComplexElements();
     val["actions"] = FdbJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_fdb_entry_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_fdb_entry_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto address = request.param(":address").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_address;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "address")) {
+      unique_address = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = FdbEntryJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = FdbEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = FdbEntryJsonObject::helpComplexElements();
     val["actions"] = FdbEntryJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_fdb_entry_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_fdb_entry_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = FdbEntryJsonObject::helpKeys();
     val["optional-params"] = FdbEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SimplebridgeJsonObject::helpKeys();
     val["elements"] = read_simplebridge_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = SimplebridgeJsonObject::helpKeys();
     val["optional-params"] = SimplebridgeJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = SimplebridgeJsonObject::helpKeys();
     val["elements"] = read_simplebridge_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = SimplebridgeJsonObject::helpKeys();
     val["elements"] = read_simplebridge_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_ports_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = PortsJsonObject::helpComplexElements();
     val["actions"] = PortsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void SimplebridgeApi::read_simplebridge_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_ports_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = PortsJsonObject::helpKeys();
     val["optional-params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(name);
+    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 
-void SimplebridgeApi::create_simplebridge_fdb_flush_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response simplebridge_fdb_flush_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

@@ -14,2539 +14,2878 @@
 
 
 #include "IptablesApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "IptablesApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::IptablesApiImpl;
 
-IptablesApi::IptablesApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void IptablesApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
+Response create_iptables_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
   try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    IptablesJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_iptables_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_iptables_chain_append_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
-
-void IptablesApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/", Routes::bind(&IptablesApi::create_iptables_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/append/", Routes::bind(&IptablesApi::create_iptables_chain_append_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/apply-rules/", Routes::bind(&IptablesApi::create_iptables_chain_apply_rules_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::create_iptables_chain_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/delete/", Routes::bind(&IptablesApi::create_iptables_chain_delete_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/insert/", Routes::bind(&IptablesApi::create_iptables_chain_insert_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/", Routes::bind(&IptablesApi::create_iptables_chain_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/reset-counters/", Routes::bind(&IptablesApi::create_iptables_chain_reset_counters_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::create_iptables_chain_rule_by_id_handler, this));
-  Routes::Post(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::create_iptables_chain_rule_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::create_iptables_ports_by_id_handler, this));
-  Routes::Post(router, base + ":name/ports/", Routes::bind(&IptablesApi::create_iptables_ports_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&IptablesApi::delete_iptables_by_id_handler, this));
-  Routes::Delete(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::delete_iptables_chain_by_id_handler, this));
-  Routes::Delete(router, base + ":name/chain/", Routes::bind(&IptablesApi::delete_iptables_chain_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::delete_iptables_chain_rule_by_id_handler, this));
-  Routes::Delete(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::delete_iptables_chain_rule_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::delete_iptables_ports_by_id_handler, this));
-  Routes::Delete(router, base + ":name/ports/", Routes::bind(&IptablesApi::delete_iptables_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&IptablesApi::read_iptables_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::read_iptables_chain_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/default/", Routes::bind(&IptablesApi::read_iptables_chain_default_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/", Routes::bind(&IptablesApi::read_iptables_chain_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/action/", Routes::bind(&IptablesApi::read_iptables_chain_rule_action_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::read_iptables_chain_rule_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/conntrack/", Routes::bind(&IptablesApi::read_iptables_chain_rule_conntrack_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/dport/", Routes::bind(&IptablesApi::read_iptables_chain_rule_dport_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/dst/", Routes::bind(&IptablesApi::read_iptables_chain_rule_dst_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/in-iface/", Routes::bind(&IptablesApi::read_iptables_chain_rule_in_iface_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/l4proto/", Routes::bind(&IptablesApi::read_iptables_chain_rule_l4proto_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::read_iptables_chain_rule_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/out-iface/", Routes::bind(&IptablesApi::read_iptables_chain_rule_out_iface_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/sport/", Routes::bind(&IptablesApi::read_iptables_chain_rule_sport_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/src/", Routes::bind(&IptablesApi::read_iptables_chain_rule_src_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/rule/:id/tcpflags/", Routes::bind(&IptablesApi::read_iptables_chain_rule_tcpflags_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/stats/:id/", Routes::bind(&IptablesApi::read_iptables_chain_stats_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/stats/:id/bytes/", Routes::bind(&IptablesApi::read_iptables_chain_stats_bytes_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/stats/", Routes::bind(&IptablesApi::read_iptables_chain_stats_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/chain/:chain_name/stats/:id/pkts/", Routes::bind(&IptablesApi::read_iptables_chain_stats_pkts_by_id_handler, this));
-  Routes::Get(router, base + ":name/conntrack/", Routes::bind(&IptablesApi::read_iptables_conntrack_by_id_handler, this));
-  Routes::Get(router, base + ":name/horus/", Routes::bind(&IptablesApi::read_iptables_horus_by_id_handler, this));
-  Routes::Get(router, base + ":name/interactive/", Routes::bind(&IptablesApi::read_iptables_interactive_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&IptablesApi::read_iptables_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&IptablesApi::read_iptables_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::read_iptables_ports_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/", Routes::bind(&IptablesApi::read_iptables_ports_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&IptablesApi::read_iptables_ports_peer_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/status/", Routes::bind(&IptablesApi::read_iptables_ports_status_by_id_handler, this));
-  Routes::Get(router, base + ":name/ports/:ports_name/uuid/", Routes::bind(&IptablesApi::read_iptables_ports_uuid_by_id_handler, this));
-  Routes::Get(router, base + ":name/session-table/:src/:dst/:l4proto/:sport/:dport/", Routes::bind(&IptablesApi::read_iptables_session_table_by_id_handler, this));
-  Routes::Get(router, base + ":name/session-table/", Routes::bind(&IptablesApi::read_iptables_session_table_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/session-table/:src/:dst/:l4proto/:sport/:dport/state/", Routes::bind(&IptablesApi::read_iptables_session_table_state_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&IptablesApi::read_iptables_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&IptablesApi::read_iptables_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&IptablesApi::replace_iptables_by_id_handler, this));
-  Routes::Put(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::replace_iptables_chain_by_id_handler, this));
-  Routes::Put(router, base + ":name/chain/", Routes::bind(&IptablesApi::replace_iptables_chain_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::replace_iptables_chain_rule_by_id_handler, this));
-  Routes::Put(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::replace_iptables_chain_rule_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::replace_iptables_ports_by_id_handler, this));
-  Routes::Put(router, base + ":name/ports/", Routes::bind(&IptablesApi::replace_iptables_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&IptablesApi::update_iptables_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::update_iptables_chain_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/default/", Routes::bind(&IptablesApi::update_iptables_chain_default_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/", Routes::bind(&IptablesApi::update_iptables_chain_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/action/", Routes::bind(&IptablesApi::update_iptables_chain_rule_action_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::update_iptables_chain_rule_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/conntrack/", Routes::bind(&IptablesApi::update_iptables_chain_rule_conntrack_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/dport/", Routes::bind(&IptablesApi::update_iptables_chain_rule_dport_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/dst/", Routes::bind(&IptablesApi::update_iptables_chain_rule_dst_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/in-iface/", Routes::bind(&IptablesApi::update_iptables_chain_rule_in_iface_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/l4proto/", Routes::bind(&IptablesApi::update_iptables_chain_rule_l4proto_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::update_iptables_chain_rule_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/out-iface/", Routes::bind(&IptablesApi::update_iptables_chain_rule_out_iface_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/sport/", Routes::bind(&IptablesApi::update_iptables_chain_rule_sport_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/src/", Routes::bind(&IptablesApi::update_iptables_chain_rule_src_by_id_handler, this));
-  Routes::Patch(router, base + ":name/chain/:chain_name/rule/:id/tcpflags/", Routes::bind(&IptablesApi::update_iptables_chain_rule_tcpflags_by_id_handler, this));
-  Routes::Patch(router, base + ":name/conntrack/", Routes::bind(&IptablesApi::update_iptables_conntrack_by_id_handler, this));
-  Routes::Patch(router, base + ":name/horus/", Routes::bind(&IptablesApi::update_iptables_horus_by_id_handler, this));
-  Routes::Patch(router, base + ":name/interactive/", Routes::bind(&IptablesApi::update_iptables_interactive_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&IptablesApi::update_iptables_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&IptablesApi::update_iptables_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::update_iptables_ports_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/", Routes::bind(&IptablesApi::update_iptables_ports_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ports/:ports_name/peer/", Routes::bind(&IptablesApi::update_iptables_ports_peer_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/", Routes::bind(&IptablesApi::read_iptables_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/", Routes::bind(&IptablesApi::read_iptables_chain_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/", Routes::bind(&IptablesApi::read_iptables_chain_list_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/rule/:id/", Routes::bind(&IptablesApi::read_iptables_chain_rule_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/rule/", Routes::bind(&IptablesApi::read_iptables_chain_rule_list_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/stats/:id/", Routes::bind(&IptablesApi::read_iptables_chain_stats_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/stats/", Routes::bind(&IptablesApi::read_iptables_chain_stats_list_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&IptablesApi::read_iptables_list_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/:ports_name/", Routes::bind(&IptablesApi::read_iptables_ports_by_id_help, this));
-  Routes::Options(router, base + ":name/ports/", Routes::bind(&IptablesApi::read_iptables_ports_list_by_id_help, this));
-  Routes::Options(router, base + ":name/session-table/:src/:dst/:l4proto/:sport/:dport/", Routes::bind(&IptablesApi::read_iptables_session_table_by_id_help, this));
-  Routes::Options(router, base + ":name/session-table/", Routes::bind(&IptablesApi::read_iptables_session_table_list_by_id_help, this));
-
-  Routes::Options(router, base + ":name/chain/:chain_name/append/", Routes::bind(&IptablesApi::create_iptables_chain_append_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/apply-rules/", Routes::bind(&IptablesApi::create_iptables_chain_apply_rules_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/delete/", Routes::bind(&IptablesApi::create_iptables_chain_delete_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/insert/", Routes::bind(&IptablesApi::create_iptables_chain_insert_by_id_help, this));
-  Routes::Options(router, base + ":name/chain/:chain_name/reset-counters/", Routes::bind(&IptablesApi::create_iptables_chain_reset_counters_by_id_help, this));
-}
-
-void IptablesApi::create_iptables_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    IptablesJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_iptables_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::create_iptables_chain_append_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+    ChainAppendInputJsonObject unique_value { request_body };
 
 
-  try {
-    // Getting the body param
-    ChainAppendInputJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-
-    auto x = create_iptables_chain_append_by_id(name, chainName_, value);
+    auto x = create_iptables_chain_append_by_id(unique_name, unique_chainName_, unique_value);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_chain_apply_rules_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_chain_apply_rules_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
 
-
-    auto x = create_iptables_chain_apply_rules_by_id(name, chainName_);
+    auto x = create_iptables_chain_apply_rules_by_id(unique_name, unique_chainName_);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_chain_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_chain_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainJsonObject value;
+    ChainJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(chainName_);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_iptables_chain_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setName(unique_chainName_);
+    create_iptables_chain_by_id(unique_name, unique_chainName_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_chain_delete_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_chain_delete_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainDeleteInputJsonObject value;
+    ChainDeleteInputJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_iptables_chain_delete_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_iptables_chain_delete_by_id(unique_name, unique_chainName_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_chain_insert_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_chain_insert_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainInsertInputJsonObject value;
+    ChainInsertInputJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
 
-    auto x = create_iptables_chain_insert_by_id(name, chainName_, value);
+    auto x = create_iptables_chain_insert_by_id(unique_name, unique_chainName_, unique_value);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_chain_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_chain_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<ChainJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ChainJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ChainJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_iptables_chain_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_iptables_chain_reset_counters_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+
+  try {
+
+    auto x = create_iptables_chain_reset_counters_by_id(unique_name, unique_chainName_);
+    nlohmann::json response_body;
+    response_body = x.toJson();
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_iptables_chain_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ChainRuleJsonObject unique_value { request_body };
+
+    unique_value.setId(unique_id);
+    create_iptables_chain_rule_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_iptables_chain_rule_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
   // Getting the body param
-  std::vector<ChainJsonObject> value;
+  std::vector<ChainRuleJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ChainJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_iptables_chain_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::create_iptables_chain_reset_counters_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-
-
-  try {
-
-
-    auto x = create_iptables_chain_reset_counters_by_id(name, chainName_);
-    nlohmann::json response_body;
-    response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::create_iptables_chain_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainRuleJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_iptables_chain_rule_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::create_iptables_chain_rule_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-
-  // Getting the body param
-  std::vector<ChainRuleJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    std::vector<ChainRuleJsonObject> unique_value;
     for (auto &j : request_body) {
-      ChainRuleJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      ChainRuleJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_iptables_chain_rule_list_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_iptables_chain_rule_list_by_id(unique_name, unique_chainName_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_iptables_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    PortsJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_iptables_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setName(unique_portsName);
+    create_iptables_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::create_iptables_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_iptables_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_iptables_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_iptables_ports_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::delete_iptables_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_iptables_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_iptables_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_iptables_chain_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
-
-    delete_iptables_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_iptables_chain_by_id(unique_name, unique_chainName_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::delete_iptables_chain_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_iptables_chain_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+
+  try {
+    delete_iptables_chain_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_iptables_chain_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-
-    delete_iptables_chain_by_id(name, chainName_);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_iptables_chain_rule_by_id(unique_name, unique_chainName_, unique_id);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::delete_iptables_chain_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_iptables_chain_rule_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
-
-    delete_iptables_chain_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_iptables_chain_rule_list_by_id(unique_name, unique_chainName_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::delete_iptables_chain_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_iptables_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_iptables_chain_rule_by_id(name, chainName_, id);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_iptables_ports_by_id(unique_name, unique_portsName);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::delete_iptables_chain_rule_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
 
+Response delete_iptables_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_iptables_ports_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-    delete_iptables_chain_rule_list_by_id(name, chainName_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::delete_iptables_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-
-    delete_iptables_ports_by_id(name, portsName);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::delete_iptables_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_iptables_ports_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::read_iptables_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_iptables_by_id(name);
+    auto x = read_iptables_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
 
-
-    auto x = read_iptables_chain_by_id(name, chainName_);
+    auto x = read_iptables_chain_by_id(unique_name, unique_chainName_);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_default_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_default_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
 
-
-    auto x = read_iptables_chain_default_by_id(name, chainName_);
+    auto x = read_iptables_chain_default_by_id(unique_name, unique_chainName_);
     nlohmann::json response_body;
     response_body = ChainJsonObject::ActionEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_chain_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_chain_list_by_id(name);
+    auto x = read_iptables_chain_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_action_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_action_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = ChainRuleJsonObject::ActionEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_conntrack_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_conntrack_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_conntrack_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_conntrack_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = ChainRuleJsonObject::ConntrackstatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_dport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_dport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_dport_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_dport_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_dst_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_dst_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_in_iface_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_in_iface_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_in_iface_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_in_iface_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_l4proto_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_l4proto_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_l4proto_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_l4proto_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_list_by_id(name, chainName_);
+    auto x = read_iptables_chain_rule_list_by_id(unique_name, unique_chainName_);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_out_iface_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_out_iface_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_out_iface_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_out_iface_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_sport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_sport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_sport_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_sport_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_src_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_src_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_rule_tcpflags_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_rule_tcpflags_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_rule_tcpflags_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_rule_tcpflags_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_stats_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_stats_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_stats_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_stats_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_stats_bytes_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_stats_bytes_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_stats_bytes_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_stats_bytes_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_stats_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_stats_description_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
+    auto x = read_iptables_chain_stats_description_by_id(unique_name, unique_chainName_, unique_id);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
 
-    auto x = read_iptables_chain_stats_list_by_id(name, chainName_);
+Response read_iptables_chain_stats_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+
+  try {
+
+    auto x = read_iptables_chain_stats_list_by_id(unique_name, unique_chainName_);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_chain_stats_pkts_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_chain_stats_pkts_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_chain_stats_pkts_by_id(name, chainName_, id);
+    auto x = read_iptables_chain_stats_pkts_by_id(unique_name, unique_chainName_, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_conntrack_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_conntrack_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_conntrack_by_id(name);
+    auto x = read_iptables_conntrack_by_id(unique_name);
     nlohmann::json response_body;
     response_body = IptablesJsonObject::IptablesConntrackEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_horus_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_horus_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_horus_by_id(name);
+    auto x = read_iptables_horus_by_id(unique_name);
     nlohmann::json response_body;
     response_body = IptablesJsonObject::IptablesHorusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_interactive_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_interactive_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_interactive_by_id(name);
+    auto x = read_iptables_interactive_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_iptables_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_loglevel_by_id(name);
+    auto x = read_iptables_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = IptablesJsonObject::IptablesLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_ports_by_id(name, portsName);
+    auto x = read_iptables_ports_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_ports_list_by_id(name);
+    auto x = read_iptables_ports_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_ports_peer_by_id(name, portsName);
+    auto x = read_iptables_ports_peer_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_ports_status_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_ports_status_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_ports_status_by_id(name, portsName);
+    auto x = read_iptables_ports_status_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_ports_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_ports_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_ports_uuid_by_id(name, portsName);
+    auto x = read_iptables_ports_uuid_by_id(unique_name, unique_portsName);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_session_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_session_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto src = request.param(":src").as<std::string>();
-  auto dst = request.param(":dst").as<std::string>();
-  auto l4proto = request.param(":l4proto").as<std::string>();
-  auto sport = request.param(":sport").as<uint16_t>();
-  auto dport = request.param(":dport").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_session_table_by_id(name, src, dst, l4proto, sport, dport);
+    auto x = read_iptables_session_table_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_session_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_session_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_session_table_list_by_id(name);
+    auto x = read_iptables_session_table_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_session_table_state_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_iptables_session_table_state_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto src = request.param(":src").as<std::string>();
-  auto dst = request.param(":dst").as<std::string>();
-  auto l4proto = request.param(":l4proto").as<std::string>();
-  auto sport = request.param(":sport").as<uint16_t>();
-  auto dport = request.param(":dport").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_iptables_session_table_state_by_id(name, src, dst, l4proto, sport, dport);
+    auto x = read_iptables_session_table_state_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_type_by_id(name);
+    auto x = read_iptables_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = IptablesJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::read_iptables_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_iptables_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_iptables_uuid_by_id(name);
+    auto x = read_iptables_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::replace_iptables_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_iptables_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    IptablesJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    replace_iptables_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_iptables_chain_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    IptablesJsonObject value;
+    ChainJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_iptables_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_chainName_);
+    replace_iptables_chain_by_id(unique_name, unique_chainName_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::replace_iptables_chain_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_iptables_chain_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<ChainJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ChainJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ChainJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_iptables_chain_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_iptables_chain_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainJsonObject value;
+    ChainRuleJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(chainName_);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_iptables_chain_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setId(unique_id);
+    replace_iptables_chain_rule_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::replace_iptables_chain_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_iptables_chain_rule_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
   // Getting the body param
-  std::vector<ChainJsonObject> value;
+  std::vector<ChainRuleJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ChainJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_iptables_chain_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::replace_iptables_chain_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    ChainRuleJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_iptables_chain_rule_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<ChainRuleJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ChainRuleJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_iptables_chain_rule_list_by_id(unique_name, unique_chainName_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::replace_iptables_chain_rule_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_iptables_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    PortsJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_portsName);
+    replace_iptables_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_iptables_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<PortsJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
+    for (auto &j : request_body) {
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_iptables_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    IptablesJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    update_iptables_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ChainJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_chainName_);
+    update_iptables_chain_by_id(unique_name, unique_chainName_, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_default_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    ActionEnum unique_value_ = ChainJsonObject::string_to_ActionEnum(request_body);
+    update_iptables_chain_default_by_id(unique_name, unique_chainName_, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<ChainJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<ChainJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ChainJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_iptables_chain_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    ActionEnum unique_value_ = ChainRuleJsonObject::string_to_ActionEnum(request_body);
+    update_iptables_chain_rule_action_by_id(unique_name, unique_chainName_, unique_id, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ChainRuleJsonObject unique_value { request_body };
+
+    unique_value.setId(unique_id);
+    update_iptables_chain_rule_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_conntrack_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    ConntrackstatusEnum unique_value_ = ChainRuleJsonObject::string_to_ConntrackstatusEnum(request_body);
+    update_iptables_chain_rule_conntrack_by_id(unique_name, unique_chainName_, unique_id, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_dport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_iptables_chain_rule_dport_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_dst_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_in_iface_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_in_iface_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_l4proto_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_l4proto_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
   // Getting the body param
-  std::vector<ChainRuleJsonObject> value;
+  std::vector<ChainRuleJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ChainRuleJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_iptables_chain_rule_list_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::replace_iptables_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_iptables_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<ChainRuleJsonObject> unique_value;
+    for (auto &j : request_body) {
+      ChainRuleJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_iptables_chain_rule_list_by_id(unique_name, unique_chainName_, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::replace_iptables_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_iptables_chain_rule_out_iface_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_out_iface_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_sport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_iptables_chain_rule_sport_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_src_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_chain_rule_tcpflags_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
+
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_iptables_chain_rule_tcpflags_by_id(unique_name, unique_chainName_, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_conntrack_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    IptablesConntrackEnum unique_value_ = IptablesJsonObject::string_to_IptablesConntrackEnum(request_body);
+    update_iptables_conntrack_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_horus_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    IptablesHorusEnum unique_value_ = IptablesJsonObject::string_to_IptablesHorusEnum(request_body);
+    update_iptables_horus_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_interactive_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    bool unique_value = request_body;
+    update_iptables_interactive_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<PortsJsonObject> value;
+  std::vector<IptablesJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<IptablesJsonObject> unique_value;
     for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      IptablesJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_iptables_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_iptables_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::update_iptables_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_iptables_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    IptablesLoglevelEnum unique_value_ = IptablesJsonObject::string_to_IptablesLoglevelEnum(request_body);
+    update_iptables_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_iptables_ports_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    IptablesJsonObject value;
+    PortsJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_iptables_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setName(unique_portsName);
+    update_iptables_ports_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::update_iptables_chain_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_iptables_ports_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-
-
-  try {
-    // Getting the body param
-    ChainJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(chainName_);
-    value.validateParams();
-    update_iptables_chain_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_default_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-
-
-  try {
-    // Getting the body param
-    ActionEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = ChainJsonObject::string_to_ActionEnum(request_body);
-    update_iptables_chain_default_by_id(name, chainName_, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<ChainJsonObject> value;
+  std::vector<PortsJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<PortsJsonObject> unique_value;
     for (auto &j : request_body) {
-      ChainJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      PortsJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_iptables_chain_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_iptables_ports_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::update_iptables_chain_rule_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_iptables_ports_peer_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    ActionEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = ChainRuleJsonObject::string_to_ActionEnum(request_body);
-    update_iptables_chain_rule_action_by_id(name, chainName_, id, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    ChainRuleJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateParams();
-    update_iptables_chain_rule_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_conntrack_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    ConntrackstatusEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = ChainRuleJsonObject::string_to_ConntrackstatusEnum(request_body);
-    update_iptables_chain_rule_conntrack_by_id(name, chainName_, id, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_dport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_dport_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_dst_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_in_iface_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_in_iface_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_l4proto_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_l4proto_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-
-  // Getting the body param
-  std::vector<ChainRuleJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      ChainRuleJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
     }
-    update_iptables_chain_rule_list_by_id(name, chainName_, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void IptablesApi::update_iptables_chain_rule_out_iface_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
 
 
   try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
     // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_out_iface_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::string unique_value = request_body;
+    update_iptables_ports_peer_by_id(unique_name, unique_portsName, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void IptablesApi::update_iptables_chain_rule_sport_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+
+Response iptables_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_sport_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_src_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_chain_rule_tcpflags_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_chain_rule_tcpflags_by_id(name, chainName_, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_conntrack_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    IptablesConntrackEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = IptablesJsonObject::string_to_IptablesConntrackEnum(request_body);
-    update_iptables_conntrack_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_horus_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    IptablesHorusEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = IptablesJsonObject::string_to_IptablesHorusEnum(request_body);
-    update_iptables_horus_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_interactive_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    bool value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_interactive_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-
-  // Getting the body param
-  std::vector<IptablesJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      IptablesJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_iptables_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    IptablesLoglevelEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = IptablesJsonObject::string_to_IptablesLoglevelEnum(request_body);
-    update_iptables_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_ports_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    PortsJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(portsName);
-    value.validateParams();
-    update_iptables_ports_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_ports_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<PortsJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      PortsJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_iptables_ports_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void IptablesApi::update_iptables_ports_peer_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_iptables_ports_peer_by_id(name, portsName, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-
-void IptablesApi::read_iptables_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = IptablesJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = IptablesJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = IptablesJsonObject::helpComplexElements();
     val["actions"] = IptablesJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ChainJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ChainJsonObject::helpComplexElements();
     val["actions"] = ChainJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(name);
+    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = ChainJsonObject::helpKeys();
     val["optional-params"] = ChainJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(name);
+    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(name);
+    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_rule_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_rule_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainRuleJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ChainRuleJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ChainRuleJsonObject::helpComplexElements();
     val["actions"] = ChainRuleJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_rule_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_rule_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
   case HelpType::ADD:
     val["params"] = ChainRuleJsonObject::helpKeys();
     val["optional-params"] = ChainRuleJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_stats_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_stats_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainStatsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = ChainStatsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = ChainStatsJsonObject::helpComplexElements();
     val["actions"] = ChainStatsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_chain_stats_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_stats_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto chainName = request.param(":chain_name").as<std::string>();
-  auto chainName_ = ChainJsonObject::string_to_ChainNameEnum(chainName);
+  std::string unique_name { name };
+  std::string unique_chainName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "chain_name")) {
+      unique_chainName = std::string { keys[i].value.string };
+      break;
+    }
+  }
+  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
   case HelpType::ADD:
     val["params"] = ChainStatsJsonObject::helpKeys();
     val["optional-params"] = ChainStatsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(name, chainName_);
+    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = IptablesJsonObject::helpKeys();
     val["elements"] = read_iptables_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = IptablesJsonObject::helpKeys();
     val["optional-params"] = IptablesJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = IptablesJsonObject::helpKeys();
     val["elements"] = read_iptables_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = IptablesJsonObject::helpKeys();
     val["elements"] = read_iptables_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_ports_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_ports_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto portsName = request.param(":ports_name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_portsName;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ports_name")) {
+      unique_portsName = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = PortsJsonObject::helpComplexElements();
     val["actions"] = PortsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_ports_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_ports_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(name);
+    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = PortsJsonObject::helpKeys();
     val["optional-params"] = PortsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(name);
+    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(name);
+    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_session_table_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_session_table_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto src = request.param(":src").as<std::string>();
-  auto dst = request.param(":dst").as<std::string>();
-  auto l4proto = request.param(":l4proto").as<std::string>();
-  auto sport = request.param(":sport").as<uint16_t>();
-  auto dport = request.param(":dport").as<uint16_t>();
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SessionTableJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = SessionTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = SessionTableJsonObject::helpComplexElements();
     val["actions"] = SessionTableJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void IptablesApi::read_iptables_session_table_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_session_table_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(name);
+    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = SessionTableJsonObject::helpKeys();
     val["optional-params"] = SessionTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(name);
+    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(name);
+    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 
-void IptablesApi::create_iptables_chain_append_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response iptables_chain_append_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = ChainAppendInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void IptablesApi::create_iptables_chain_apply_rules_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response iptables_chain_apply_rules_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void IptablesApi::create_iptables_chain_delete_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response iptables_chain_delete_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = ChainDeleteInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void IptablesApi::create_iptables_chain_insert_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response iptables_chain_insert_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = ChainInsertInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void IptablesApi::create_iptables_chain_reset_counters_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response iptables_chain_reset_counters_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

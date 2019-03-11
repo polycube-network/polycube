@@ -48,17 +48,13 @@ enum class ActionEnum {
 class  ChainRuleJsonObject : public JsonObjectBase {
 public:
   ChainRuleJsonObject();
-  virtual ~ChainRuleJsonObject();
+  ChainRuleJsonObject(nlohmann::json& json);
+  ~ChainRuleJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -153,7 +149,7 @@ public:
   void unsetDescription();
 
 
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
   std::string m_src;
@@ -174,8 +170,6 @@ protected:
   bool m_actionIsSet;
   std::string m_description;
   bool m_descriptionIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id", "src", "dst", "l4proto", "sport", "dport", "tcpflags", "conntrack", "action", "description" };
 };
 
 }

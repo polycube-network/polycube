@@ -36,17 +36,13 @@ namespace model {
 class  FwdTableJsonObject : public JsonObjectBase {
 public:
   FwdTableJsonObject();
-  virtual ~FwdTableJsonObject();
+  FwdTableJsonObject(nlohmann::json& json);
+  ~FwdTableJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -81,15 +77,13 @@ public:
   void unsetPort();
 
 
-protected:
+private:
   std::string m_address;
   bool m_addressIsSet;
   std::string m_mac;
   bool m_macIsSet;
   std::string m_port;
   bool m_portIsSet;
-
-  std::vector<std::string> allowedParameters_{ "address", "mac", "port" };
 };
 
 }

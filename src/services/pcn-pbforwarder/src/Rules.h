@@ -118,7 +118,7 @@ class Rules : public RulesInterface {
   void setDstIp(const std::string &value) override;
 
   /// <summary>
-  /// Level 4 Protocol (i.e. UDP, TCP; default: TCP)
+  /// Level 4 Protocol (i.e. UDP, TCP)
   /// </summary>
   RulesL4ProtoEnum getL4Proto() override;
   void setL4Proto(const RulesL4ProtoEnum &value) override;

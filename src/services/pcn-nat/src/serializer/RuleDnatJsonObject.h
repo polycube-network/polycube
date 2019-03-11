@@ -38,17 +38,13 @@ namespace model {
 class  RuleDnatJsonObject : public JsonObjectBase {
 public:
   RuleDnatJsonObject();
-  virtual ~RuleDnatJsonObject();
+  RuleDnatJsonObject(nlohmann::json& json);
+  ~RuleDnatJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -67,11 +63,9 @@ public:
   void unsetEntry();
 
 
-protected:
+private:
   std::vector<RuleDnatEntryJsonObject> m_entry;
   bool m_entryIsSet;
-
-  std::vector<std::string> allowedParameters_{ "entry" };
 };
 
 }

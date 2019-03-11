@@ -97,6 +97,11 @@ Install dependencies
         curl uuid-dev build-essential autoconf libtool
 
 
+Install libyang
+^^^^^^^^^^^^^^^^
+
+Please check the `libyang installation documentation <https://software.opensuse.org//download.html?project=home%3Aliberouter&package=libyang>`_.
+
 Install pistache
 ^^^^^^^^^^^^^^^^
 

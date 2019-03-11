@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-SimpleforwarderApiImpl::SimpleforwarderApiImpl() {}
+namespace SimpleforwarderApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Simpleforwarder>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Simpleforwarder> SimpleforwarderApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Simpleforwarder> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Simpleforwarder> SimpleforwarderApiImpl::get_cube(const std::str
   return iter->second;
 }
 
-void SimpleforwarderApiImpl::create_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Simpleforwarder>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void SimpleforwarderApiImpl::create_simpleforwarder_by_id(const std::string &nam
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void SimpleforwarderApiImpl::replace_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &bridge){
+void replace_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void SimpleforwarderApiImpl::delete_simpleforwarder_by_id(const std::string &name) {
+void delete_simpleforwarder_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void SimpleforwarderApiImpl::delete_simpleforwarder_by_id(const std::string &nam
   cubes.erase(name);
 }
 
-std::string SimpleforwarderApiImpl::read_simpleforwarder_uuid_by_id(const std::string &name) {
+std::string read_simpleforwarder_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<SimpleforwarderJsonObject> SimpleforwarderApiImpl::read_simpleforwarder_list_by_id() {
+std::vector<SimpleforwarderJsonObject> read_simpleforwarder_list_by_id() {
   std::vector<SimpleforwarderJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<SimpleforwarderJsonObject> SimpleforwarderApiImpl::read_simpleforwar
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::read_simpleforwarder_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 /*
 * Ports list related functions
 */
-void SimpleforwarderApiImpl::create_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> SimpleforwarderApiImpl::read_simpleforwarder_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_simpleforwarder_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> SimpleforwarderApiImpl::read_simpleforwarder_ports_
   return vect;
 }
 
-void SimpleforwarderApiImpl::replace_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void SimpleforwarderApiImpl::delete_simpleforwarder_ports_list_by_id(const std::string &name) {
+void delete_simpleforwarder_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::read_simpleforwarder_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 /*
 * Ports related functions
 */
-void SimpleforwarderApiImpl::create_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject SimpleforwarderApiImpl::read_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void SimpleforwarderApiImpl::replace_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void SimpleforwarderApiImpl::delete_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string SimpleforwarderApiImpl::read_simpleforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_simpleforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum SimpleforwarderApiImpl::read_simpleforwarder_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_simpleforwarder_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string SimpleforwarderApiImpl::read_simpleforwarder_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_simpleforwarder_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void SimpleforwarderApiImpl::update_simpleforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_simpleforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -193,7 +197,7 @@ void SimpleforwarderApiImpl::update_simpleforwarder_ports_peer_by_id(const std::
 *
 */
 void
-SimpleforwarderApiImpl::create_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
+create_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
   auto simpleforwarder = get_cube(name);
 
   simpleforwarder->addActions(inport, value);
@@ -214,14 +218,14 @@ SimpleforwarderApiImpl::create_simpleforwarder_actions_by_id(const std::string &
 *
 */
 void
-SimpleforwarderApiImpl::create_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+create_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   auto simpleforwarder = get_cube(name);
   simpleforwarder->addActionsList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::create_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&simpleforwarder = get_cube(name);
 
@@ -246,7 +250,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 *
 */
 void
-SimpleforwarderApiImpl::delete_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport) {
+delete_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport) {
   auto simpleforwarder = get_cube(name);
 
   simpleforwarder->delActions(inport);
@@ -266,14 +270,14 @@ SimpleforwarderApiImpl::delete_simpleforwarder_actions_by_id(const std::string &
 *
 */
 void
-SimpleforwarderApiImpl::delete_simpleforwarder_actions_list_by_id(const std::string &name) {
+delete_simpleforwarder_actions_list_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   simpleforwarder->delActionsList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::delete_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&simpleforwarder = get_cube(name);
 
@@ -298,7 +302,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 * ActionsActionEnum
 */
 ActionsActionEnum
-SimpleforwarderApiImpl::read_simpleforwarder_actions_action_by_id(const std::string &name, const std::string &inport) {
+read_simpleforwarder_actions_action_by_id(const std::string &name, const std::string &inport) {
   auto simpleforwarder = get_cube(name);
   auto actions = simpleforwarder->getActions(inport);
   return actions->getAction();
@@ -320,7 +324,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_actions_action_by_id(const std::str
 * ActionsJsonObject
 */
 ActionsJsonObject
-SimpleforwarderApiImpl::read_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport) {
+read_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport) {
   auto simpleforwarder = get_cube(name);
   return simpleforwarder->getActions(inport)->toJsonObject();
 
@@ -340,7 +344,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_actions_by_id(const std::string &na
 * std::vector<ActionsJsonObject>
 */
 std::vector<ActionsJsonObject>
-SimpleforwarderApiImpl::read_simpleforwarder_actions_list_by_id(const std::string &name) {
+read_simpleforwarder_actions_list_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   auto &&actions = simpleforwarder->getActionsList();
   std::vector<ActionsJsonObject> m;
@@ -352,7 +356,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_actions_list_by_id(const std::strin
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::read_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&simpleforwarder = get_cube(name);
 
@@ -378,7 +382,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 * std::string
 */
 std::string
-SimpleforwarderApiImpl::read_simpleforwarder_actions_outport_by_id(const std::string &name, const std::string &inport) {
+read_simpleforwarder_actions_outport_by_id(const std::string &name, const std::string &inport) {
   auto simpleforwarder = get_cube(name);
   auto actions = simpleforwarder->getActions(inport);
   return actions->getOutport();
@@ -399,7 +403,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_actions_outport_by_id(const std::st
 * SimpleforwarderJsonObject
 */
 SimpleforwarderJsonObject
-SimpleforwarderApiImpl::read_simpleforwarder_by_id(const std::string &name) {
+read_simpleforwarder_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -418,7 +422,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_by_id(const std::string &name) {
 * SimpleforwarderLoglevelEnum
 */
 SimpleforwarderLoglevelEnum
-SimpleforwarderApiImpl::read_simpleforwarder_loglevel_by_id(const std::string &name) {
+read_simpleforwarder_loglevel_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   return simpleforwarder->getLoglevel();
 
@@ -438,7 +442,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_loglevel_by_id(const std::string &n
 * CubeType
 */
 CubeType
-SimpleforwarderApiImpl::read_simpleforwarder_type_by_id(const std::string &name) {
+read_simpleforwarder_type_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   return simpleforwarder->getType();
 
@@ -460,7 +464,7 @@ SimpleforwarderApiImpl::read_simpleforwarder_type_by_id(const std::string &name)
 *
 */
 void
-SimpleforwarderApiImpl::replace_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
+replace_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
   auto simpleforwarder = get_cube(name);
 
   simpleforwarder->replaceActions(inport, value);
@@ -481,13 +485,13 @@ SimpleforwarderApiImpl::replace_simpleforwarder_actions_by_id(const std::string 
 *
 */
 void
-SimpleforwarderApiImpl::replace_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+replace_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::replace_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -506,7 +510,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_actions_action_by_id(const std::string &name, const std::string &inport, const ActionsActionEnum &value) {
+update_simpleforwarder_actions_action_by_id(const std::string &name, const std::string &inport, const ActionsActionEnum &value) {
   auto simpleforwarder = get_cube(name);
   auto actions = simpleforwarder->getActions(inport);
 
@@ -529,7 +533,7 @@ SimpleforwarderApiImpl::update_simpleforwarder_actions_action_by_id(const std::s
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
+update_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value) {
   auto simpleforwarder = get_cube(name);
   auto actions = simpleforwarder->getActions(inport);
 
@@ -551,13 +555,13 @@ SimpleforwarderApiImpl::update_simpleforwarder_actions_by_id(const std::string &
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+update_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::update_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -576,7 +580,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_actions_outport_by_id(const std::string &name, const std::string &inport, const std::string &value) {
+update_simpleforwarder_actions_outport_by_id(const std::string &name, const std::string &inport, const std::string &value) {
   auto simpleforwarder = get_cube(name);
   auto actions = simpleforwarder->getActions(inport);
 
@@ -598,7 +602,7 @@ SimpleforwarderApiImpl::update_simpleforwarder_actions_outport_by_id(const std::
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &value) {
+update_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &value) {
   auto simpleforwarder = get_cube(name);
 
   simpleforwarder->update(value);
@@ -618,13 +622,13 @@ SimpleforwarderApiImpl::update_simpleforwarder_by_id(const std::string &name, co
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_list_by_id(const std::vector<SimpleforwarderJsonObject> &value) {
+update_simpleforwarder_list_by_id(const std::vector<SimpleforwarderJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::update_simpleforwarder_list_by_id_get_list(const std::vector<SimpleforwarderJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_list_by_id_get_list(const std::vector<SimpleforwarderJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -642,7 +646,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_loglevel_by_id(const std::string &name, const SimpleforwarderLoglevelEnum &value) {
+update_simpleforwarder_loglevel_by_id(const std::string &name, const SimpleforwarderLoglevelEnum &value) {
   auto simpleforwarder = get_cube(name);
 
   simpleforwarder->setLoglevel(value);
@@ -664,7 +668,7 @@ SimpleforwarderApiImpl::update_simpleforwarder_loglevel_by_id(const std::string 
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto simpleforwarder = get_cube(name);
   auto ports = simpleforwarder->getPorts(portsName);
 
@@ -686,18 +690,19 @@ SimpleforwarderApiImpl::update_simpleforwarder_ports_by_id(const std::string &na
 *
 */
 void
-SimpleforwarderApiImpl::update_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> SimpleforwarderApiImpl::update_simpleforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
 
 
+}
 }
 }
 }

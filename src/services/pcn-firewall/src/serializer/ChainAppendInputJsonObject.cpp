@@ -22,39 +22,62 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ChainAppendInputJsonObject::ChainAppendInputJsonObject() {
+ChainAppendInputJsonObject::ChainAppendInputJsonObject() : 
+  m_srcIsSet(false),
+  m_dstIsSet(false),
+  m_l4protoIsSet(false),
+  m_sportIsSet(false),
+  m_dportIsSet(false),
+  m_tcpflagsIsSet(false),
+  m_conntrackIsSet(false),
+  m_actionIsSet(false),
+  m_descriptionIsSet(false) { }
 
-  m_srcIsSet = false;
+ChainAppendInputJsonObject::ChainAppendInputJsonObject(nlohmann::json &val) : 
+  m_srcIsSet(false),
+  m_dstIsSet(false),
+  m_l4protoIsSet(false),
+  m_sportIsSet(false),
+  m_dportIsSet(false),
+  m_tcpflagsIsSet(false),
+  m_conntrackIsSet(false),
+  m_actionIsSet(false),
+  m_descriptionIsSet(false) { 
+  if (val.count("src")) {
+    setSrc(val.at("src").get<std::string>());
+  }
 
-  m_dstIsSet = false;
+  if (val.count("dst")) {
+    setDst(val.at("dst").get<std::string>());
+  }
 
-  m_l4protoIsSet = false;
+  if (val.count("l4proto")) {
+    setL4proto(val.at("l4proto").get<std::string>());
+  }
 
-  m_sportIsSet = false;
+  if (val.count("sport")) {
+    setSport(val.at("sport").get<uint16_t>());
+  }
 
-  m_dportIsSet = false;
+  if (val.count("dport")) {
+    setDport(val.at("dport").get<uint16_t>());
+  }
 
-  m_tcpflagsIsSet = false;
+  if (val.count("tcpflags")) {
+    setTcpflags(val.at("tcpflags").get<std::string>());
+  }
 
-  m_conntrackIsSet = false;
+  if (val.count("conntrack")) {
+    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack").get<std::string>()));
+  }
 
-  m_actionIsSet = false;
+  if (val.count("action")) {
+    setAction(string_to_ActionEnum(val.at("action").get<std::string>()));
+  }
 
-  m_descriptionIsSet = false;
-}
-
-ChainAppendInputJsonObject::~ChainAppendInputJsonObject() {}
-
-void ChainAppendInputJsonObject::validateKeys() {
-
-}
-
-void ChainAppendInputJsonObject::validateMandatoryFields() {
-
-}
-
-void ChainAppendInputJsonObject::validateParams() {
-
+  if (val.count("description")) {
+    setDescription(val.at("description").get<std::string>());
+  }
 }
 
 nlohmann::json ChainAppendInputJsonObject::toJson() const {
@@ -98,53 +121,6 @@ nlohmann::json ChainAppendInputJsonObject::toJson() const {
 
 
   return val;
-}
-
-void ChainAppendInputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("src") != val.end()) {
-    setSrc(val.at("src"));
-  }
-
-  if (val.find("dst") != val.end()) {
-    setDst(val.at("dst"));
-  }
-
-  if (val.find("l4proto") != val.end()) {
-    setL4proto(val.at("l4proto"));
-  }
-
-  if (val.find("sport") != val.end()) {
-    setSport(val.at("sport"));
-  }
-
-  if (val.find("dport") != val.end()) {
-    setDport(val.at("dport"));
-  }
-
-  if (val.find("tcpflags") != val.end()) {
-    setTcpflags(val.at("tcpflags"));
-  }
-
-  if (val.find("conntrack") != val.end()) {
-    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack")));
-  }
-
-  if (val.find("action") != val.end()) {
-    setAction(string_to_ActionEnum(val.at("action")));
-  }
-
-  if (val.find("description") != val.end()) {
-    setDescription(val.at("description"));
-  }
 }
 
 nlohmann::json ChainAppendInputJsonObject::helpKeys() {

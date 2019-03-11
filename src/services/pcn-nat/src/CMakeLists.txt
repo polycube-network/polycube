@@ -33,6 +33,9 @@ load_file_as_variable(pcn-nat Nat_dp_common.c nat_code_common)
 load_file_as_variable(pcn-nat Nat_dp_ingress.c nat_code_ingress)
 load_file_as_variable(pcn-nat Nat_dp_egress.c nat_code_egress)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-nat ../datamodel/nat.yang nat_datamodel)
+
 target_link_libraries(pcn-nat
   polycube
   uuid)

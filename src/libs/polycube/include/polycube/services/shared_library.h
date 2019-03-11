@@ -15,33 +15,15 @@
  */
 
 /*
- * shared_library.h implements ManagementInterface.  This file should be
- * included in a .cpp file and compiled as a shared library.
- * A service should define the MANAGER_TYPE macro to the type of the Manager
- * it intends to use
+ * shared_library.h This file should be included in a .cpp file and compiled
+ * as a shared library.
  */
-
 #pragma once
 
 #include "cube_factory.h"
-#include "management_interface.h"
 
 namespace polycube {
 namespace service {
-
-static ManagementInterface *mgmt;
-
-#ifndef MANAGER_TYPE
-#error "MANAGER_TYPE not defined"
-#endif
-
-#ifndef SERVICE_DESCRIPTION
-#define SERVICE_DESCRIPTION ""
-#endif
-
-#ifndef SERVICE_VERSION
-#define SERVICE_VERSION ""
-#endif
 
 #ifndef SERVICE_PYANG_GIT
 #define SERVICE_PYANG_GIT ""
@@ -51,42 +33,21 @@ static ManagementInterface *mgmt;
 #define SERVICE_SWAGGER_CODEGEN_GIT ""
 #endif
 
-#ifndef SERVICE_REQUIRED_KERNEL_VERSION
-#define SERVICE_REQUIRED_KERNEL_VERSION ""
-#endif
-
 // TODO: I am sure that there is a best way to pass this pointer around
 CubeFactory *factory_;
 std::string logfile_;
 
-extern "C" ServiceMetadata init(CubeFactory *factory, std::string logfile) {
-  ServiceMetadata metadata;
+extern "C" void init(CubeFactory *factory, const char *logfile) {
   factory_ = factory;
-  logfile_ = logfile;
-  mgmt = new MANAGER_TYPE();
-
-  metadata.description = SERVICE_DESCRIPTION;
-  metadata.version = SERVICE_VERSION;
-  metadata.pyangGitRepoId = SERVICE_PYANG_GIT;
-  metadata.swaggerCodegenGitRepoId = SERVICE_SWAGGER_CODEGEN_GIT;
-  metadata.dataModel = std::string(SERVICE_DATA_MODEL);
-  metadata.requiredKernelVersion = std::string(SERVICE_REQUIRED_KERNEL_VERSION);
-  return metadata;
+  logfile_ = std::string{logfile};
 }
 
-extern "C" void control_handler(const HttpHandleRequest &request,
-                                HttpHandleResponse &response) {
-  if (mgmt == nullptr) {
-    return;
-  }
-  mgmt->control_handler(request, response);
+extern "C" const char *pyang_git() {
+  return SERVICE_PYANG_GIT;
 }
 
-extern "C" void uninit() {
-  if (mgmt == nullptr) {
-    return;
-  }
-  delete mgmt;
+extern "C" const char *swagger_codegen_git() {
+  return SERVICE_SWAGGER_CODEGEN_GIT;
 }
 
 }  // namespace service

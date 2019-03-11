@@ -40,30 +40,28 @@ std::unordered_map<std::string, std::string> ServiceController::ports_to_ports;
 std::unordered_map<std::string, std::string> ServiceController::cubes_x_service;
 
 ServiceController::ServiceController(const std::string &name,
-                                     const std::string &path)
+                                     const std::string &path,
+                                     const std::string &base_url,
+                                     const ServiceControllerType type)
     : l(spdlog::get("polycubed")),
+      management_interface_{},
       name_(name),
       servicecontroller_(path),
-      factory_(name) {
-  // TODO improve validation format
-  std::size_t found;
-  found = servicecontroller_.find(":");
-  if (found != std::string::npos) {
-    type_ = ServiceControllerType::DAEMON;
-  }
-
-  found = servicecontroller_.find(".so");
-  if (found != std::string::npos) {
-    type_ = ServiceControllerType::LIBRARY;
-  }
-}
+      factory_(name),
+      base_url_(base_url),
+      type_(type) {}
 
 ServiceController::~ServiceController() {
-  // TODO: destroy all cubes created by this service
-  switch (type_) {
-  case ServiceControllerType::LIBRARY:
-    managementInterface.reset();
-    break;
+  l->info("delete service {0}", name_);
+  management_interface_.reset();
+
+  // destroy instances created by this
+  for (auto it = cubes_x_service.begin(); it != cubes_x_service.end();) {
+    if (it->second == name_) {
+      it = cubes_x_service.erase(it);
+    } else {
+      it++;
+    }
   }
 }
 
@@ -71,64 +69,51 @@ ServiceControllerType ServiceController::get_type() const {
   return type_;
 }
 
+const std::shared_ptr<ManagementInterface>
+ServiceController::get_management_interface() const {
+  return management_interface_;
+}
+
 std::string ServiceController::get_description() const {
-  if (!service_md_.description.empty())
-    return service_md_.description;
-  else {
-    std::string upper_service_name = get_name();
-    upper_service_name[0] = toupper(upper_service_name[0]);
-    return upper_service_name + " Service";
-  }
+  if (service_md_.description.empty())
+    return "Unknown";
+
+  return service_md_.description;
 }
 
 std::string ServiceController::get_version() const {
-  if (!service_md_.version.empty())
-    return service_md_.version;
-
-  return "Unknown";
+  if (service_md_.version.empty())
+    return "Unknown";
+  return service_md_.version;
 }
 
 std::string ServiceController::get_pyang_git_repo_id() const {
-  if (!service_md_.pyangGitRepoId.empty())
-    return service_md_.pyangGitRepoId;
-
-  return "Unknown";
+  if (service_md_.pyangGitRepoId.empty())
+    return "Unknown";
+  return service_md_.pyangGitRepoId;
 }
 
 std::string ServiceController::get_swagger_codegen_git_repo_id() const {
-  if (!service_md_.swaggerCodegenGitRepoId.empty())
-    return service_md_.swaggerCodegenGitRepoId;
-
-  return "Unknown";
+  if (service_md_.swaggerCodegenGitRepoId.empty())
+    return "Unknown";
+  return service_md_.swaggerCodegenGitRepoId;
 }
 
-void ServiceController::connect(std::string polycubeEndpoint) {
+void ServiceController::connect(PolycubedCore *core) {
   switch (type_) {
   case ServiceControllerType::DAEMON:
     throw std::runtime_error("GRPC support has not been compiled");
     break;
 
-  case ServiceControllerType::LIBRARY:
-    managementInterface =
-        std::make_shared<ManagementLib>(get_servicecontroller());
+  case ServiceControllerType::LIBRARY: {
+    management_interface_ = std::make_shared<ManagementLib>(
+        servicecontroller_, base_url_, name_, core);
     std::shared_ptr<ManagementLib> lib =
-        std::dynamic_pointer_cast<ManagementLib>(managementInterface);
-
-    if (!lib->load()) {
-      throw std::runtime_error("cannot load library");
-    }
+        std::dynamic_pointer_cast<ManagementLib>(management_interface_);
 
     service_md_ = lib->init(&factory_, configuration::config.getLogFile());
-    datamodel_ = service_md_.dataModel;
-
-    if (!service_md_.requiredKernelVersion.empty()) {
-      if (!utils::check_kernel_version(service_md_.requiredKernelVersion)) {
-        throw std::runtime_error(
-            "kernel version does not satisfy service requirement");
-      }
-    }
-
     break;
+  }
   }
 }
 
@@ -142,21 +127,11 @@ json ServiceController::to_json() const {
   return j;
 }
 
-std::string ServiceController::to_json_string() const {
-  std::string jsonString = to_json().dump(4);
-  return jsonString;
-}
-
 json ServiceController::to_json_datamodel() const {
   json j = {{"name", get_name()},
             {"servicecontroller", get_servicecontroller()},
             {"datamodel", get_datamodel()}};
   return j;
-}
-
-std::string ServiceController::to_json_string_datamodel() const {
-  std::string jsonString = to_json_datamodel().dump(4);
-  return jsonString;
 }
 
 std::string ServiceController::get_name() const {
@@ -168,7 +143,7 @@ std::string ServiceController::get_servicecontroller() const {
 }
 
 std::string ServiceController::get_datamodel() const {
-  return datamodel_;
+  return service_md_.dataModel;
 }
 
 std::shared_ptr<BaseCubeIface> ServiceController::get_cube(
@@ -197,6 +172,10 @@ std::vector<std::shared_ptr<BaseCubeIface>> ServiceController::get_all_cubes() {
   }
 
   return r;
+}
+
+bool ServiceController::exists_cube(const std::string &name) {
+  return cubes.count(name) == 1;
 }
 
 void ServiceController::register_cube(std::shared_ptr<BaseCubeIface> cube,

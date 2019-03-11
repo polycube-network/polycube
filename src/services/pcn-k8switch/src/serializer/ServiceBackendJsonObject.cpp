@@ -22,45 +22,31 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ServiceBackendJsonObject::ServiceBackendJsonObject() {
+ServiceBackendJsonObject::ServiceBackendJsonObject() : 
+  m_nameIsSet(false),
+  m_ipIsSet(false),
+  m_portIsSet(false),
+  m_weightIsSet(false) { }
 
-  m_nameIsSet = false;
-
-  m_ipIsSet = false;
-
-  m_portIsSet = false;
-
-  m_weightIsSet = false;
-}
-
-ServiceBackendJsonObject::~ServiceBackendJsonObject() {}
-
-void ServiceBackendJsonObject::validateKeys() {
-
-  if (!m_ipIsSet) {
-    throw std::runtime_error("Variable ip is required");
+ServiceBackendJsonObject::ServiceBackendJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_ipIsSet(false),
+  m_portIsSet(false),
+  m_weightIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-  if (!m_portIsSet) {
-    throw std::runtime_error("Variable port is required");
+
+  if (val.count("ip")) {
+    setIp(val.at("ip").get<std::string>());
   }
-}
 
-void ServiceBackendJsonObject::validateMandatoryFields() {
-
-}
-
-void ServiceBackendJsonObject::validateParams() {
-
-  if (m_ipIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(%[\p{N}\p{L}]+)?)PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_ip, e))
-      throw std::runtime_error("Variable ip has not a valid format");
+  if (val.count("port")) {
+    setPort(val.at("port").get<uint16_t>());
   }
-  if (m_portIsSet) {
-    if (m_port < 0 || m_port > 65535) {
-      throw std::runtime_error("Variable port is not in the range");
-    }
+
+  if (val.count("weight")) {
+    setWeight(val.at("weight").get<uint16_t>());
   }
 }
 
@@ -85,33 +71,6 @@ nlohmann::json ServiceBackendJsonObject::toJson() const {
 
 
   return val;
-}
-
-void ServiceBackendJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("ip") != val.end()) {
-    setIp(val.at("ip"));
-  }
-
-  if (val.find("port") != val.end()) {
-    setPort(val.at("port"));
-  }
-
-  if (val.find("weight") != val.end()) {
-    setWeight(val.at("weight"));
-  }
 }
 
 nlohmann::json ServiceBackendJsonObject::helpKeys() {
@@ -207,9 +166,7 @@ bool ServiceBackendJsonObject::ipIsSet() const {
   return m_ipIsSet;
 }
 
-void ServiceBackendJsonObject::unsetIp() {
-  m_ipIsSet = false;
-}
+
 
 
 
@@ -226,9 +183,7 @@ bool ServiceBackendJsonObject::portIsSet() const {
   return m_portIsSet;
 }
 
-void ServiceBackendJsonObject::unsetPort() {
-  m_portIsSet = false;
-}
+
 
 
 

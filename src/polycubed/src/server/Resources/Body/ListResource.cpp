@@ -1,0 +1,112 @@
+/*
+ * Copyright 2018 The Polycube Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "ListResource.h"
+
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "../../Validators/ValueValidator.h"
+#include "JsonNodeField.h"
+#include "ListKey.h"
+
+namespace polycube::polycubed::Rest::Resources::Body {
+ListResource::ListResource(const std::string &name,
+                           const std::string &description,
+                           const std::string &cli_example,
+                           const Body::ParentResource *parent,
+                           PolycubedCore *core, std::vector<ListKey> &&keys,
+                           const std::vector<JsonNodeField> &node_fields,
+                           bool configuration, bool init_only_config)
+    : ParentResource(name, description, cli_example, parent, core, node_fields,
+                     configuration, init_only_config, false),
+      keys_{std::move(keys)} {}
+
+bool ListResource::ValidateKeys(
+    std::unordered_map<std::string, std::string> keys) const {
+  for (const auto &key : keys_) {
+    if (keys.count(key.Name()) == 0)
+      return false;
+    const auto &value = keys.at(key.Name());
+    for (const auto &validator : key.Validators()) {
+      if (!validator->Validate(value))
+        return false;
+    }
+  }
+  return true;
+}
+
+const Response ListResource::ReadValue(const std::string &cube_name,
+                                       const ListKeyValues &keys) const {
+  const auto &parent_value = Resource::ReadValue(cube_name, keys);
+  auto jvalue = nlohmann::json::parse(parent_value.message)[name_];
+  ListKeyValues current_keys;
+  for (const auto &key : keys_) {
+    const auto nk = std::find_if(
+        std::begin(keys), std::end(keys),
+        [=](const ListKeyValue &k) { return k.name == key.Name(); });
+    if (nk != std::end(keys)) {
+      current_keys.push_back(*nk);
+    }
+  }
+  for (auto &element : jvalue) {
+    unsigned matching_keys = 0;
+    for (const auto &key : current_keys) {
+      if (element[key.name] == key.value) {
+        matching_keys += 1;
+      }
+      if (matching_keys == keys_.size())
+        return {ErrorTag::kOk, ::strdup(element.dump().data())};
+    }
+  }
+  throw std::runtime_error(
+      "Unreachable since keys are mandatory and validated.");
+}
+
+const Response ListResource::ReadWhole(const std::string &cube_name,
+                                       const ListKeyValues &keys) const {
+  return ParentResource::ReadValue(cube_name, keys);
+}
+
+void ListResource::SetDefaultIfMissing(nlohmann::json &body,
+                                       bool initialization) const {
+  // keys default values must be ignored (RFC7950#7.8.2)
+  std::set<std::string> key_names;
+  for (const auto &key : keys_) {
+    key_names.emplace(key.Name());
+  }
+
+  for (const auto &child : children_) {
+    // Set default only for configuration nodes. During initialization
+    // all non-keys can be defaulted, otherwise only the ones that are not
+    // marked as init-only-config.
+    if (key_names.count(child->Name()) == 0 && child->IsConfiguration() &&
+        (initialization || !child->IsInitOnlyConfig())) {
+      child->SetDefaultIfMissing(body[child->Name()], initialization);
+      if (body[child->Name()].empty()) {
+        body.erase(child->Name());
+      }
+    }
+  }
+}
+
+bool ListResource::IsMandatory() const {
+  return false;
+}
+
+}  // namespace polycube::polycubed::Rest::Resources::Body

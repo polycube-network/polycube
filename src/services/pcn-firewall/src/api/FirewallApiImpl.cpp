@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-FirewallApiImpl::FirewallApiImpl() {}
+namespace FirewallApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Firewall>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Firewall> FirewallApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Firewall> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Firewall> FirewallApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void FirewallApiImpl::create_firewall_by_id(const std::string &name, const FirewallJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_firewall_by_id(const std::string &name, const FirewallJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Firewall>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void FirewallApiImpl::create_firewall_by_id(const std::string &name, const Firew
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void FirewallApiImpl::replace_firewall_by_id(const std::string &name, const FirewallJsonObject &bridge){
+void replace_firewall_by_id(const std::string &name, const FirewallJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void FirewallApiImpl::delete_firewall_by_id(const std::string &name) {
+void delete_firewall_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void FirewallApiImpl::delete_firewall_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string FirewallApiImpl::read_firewall_uuid_by_id(const std::string &name) {
+std::string read_firewall_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<FirewallJsonObject> FirewallApiImpl::read_firewall_list_by_id() {
+std::vector<FirewallJsonObject> read_firewall_list_by_id() {
   std::vector<FirewallJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<FirewallJsonObject> FirewallApiImpl::read_firewall_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 /*
 * Ports list related functions
 */
-void FirewallApiImpl::create_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> FirewallApiImpl::read_firewall_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_firewall_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> FirewallApiImpl::read_firewall_ports_list_by_id(con
   return vect;
 }
 
-void FirewallApiImpl::replace_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void FirewallApiImpl::delete_firewall_ports_list_by_id(const std::string &name) {
+void delete_firewall_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 /*
 * Ports related functions
 */
-void FirewallApiImpl::create_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject FirewallApiImpl::read_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void FirewallApiImpl::replace_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void FirewallApiImpl::delete_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string FirewallApiImpl::read_firewall_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_firewall_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum FirewallApiImpl::read_firewall_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_firewall_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string FirewallApiImpl::read_firewall_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_firewall_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void FirewallApiImpl::update_firewall_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_firewall_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -193,7 +197,7 @@ void FirewallApiImpl::update_firewall_ports_peer_by_id(const std::string &name, 
 * ChainAppendOutputJsonObject
 */
 ChainAppendOutputJsonObject
-FirewallApiImpl::create_firewall_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value) {
+create_firewall_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 return chain->append(value);
@@ -215,7 +219,7 @@ return chain->append(value);
 * ChainApplyRulesOutputJsonObject
 */
 ChainApplyRulesOutputJsonObject
-FirewallApiImpl::create_firewall_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName) {
+create_firewall_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 return chain->applyRules();
@@ -238,7 +242,7 @@ return chain->applyRules();
 *
 */
 void
-FirewallApiImpl::create_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+create_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto firewall = get_cube(name);
 
   firewall->addChain(chainName, value);
@@ -259,14 +263,14 @@ FirewallApiImpl::create_firewall_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-FirewallApiImpl::create_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+create_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   auto firewall = get_cube(name);
   firewall->addChainList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::create_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
 
@@ -291,7 +295,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::creat
 * ChainResetCountersOutputJsonObject
 */
 ChainResetCountersOutputJsonObject
-FirewallApiImpl::create_firewall_chain_reset_counters_by_id(const std::string &name, const ChainNameEnum &chainName) {
+create_firewall_chain_reset_counters_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 return chain->resetCounters();
@@ -315,7 +319,7 @@ return chain->resetCounters();
 *
 */
 void
-FirewallApiImpl::create_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+create_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
@@ -338,7 +342,7 @@ FirewallApiImpl::create_firewall_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-FirewallApiImpl::create_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+create_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   chain->addRuleList(value);
@@ -346,7 +350,7 @@ FirewallApiImpl::create_firewall_chain_rule_list_by_id(const std::string &name, 
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::create_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
   auto &&chain = firewall->getChain(chainName);
@@ -372,7 +376,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::creat
 *
 */
 void
-FirewallApiImpl::delete_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
+delete_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
 
   firewall->delChain(chainName);
@@ -392,14 +396,14 @@ FirewallApiImpl::delete_firewall_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-FirewallApiImpl::delete_firewall_chain_list_by_id(const std::string &name) {
+delete_firewall_chain_list_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   firewall->delChainList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::delete_firewall_chain_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_firewall_chain_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
 
@@ -425,7 +429,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::delet
 *
 */
 void
-FirewallApiImpl::delete_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+delete_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
@@ -447,7 +451,7 @@ FirewallApiImpl::delete_firewall_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-FirewallApiImpl::delete_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+delete_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   chain->delRuleList();
@@ -455,7 +459,7 @@ FirewallApiImpl::delete_firewall_chain_rule_list_by_id(const std::string &name, 
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::delete_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
   auto &&chain = firewall->getChain(chainName);
@@ -480,7 +484,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::delet
 * FirewallAcceptEstablishedEnum
 */
 FirewallAcceptEstablishedEnum
-FirewallApiImpl::read_firewall_accept_established_by_id(const std::string &name) {
+read_firewall_accept_established_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getAcceptEstablished();
 
@@ -500,7 +504,7 @@ FirewallApiImpl::read_firewall_accept_established_by_id(const std::string &name)
 * FirewallJsonObject
 */
 FirewallJsonObject
-FirewallApiImpl::read_firewall_by_id(const std::string &name) {
+read_firewall_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -520,7 +524,7 @@ FirewallApiImpl::read_firewall_by_id(const std::string &name) {
 * ChainJsonObject
 */
 ChainJsonObject
-FirewallApiImpl::read_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   return firewall->getChain(chainName)->toJsonObject();
 
@@ -541,7 +545,7 @@ FirewallApiImpl::read_firewall_chain_by_id(const std::string &name, const ChainN
 * ActionEnum
 */
 ActionEnum
-FirewallApiImpl::read_firewall_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_firewall_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   return chain->getDefault();
@@ -562,7 +566,7 @@ FirewallApiImpl::read_firewall_chain_default_by_id(const std::string &name, cons
 * std::vector<ChainJsonObject>
 */
 std::vector<ChainJsonObject>
-FirewallApiImpl::read_firewall_chain_list_by_id(const std::string &name) {
+read_firewall_chain_list_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   auto &&chain = firewall->getChainList();
   std::vector<ChainJsonObject> m;
@@ -574,7 +578,7 @@ FirewallApiImpl::read_firewall_chain_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_chain_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_chain_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
 
@@ -601,7 +605,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 * ActionEnum
 */
 ActionEnum
-FirewallApiImpl::read_firewall_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -625,7 +629,7 @@ FirewallApiImpl::read_firewall_chain_rule_action_by_id(const std::string &name, 
 * ChainRuleJsonObject
 */
 ChainRuleJsonObject
-FirewallApiImpl::read_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   return chain->getRule(id)->toJsonObject();
@@ -648,7 +652,7 @@ FirewallApiImpl::read_firewall_chain_rule_by_id(const std::string &name, const C
 * ConntrackstatusEnum
 */
 ConntrackstatusEnum
-FirewallApiImpl::read_firewall_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -672,7 +676,7 @@ FirewallApiImpl::read_firewall_chain_rule_conntrack_by_id(const std::string &nam
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_rule_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -696,7 +700,7 @@ FirewallApiImpl::read_firewall_chain_rule_description_by_id(const std::string &n
 * uint16_t
 */
 uint16_t
-FirewallApiImpl::read_firewall_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -720,7 +724,7 @@ FirewallApiImpl::read_firewall_chain_rule_dport_by_id(const std::string &name, c
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -744,7 +748,7 @@ FirewallApiImpl::read_firewall_chain_rule_dst_by_id(const std::string &name, con
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -767,7 +771,7 @@ FirewallApiImpl::read_firewall_chain_rule_l4proto_by_id(const std::string &name,
 * std::vector<ChainRuleJsonObject>
 */
 std::vector<ChainRuleJsonObject>
-FirewallApiImpl::read_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto &&rule = chain->getRuleList();
@@ -780,7 +784,7 @@ FirewallApiImpl::read_firewall_chain_rule_list_by_id(const std::string &name, co
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
   auto &&chain = firewall->getChain(chainName);
@@ -808,7 +812,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 * uint16_t
 */
 uint16_t
-FirewallApiImpl::read_firewall_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -832,7 +836,7 @@ FirewallApiImpl::read_firewall_chain_rule_sport_by_id(const std::string &name, c
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -856,7 +860,7 @@ FirewallApiImpl::read_firewall_chain_rule_src_by_id(const std::string &name, con
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_rule_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -880,7 +884,7 @@ FirewallApiImpl::read_firewall_chain_rule_tcpflags_by_id(const std::string &name
 * ActionEnum
 */
 ActionEnum
-FirewallApiImpl::read_firewall_chain_stats_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -904,7 +908,7 @@ FirewallApiImpl::read_firewall_chain_stats_action_by_id(const std::string &name,
 * ChainStatsJsonObject
 */
 ChainStatsJsonObject
-FirewallApiImpl::read_firewall_chain_stats_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   return chain->getStats(id)->toJsonObject();
@@ -927,7 +931,7 @@ FirewallApiImpl::read_firewall_chain_stats_by_id(const std::string &name, const 
 * uint64_t
 */
 uint64_t
-FirewallApiImpl::read_firewall_chain_stats_bytes_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_bytes_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -951,7 +955,7 @@ FirewallApiImpl::read_firewall_chain_stats_bytes_by_id(const std::string &name, 
 * ConntrackstatusEnum
 */
 ConntrackstatusEnum
-FirewallApiImpl::read_firewall_chain_stats_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -975,7 +979,7 @@ FirewallApiImpl::read_firewall_chain_stats_conntrack_by_id(const std::string &na
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_stats_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -999,7 +1003,7 @@ FirewallApiImpl::read_firewall_chain_stats_description_by_id(const std::string &
 * uint16_t
 */
 uint16_t
-FirewallApiImpl::read_firewall_chain_stats_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_dport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1023,7 +1027,7 @@ FirewallApiImpl::read_firewall_chain_stats_dport_by_id(const std::string &name, 
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_stats_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_dst_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1047,7 +1051,7 @@ FirewallApiImpl::read_firewall_chain_stats_dst_by_id(const std::string &name, co
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_stats_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1070,7 +1074,7 @@ FirewallApiImpl::read_firewall_chain_stats_l4proto_by_id(const std::string &name
 * std::vector<ChainStatsJsonObject>
 */
 std::vector<ChainStatsJsonObject>
-FirewallApiImpl::read_firewall_chain_stats_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
+read_firewall_chain_stats_list_by_id(const std::string &name, const ChainNameEnum &chainName) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto &&stats = chain->getStatsList();
@@ -1083,7 +1087,7 @@ FirewallApiImpl::read_firewall_chain_stats_list_by_id(const std::string &name, c
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
   auto &&chain = firewall->getChain(chainName);
@@ -1111,7 +1115,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 * uint64_t
 */
 uint64_t
-FirewallApiImpl::read_firewall_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1135,7 +1139,7 @@ FirewallApiImpl::read_firewall_chain_stats_pkts_by_id(const std::string &name, c
 * uint16_t
 */
 uint16_t
-FirewallApiImpl::read_firewall_chain_stats_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1159,7 +1163,7 @@ FirewallApiImpl::read_firewall_chain_stats_sport_by_id(const std::string &name, 
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_stats_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1183,7 +1187,7 @@ FirewallApiImpl::read_firewall_chain_stats_src_by_id(const std::string &name, co
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_chain_stats_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
+read_firewall_chain_stats_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto stats = chain->getStats(id);
@@ -1205,7 +1209,7 @@ FirewallApiImpl::read_firewall_chain_stats_tcpflags_by_id(const std::string &nam
 * FirewallConntrackEnum
 */
 FirewallConntrackEnum
-FirewallApiImpl::read_firewall_conntrack_by_id(const std::string &name) {
+read_firewall_conntrack_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getConntrack();
 
@@ -1225,7 +1229,7 @@ FirewallApiImpl::read_firewall_conntrack_by_id(const std::string &name) {
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_egress_port_by_id(const std::string &name) {
+read_firewall_egress_port_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getEgressPort();
 
@@ -1245,7 +1249,7 @@ FirewallApiImpl::read_firewall_egress_port_by_id(const std::string &name) {
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_ingress_port_by_id(const std::string &name) {
+read_firewall_ingress_port_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getIngressPort();
 
@@ -1265,7 +1269,7 @@ FirewallApiImpl::read_firewall_ingress_port_by_id(const std::string &name) {
 * bool
 */
 bool
-FirewallApiImpl::read_firewall_interactive_by_id(const std::string &name) {
+read_firewall_interactive_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getInteractive();
 
@@ -1285,7 +1289,7 @@ FirewallApiImpl::read_firewall_interactive_by_id(const std::string &name) {
 * FirewallLoglevelEnum
 */
 FirewallLoglevelEnum
-FirewallApiImpl::read_firewall_loglevel_by_id(const std::string &name) {
+read_firewall_loglevel_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getLoglevel();
 
@@ -1310,7 +1314,7 @@ FirewallApiImpl::read_firewall_loglevel_by_id(const std::string &name) {
 * SessionTableJsonObject
 */
 SessionTableJsonObject
-FirewallApiImpl::read_firewall_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+read_firewall_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
   auto firewall = get_cube(name);
   return firewall->getSessionTable(src, dst, l4proto, sport, dport)->toJsonObject();
 
@@ -1335,7 +1339,7 @@ FirewallApiImpl::read_firewall_session_table_by_id(const std::string &name, cons
 * uint32_t
 */
 uint32_t
-FirewallApiImpl::read_firewall_session_table_eta_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+read_firewall_session_table_eta_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
   auto firewall = get_cube(name);
   auto sessionTable = firewall->getSessionTable(src, dst, l4proto, sport, dport);
   return sessionTable->getEta();
@@ -1356,7 +1360,7 @@ FirewallApiImpl::read_firewall_session_table_eta_by_id(const std::string &name, 
 * std::vector<SessionTableJsonObject>
 */
 std::vector<SessionTableJsonObject>
-FirewallApiImpl::read_firewall_session_table_list_by_id(const std::string &name) {
+read_firewall_session_table_list_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   auto &&sessionTable = firewall->getSessionTableList();
   std::vector<SessionTableJsonObject> m;
@@ -1368,7 +1372,7 @@ FirewallApiImpl::read_firewall_session_table_list_by_id(const std::string &name)
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_firewall_session_table_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_session_table_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&firewall = get_cube(name);
 
@@ -1398,7 +1402,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::read_
 * std::string
 */
 std::string
-FirewallApiImpl::read_firewall_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+read_firewall_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
   auto firewall = get_cube(name);
   auto sessionTable = firewall->getSessionTable(src, dst, l4proto, sport, dport);
   return sessionTable->getState();
@@ -1419,7 +1423,7 @@ FirewallApiImpl::read_firewall_session_table_state_by_id(const std::string &name
 * CubeType
 */
 CubeType
-FirewallApiImpl::read_firewall_type_by_id(const std::string &name) {
+read_firewall_type_by_id(const std::string &name) {
   auto firewall = get_cube(name);
   return firewall->getType();
 
@@ -1441,7 +1445,7 @@ FirewallApiImpl::read_firewall_type_by_id(const std::string &name) {
 *
 */
 void
-FirewallApiImpl::replace_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+replace_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto firewall = get_cube(name);
 
   firewall->replaceChain(chainName, value);
@@ -1462,13 +1466,13 @@ FirewallApiImpl::replace_firewall_chain_by_id(const std::string &name, const Cha
 *
 */
 void
-FirewallApiImpl::replace_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+replace_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::replace_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1488,7 +1492,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::repla
 *
 */
 void
-FirewallApiImpl::replace_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+replace_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
@@ -1511,13 +1515,13 @@ FirewallApiImpl::replace_firewall_chain_rule_by_id(const std::string &name, cons
 *
 */
 void
-FirewallApiImpl::replace_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+replace_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::replace_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1535,7 +1539,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::repla
 *
 */
 void
-FirewallApiImpl::update_firewall_accept_established_by_id(const std::string &name, const FirewallAcceptEstablishedEnum &value) {
+update_firewall_accept_established_by_id(const std::string &name, const FirewallAcceptEstablishedEnum &value) {
   auto firewall = get_cube(name);
 
   firewall->setAcceptEstablished(value);
@@ -1556,7 +1560,7 @@ FirewallApiImpl::update_firewall_accept_established_by_id(const std::string &nam
 *
 */
 void
-FirewallApiImpl::update_firewall_by_id(const std::string &name, const FirewallJsonObject &value) {
+update_firewall_by_id(const std::string &name, const FirewallJsonObject &value) {
   auto firewall = get_cube(name);
 
   firewall->update(value);
@@ -1578,7 +1582,7 @@ FirewallApiImpl::update_firewall_by_id(const std::string &name, const FirewallJs
 *
 */
 void
-FirewallApiImpl::update_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
+update_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
@@ -1601,7 +1605,7 @@ FirewallApiImpl::update_firewall_chain_by_id(const std::string &name, const Chai
 *
 */
 void
-FirewallApiImpl::update_firewall_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName, const ActionEnum &value) {
+update_firewall_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName, const ActionEnum &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
@@ -1623,13 +1627,13 @@ FirewallApiImpl::update_firewall_chain_default_by_id(const std::string &name, co
 *
 */
 void
-FirewallApiImpl::update_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
+update_firewall_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::update_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_firewall_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1649,7 +1653,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::updat
 *
 */
 void
-FirewallApiImpl::update_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
+update_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
   auto rule = chain->getRule(id);
@@ -1673,13 +1677,13 @@ FirewallApiImpl::update_firewall_chain_rule_by_id(const std::string &name, const
 *
 */
 void
-FirewallApiImpl::update_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+update_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::update_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_firewall_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1697,7 +1701,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::updat
 *
 */
 void
-FirewallApiImpl::update_firewall_conntrack_by_id(const std::string &name, const FirewallConntrackEnum &value) {
+update_firewall_conntrack_by_id(const std::string &name, const FirewallConntrackEnum &value) {
   auto firewall = get_cube(name);
 
   firewall->setConntrack(value);
@@ -1718,7 +1722,7 @@ FirewallApiImpl::update_firewall_conntrack_by_id(const std::string &name, const 
 *
 */
 void
-FirewallApiImpl::update_firewall_egress_port_by_id(const std::string &name, const std::string &value) {
+update_firewall_egress_port_by_id(const std::string &name, const std::string &value) {
   auto firewall = get_cube(name);
 
   firewall->setEgressPort(value);
@@ -1739,7 +1743,7 @@ FirewallApiImpl::update_firewall_egress_port_by_id(const std::string &name, cons
 *
 */
 void
-FirewallApiImpl::update_firewall_ingress_port_by_id(const std::string &name, const std::string &value) {
+update_firewall_ingress_port_by_id(const std::string &name, const std::string &value) {
   auto firewall = get_cube(name);
 
   firewall->setIngressPort(value);
@@ -1760,7 +1764,7 @@ FirewallApiImpl::update_firewall_ingress_port_by_id(const std::string &name, con
 *
 */
 void
-FirewallApiImpl::update_firewall_interactive_by_id(const std::string &name, const bool &value) {
+update_firewall_interactive_by_id(const std::string &name, const bool &value) {
   auto firewall = get_cube(name);
 
   firewall->setInteractive(value);
@@ -1780,13 +1784,13 @@ FirewallApiImpl::update_firewall_interactive_by_id(const std::string &name, cons
 *
 */
 void
-FirewallApiImpl::update_firewall_list_by_id(const std::vector<FirewallJsonObject> &value) {
+update_firewall_list_by_id(const std::vector<FirewallJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::update_firewall_list_by_id_get_list(const std::vector<FirewallJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_firewall_list_by_id_get_list(const std::vector<FirewallJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1804,7 +1808,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::updat
 *
 */
 void
-FirewallApiImpl::update_firewall_loglevel_by_id(const std::string &name, const FirewallLoglevelEnum &value) {
+update_firewall_loglevel_by_id(const std::string &name, const FirewallLoglevelEnum &value) {
   auto firewall = get_cube(name);
 
   firewall->setLoglevel(value);
@@ -1826,7 +1830,7 @@ FirewallApiImpl::update_firewall_loglevel_by_id(const std::string &name, const F
 *
 */
 void
-FirewallApiImpl::update_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto firewall = get_cube(name);
   auto ports = firewall->getPorts(portsName);
 
@@ -1848,18 +1852,19 @@ FirewallApiImpl::update_firewall_ports_by_id(const std::string &name, const std:
 *
 */
 void
-FirewallApiImpl::update_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> FirewallApiImpl::update_firewall_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_firewall_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
 
 
+}
 }
 }
 }

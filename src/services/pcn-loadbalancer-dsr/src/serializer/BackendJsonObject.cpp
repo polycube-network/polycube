@@ -22,23 +22,18 @@ namespace swagger {
 namespace server {
 namespace model {
 
-BackendJsonObject::BackendJsonObject() {
+BackendJsonObject::BackendJsonObject() : 
+  m_poolIsSet(false) { }
 
-  m_poolIsSet = false;
-}
-
-BackendJsonObject::~BackendJsonObject() {}
-
-void BackendJsonObject::validateKeys() {
-
-}
-
-void BackendJsonObject::validateMandatoryFields() {
-
-}
-
-void BackendJsonObject::validateParams() {
-
+BackendJsonObject::BackendJsonObject(nlohmann::json &val) : 
+  m_poolIsSet(false) { 
+  m_pool.clear();
+  for (auto& item : val["pool"]) { 
+    BackendPoolJsonObject newItem { item };
+    m_pool.push_back(newItem);
+  }
+  m_poolIsSet = !m_pool.empty();
+  
 }
 
 nlohmann::json BackendJsonObject::toJson() const {
@@ -49,34 +44,12 @@ nlohmann::json BackendJsonObject::toJson() const {
     for (auto& item : m_pool) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["pool"] = jsonArray;
     }
   }
 
   return val;
-}
-
-void BackendJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  m_pool.clear();
-  for (auto& item : val["pool"]) {
-
-    BackendPoolJsonObject newItem;
-    newItem.fromJson(item);
-    m_pool.push_back(newItem);
-    m_poolIsSet = true;
-  }
-
 }
 
 nlohmann::json BackendJsonObject::helpKeys() {

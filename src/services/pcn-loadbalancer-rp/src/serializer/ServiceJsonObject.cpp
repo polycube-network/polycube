@@ -22,51 +22,42 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ServiceJsonObject::ServiceJsonObject() {
+ServiceJsonObject::ServiceJsonObject() : 
+  m_nameIsSet(false),
+  m_vipIsSet(false),
+  m_vportIsSet(false),
+  m_protoIsSet(false),
+  m_backendIsSet(false) { }
 
-  m_nameIsSet = false;
-
-  m_vipIsSet = false;
-
-  m_vportIsSet = false;
-
-  m_protoIsSet = false;
-
-  m_backendIsSet = false;
-}
-
-ServiceJsonObject::~ServiceJsonObject() {}
-
-void ServiceJsonObject::validateKeys() {
-
-  if (!m_vipIsSet) {
-    throw std::runtime_error("Variable vip is required");
+ServiceJsonObject::ServiceJsonObject(nlohmann::json &val) : 
+  m_nameIsSet(false),
+  m_vipIsSet(false),
+  m_vportIsSet(false),
+  m_protoIsSet(false),
+  m_backendIsSet(false) { 
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-  if (!m_vportIsSet) {
-    throw std::runtime_error("Variable vport is required");
-  }
-  if (!m_protoIsSet) {
-    throw std::runtime_error("Variable proto is required");
-  }
-}
 
-void ServiceJsonObject::validateMandatoryFields() {
-
-}
-
-void ServiceJsonObject::validateParams() {
-
-  if (m_vipIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(%[\p{N}\p{L}]+)?)PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_vip, e))
-      throw std::runtime_error("Variable vip has not a valid format");
+  if (val.count("vip")) {
+    setVip(val.at("vip").get<std::string>());
   }
-  if (m_vportIsSet) {
-    if (m_vport < 0 || m_vport > 65535) {
-      throw std::runtime_error("Variable vport is not in the range");
-    }
+
+  if (val.count("vport")) {
+    setVport(val.at("vport").get<uint16_t>());
   }
+
+  if (val.count("proto")) {
+    setProto(string_to_ServiceProtoEnum(val.at("proto").get<std::string>()));
+  }
+
+  m_backend.clear();
+  for (auto& item : val["backend"]) { 
+    ServiceBackendJsonObject newItem { item };
+    m_backend.push_back(newItem);
+  }
+  m_backendIsSet = !m_backend.empty();
+  
 }
 
 nlohmann::json ServiceJsonObject::toJson() const {
@@ -93,50 +84,12 @@ nlohmann::json ServiceJsonObject::toJson() const {
     for (auto& item : m_backend) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["backend"] = jsonArray;
     }
   }
 
   return val;
-}
-
-void ServiceJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("vip") != val.end()) {
-    setVip(val.at("vip"));
-  }
-
-  if (val.find("vport") != val.end()) {
-    setVport(val.at("vport"));
-  }
-
-  if (val.find("proto") != val.end()) {
-    setProto(string_to_ServiceProtoEnum(val.at("proto")));
-  }
-
-  m_backend.clear();
-  for (auto& item : val["backend"]) {
-
-    ServiceBackendJsonObject newItem;
-    newItem.fromJson(item);
-    m_backend.push_back(newItem);
-    m_backendIsSet = true;
-  }
-
 }
 
 nlohmann::json ServiceJsonObject::helpKeys() {
@@ -237,9 +190,7 @@ bool ServiceJsonObject::vipIsSet() const {
   return m_vipIsSet;
 }
 
-void ServiceJsonObject::unsetVip() {
-  m_vipIsSet = false;
-}
+
 
 
 
@@ -256,9 +207,7 @@ bool ServiceJsonObject::vportIsSet() const {
   return m_vportIsSet;
 }
 
-void ServiceJsonObject::unsetVport() {
-  m_vportIsSet = false;
-}
+
 
 
 
@@ -275,9 +224,7 @@ bool ServiceJsonObject::protoIsSet() const {
   return m_protoIsSet;
 }
 
-void ServiceJsonObject::unsetProto() {
-  m_protoIsSet = false;
-}
+
 
 std::string ServiceJsonObject::ServiceProtoEnum_to_string(const ServiceProtoEnum &value){
   switch(value){

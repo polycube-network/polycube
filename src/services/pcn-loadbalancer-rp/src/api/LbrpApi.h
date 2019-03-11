@@ -22,9 +22,8 @@
 #define POLYCUBE_SERVICE_NAME "lbrp"
 
 
-#include <polycube/services/http_router.h>
-#include <polycube/services/management_interface.h>
-#include <vector>
+#include "polycube/services/response.h"
+#include "polycube/services/shared_lib_elements.h"
 
 #include "LbrpJsonObject.h"
 #include "PortsJsonObject.h"
@@ -33,746 +32,89 @@
 #include "SrcIpRewriteJsonObject.h"
 #include <vector>
 
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
 
-using namespace io::swagger::server::model;
-using namespace polycube::service;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class  LbrpApi : public ManagementInterface {
- public:
-  LbrpApi();
-  virtual ~LbrpApi() {};
+Response create_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_service_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_service_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response create_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response delete_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_service_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_service_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response delete_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_backend_name_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_backend_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_backend_weight_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_service_name_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_src_ip_rewrite_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response replace_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_service_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_service_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response replace_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_backend_name_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_backend_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_backend_weight_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_service_name_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_src_ip_rewrite_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-  const std::string base = "/" + std::string(POLYCUBE_SERVICE_NAME) + "/";
-
- protected:
-  void setup_routes();
-  void control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) override;
-
-  void create_lbrp_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_service_backend_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_service_backend_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_service_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_service_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void create_lbrp_src_ip_rewrite_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_service_backend_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_service_backend_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_service_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_service_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void delete_lbrp_src_ip_rewrite_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_status_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_name_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_weight_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_name_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_src_ip_rewrite_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_src_ip_rewrite_ip_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_uuid_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_service_backend_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_service_backend_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_service_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_service_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void replace_lbrp_src_ip_rewrite_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_loglevel_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_ports_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_ports_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_ports_peer_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_ports_type_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_backend_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_backend_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_backend_name_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_backend_port_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_backend_weight_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_list_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_service_name_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_src_ip_rewrite_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_src_ip_rewrite_ip_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void update_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-
-  void read_lbrp_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_ports_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_backend_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_service_list_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
-  void read_lbrp_src_ip_rewrite_by_id_help(const polycube::service::Rest::Request &request, polycube::service::HttpHandleResponse &response);
+Response lbrp_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_backend_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_backend_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response lbrp_src_ip_rewrite_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 
 
-  polycube::service::Rest::Router router;
 
-  /// <summary>
-  /// Create lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: lbrp
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">lbrpbody object</param>
-  virtual void create_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Create ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void create_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Create backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">backendbody object</param>
-  virtual void create_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) = 0;
-  /// <summary>
-  /// Create backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">backendbody object</param>
-  virtual void create_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) = 0;
-  /// <summary>
-  /// Create service by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">servicebody object</param>
-  virtual void create_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) = 0;
-  /// <summary>
-  /// Create service by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">servicebody object</param>
-  virtual void create_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) = 0;
-  /// <summary>
-  /// Create src-ip-rewrite by ID
-  /// </summary>
-  /// <remarks>
-  /// Create operation of resource: src-ip-rewrite
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">src-ip-rewritebody object</param>
-  virtual void create_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) = 0;
-  /// <summary>
-  /// Delete lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: lbrp
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_lbrp_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual void delete_lbrp_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Delete ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_lbrp_ports_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  virtual void delete_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) = 0;
-  /// <summary>
-  /// Delete backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  virtual void delete_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  /// <summary>
-  /// Delete service by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  virtual void delete_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  /// <summary>
-  /// Delete service by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_lbrp_service_list_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Delete src-ip-rewrite by ID
-  /// </summary>
-  /// <remarks>
-  /// Delete operation of resource: src-ip-rewrite
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual void delete_lbrp_src_ip_rewrite_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: lbrp
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual LbrpJsonObject read_lbrp_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: lbrp
-  /// </remarks>
-  virtual std::vector<LbrpJsonObject> read_lbrp_list_by_id() = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_list_by_id_get_list() = 0;
-  /// <summary>
-  /// Read loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual LbrpLoglevelEnum read_lbrp_loglevel_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsJsonObject read_lbrp_ports_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<PortsJsonObject> read_lbrp_ports_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read status by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: status
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsStatusEnum read_lbrp_ports_status_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual PortsTypeEnum read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  virtual std::string read_lbrp_ports_uuid_by_id(const std::string &name, const std::string &portsName) = 0;
-  /// <summary>
-  /// Read backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  virtual ServiceBackendJsonObject read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) = 0;
-  /// <summary>
-  /// Read backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  virtual std::vector<ServiceBackendJsonObject> read_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  /// <summary>
-  /// Read name by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: name
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  virtual std::string read_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) = 0;
-  /// <summary>
-  /// Read port by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  virtual uint16_t read_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) = 0;
-  /// <summary>
-  /// Read weight by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: weight
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  virtual uint16_t read_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) = 0;
-  /// <summary>
-  /// Read service by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  virtual ServiceJsonObject read_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  /// <summary>
-  /// Read service by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::vector<ServiceJsonObject> read_lbrp_service_list_by_id(const std::string &name) = 0;
-  virtual std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name) = 0;
-  /// <summary>
-  /// Read name by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: name
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  virtual std::string read_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) = 0;
-  /// <summary>
-  /// Read src-ip-rewrite by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: src-ip-rewrite
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual SrcIpRewriteJsonObject read_lbrp_src_ip_rewrite_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read ip-range by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: ip-range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read new_ip_range by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: new_ip_range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read type by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual CubeType read_lbrp_type_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Read uuid by ID
-  /// </summary>
-  /// <remarks>
-  /// Read operation of resource: uuid
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  virtual std::string read_lbrp_uuid_by_id(const std::string &name) = 0;
-  /// <summary>
-  /// Replace lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: lbrp
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">lbrpbody object</param>
-  virtual void replace_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Replace ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void replace_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">backendbody object</param>
-  virtual void replace_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) = 0;
-  /// <summary>
-  /// Replace backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">backendbody object</param>
-  virtual void replace_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace service by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">servicebody object</param>
-  virtual void replace_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) = 0;
-  /// <summary>
-  /// Replace service by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">servicebody object</param>
-  virtual void replace_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) = 0;
-  /// <summary>
-  /// Replace src-ip-rewrite by ID
-  /// </summary>
-  /// <remarks>
-  /// Replace operation of resource: src-ip-rewrite
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">src-ip-rewritebody object</param>
-  virtual void replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) = 0;
-  /// <summary>
-  /// Update lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: lbrp
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">lbrpbody object</param>
-  virtual void update_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) = 0;
-  /// <summary>
-  /// Update lbrp by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: lbrp
-  /// </remarks>
-  /// <param name="value">lbrpbody object</param>
-  virtual void update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value) = 0;
-  /// <summary>
-  /// Update loglevel by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: loglevel
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)</param>
-  virtual void update_lbrp_loglevel_by_id(const std::string &name, const LbrpLoglevelEnum &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) = 0;
-  /// <summary>
-  /// Update ports by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ports
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">portsbody object</param>
-  virtual void update_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) = 0;
-  /// <summary>
-  /// Update peer by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: peer
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)</param>
-  virtual void update_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value) = 0;
-  /// <summary>
-  /// Update type by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: type
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="portsName">ID of ports_name</param>
-  /// <param name="value">Type of the LB port (e.g. FRONTEND or BACKEND)</param>
-  virtual void update_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) = 0;
-  /// <summary>
-  /// Update backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">backendbody object</param>
-  virtual void update_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) = 0;
-  /// <summary>
-  /// Update backend by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: backend
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">backendbody object</param>
-  virtual void update_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) = 0;
-  /// <summary>
-  /// Update name by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: name
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">name</param>
-  virtual void update_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const std::string &value) = 0;
-  /// <summary>
-  /// Update port by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: port
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">Port where the server listen to (this value is ignored in case of ICMP)</param>
-  virtual void update_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) = 0;
-  /// <summary>
-  /// Update weight by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: weight
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="ip">ID of ip</param>
-  /// <param name="value">Weight of the backend in the pool</param>
-  virtual void update_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) = 0;
-  /// <summary>
-  /// Update service by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">servicebody object</param>
-  virtual void update_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) = 0;
-  /// <summary>
-  /// Update service by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: service
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">servicebody object</param>
-  virtual void update_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) = 0;
-  /// <summary>
-  /// Update name by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: name
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="vip">ID of vip</param>
-  /// <param name="vport">ID of vport</param>
-  /// <param name="proto">ID of proto</param>
-  /// <param name="value">Service name related to the backend server of the pool is connected to</param>
-  virtual void update_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value) = 0;
-  /// <summary>
-  /// Update src-ip-rewrite by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: src-ip-rewrite
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">src-ip-rewritebody object</param>
-  virtual void update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) = 0;
-  /// <summary>
-  /// Update ip-range by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: ip-range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Range of IP addresses of the clients that must be replaced</param>
-  virtual void update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::string &value) = 0;
-  /// <summary>
-  /// Update new_ip_range by ID
-  /// </summary>
-  /// <remarks>
-  /// Update operation of resource: new_ip_range
-  /// </remarks>
-  /// <param name="name">ID of name</param>
-  /// <param name="value">Range of IP addresses of the that must be used to replace client addresses</param>
-  virtual void update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std::string &value) = 0;
-};
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

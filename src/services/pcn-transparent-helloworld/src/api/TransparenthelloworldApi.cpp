@@ -14,430 +14,338 @@
 
 
 #include "TransparenthelloworldApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "TransparenthelloworldApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::TransparenthelloworldApiImpl;
 
-TransparenthelloworldApi::TransparenthelloworldApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void TransparenthelloworldApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
-  try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
-    }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
-  }
-}
-
-void TransparenthelloworldApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::create_transparenthelloworld_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::delete_transparenthelloworld_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_by_id_handler, this));
-  Routes::Get(router, base + ":name/egress-action/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_egress_action_by_id_handler, this));
-  Routes::Get(router, base + ":name/ingress-action/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_ingress_action_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::replace_transparenthelloworld_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::update_transparenthelloworld_by_id_handler, this));
-  Routes::Patch(router, base + ":name/egress-action/", Routes::bind(&TransparenthelloworldApi::update_transparenthelloworld_egress_action_by_id_handler, this));
-  Routes::Patch(router, base + ":name/ingress-action/", Routes::bind(&TransparenthelloworldApi::update_transparenthelloworld_ingress_action_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&TransparenthelloworldApi::update_transparenthelloworld_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&TransparenthelloworldApi::update_transparenthelloworld_loglevel_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&TransparenthelloworldApi::read_transparenthelloworld_list_by_id_help, this));
-
-}
-
-void TransparenthelloworldApi::create_transparenthelloworld_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response create_transparenthelloworld_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    TransparenthelloworldJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_transparenthelloworld_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    TransparenthelloworldJsonObject unique_value { request_body };
+    
+    unique_value.setName(unique_name);
+    create_transparenthelloworld_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::delete_transparenthelloworld_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response delete_transparenthelloworld_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_transparenthelloworld_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_transparenthelloworld_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-    delete_transparenthelloworld_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void TransparenthelloworldApi::read_transparenthelloworld_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_transparenthelloworld_by_id(name);
+    auto x = read_transparenthelloworld_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_egress_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_transparenthelloworld_egress_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_transparenthelloworld_egress_action_by_id(name);
+    auto x = read_transparenthelloworld_egress_action_by_id(unique_name);
     nlohmann::json response_body;
     response_body = TransparenthelloworldJsonObject::TransparenthelloworldEgressActionEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_ingress_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_transparenthelloworld_ingress_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_transparenthelloworld_ingress_action_by_id(name);
+    auto x = read_transparenthelloworld_ingress_action_by_id(unique_name);
     nlohmann::json response_body;
     response_body = TransparenthelloworldJsonObject::TransparenthelloworldIngressActionEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_transparenthelloworld_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_transparenthelloworld_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_transparenthelloworld_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_transparenthelloworld_loglevel_by_id(name);
+    auto x = read_transparenthelloworld_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = TransparenthelloworldJsonObject::TransparenthelloworldLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_transparenthelloworld_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_transparenthelloworld_type_by_id(name);
+    auto x = read_transparenthelloworld_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = TransparenthelloworldJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::read_transparenthelloworld_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_transparenthelloworld_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_transparenthelloworld_uuid_by_id(name);
+    auto x = read_transparenthelloworld_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::replace_transparenthelloworld_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response replace_transparenthelloworld_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    TransparenthelloworldJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_transparenthelloworld_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    TransparenthelloworldJsonObject unique_value { request_body };
+    
+    unique_value.setName(unique_name);
+    replace_transparenthelloworld_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::update_transparenthelloworld_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_transparenthelloworld_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    TransparenthelloworldJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_transparenthelloworld_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    TransparenthelloworldJsonObject unique_value { request_body };
+    
+    unique_value.setName(unique_name);
+    update_transparenthelloworld_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::update_transparenthelloworld_egress_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_transparenthelloworld_egress_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
-    // Getting the body param
-    TransparenthelloworldEgressActionEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldEgressActionEnum(request_body);
-    update_transparenthelloworld_egress_action_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    TransparenthelloworldEgressActionEnum unique_value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldEgressActionEnum(request_body);
+    update_transparenthelloworld_egress_action_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::update_transparenthelloworld_ingress_action_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_transparenthelloworld_ingress_action_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
-    // Getting the body param
-    TransparenthelloworldIngressActionEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldIngressActionEnum(request_body);
-    update_transparenthelloworld_ingress_action_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    TransparenthelloworldIngressActionEnum unique_value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldIngressActionEnum(request_body);
+    update_transparenthelloworld_ingress_action_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void TransparenthelloworldApi::update_transparenthelloworld_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_transparenthelloworld_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<TransparenthelloworldJsonObject> value;
+  std::vector<TransparenthelloworldJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      TransparenthelloworldJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_transparenthelloworld_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void TransparenthelloworldApi::update_transparenthelloworld_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    TransparenthelloworldLoglevelEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldLoglevelEnum(request_body);
-    update_transparenthelloworld_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<TransparenthelloworldJsonObject> unique_value;
+    for (auto &j : request_body) {
+      TransparenthelloworldJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_transparenthelloworld_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
 
-void TransparenthelloworldApi::read_transparenthelloworld_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response update_transparenthelloworld_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    TransparenthelloworldLoglevelEnum unique_value_ = TransparenthelloworldJsonObject::string_to_TransparenthelloworldLoglevelEnum(request_body);
+    update_transparenthelloworld_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
 
 
-  using polycube::service::HelpType;
+Response transparenthelloworld_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
+  // Getting the path params
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = TransparenthelloworldJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = TransparenthelloworldJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = TransparenthelloworldJsonObject::helpComplexElements();
     val["actions"] = TransparenthelloworldJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void TransparenthelloworldApi::read_transparenthelloworld_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response transparenthelloworld_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = TransparenthelloworldJsonObject::helpKeys();
     val["elements"] = read_transparenthelloworld_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = TransparenthelloworldJsonObject::helpKeys();
     val["optional-params"] = TransparenthelloworldJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = TransparenthelloworldJsonObject::helpKeys();
     val["elements"] = read_transparenthelloworld_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = TransparenthelloworldJsonObject::helpKeys();
     val["elements"] = read_transparenthelloworld_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

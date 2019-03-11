@@ -22,36 +22,26 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ArpEntryJsonObject::ArpEntryJsonObject() {
+ArpEntryJsonObject::ArpEntryJsonObject() : 
+  m_addressIsSet(false),
+  m_macIsSet(false),
+  m_interfaceIsSet(false) { }
 
-  m_addressIsSet = false;
-
-  m_macIsSet = false;
-
-  m_interfaceIsSet = false;
-}
-
-ArpEntryJsonObject::~ArpEntryJsonObject() {}
-
-void ArpEntryJsonObject::validateKeys() {
-
-  if (!m_addressIsSet) {
-    throw std::runtime_error("Variable address is required");
+ArpEntryJsonObject::ArpEntryJsonObject(nlohmann::json &val) : 
+  m_addressIsSet(false),
+  m_macIsSet(false),
+  m_interfaceIsSet(false) { 
+  if (val.count("address")) {
+    setAddress(val.at("address").get<std::string>());
   }
-}
 
-void ArpEntryJsonObject::validateMandatoryFields() {
-
-  if (!m_macIsSet) {
-    throw std::runtime_error("Variable mac is required");
+  if (val.count("mac")) {
+    setMac(val.at("mac").get<std::string>());
   }
-  if (!m_interfaceIsSet) {
-    throw std::runtime_error("Variable interface is required");
+
+  if (val.count("interface")) {
+    setInterface(val.at("interface").get<std::string>());
   }
-}
-
-void ArpEntryJsonObject::validateParams() {
-
 }
 
 nlohmann::json ArpEntryJsonObject::toJson() const {
@@ -61,33 +51,16 @@ nlohmann::json ArpEntryJsonObject::toJson() const {
     val["address"] = m_address;
   }
 
-  val["mac"] = m_mac;
-  val["interface"] = m_interface;
+  if (m_macIsSet) {
+    val["mac"] = m_mac;
+  }
+
+  if (m_interfaceIsSet) {
+    val["interface"] = m_interface;
+  }
+
 
   return val;
-}
-
-void ArpEntryJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("address") != val.end()) {
-    setAddress(val.at("address"));
-  }
-
-  if (val.find("mac") != val.end()) {
-    setMac(val.at("mac"));
-  }
-
-  if (val.find("interface") != val.end()) {
-    setInterface(val.at("interface"));
-  }
 }
 
 nlohmann::json ArpEntryJsonObject::helpKeys() {
@@ -159,9 +132,7 @@ bool ArpEntryJsonObject::addressIsSet() const {
   return m_addressIsSet;
 }
 
-void ArpEntryJsonObject::unsetAddress() {
-  m_addressIsSet = false;
-}
+
 
 
 
@@ -178,9 +149,7 @@ bool ArpEntryJsonObject::macIsSet() const {
   return m_macIsSet;
 }
 
-void ArpEntryJsonObject::unsetMac() {
-  m_macIsSet = false;
-}
+
 
 
 
@@ -197,9 +166,7 @@ bool ArpEntryJsonObject::interfaceIsSet() const {
   return m_interfaceIsSet;
 }
 
-void ArpEntryJsonObject::unsetInterface() {
-  m_interfaceIsSet = false;
-}
+
 
 
 

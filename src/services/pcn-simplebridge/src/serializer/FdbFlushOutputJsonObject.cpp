@@ -22,49 +22,25 @@ namespace swagger {
 namespace server {
 namespace model {
 
-FdbFlushOutputJsonObject::FdbFlushOutputJsonObject() {
+FdbFlushOutputJsonObject::FdbFlushOutputJsonObject() : 
+  m_flushedIsSet(false) { }
 
-  m_flushedIsSet = false;
-}
-
-FdbFlushOutputJsonObject::~FdbFlushOutputJsonObject() {}
-
-void FdbFlushOutputJsonObject::validateKeys() {
-
-}
-
-void FdbFlushOutputJsonObject::validateMandatoryFields() {
-
-  if (!m_flushedIsSet) {
-    throw std::runtime_error("Variable flushed is required");
+FdbFlushOutputJsonObject::FdbFlushOutputJsonObject(nlohmann::json &val) : 
+  m_flushedIsSet(false) { 
+  if (val.count("flushed")) {
+    setFlushed(val.at("flushed").get<bool>());
   }
-}
-
-void FdbFlushOutputJsonObject::validateParams() {
-
 }
 
 nlohmann::json FdbFlushOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
 
-  val["flushed"] = m_flushed;
+  if (m_flushedIsSet) {
+    val["flushed"] = m_flushed;
+  }
+
 
   return val;
-}
-
-void FdbFlushOutputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("flushed") != val.end()) {
-    setFlushed(val.at("flushed"));
-  }
 }
 
 nlohmann::json FdbFlushOutputJsonObject::helpKeys() {
@@ -122,9 +98,7 @@ bool FdbFlushOutputJsonObject::flushedIsSet() const {
   return m_flushedIsSet;
 }
 
-void FdbFlushOutputJsonObject::unsetFlushed() {
-  m_flushedIsSet = false;
-}
+
 
 
 

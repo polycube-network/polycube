@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "LbrpApi.h"
-
 
 #include <memory>
 #include <map>
@@ -42,11 +40,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class LbrpApiImpl : public io::swagger::server::api::LbrpApi {
-public:
-  LbrpApiImpl();
-  ~LbrpApiImpl() { };
-
+namespace LbrpApiImpl {
   void create_lbrp_by_id(const std::string &name, const LbrpJsonObject &value);
   void create_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void create_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
@@ -115,13 +109,7 @@ public:
   void update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value);
   void update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::string &value);
   void update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Lbrp>> cubes;
-  std::shared_ptr<Lbrp> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

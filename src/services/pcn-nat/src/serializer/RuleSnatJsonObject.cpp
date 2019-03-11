@@ -22,23 +22,18 @@ namespace swagger {
 namespace server {
 namespace model {
 
-RuleSnatJsonObject::RuleSnatJsonObject() {
+RuleSnatJsonObject::RuleSnatJsonObject() : 
+  m_entryIsSet(false) { }
 
-  m_entryIsSet = false;
-}
-
-RuleSnatJsonObject::~RuleSnatJsonObject() {}
-
-void RuleSnatJsonObject::validateKeys() {
-
-}
-
-void RuleSnatJsonObject::validateMandatoryFields() {
-
-}
-
-void RuleSnatJsonObject::validateParams() {
-
+RuleSnatJsonObject::RuleSnatJsonObject(nlohmann::json &val) : 
+  m_entryIsSet(false) { 
+  m_entry.clear();
+  for (auto& item : val["entry"]) { 
+    RuleSnatEntryJsonObject newItem { item };
+    m_entry.push_back(newItem);
+  }
+  m_entryIsSet = !m_entry.empty();
+  
 }
 
 nlohmann::json RuleSnatJsonObject::toJson() const {
@@ -49,34 +44,12 @@ nlohmann::json RuleSnatJsonObject::toJson() const {
     for (auto& item : m_entry) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
-
     if (jsonArray.size() > 0) {
       val["entry"] = jsonArray;
     }
   }
 
   return val;
-}
-
-void RuleSnatJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  m_entry.clear();
-  for (auto& item : val["entry"]) {
-
-    RuleSnatEntryJsonObject newItem;
-    newItem.fromJson(item);
-    m_entry.push_back(newItem);
-    m_entryIsSet = true;
-  }
-
 }
 
 nlohmann::json RuleSnatJsonObject::helpKeys() {

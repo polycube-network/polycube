@@ -22,14 +22,12 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-LbrpApiImpl::LbrpApiImpl() {}
+namespace LbrpApiImpl {
+namespace {
+std::unordered_map<std::string, std::shared_ptr<Lbrp>> cubes;
+std::mutex cubes_mutex;
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
-
-std::shared_ptr<Lbrp> LbrpApiImpl::get_cube(const std::string &name) {
+std::shared_ptr<Lbrp> get_cube(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   auto iter = cubes.find(name);
   if (iter == cubes.end()) {
@@ -39,12 +37,18 @@ std::shared_ptr<Lbrp> LbrpApiImpl::get_cube(const std::string &name) {
   return iter->second;
 }
 
-void LbrpApiImpl::create_lbrp_by_id(const std::string &name, const LbrpJsonObject &jsonObject) {
+}
+
+/*
+* These functions include a default basic implementation.  The user could
+* extend adapt this implementation to his needs.
+*/
+void create_lbrp_by_id(const std::string &name, const LbrpJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already a cube with name " + name);
+      throw std::runtime_error("There is already an Cube with name " + name);
     }
   }
   auto ptr = std::make_shared<Lbrp>(name, jsonObject, jsonObject.getType());
@@ -55,15 +59,15 @@ void LbrpApiImpl::create_lbrp_by_id(const std::string &name, const LbrpJsonObjec
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already a cube with name " + name);
+    throw std::runtime_error("There is already an Cube with name " + name);
   }
 }
 
-void LbrpApiImpl::replace_lbrp_by_id(const std::string &name, const LbrpJsonObject &bridge){
+void replace_lbrp_by_id(const std::string &name, const LbrpJsonObject &bridge){
   throw std::runtime_error("Method not supported!");
 }
 
-void LbrpApiImpl::delete_lbrp_by_id(const std::string &name) {
+void delete_lbrp_by_id(const std::string &name) {
   std::lock_guard<std::mutex> guard(cubes_mutex);
   if (cubes.count(name) == 0) {
     throw std::runtime_error("Cube " + name + " does not exist");
@@ -71,12 +75,12 @@ void LbrpApiImpl::delete_lbrp_by_id(const std::string &name) {
   cubes.erase(name);
 }
 
-std::string LbrpApiImpl::read_lbrp_uuid_by_id(const std::string &name) {
+std::string read_lbrp_uuid_by_id(const std::string &name) {
   auto m = get_cube(name);
   return m->getUuid();
 }
 
-std::vector<LbrpJsonObject> LbrpApiImpl::read_lbrp_list_by_id() {
+std::vector<LbrpJsonObject> read_lbrp_list_by_id() {
   std::vector<LbrpJsonObject> jsonObject_vect;
   for(auto &i : cubes) {
     auto m = get_cube(i.first);
@@ -85,7 +89,7 @@ std::vector<LbrpJsonObject> LbrpApiImpl::read_lbrp_list_by_id() {
   return jsonObject_vect;
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp_list_by_id_get_list() {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_list_by_id_get_list() {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   for (auto &x : cubes) {
     nlohmann::fifo_map<std::string, std::string> m;
@@ -98,12 +102,12 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp
 /*
 * Ports list related functions
 */
-void LbrpApiImpl::create_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void create_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   auto m = get_cube(name);
   m->addPortsList(ports);
 }
 
-std::vector<PortsJsonObject> LbrpApiImpl::read_lbrp_ports_list_by_id(const std::string &name) {
+std::vector<PortsJsonObject> read_lbrp_ports_list_by_id(const std::string &name) {
   std::vector<PortsJsonObject> vect;
   auto m = get_cube(name);
   for (auto &i : m->getPortsList()) {
@@ -112,16 +116,16 @@ std::vector<PortsJsonObject> LbrpApiImpl::read_lbrp_ports_list_by_id(const std::
   return vect;
 }
 
-void LbrpApiImpl::replace_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
+void replace_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
   throw std::runtime_error("Method not supported");
 }
 
-void LbrpApiImpl::delete_lbrp_ports_list_by_id(const std::string &name) {
+void delete_lbrp_ports_list_by_id(const std::string &name) {
   auto m = get_cube(name);
   m->delPortsList();
 }
 
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp_ports_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto m = get_cube(name);
   for(auto &i : m->getPortsList()){
@@ -135,45 +139,45 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp
 /*
 * Ports related functions
 */
-void LbrpApiImpl::create_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void create_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   return m->addPorts(portsName, ports);
 }
 
-PortsJsonObject LbrpApiImpl::read_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
+PortsJsonObject read_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   return m->getPorts(portsName)->toJsonObject();
 }
 
-void LbrpApiImpl::replace_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
+void replace_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
   auto m = get_cube(name);
   m->replacePorts(portsName, ports);
 }
 
-void LbrpApiImpl::delete_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
+void delete_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   m->delPorts(portsName);
 }
 
-std::string LbrpApiImpl::read_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName) {
+std::string read_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getPeer();
 }
 
-PortsStatusEnum LbrpApiImpl::read_lbrp_ports_status_by_id(const std::string &name, const std::string &portsName) {
+PortsStatusEnum read_lbrp_ports_status_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getStatus();
 }
 
-std::string LbrpApiImpl::read_lbrp_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
+std::string read_lbrp_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   return p->getUuid();
 }
 
-void LbrpApiImpl::update_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
+void update_lbrp_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
   auto m = get_cube(name);
   auto p = m->getPorts(portsName);
   p->setPeer(peer);
@@ -196,7 +200,7 @@ void LbrpApiImpl::update_lbrp_ports_peer_by_id(const std::string &name, const st
 *
 */
 void
-LbrpApiImpl::create_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
+create_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
 
@@ -221,7 +225,7 @@ LbrpApiImpl::create_lbrp_service_backend_by_id(const std::string &name, const st
 *
 */
 void
-LbrpApiImpl::create_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+create_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   service->addBackendList(value);
@@ -229,7 +233,7 @@ LbrpApiImpl::create_lbrp_service_backend_list_by_id(const std::string &name, con
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::create_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
   auto &&service = lbrp->getService(vip, vport, proto);
@@ -258,7 +262,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::create_lb
 *
 */
 void
-LbrpApiImpl::create_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+create_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto lbrp = get_cube(name);
 
   lbrp->addService(vip, vport, proto, value);
@@ -279,14 +283,14 @@ LbrpApiImpl::create_lbrp_service_by_id(const std::string &name, const std::strin
 *
 */
 void
-LbrpApiImpl::create_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+create_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   auto lbrp = get_cube(name);
   lbrp->addServiceList(value);
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::create_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
 
@@ -311,7 +315,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::create_lb
 *
 */
 void
-LbrpApiImpl::create_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
+create_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
   auto lbrp = get_cube(name);
 
   lbrp->addSrcIpRewrite(value);
@@ -335,7 +339,7 @@ LbrpApiImpl::create_lbrp_src_ip_rewrite_by_id(const std::string &name, const Src
 *
 */
 void
-LbrpApiImpl::delete_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
+delete_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
 
@@ -359,7 +363,7 @@ LbrpApiImpl::delete_lbrp_service_backend_by_id(const std::string &name, const st
 *
 */
 void
-LbrpApiImpl::delete_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+delete_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   service->delBackendList();
@@ -367,7 +371,7 @@ LbrpApiImpl::delete_lbrp_service_backend_list_by_id(const std::string &name, con
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::delete_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
   auto &&service = lbrp->getService(vip, vport, proto);
@@ -395,7 +399,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::delete_lb
 *
 */
 void
-LbrpApiImpl::delete_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+delete_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto lbrp = get_cube(name);
 
   lbrp->delService(vip, vport, proto);
@@ -415,14 +419,14 @@ LbrpApiImpl::delete_lbrp_service_by_id(const std::string &name, const std::strin
 *
 */
 void
-LbrpApiImpl::delete_lbrp_service_list_by_id(const std::string &name) {
+delete_lbrp_service_list_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   lbrp->delServiceList();
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::delete_lbrp_service_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbrp_service_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
 
@@ -446,7 +450,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::delete_lb
 *
 */
 void
-LbrpApiImpl::delete_lbrp_src_ip_rewrite_by_id(const std::string &name) {
+delete_lbrp_src_ip_rewrite_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
 
   lbrp->delSrcIpRewrite();
@@ -466,7 +470,7 @@ LbrpApiImpl::delete_lbrp_src_ip_rewrite_by_id(const std::string &name) {
 * LbrpJsonObject
 */
 LbrpJsonObject
-LbrpApiImpl::read_lbrp_by_id(const std::string &name) {
+read_lbrp_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
@@ -485,7 +489,7 @@ LbrpApiImpl::read_lbrp_by_id(const std::string &name) {
 * LbrpLoglevelEnum
 */
 LbrpLoglevelEnum
-LbrpApiImpl::read_lbrp_loglevel_by_id(const std::string &name) {
+read_lbrp_loglevel_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   return lbrp->getLoglevel();
 
@@ -506,7 +510,7 @@ LbrpApiImpl::read_lbrp_loglevel_by_id(const std::string &name) {
 * PortsTypeEnum
 */
 PortsTypeEnum
-LbrpApiImpl::read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName) {
+read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName) {
   auto lbrp = get_cube(name);
   auto ports = lbrp->getPorts(portsName);
   return ports->getType();
@@ -531,7 +535,7 @@ LbrpApiImpl::read_lbrp_ports_type_by_id(const std::string &name, const std::stri
 * ServiceBackendJsonObject
 */
 ServiceBackendJsonObject
-LbrpApiImpl::read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
+read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   return service->getBackend(ip)->toJsonObject();
@@ -555,7 +559,7 @@ LbrpApiImpl::read_lbrp_service_backend_by_id(const std::string &name, const std:
 * std::vector<ServiceBackendJsonObject>
 */
 std::vector<ServiceBackendJsonObject>
-LbrpApiImpl::read_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto &&backend = service->getBackendList();
@@ -568,7 +572,7 @@ LbrpApiImpl::read_lbrp_service_backend_list_by_id(const std::string &name, const
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
   auto &&service = lbrp->getService(vip, vport, proto);
@@ -598,7 +602,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp
 * std::string
 */
 std::string
-LbrpApiImpl::read_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
+read_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -624,7 +628,7 @@ LbrpApiImpl::read_lbrp_service_backend_name_by_id(const std::string &name, const
 * uint16_t
 */
 uint16_t
-LbrpApiImpl::read_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
+read_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -650,7 +654,7 @@ LbrpApiImpl::read_lbrp_service_backend_port_by_id(const std::string &name, const
 * uint16_t
 */
 uint16_t
-LbrpApiImpl::read_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
+read_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -675,7 +679,7 @@ LbrpApiImpl::read_lbrp_service_backend_weight_by_id(const std::string &name, con
 * ServiceJsonObject
 */
 ServiceJsonObject
-LbrpApiImpl::read_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto lbrp = get_cube(name);
   return lbrp->getService(vip, vport, proto)->toJsonObject();
 
@@ -695,7 +699,7 @@ LbrpApiImpl::read_lbrp_service_by_id(const std::string &name, const std::string 
 * std::vector<ServiceJsonObject>
 */
 std::vector<ServiceJsonObject>
-LbrpApiImpl::read_lbrp_service_list_by_id(const std::string &name) {
+read_lbrp_service_list_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   auto &&service = lbrp->getServiceList();
   std::vector<ServiceJsonObject> m;
@@ -707,7 +711,7 @@ LbrpApiImpl::read_lbrp_service_list_by_id(const std::string &name) {
 #define IMPLEMENT_POLYCUBE_GET_LIST
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp_service_list_by_id_get_list(const std::string &name) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
   auto &&lbrp = get_cube(name);
 
@@ -735,7 +739,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::read_lbrp
 * std::string
 */
 std::string
-LbrpApiImpl::read_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+read_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   return service->getName();
@@ -756,7 +760,7 @@ LbrpApiImpl::read_lbrp_service_name_by_id(const std::string &name, const std::st
 * SrcIpRewriteJsonObject
 */
 SrcIpRewriteJsonObject
-LbrpApiImpl::read_lbrp_src_ip_rewrite_by_id(const std::string &name) {
+read_lbrp_src_ip_rewrite_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   return lbrp->getSrcIpRewrite()->toJsonObject();
 
@@ -776,7 +780,7 @@ LbrpApiImpl::read_lbrp_src_ip_rewrite_by_id(const std::string &name) {
 * std::string
 */
 std::string
-LbrpApiImpl::read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name) {
+read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   auto srcIpRewrite = lbrp->getSrcIpRewrite();
   return srcIpRewrite->getIpRange();
@@ -797,7 +801,7 @@ LbrpApiImpl::read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name) {
 * std::string
 */
 std::string
-LbrpApiImpl::read_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name) {
+read_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   auto srcIpRewrite = lbrp->getSrcIpRewrite();
   return srcIpRewrite->getNewIpRange();
@@ -818,7 +822,7 @@ LbrpApiImpl::read_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name
 * CubeType
 */
 CubeType
-LbrpApiImpl::read_lbrp_type_by_id(const std::string &name) {
+read_lbrp_type_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   return lbrp->getType();
 
@@ -843,7 +847,7 @@ LbrpApiImpl::read_lbrp_type_by_id(const std::string &name) {
 *
 */
 void
-LbrpApiImpl::replace_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
+replace_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
 
@@ -868,13 +872,13 @@ LbrpApiImpl::replace_lbrp_service_backend_by_id(const std::string &name, const s
 *
 */
 void
-LbrpApiImpl::replace_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+replace_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::replace_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -895,7 +899,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::replace_l
 *
 */
 void
-LbrpApiImpl::replace_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+replace_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto lbrp = get_cube(name);
 
   lbrp->replaceService(vip, vport, proto, value);
@@ -916,13 +920,13 @@ LbrpApiImpl::replace_lbrp_service_by_id(const std::string &name, const std::stri
 *
 */
 void
-LbrpApiImpl::replace_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+replace_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::replace_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -940,7 +944,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::replace_l
 *
 */
 void
-LbrpApiImpl::replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
+replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
   auto lbrp = get_cube(name);
 
   lbrp->replaceSrcIpRewrite(value);
@@ -961,7 +965,7 @@ LbrpApiImpl::replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const Sr
 *
 */
 void
-LbrpApiImpl::update_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) {
+update_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) {
   auto lbrp = get_cube(name);
 
   lbrp->update(value);
@@ -981,13 +985,13 @@ LbrpApiImpl::update_lbrp_by_id(const std::string &name, const LbrpJsonObject &va
 *
 */
 void
-LbrpApiImpl::update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value) {
+update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lbrp_list_by_id_get_list(const std::vector<LbrpJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_list_by_id_get_list(const std::vector<LbrpJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1005,7 +1009,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lb
 *
 */
 void
-LbrpApiImpl::update_lbrp_loglevel_by_id(const std::string &name, const LbrpLoglevelEnum &value) {
+update_lbrp_loglevel_by_id(const std::string &name, const LbrpLoglevelEnum &value) {
   auto lbrp = get_cube(name);
 
   lbrp->setLoglevel(value);
@@ -1027,7 +1031,7 @@ LbrpApiImpl::update_lbrp_loglevel_by_id(const std::string &name, const LbrpLogle
 *
 */
 void
-LbrpApiImpl::update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
   auto lbrp = get_cube(name);
   auto ports = lbrp->getPorts(portsName);
 
@@ -1049,13 +1053,13 @@ LbrpApiImpl::update_lbrp_ports_by_id(const std::string &name, const std::string 
 *
 */
 void
-LbrpApiImpl::update_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+update_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lbrp_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1074,7 +1078,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lb
 *
 */
 void
-LbrpApiImpl::update_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
+update_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
   auto lbrp = get_cube(name);
   auto ports = lbrp->getPorts(portsName);
 
@@ -1100,7 +1104,7 @@ LbrpApiImpl::update_lbrp_ports_type_by_id(const std::string &name, const std::st
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
+update_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -1126,13 +1130,13 @@ LbrpApiImpl::update_lbrp_service_backend_by_id(const std::string &name, const st
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+update_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1154,7 +1158,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lb
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const std::string &value) {
+update_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const std::string &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -1181,7 +1185,7 @@ LbrpApiImpl::update_lbrp_service_backend_name_by_id(const std::string &name, con
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) {
+update_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -1208,7 +1212,7 @@ LbrpApiImpl::update_lbrp_service_backend_port_by_id(const std::string &name, con
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) {
+update_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
   auto backend = service->getBackend(ip);
@@ -1234,7 +1238,7 @@ LbrpApiImpl::update_lbrp_service_backend_weight_by_id(const std::string &name, c
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
+update_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const ServiceJsonObject &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
 
@@ -1256,13 +1260,13 @@ LbrpApiImpl::update_lbrp_service_by_id(const std::string &name, const std::strin
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+update_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
 
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
+std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -1283,7 +1287,7 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> LbrpApiImpl::update_lb
 *
 */
 void
-LbrpApiImpl::update_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value) {
+update_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value) {
   auto lbrp = get_cube(name);
   auto service = lbrp->getService(vip, vport, proto);
 
@@ -1305,7 +1309,7 @@ LbrpApiImpl::update_lbrp_service_name_by_id(const std::string &name, const std::
 *
 */
 void
-LbrpApiImpl::update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
+update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value) {
   auto lbrp = get_cube(name);
   auto srcIpRewrite = lbrp->getSrcIpRewrite();
 
@@ -1327,7 +1331,7 @@ LbrpApiImpl::update_lbrp_src_ip_rewrite_by_id(const std::string &name, const Src
 *
 */
 void
-LbrpApiImpl::update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::string &value) {
+update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::string &value) {
   auto lbrp = get_cube(name);
   auto srcIpRewrite = lbrp->getSrcIpRewrite();
 
@@ -1349,7 +1353,7 @@ LbrpApiImpl::update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, 
 *
 */
 void
-LbrpApiImpl::update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std::string &value) {
+update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std::string &value) {
   auto lbrp = get_cube(name);
   auto srcIpRewrite = lbrp->getSrcIpRewrite();
 
@@ -1359,6 +1363,7 @@ LbrpApiImpl::update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &na
 
 
 
+}
 }
 }
 }

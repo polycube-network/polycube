@@ -39,7 +39,7 @@ using service::attach_cb;
 class CubeFactoryImpl : public CubeFactory {
  public:
   CubeFactoryImpl(const std::string &service_name);
-  ~CubeFactoryImpl();
+  ~CubeFactoryImpl() = default;
 
   std::shared_ptr<CubeIface> create_cube(
       const std::string &name, const std::vector<std::string> &ingress_code,

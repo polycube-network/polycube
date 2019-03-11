@@ -14,1113 +14,991 @@
 
 
 #include "DdosmitigatorApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "DdosmitigatorApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::DdosmitigatorApiImpl;
 
-DdosmitigatorApi::DdosmitigatorApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void DdosmitigatorApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
-  try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+Response create_ddosmitigator_blacklist_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
-
-void DdosmitigatorApi::setup_routes() {
-  using namespace polycube::service::Rest;
-
-  Routes::Post(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_dst_by_id_handler, this));
-  Routes::Post(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_dst_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_src_by_id_handler, this));
-  Routes::Post(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_blacklist_src_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/", Routes::bind(&DdosmitigatorApi::create_ddosmitigator_by_id_handler, this));
-  Routes::Delete(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_by_id_handler, this));
-  Routes::Delete(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_src_by_id_handler, this));
-  Routes::Delete(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_blacklist_src_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&DdosmitigatorApi::delete_ddosmitigator_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-dst/:ip/drop-pkts/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_drop_pkts_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-src/:ip/drop-pkts/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_drop_pkts_by_id_handler, this));
-  Routes::Get(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/stats/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_by_id_handler, this));
-  Routes::Get(router, base + ":name/stats/pkts/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_pkts_by_id_handler, this));
-  Routes::Get(router, base + ":name/stats/pps/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_pps_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_dst_by_id_handler, this));
-  Routes::Put(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_dst_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_src_by_id_handler, this));
-  Routes::Put(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_blacklist_src_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&DdosmitigatorApi::replace_ddosmitigator_by_id_handler, this));
-  Routes::Patch(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_dst_by_id_handler, this));
-  Routes::Patch(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_dst_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_src_by_id_handler, this));
-  Routes::Patch(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_blacklist_src_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&DdosmitigatorApi::update_ddosmitigator_loglevel_by_id_handler, this));
-
-  Routes::Options(router, base + ":name/blacklist-dst/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_help, this));
-  Routes::Options(router, base + ":name/blacklist-dst/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_help, this));
-  Routes::Options(router, base + ":name/blacklist-src/:ip/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_by_id_help, this));
-  Routes::Options(router, base + ":name/blacklist-src/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_blacklist_src_list_by_id_help, this));
-  Routes::Options(router, base + ":name/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_list_by_id_help, this));
-  Routes::Options(router, base + ":name/stats/", Routes::bind(&DdosmitigatorApi::read_ddosmitigator_stats_by_id_help, this));
-
-}
-
-void DdosmitigatorApi::create_ddosmitigator_blacklist_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    BlacklistDstJsonObject value;
+    BlacklistDstJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_ddosmitigator_blacklist_dst_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setIp(unique_ip);
+    create_ddosmitigator_blacklist_dst_by_id(unique_name, unique_ip, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::create_ddosmitigator_blacklist_dst_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_ddosmitigator_blacklist_dst_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<BlacklistDstJsonObject> value;
+  std::vector<BlacklistDstJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      BlacklistDstJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_ddosmitigator_blacklist_dst_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::create_ddosmitigator_blacklist_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    BlacklistSrcJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_ddosmitigator_blacklist_src_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Created);
+    std::vector<BlacklistDstJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistDstJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_ddosmitigator_blacklist_dst_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::create_ddosmitigator_blacklist_src_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_ddosmitigator_blacklist_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    BlacklistSrcJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    create_ddosmitigator_blacklist_src_by_id(unique_name, unique_ip, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_ddosmitigator_blacklist_src_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<BlacklistSrcJsonObject> value;
+  std::vector<BlacklistSrcJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      BlacklistSrcJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    create_ddosmitigator_blacklist_src_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::create_ddosmitigator_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    DdosmitigatorJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_ddosmitigator_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    std::vector<BlacklistSrcJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistSrcJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    create_ddosmitigator_blacklist_src_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_ddosmitigator_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    DdosmitigatorJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_ddosmitigator_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_ddosmitigator_blacklist_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    delete_ddosmitigator_blacklist_dst_by_id(unique_name, unique_ip);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_ddosmitigator_blacklist_dst_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_ddosmitigator_blacklist_dst_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_ddosmitigator_blacklist_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    delete_ddosmitigator_blacklist_src_by_id(unique_name, unique_ip);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_ddosmitigator_blacklist_src_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_ddosmitigator_blacklist_src_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_ddosmitigator_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_ddosmitigator_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_ddosmitigator_blacklist_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-    delete_ddosmitigator_blacklist_dst_by_id(name, ip);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_blacklist_dst_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_blacklist_dst_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_blacklist_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_blacklist_src_by_id(name, ip);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_blacklist_src_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_blacklist_src_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::delete_ddosmitigator_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_ddosmitigator_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_ddosmitigator_blacklist_dst_by_id(name, ip);
+    auto x = read_ddosmitigator_blacklist_dst_by_id(unique_name, unique_ip);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_drop_pkts_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_ddosmitigator_blacklist_dst_drop_pkts_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_ddosmitigator_blacklist_dst_drop_pkts_by_id(name, ip);
+    auto x = read_ddosmitigator_blacklist_dst_drop_pkts_by_id(unique_name, unique_ip);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_blacklist_dst_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_blacklist_dst_list_by_id(name);
+    auto x = read_ddosmitigator_blacklist_dst_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_blacklist_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_ddosmitigator_blacklist_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_ddosmitigator_blacklist_src_by_id(name, ip);
+    auto x = read_ddosmitigator_blacklist_src_by_id(unique_name, unique_ip);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_blacklist_src_drop_pkts_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_ddosmitigator_blacklist_src_drop_pkts_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_ddosmitigator_blacklist_src_drop_pkts_by_id(name, ip);
+    auto x = read_ddosmitigator_blacklist_src_drop_pkts_by_id(unique_name, unique_ip);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_blacklist_src_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_blacklist_src_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_blacklist_src_list_by_id(name);
+    auto x = read_ddosmitigator_blacklist_src_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_by_id(name);
+    auto x = read_ddosmitigator_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_ddosmitigator_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_ddosmitigator_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_loglevel_by_id(name);
+    auto x = read_ddosmitigator_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = DdosmitigatorJsonObject::DdosmitigatorLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_stats_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_stats_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_stats_by_id(name);
+    auto x = read_ddosmitigator_stats_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_stats_pkts_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_stats_pkts_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_stats_pkts_by_id(name);
+    auto x = read_ddosmitigator_stats_pkts_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_stats_pps_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_stats_pps_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_stats_pps_by_id(name);
+    auto x = read_ddosmitigator_stats_pps_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_type_by_id(name);
+    auto x = read_ddosmitigator_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = DdosmitigatorJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::read_ddosmitigator_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_ddosmitigator_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_ddosmitigator_uuid_by_id(name);
+    auto x = read_ddosmitigator_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::replace_ddosmitigator_blacklist_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_ddosmitigator_blacklist_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    BlacklistDstJsonObject value;
+    BlacklistDstJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_ddosmitigator_blacklist_dst_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setIp(unique_ip);
+    replace_ddosmitigator_blacklist_dst_by_id(unique_name, unique_ip, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::replace_ddosmitigator_blacklist_dst_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_ddosmitigator_blacklist_dst_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<BlacklistDstJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<BlacklistDstJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistDstJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_ddosmitigator_blacklist_dst_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_ddosmitigator_blacklist_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    BlacklistSrcJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    replace_ddosmitigator_blacklist_src_by_id(unique_name, unique_ip, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_ddosmitigator_blacklist_src_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<BlacklistSrcJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<BlacklistSrcJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistSrcJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_ddosmitigator_blacklist_src_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_ddosmitigator_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    DdosmitigatorJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    replace_ddosmitigator_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_blacklist_dst_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    BlacklistDstJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    update_ddosmitigator_blacklist_dst_by_id(unique_name, unique_ip, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_blacklist_dst_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<BlacklistDstJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<BlacklistDstJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistDstJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_ddosmitigator_blacklist_dst_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_blacklist_src_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    BlacklistSrcJsonObject unique_value { request_body };
+
+    unique_value.setIp(unique_ip);
+    update_ddosmitigator_blacklist_src_by_id(unique_name, unique_ip, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_blacklist_src_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<BlacklistSrcJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<BlacklistSrcJsonObject> unique_value;
+    for (auto &j : request_body) {
+      BlacklistSrcJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_ddosmitigator_blacklist_src_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    DdosmitigatorJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    update_ddosmitigator_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_ddosmitigator_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<BlacklistDstJsonObject> value;
+  std::vector<DdosmitigatorJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<DdosmitigatorJsonObject> unique_value;
     for (auto &j : request_body) {
-      BlacklistDstJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      DdosmitigatorJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_ddosmitigator_blacklist_dst_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_ddosmitigator_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::replace_ddosmitigator_blacklist_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
 
+Response update_ddosmitigator_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
-    // Getting the body param
-    BlacklistSrcJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_ddosmitigator_blacklist_src_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    DdosmitigatorLoglevelEnum unique_value_ = DdosmitigatorJsonObject::string_to_DdosmitigatorLoglevelEnum(request_body);
+    update_ddosmitigator_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void DdosmitigatorApi::replace_ddosmitigator_blacklist_src_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+
+Response ddosmitigator_blacklist_dst_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<BlacklistSrcJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      BlacklistSrcJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
     }
-    replace_ddosmitigator_blacklist_src_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
   }
-}
-void DdosmitigatorApi::replace_ddosmitigator_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
-
-  try {
-    // Getting the body param
-    DdosmitigatorJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_ddosmitigator_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_blacklist_dst_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    BlacklistDstJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateParams();
-    update_ddosmitigator_blacklist_dst_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_blacklist_dst_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<BlacklistDstJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      BlacklistDstJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_ddosmitigator_blacklist_dst_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_blacklist_src_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    BlacklistSrcJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setIp(ip);
-    value.validateParams();
-    update_ddosmitigator_blacklist_src_by_id(name, ip, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_blacklist_src_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<BlacklistSrcJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      BlacklistSrcJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_ddosmitigator_blacklist_src_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    DdosmitigatorJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_ddosmitigator_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-
-  // Getting the body param
-  std::vector<DdosmitigatorJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      DdosmitigatorJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_ddosmitigator_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::update_ddosmitigator_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    DdosmitigatorLoglevelEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = DdosmitigatorJsonObject::string_to_DdosmitigatorLoglevelEnum(request_body);
-    update_ddosmitigator_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
-
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = BlacklistDstJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = BlacklistDstJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = BlacklistDstJsonObject::helpComplexElements();
     val["actions"] = BlacklistDstJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_blacklist_dst_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_blacklist_dst_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = BlacklistDstJsonObject::helpKeys();
     val["optional-params"] = BlacklistDstJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_blacklist_src_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_blacklist_src_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto ip = request.param(":ip").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_ip;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "ip")) {
+      unique_ip = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = BlacklistSrcJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = BlacklistSrcJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = BlacklistSrcJsonObject::helpComplexElements();
     val["actions"] = BlacklistSrcJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_blacklist_src_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_blacklist_src_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = BlacklistSrcJsonObject::helpKeys();
     val["optional-params"] = BlacklistSrcJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(name);
+    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = DdosmitigatorJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = DdosmitigatorJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = DdosmitigatorJsonObject::helpComplexElements();
     val["actions"] = DdosmitigatorJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = DdosmitigatorJsonObject::helpKeys();
     val["elements"] = read_ddosmitigator_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = DdosmitigatorJsonObject::helpKeys();
     val["optional-params"] = DdosmitigatorJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = DdosmitigatorJsonObject::helpKeys();
     val["elements"] = read_ddosmitigator_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = DdosmitigatorJsonObject::helpKeys();
     val["elements"] = read_ddosmitigator_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void DdosmitigatorApi::read_ddosmitigator_stats_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response ddosmitigator_stats_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = StatsJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = StatsJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = StatsJsonObject::helpComplexElements();
     val["actions"] = StatsJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

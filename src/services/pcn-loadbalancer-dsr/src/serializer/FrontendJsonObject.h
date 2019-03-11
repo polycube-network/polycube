@@ -36,17 +36,13 @@ namespace model {
 class  FrontendJsonObject : public JsonObjectBase {
 public:
   FrontendJsonObject();
-  virtual ~FrontendJsonObject();
+  FrontendJsonObject(nlohmann::json& json);
+  ~FrontendJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -73,13 +69,11 @@ public:
   void unsetMac();
 
 
-protected:
+private:
   std::string m_vip;
   bool m_vipIsSet;
   std::string m_mac;
   bool m_macIsSet;
-
-  std::vector<std::string> allowedParameters_{ "vip", "mac" };
 };
 
 }

@@ -23,6 +23,9 @@ add_library(pcn-helloworld SHARED
 load_file_as_variable(pcn-helloworld Helloworld_dp_ingress.c helloworld_code_ingress)
 load_file_as_variable(pcn-helloworld Helloworld_dp_egress.c helloworld_code_egress)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-helloworld ../datamodel/helloworld.yang helloworld_datamodel)
+
 target_link_libraries(pcn-helloworld
   polycube
   uuid)

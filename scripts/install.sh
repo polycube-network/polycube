@@ -60,7 +60,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 mkdir -p $WORKDIR
 
-$SUDO apt-get update
+$SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
+wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
+$SUDO apt-key add - < Release.key
+$SUDO apt update
+
 PACKAGES=""
 PACKAGES+=" git" # needed to clone dependencies
 PACKAGES+=" build-essential cmake" # provides compiler and other compilation tools
@@ -70,6 +74,7 @@ PACKAGES+=" libnl-route-3-dev libnl-genl-3-dev" # netlink library
 PACKAGES+=" uuid-dev"
 PACKAGES+=" golang-go" # needed for polycubectl and pcn-k8s
 PACKAGES+=" pkg-config"
+PACKAGES+=" libyang-dev"
 PACKAGES+=" autoconf libtool m4 automake"
 PACKAGES+=" libssl-dev" # needed for certificate based security
 
@@ -79,7 +84,7 @@ if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" iproute2" # provides bridge command that is used to add entries in vxlan device
 fi
 
-$SUDO  apt-get install -y $PACKAGES
+$SUDO  apt install -y $PACKAGES
 
 echo "Install pistache"
 cd $WORKDIR

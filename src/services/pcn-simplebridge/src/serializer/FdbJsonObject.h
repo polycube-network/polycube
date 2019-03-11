@@ -38,17 +38,13 @@ namespace model {
 class  FdbJsonObject : public JsonObjectBase {
 public:
   FdbJsonObject();
-  virtual ~FdbJsonObject();
+  FdbJsonObject(nlohmann::json& json);
+  ~FdbJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -75,13 +71,11 @@ public:
   void unsetEntry();
 
 
-protected:
+private:
   uint32_t m_agingTime;
   bool m_agingTimeIsSet;
   std::vector<FdbEntryJsonObject> m_entry;
   bool m_entryIsSet;
-
-  std::vector<std::string> allowedParameters_{ "aging-time", "entry" };
 };
 
 }

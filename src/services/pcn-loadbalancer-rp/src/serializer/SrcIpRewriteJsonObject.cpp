@@ -22,36 +22,19 @@ namespace swagger {
 namespace server {
 namespace model {
 
-SrcIpRewriteJsonObject::SrcIpRewriteJsonObject() {
+SrcIpRewriteJsonObject::SrcIpRewriteJsonObject() : 
+  m_ipRangeIsSet(false),
+  m_newIpRangeIsSet(false) { }
 
-  m_ipRangeIsSet = false;
-
-  m_newIpRangeIsSet = false;
-}
-
-SrcIpRewriteJsonObject::~SrcIpRewriteJsonObject() {}
-
-void SrcIpRewriteJsonObject::validateKeys() {
-
-}
-
-void SrcIpRewriteJsonObject::validateMandatoryFields() {
-
-}
-
-void SrcIpRewriteJsonObject::validateParams() {
-
-  if (m_ipRangeIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])/(([0-9])|([1-2][0-9])|(3[0-2])))PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_ipRange, e))
-      throw std::runtime_error("Variable ip-range has not a valid format");
+SrcIpRewriteJsonObject::SrcIpRewriteJsonObject(nlohmann::json &val) : 
+  m_ipRangeIsSet(false),
+  m_newIpRangeIsSet(false) { 
+  if (val.count("ip-range")) {
+    setIpRange(val.at("ip-range").get<std::string>());
   }
-  if (m_newIpRangeIsSet) {
-    std::string patter_value = R"PATTERN((([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])/(([0-9])|([1-2][0-9])|(3[0-2])))PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_newIpRange, e))
-      throw std::runtime_error("Variable new_ip_range has not a valid format");
+
+  if (val.count("new_ip_range")) {
+    setNewIpRange(val.at("new_ip_range").get<std::string>());
   }
 }
 
@@ -68,25 +51,6 @@ nlohmann::json SrcIpRewriteJsonObject::toJson() const {
 
 
   return val;
-}
-
-void SrcIpRewriteJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("ip-range") != val.end()) {
-    setIpRange(val.at("ip-range"));
-  }
-
-  if (val.find("new_ip_range") != val.end()) {
-    setNewIpRange(val.at("new_ip_range"));
-  }
 }
 
 nlohmann::json SrcIpRewriteJsonObject::helpKeys() {

@@ -66,7 +66,8 @@ module lbdsr {
       leaf mac {
         type yang:mac-address;
         mandatory true;
-        config false;
+        config true;
+        polycube-base:init-only-config;
         description "MAC address of the backend server of the pool";
         polycube-base:cli-example "aa:bb:cc:dd:ee:ff";
       }

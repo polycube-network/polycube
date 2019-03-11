@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include "SimpleforwarderApi.h"
-
 
 #include <memory>
 #include <map>
@@ -40,11 +38,7 @@ namespace api {
 
 using namespace io::swagger::server::model;
 
-class SimpleforwarderApiImpl : public io::swagger::server::api::SimpleforwarderApi {
-public:
-  SimpleforwarderApiImpl();
-  ~SimpleforwarderApiImpl() { };
-
+namespace SimpleforwarderApiImpl {
   void create_simpleforwarder_actions_by_id(const std::string &name, const std::string &inport, const ActionsJsonObject &value);
   void create_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value);
   void create_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonObject &value);
@@ -87,13 +81,7 @@ public:
   void update_simpleforwarder_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_simpleforwarder_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
-
-private:
-  std::unordered_map<std::string, std::shared_ptr<Simpleforwarder>> cubes;
-  std::shared_ptr<Simpleforwarder> get_cube(const std::string &name);
-  std::mutex cubes_mutex;
-};
-
+}
 }
 }
 }

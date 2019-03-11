@@ -46,17 +46,13 @@ enum class K8switchLoglevelEnum {
 class  K8switchJsonObject : public JsonObjectBase {
 public:
   K8switchJsonObject();
-  virtual ~K8switchJsonObject();
+  K8switchJsonObject(nlohmann::json& json);
+  ~K8switchJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -151,7 +147,7 @@ public:
   void unsetFwdTable();
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_uuid;
@@ -172,8 +168,6 @@ protected:
   bool m_serviceIsSet;
   std::vector<FwdTableJsonObject> m_fwdTable;
   bool m_fwdTableIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "type", "loglevel", "ports", "cluster-ip-subnet", "client-subnet", "virtual-client-subnet", "service", "fwd-table" };
 };
 
 }

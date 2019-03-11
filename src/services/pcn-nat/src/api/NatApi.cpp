@@ -14,3076 +14,3209 @@
 
 
 #include "NatApi.h"
-
-namespace io {
-namespace swagger {
-namespace server {
-namespace api {
+#include "NatApiImpl.h"
 
 using namespace io::swagger::server::model;
+using namespace io::swagger::server::api::NatApiImpl;
 
-NatApi::NatApi() {
-  setup_routes();
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void NatApi::control_handler(const HttpHandleRequest &request, HttpHandleResponse &response) {
+Response create_nat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
   try {
-    auto s = router.route(request, response);
-    if (s == Rest::Router::Status::NotFound) {
-      response.send(Http::Code::Not_Found);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    NatJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    create_nat_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_nat_natting_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
     }
-  } catch (const std::exception &e) {
-    response.send(polycube::service::Http::Code::Bad_Request, e.what());
   }
-}
 
-void NatApi::setup_routes() {
-  using namespace polycube::service::Rest;
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-  Routes::Post(router, base + ":name/", Routes::bind(&NatApi::create_nat_by_id_handler, this));
-  Routes::Post(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::create_nat_natting_table_by_id_handler, this));
-  Routes::Post(router, base + ":name/natting-table/", Routes::bind(&NatApi::create_nat_natting_table_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/", Routes::bind(&NatApi::create_nat_rule_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/dnat/append/", Routes::bind(&NatApi::create_nat_rule_dnat_append_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::create_nat_rule_dnat_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::create_nat_rule_dnat_entry_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::create_nat_rule_dnat_entry_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::create_nat_rule_masquerade_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/masquerade/disable/", Routes::bind(&NatApi::create_nat_rule_masquerade_disable_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/masquerade/enable/", Routes::bind(&NatApi::create_nat_rule_masquerade_enable_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/port-forwarding/append/", Routes::bind(&NatApi::create_nat_rule_port_forwarding_append_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::create_nat_rule_port_forwarding_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::create_nat_rule_port_forwarding_entry_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::create_nat_rule_port_forwarding_entry_list_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/snat/append/", Routes::bind(&NatApi::create_nat_rule_snat_append_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/snat/", Routes::bind(&NatApi::create_nat_rule_snat_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::create_nat_rule_snat_entry_by_id_handler, this));
-  Routes::Post(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::create_nat_rule_snat_entry_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/", Routes::bind(&NatApi::delete_nat_by_id_handler, this));
-  Routes::Delete(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::delete_nat_natting_table_by_id_handler, this));
-  Routes::Delete(router, base + ":name/natting-table/", Routes::bind(&NatApi::delete_nat_natting_table_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/", Routes::bind(&NatApi::delete_nat_rule_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::delete_nat_rule_dnat_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::delete_nat_rule_dnat_entry_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::delete_nat_rule_dnat_entry_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::delete_nat_rule_masquerade_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::delete_nat_rule_port_forwarding_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::delete_nat_rule_port_forwarding_entry_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::delete_nat_rule_port_forwarding_entry_list_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/snat/", Routes::bind(&NatApi::delete_nat_rule_snat_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::delete_nat_rule_snat_entry_by_id_handler, this));
-  Routes::Delete(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::delete_nat_rule_snat_entry_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/", Routes::bind(&NatApi::read_nat_by_id_handler, this));
-  Routes::Get(router, base + "", Routes::bind(&NatApi::read_nat_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/loglevel/", Routes::bind(&NatApi::read_nat_loglevel_by_id_handler, this));
-  Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::read_nat_natting_table_by_id_handler, this));
-  Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-ip/", Routes::bind(&NatApi::read_nat_natting_table_external_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-port/", Routes::bind(&NatApi::read_nat_natting_table_external_port_by_id_handler, this));
-  Routes::Get(router, base + ":name/natting-table/", Routes::bind(&NatApi::read_nat_natting_table_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/originating-rule/", Routes::bind(&NatApi::read_nat_natting_table_originating_rule_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/", Routes::bind(&NatApi::read_nat_rule_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::read_nat_rule_dnat_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/dnat/entry/:id/external-ip/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_external_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/dnat/entry/:id/internal-ip/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_internal_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::read_nat_rule_masquerade_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/masquerade/enabled/", Routes::bind(&NatApi::read_nat_rule_masquerade_enabled_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/external-ip/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_external_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/external-port/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_external_port_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/internal-ip/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_internal_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/internal-port/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_internal_port_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/port-forwarding/entry/:id/proto/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_proto_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/snat/", Routes::bind(&NatApi::read_nat_rule_snat_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_snat_entry_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/snat/entry/:id/external-ip/", Routes::bind(&NatApi::read_nat_rule_snat_entry_external_ip_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/snat/entry/:id/internal-net/", Routes::bind(&NatApi::read_nat_rule_snat_entry_internal_net_by_id_handler, this));
-  Routes::Get(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::read_nat_rule_snat_entry_list_by_id_handler, this));
-  Routes::Get(router, base + ":name/type/", Routes::bind(&NatApi::read_nat_type_by_id_handler, this));
-  Routes::Get(router, base + ":name/uuid/", Routes::bind(&NatApi::read_nat_uuid_by_id_handler, this));
-  Routes::Put(router, base + ":name/", Routes::bind(&NatApi::replace_nat_by_id_handler, this));
-  Routes::Put(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::replace_nat_natting_table_by_id_handler, this));
-  Routes::Put(router, base + ":name/natting-table/", Routes::bind(&NatApi::replace_nat_natting_table_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/", Routes::bind(&NatApi::replace_nat_rule_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::replace_nat_rule_dnat_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::replace_nat_rule_dnat_entry_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::replace_nat_rule_dnat_entry_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::replace_nat_rule_masquerade_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::replace_nat_rule_port_forwarding_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::replace_nat_rule_port_forwarding_entry_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::replace_nat_rule_port_forwarding_entry_list_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/snat/", Routes::bind(&NatApi::replace_nat_rule_snat_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::replace_nat_rule_snat_entry_by_id_handler, this));
-  Routes::Put(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::replace_nat_rule_snat_entry_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/", Routes::bind(&NatApi::update_nat_by_id_handler, this));
-  Routes::Patch(router, base + "", Routes::bind(&NatApi::update_nat_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/loglevel/", Routes::bind(&NatApi::update_nat_loglevel_by_id_handler, this));
-  Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::update_nat_natting_table_by_id_handler, this));
-  Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-ip/", Routes::bind(&NatApi::update_nat_natting_table_external_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/external-port/", Routes::bind(&NatApi::update_nat_natting_table_external_port_by_id_handler, this));
-  Routes::Patch(router, base + ":name/natting-table/", Routes::bind(&NatApi::update_nat_natting_table_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/originating-rule/", Routes::bind(&NatApi::update_nat_natting_table_originating_rule_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/", Routes::bind(&NatApi::update_nat_rule_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::update_nat_rule_dnat_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::update_nat_rule_dnat_entry_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/dnat/entry/:id/external-ip/", Routes::bind(&NatApi::update_nat_rule_dnat_entry_external_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/dnat/entry/:id/internal-ip/", Routes::bind(&NatApi::update_nat_rule_dnat_entry_internal_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::update_nat_rule_dnat_entry_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::update_nat_rule_masquerade_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/masquerade/enabled/", Routes::bind(&NatApi::update_nat_rule_masquerade_enabled_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/external-ip/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_external_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/external-port/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_external_port_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/internal-ip/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_internal_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/internal-port/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_internal_port_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_list_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/port-forwarding/entry/:id/proto/", Routes::bind(&NatApi::update_nat_rule_port_forwarding_entry_proto_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/snat/", Routes::bind(&NatApi::update_nat_rule_snat_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::update_nat_rule_snat_entry_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/snat/entry/:id/external-ip/", Routes::bind(&NatApi::update_nat_rule_snat_entry_external_ip_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/snat/entry/:id/internal-net/", Routes::bind(&NatApi::update_nat_rule_snat_entry_internal_net_by_id_handler, this));
-  Routes::Patch(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::update_nat_rule_snat_entry_list_by_id_handler, this));
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
 
-  Routes::Options(router, base + ":name/", Routes::bind(&NatApi::read_nat_by_id_help, this));
-  Routes::Options(router, base + "", Routes::bind(&NatApi::read_nat_list_by_id_help, this));
-  Routes::Options(router, base + ":name/natting-table/:internal-src/:internal-dst/:internal-sport/:internal-dport/:proto/", Routes::bind(&NatApi::read_nat_natting_table_by_id_help, this));
-  Routes::Options(router, base + ":name/natting-table/", Routes::bind(&NatApi::read_nat_natting_table_list_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/", Routes::bind(&NatApi::read_nat_rule_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/dnat/", Routes::bind(&NatApi::read_nat_rule_dnat_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/dnat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/dnat/entry/", Routes::bind(&NatApi::read_nat_rule_dnat_entry_list_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/masquerade/", Routes::bind(&NatApi::read_nat_rule_masquerade_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/port-forwarding/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/port-forwarding/entry/:id/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/port-forwarding/entry/", Routes::bind(&NatApi::read_nat_rule_port_forwarding_entry_list_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/snat/", Routes::bind(&NatApi::read_nat_rule_snat_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/snat/entry/:id/", Routes::bind(&NatApi::read_nat_rule_snat_entry_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/snat/entry/", Routes::bind(&NatApi::read_nat_rule_snat_entry_list_by_id_help, this));
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
 
-  Routes::Options(router, base + ":name/rule/dnat/append/", Routes::bind(&NatApi::create_nat_rule_dnat_append_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/masquerade/disable/", Routes::bind(&NatApi::create_nat_rule_masquerade_disable_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/masquerade/enable/", Routes::bind(&NatApi::create_nat_rule_masquerade_enable_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/port-forwarding/append/", Routes::bind(&NatApi::create_nat_rule_port_forwarding_append_by_id_help, this));
-  Routes::Options(router, base + ":name/rule/snat/append/", Routes::bind(&NatApi::create_nat_rule_snat_append_by_id_help, this));
-}
-
-void NatApi::create_nat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    NatJsonObject value;
+    NattingTableJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setInternalSrc(unique_internalSrc);
+    unique_value.setInternalDst(unique_internalDst);
+    unique_value.setInternalSport(unique_internalSport);
+    unique_value.setInternalDport(unique_internalDport);
+    unique_value.setProto(unique_proto);
+    create_nat_natting_table_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_natting_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_natting_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    NattingTableJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInternalSrc(internalSrc);
-    value.setInternalDst(internalDst);
-    value.setInternalSport(internalSport);
-    value.setInternalDport(internalDport);
-    value.setProto(proto);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_natting_table_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_natting_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<NattingTableJsonObject> value;
+  std::vector<NattingTableJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<NattingTableJsonObject> unique_value;
     for (auto &j : request_body) {
-      NattingTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      NattingTableJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_nat_natting_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_natting_table_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleJsonObject value;
+    RuleJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_rule_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_dnat_append_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_dnat_append_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleDnatAppendInputJsonObject value;
+    RuleDnatAppendInputJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
 
-    auto x = create_nat_rule_dnat_append_by_id(name, value);
+    auto x = create_nat_rule_dnat_append_by_id(unique_name, unique_value);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_dnat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_dnat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleDnatJsonObject unique_value { request_body };
+
+    create_nat_rule_dnat_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_nat_rule_dnat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleDnatJsonObject value;
+    RuleDnatEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_dnat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setId(unique_id);
+    create_nat_rule_dnat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_dnat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_dnat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RuleDnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_dnat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_rule_dnat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RuleDnatEntryJsonObject> value;
+  std::vector<RuleDnatEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleDnatEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      RuleDnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      RuleDnatEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_nat_rule_dnat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_rule_dnat_entry_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_masquerade_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_masquerade_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleMasqueradeJsonObject value;
+    RuleMasqueradeJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_masquerade_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_rule_masquerade_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_masquerade_disable_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_masquerade_disable_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = create_nat_rule_masquerade_disable_by_id(name);
+    auto x = create_nat_rule_masquerade_disable_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_masquerade_enable_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_masquerade_enable_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = create_nat_rule_masquerade_enable_by_id(name);
+    auto x = create_nat_rule_masquerade_enable_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_port_forwarding_append_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_port_forwarding_append_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RulePortForwardingAppendInputJsonObject value;
+    RulePortForwardingAppendInputJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
 
-    auto x = create_nat_rule_port_forwarding_append_by_id(name, value);
+    auto x = create_nat_rule_port_forwarding_append_by_id(unique_name, unique_value);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_port_forwarding_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_port_forwarding_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RulePortForwardingJsonObject unique_value { request_body };
+
+    create_nat_rule_port_forwarding_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_nat_rule_port_forwarding_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RulePortForwardingJsonObject value;
+    RulePortForwardingEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_port_forwarding_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setId(unique_id);
+    create_nat_rule_port_forwarding_entry_by_id(unique_name, unique_id, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_port_forwarding_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_port_forwarding_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RulePortForwardingEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_port_forwarding_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_rule_port_forwarding_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RulePortForwardingEntryJsonObject> value;
+  std::vector<RulePortForwardingEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RulePortForwardingEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      RulePortForwardingEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      RulePortForwardingEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_nat_rule_port_forwarding_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_rule_port_forwarding_entry_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_snat_append_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response create_nat_rule_snat_append_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleSnatAppendInputJsonObject value;
+    RuleSnatAppendInputJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
 
-    auto x = create_nat_rule_snat_append_by_id(name, value);
+    auto x = create_nat_rule_snat_append_by_id(unique_name, unique_value);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Created, response_body.dump(4));
-
+    return { kCreated, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_snat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_snat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleSnatJsonObject unique_value { request_body };
+
+    create_nat_rule_snat_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response create_nat_rule_snat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleSnatJsonObject value;
+    RuleSnatEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_snat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    unique_value.setId(unique_id);
+    create_nat_rule_snat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::create_nat_rule_snat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response create_nat_rule_snat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RuleSnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    create_nat_rule_snat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Created);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::create_nat_rule_snat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RuleSnatEntryJsonObject> value;
+  std::vector<RuleSnatEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleSnatEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      RuleSnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      RuleSnatEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    create_nat_rule_snat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Created);
+    create_nat_rule_snat_entry_list_by_id(unique_name, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::delete_nat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_nat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_nat_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_natting_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-
-    delete_nat_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_nat_natting_table_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::delete_nat_natting_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_nat_natting_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_nat_natting_table_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_dnat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_dnat_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_dnat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-
-    delete_nat_natting_table_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_nat_rule_dnat_entry_by_id(unique_name, unique_id);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::delete_nat_natting_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_nat_rule_dnat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_dnat_entry_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_masquerade_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_masquerade_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_port_forwarding_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_port_forwarding_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_port_forwarding_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-
-    delete_nat_natting_table_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_nat_rule_port_forwarding_entry_by_id(unique_name, unique_id);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::delete_nat_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response delete_nat_rule_port_forwarding_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_port_forwarding_entry_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_snat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_snat_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response delete_nat_rule_snat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-
-    delete_nat_rule_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
+    delete_nat_rule_snat_entry_by_id(unique_name, unique_id);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::delete_nat_rule_dnat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response delete_nat_rule_snat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    delete_nat_rule_snat_entry_list_by_id(unique_name);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_nat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-    delete_nat_rule_dnat_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_dnat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-
-    delete_nat_rule_dnat_entry_by_id(name, id);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_dnat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_dnat_entry_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_masquerade_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_masquerade_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_port_forwarding_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_port_forwarding_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_port_forwarding_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-
-    delete_nat_rule_port_forwarding_entry_by_id(name, id);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_port_forwarding_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_port_forwarding_entry_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_snat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_snat_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_snat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-
-    delete_nat_rule_snat_entry_by_id(name, id);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::delete_nat_rule_snat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-    delete_nat_rule_snat_entry_list_by_id(name);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::read_nat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-
-
-    auto x = read_nat_by_id(name);
+    auto x = read_nat_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
 
 
   try {
-
 
     auto x = read_nat_list_by_id();
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_loglevel_by_id(name);
+    auto x = read_nat_loglevel_by_id(unique_name);
     nlohmann::json response_body;
     response_body = NatJsonObject::NatLoglevelEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_natting_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_natting_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_natting_table_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
+    auto x = read_nat_natting_table_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_natting_table_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_natting_table_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_natting_table_external_ip_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
+    auto x = read_nat_natting_table_external_ip_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_natting_table_external_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_natting_table_external_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_natting_table_external_port_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
+    auto x = read_nat_natting_table_external_port_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_natting_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_natting_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_natting_table_list_by_id(name);
+    auto x = read_nat_natting_table_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_natting_table_originating_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_natting_table_originating_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_natting_table_originating_rule_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto);
+    auto x = read_nat_natting_table_originating_rule_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto);
     nlohmann::json response_body;
     response_body = NattingTableJsonObject::NattingTableOriginatingRuleEnum_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_by_id(name);
+    auto x = read_nat_rule_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_dnat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_dnat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_dnat_by_id(name);
+    auto x = read_nat_rule_dnat_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_dnat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_dnat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_dnat_entry_by_id(name, id);
+    auto x = read_nat_rule_dnat_entry_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_dnat_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_dnat_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_dnat_entry_external_ip_by_id(name, id);
+    auto x = read_nat_rule_dnat_entry_external_ip_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_dnat_entry_internal_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_dnat_entry_internal_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_dnat_entry_internal_ip_by_id(name, id);
+    auto x = read_nat_rule_dnat_entry_internal_ip_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_dnat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_dnat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_dnat_entry_list_by_id(name);
+    auto x = read_nat_rule_dnat_entry_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_masquerade_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_masquerade_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_masquerade_by_id(name);
+    auto x = read_nat_rule_masquerade_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_masquerade_enabled_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_masquerade_enabled_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_masquerade_enabled_by_id(name);
+    auto x = read_nat_rule_masquerade_enabled_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_port_forwarding_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_by_id(name);
+    auto x = read_nat_rule_port_forwarding_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_external_ip_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_external_ip_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_external_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_external_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_external_port_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_external_port_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_internal_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_internal_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_internal_ip_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_internal_ip_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_internal_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_internal_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_internal_port_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_internal_port_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_port_forwarding_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_list_by_id(name);
+    auto x = read_nat_rule_port_forwarding_entry_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_port_forwarding_entry_proto_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_port_forwarding_entry_proto_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_port_forwarding_entry_proto_by_id(name, id);
+    auto x = read_nat_rule_port_forwarding_entry_proto_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_snat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_snat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_snat_by_id(name);
+    auto x = read_nat_rule_snat_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_snat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_snat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_snat_entry_by_id(name, id);
+    auto x = read_nat_rule_snat_entry_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x.toJson();
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_snat_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_snat_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_snat_entry_external_ip_by_id(name, id);
+    auto x = read_nat_rule_snat_entry_external_ip_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_snat_entry_internal_net_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response read_nat_rule_snat_entry_internal_net_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
 
-
-    auto x = read_nat_rule_snat_entry_internal_net_by_id(name, id);
+    auto x = read_nat_rule_snat_entry_internal_net_by_id(unique_name, unique_id);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_rule_snat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_rule_snat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_rule_snat_entry_list_by_id(name);
+    auto x = read_nat_rule_snat_entry_list_by_id(unique_name);
     nlohmann::json response_body;
     for (auto &i : x) {
       response_body += i.toJson();
     }
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_type_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_type_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_type_by_id(name);
+    auto x = read_nat_type_by_id(unique_name);
     nlohmann::json response_body;
     response_body = NatJsonObject::CubeType_to_string(x);
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::read_nat_uuid_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response read_nat_uuid_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
 
   try {
 
-
-    auto x = read_nat_uuid_by_id(name);
+    auto x = read_nat_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
-    response.send(polycube::service::Http::Code::Ok, response_body.dump(4));
-
+    return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_nat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    NatJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    replace_nat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_natting_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    NatJsonObject value;
+    NattingTableJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setInternalSrc(unique_internalSrc);
+    unique_value.setInternalDst(unique_internalDst);
+    unique_value.setInternalSport(unique_internalSport);
+    unique_value.setInternalDport(unique_internalDport);
+    unique_value.setProto(unique_proto);
+    replace_nat_natting_table_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_natting_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_nat_natting_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<NattingTableJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<NattingTableJsonObject> unique_value;
+    for (auto &j : request_body) {
+      NattingTableJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_nat_natting_table_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+
+Response replace_nat_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleJsonObject unique_value { request_body };
+
+    replace_nat_rule_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_dnat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleDnatJsonObject unique_value { request_body };
+
+    replace_nat_rule_dnat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_dnat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    NattingTableJsonObject value;
+    RuleDnatEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInternalSrc(internalSrc);
-    value.setInternalDst(internalDst);
-    value.setInternalSport(internalSport);
-    value.setInternalDport(internalDport);
-    value.setProto(proto);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_natting_table_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setId(unique_id);
+    replace_nat_rule_dnat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_natting_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response replace_nat_rule_dnat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<RuleDnatEntryJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleDnatEntryJsonObject> unique_value;
+    for (auto &j : request_body) {
+      RuleDnatEntryJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_nat_rule_dnat_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_masquerade_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleMasqueradeJsonObject unique_value { request_body };
+
+    replace_nat_rule_masquerade_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_port_forwarding_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RulePortForwardingJsonObject unique_value { request_body };
+
+    replace_nat_rule_port_forwarding_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_port_forwarding_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RulePortForwardingEntryJsonObject unique_value { request_body };
+
+    unique_value.setId(unique_id);
+    replace_nat_rule_port_forwarding_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_port_forwarding_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<RulePortForwardingEntryJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RulePortForwardingEntryJsonObject> unique_value;
+    for (auto &j : request_body) {
+      RulePortForwardingEntryJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_nat_rule_port_forwarding_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_snat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleSnatJsonObject unique_value { request_body };
+
+    replace_nat_rule_snat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_snat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleSnatEntryJsonObject unique_value { request_body };
+
+    unique_value.setId(unique_id);
+    replace_nat_rule_snat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response replace_nat_rule_snat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  // Getting the body param
+  std::vector<RuleSnatEntryJsonObject> unique_value;
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleSnatEntryJsonObject> unique_value;
+    for (auto &j : request_body) {
+      RuleSnatEntryJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    replace_nat_rule_snat_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    NatJsonObject unique_value { request_body };
+
+    unique_value.setName(unique_name);
+    update_nat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
 
   // Getting the body param
-  std::vector<NattingTableJsonObject> value;
+  std::vector<NatJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<NatJsonObject> unique_value;
     for (auto &j : request_body) {
-      NattingTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      NatJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_nat_natting_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_nat_list_by_id(unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_loglevel_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    NatLoglevelEnum unique_value_ = NatJsonObject::string_to_NatLoglevelEnum(request_body);
+    update_nat_loglevel_by_id(unique_name, unique_value_);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_natting_table_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleJsonObject value;
+    NattingTableJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setInternalSrc(unique_internalSrc);
+    unique_value.setInternalDst(unique_internalDst);
+    unique_value.setInternalSport(unique_internalSport);
+    unique_value.setInternalDport(unique_internalDport);
+    unique_value.setProto(unique_proto);
+    update_nat_natting_table_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_dnat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_natting_table_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    RuleDnatJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_dnat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_natting_table_external_ip_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_dnat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_natting_table_external_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    RuleDnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_dnat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_nat_natting_table_external_port_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_dnat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_nat_natting_table_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RuleDnatEntryJsonObject> value;
+  std::vector<NattingTableJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<NattingTableJsonObject> unique_value;
     for (auto &j : request_body) {
-      RuleDnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      NattingTableJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_nat_rule_dnat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_nat_natting_table_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_masquerade_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_natting_table_originating_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    RuleMasqueradeJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_masquerade_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    NattingTableOriginatingRuleEnum unique_value_ = NattingTableJsonObject::string_to_NattingTableOriginatingRuleEnum(request_body);
+    update_nat_natting_table_originating_rule_by_id(unique_name, unique_internalSrc, unique_internalDst, unique_internalSport, unique_internalDport, unique_proto, unique_value_);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_port_forwarding_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+
+Response update_nat_rule_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleJsonObject unique_value { request_body };
+
+    update_nat_rule_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_dnat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleDnatJsonObject unique_value { request_body };
+
+    update_nat_rule_dnat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_dnat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RulePortForwardingJsonObject value;
+    RuleDnatEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_port_forwarding_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setId(unique_id);
+    update_nat_rule_dnat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_port_forwarding_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_rule_dnat_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    RulePortForwardingEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_port_forwarding_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_dnat_entry_external_ip_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_port_forwarding_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_nat_rule_dnat_entry_internal_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_dnat_entry_internal_ip_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_dnat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RulePortForwardingEntryJsonObject> value;
+  std::vector<RuleDnatEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleDnatEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      RulePortForwardingEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
+      RuleDnatEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    replace_nat_rule_port_forwarding_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_nat_rule_dnat_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_snat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_rule_masquerade_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleMasqueradeJsonObject unique_value { request_body };
+
+    update_nat_rule_masquerade_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_masquerade_enabled_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    bool unique_value = request_body;
+    update_nat_rule_masquerade_enabled_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_port_forwarding_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RulePortForwardingJsonObject unique_value { request_body };
+
+    update_nat_rule_port_forwarding_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_port_forwarding_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    RuleSnatJsonObject value;
+    RulePortForwardingEntryJsonObject unique_value { request_body };
 
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_snat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    unique_value.setId(unique_id);
+    update_nat_rule_port_forwarding_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_snat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response update_nat_rule_port_forwarding_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
 
   try {
-    // Getting the body param
-    RuleSnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateMandatoryFields();
-    value.validateParams();
-    replace_nat_rule_snat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_port_forwarding_entry_external_ip_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::replace_nat_rule_snat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
 
+Response update_nat_rule_port_forwarding_entry_external_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_nat_rule_port_forwarding_entry_external_port_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_port_forwarding_entry_internal_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_port_forwarding_entry_internal_ip_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_port_forwarding_entry_internal_port_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    uint16_t unique_value = request_body;
+    update_nat_rule_port_forwarding_entry_internal_port_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_port_forwarding_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<RuleSnatEntryJsonObject> value;
+  std::vector<RulePortForwardingEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      RuleSnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateMandatoryFields();
-      a.validateParams();
-      value.push_back(a);
-    }
-    replace_nat_rule_snat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
     // Getting the body param
-    NatJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setName(name);
-    value.validateParams();
-    update_nat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
+    std::vector<RulePortForwardingEntryJsonObject> unique_value;
+    for (auto &j : request_body) {
+      RulePortForwardingEntryJsonObject a { j };
+      unique_value.push_back(a);
+    }
+    update_nat_rule_port_forwarding_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
-void NatApi::update_nat_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
 
+Response update_nat_rule_port_forwarding_entry_proto_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_port_forwarding_entry_proto_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_snat_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleSnatJsonObject unique_value { request_body };
+
+    update_nat_rule_snat_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_snat_entry_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    RuleSnatEntryJsonObject unique_value { request_body };
+
+    unique_value.setId(unique_id);
+    update_nat_rule_snat_entry_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_snat_entry_external_ip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_snat_entry_external_ip_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_snat_entry_internal_net_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
+
+
+  try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // The conversion is done automatically by the json library
+    std::string unique_value = request_body;
+    update_nat_rule_snat_entry_internal_net_by_id(unique_name, unique_id, unique_value);
+    return { kOk, nullptr };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response update_nat_rule_snat_entry_list_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ,
+  const char *value) {
+  // Getting the path params
+  std::string unique_name { name };
   // Getting the body param
-  std::vector<NatJsonObject> value;
+  std::vector<RuleSnatEntryJsonObject> unique_value;
 
   try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    std::vector<RuleSnatEntryJsonObject> unique_value;
     for (auto &j : request_body) {
-      NatJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
+      RuleSnatEntryJsonObject a { j };
+      unique_value.push_back(a);
     }
-    update_nat_list_by_id(value);
-    response.send(polycube::service::Http::Code::Ok);
+    update_nat_rule_snat_entry_list_by_id(unique_name, unique_value);
+    return { kOk, nullptr };
   } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_loglevel_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    NatLoglevelEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = NatJsonObject::string_to_NatLoglevelEnum(request_body);
-    update_nat_loglevel_by_id(name, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_natting_table_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    NattingTableJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setInternalSrc(internalSrc);
-    value.setInternalDst(internalDst);
-    value.setInternalSport(internalSport);
-    value.setInternalDport(internalDport);
-    value.setProto(proto);
-    value.validateParams();
-    update_nat_natting_table_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_natting_table_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_natting_table_external_ip_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_natting_table_external_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_natting_table_external_port_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_natting_table_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<NattingTableJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      NattingTableJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_nat_natting_table_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_natting_table_originating_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    NattingTableOriginatingRuleEnum value_;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value_ = NattingTableJsonObject::string_to_NattingTableOriginatingRuleEnum(request_body);
-    update_nat_natting_table_originating_rule_by_id(name, internalSrc, internalDst, internalSport, internalDport, proto, value_);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    RuleJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_nat_rule_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_dnat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    RuleDnatJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_nat_rule_dnat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_dnat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RuleDnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateParams();
-    update_nat_rule_dnat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_dnat_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_dnat_entry_external_ip_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_dnat_entry_internal_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_dnat_entry_internal_ip_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_dnat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<RuleDnatEntryJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      RuleDnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_nat_rule_dnat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_masquerade_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    RuleMasqueradeJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_nat_rule_masquerade_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_masquerade_enabled_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    bool value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_masquerade_enabled_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    RulePortForwardingJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_nat_rule_port_forwarding_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RulePortForwardingEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateParams();
-    update_nat_rule_port_forwarding_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_port_forwarding_entry_external_ip_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_external_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_port_forwarding_entry_external_port_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_internal_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_port_forwarding_entry_internal_ip_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_internal_port_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    uint16_t value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_port_forwarding_entry_internal_port_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<RulePortForwardingEntryJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      RulePortForwardingEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_nat_rule_port_forwarding_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_port_forwarding_entry_proto_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_port_forwarding_entry_proto_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_snat_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  try {
-    // Getting the body param
-    RuleSnatJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.validateParams();
-    update_nat_rule_snat_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_snat_entry_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    RuleSnatEntryJsonObject value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    value.fromJson(request_body);
-    value.setId(id);
-    value.validateParams();
-    update_nat_rule_snat_entry_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_snat_entry_external_ip_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_snat_entry_external_ip_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_snat_entry_internal_net_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
-
-
-  try {
-    // Getting the body param
-    std::string value;
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    // The conversion is done automatically by the json library
-    value = request_body;
-    update_nat_rule_snat_entry_internal_net_by_id(name, id, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
-  }
-}
-void NatApi::update_nat_rule_snat_entry_list_by_id_handler(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
-  // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-  // Getting the body param
-  std::vector<RuleSnatEntryJsonObject> value;
-
-  try {
-
-    nlohmann::json request_body = nlohmann::json::parse(request.body());
-    for (auto &j : request_body) {
-      RuleSnatEntryJsonObject a;
-      a.fromJson(j);
-      a.validateKeys();
-      a.validateParams();
-      value.push_back(a);
-    }
-    update_nat_rule_snat_entry_list_by_id(name, value);
-    response.send(polycube::service::Http::Code::Ok);
-  } catch(const std::exception &e) {
-    response.send(polycube::service::Http::Code::Internal_Server_Error, e.what());
+    return { kGenericError, ::strdup(e.what()) };
   }
 }
 
-void NatApi::read_nat_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response nat_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = NatJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = NatJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = NatJsonObject::helpComplexElements();
     val["actions"] = NatJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = NatJsonObject::helpKeys();
     val["elements"] = read_nat_list_by_id_get_list();
   break;
-
   case HelpType::ADD:
     val["params"] = NatJsonObject::helpKeys();
     val["optional-params"] = NatJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = NatJsonObject::helpKeys();
     val["elements"] = read_nat_list_by_id_get_list();
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = NatJsonObject::helpKeys();
     val["elements"] = read_nat_list_by_id_get_list();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_natting_table_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_natting_table_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto internalSrc = request.param(":internal-src").as<std::string>();
-  auto internalDst = request.param(":internal-dst").as<std::string>();
-  auto internalSport = request.param(":internal-sport").as<uint16_t>();
-  auto internalDport = request.param(":internal-dport").as<uint16_t>();
-  auto proto = request.param(":proto").as<std::string>();
+  std::string unique_name { name };
+  std::string unique_internalSrc;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-src")) {
+      unique_internalSrc = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
+  std::string unique_internalDst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dst")) {
+      unique_internalDst = std::string { keys[i].value.string };
+      break;
+    }
+  }
 
-  using polycube::service::HelpType;
+  uint16_t unique_internalSport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-sport")) {
+      unique_internalSport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_internalDport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "internal-dport")) {
+      unique_internalDport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  std::string unique_proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "proto")) {
+      unique_proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = NattingTableJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = NattingTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = NattingTableJsonObject::helpComplexElements();
     val["actions"] = NattingTableJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_natting_table_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_natting_table_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = NattingTableJsonObject::helpKeys();
-    val["elements"] = read_nat_natting_table_list_by_id_get_list(name);
+    val["elements"] = read_nat_natting_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = NattingTableJsonObject::helpKeys();
     val["optional-params"] = NattingTableJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = NattingTableJsonObject::helpKeys();
-    val["elements"] = read_nat_natting_table_list_by_id_get_list(name);
+    val["elements"] = read_nat_natting_table_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = NattingTableJsonObject::helpKeys();
-    val["elements"] = read_nat_natting_table_list_by_id_get_list(name);
+    val["elements"] = read_nat_natting_table_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleJsonObject::helpComplexElements();
     val["actions"] = RuleJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_dnat_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_dnat_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleDnatJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleDnatJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleDnatJsonObject::helpComplexElements();
     val["actions"] = RuleDnatJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_dnat_entry_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_dnat_entry_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleDnatEntryJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleDnatEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleDnatEntryJsonObject::helpComplexElements();
     val["actions"] = RuleDnatEntryJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_dnat_entry_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_dnat_entry_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleDnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = RuleDnatEntryJsonObject::helpKeys();
     val["optional-params"] = RuleDnatEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = RuleDnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = RuleDnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_dnat_entry_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_masquerade_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_masquerade_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleMasqueradeJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleMasqueradeJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleMasqueradeJsonObject::helpComplexElements();
     val["actions"] = RuleMasqueradeJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_port_forwarding_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_port_forwarding_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RulePortForwardingJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RulePortForwardingJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RulePortForwardingJsonObject::helpComplexElements();
     val["actions"] = RulePortForwardingJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_port_forwarding_entry_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_port_forwarding_entry_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RulePortForwardingEntryJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RulePortForwardingEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RulePortForwardingEntryJsonObject::helpComplexElements();
     val["actions"] = RulePortForwardingEntryJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_port_forwarding_entry_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_port_forwarding_entry_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RulePortForwardingEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = RulePortForwardingEntryJsonObject::helpKeys();
     val["optional-params"] = RulePortForwardingEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = RulePortForwardingEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = RulePortForwardingEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_port_forwarding_entry_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_snat_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_snat_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleSnatJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleSnatJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleSnatJsonObject::helpComplexElements();
     val["actions"] = RuleSnatJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_snat_entry_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_snat_entry_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-  auto id = request.param(":id").as<uint32_t>();
+  std::string unique_name { name };
+  uint32_t unique_id;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "id")) {
+      unique_id = keys[i].value.uint32;
+      break;
+    }
+  }
 
-
-  using polycube::service::HelpType;
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleSnatEntryJsonObject::helpElements();
   break;
-
-  case HelpType::ADD:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::SET:
     val["params"] = RuleSnatEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::DEL:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::NONE:
     val["commands"] = {"set", "show"};
     val["params"] = RuleSnatEntryJsonObject::helpComplexElements();
     val["actions"] = RuleSnatEntryJsonObject::helpActions();
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-void NatApi::read_nat_rule_snat_entry_list_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_snat_entry_list_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   // Getting the path params
-  auto name = request.param(":name").as<std::string>();
-
-
-  using polycube::service::HelpType;
+  std::string unique_name { name };
   nlohmann::json val = nlohmann::json::object();
-  switch (request.help_type()) {
+  switch (type) {
   case HelpType::SHOW:
     val["params"] = RuleSnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::ADD:
     val["params"] = RuleSnatEntryJsonObject::helpKeys();
     val["optional-params"] = RuleSnatEntryJsonObject::helpWritableLeafs();
   break;
-
-  case HelpType::SET:
-    response.send(polycube::service::Http::Code::Bad_Request);
-  return;
-
   case HelpType::DEL:
     val["params"] = RuleSnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(unique_name);
   break;
-
   case HelpType::NONE:
     val["commands"] = {"add", "del", "show"};
     val["params"] = RuleSnatEntryJsonObject::helpKeys();
-    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(name);
+    val["elements"] = read_nat_rule_snat_entry_list_by_id_get_list(unique_name);
   break;
-
-  case HelpType::NO_HELP:
-    response.send(polycube::service::Http::Code::Bad_Request);
-    return;
+  default:
+    return { kBadRequest, nullptr };
   }
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 
-void NatApi::create_nat_rule_dnat_append_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+Response nat_rule_dnat_append_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = RuleDnatAppendInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void NatApi::create_nat_rule_masquerade_disable_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response nat_rule_masquerade_disable_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void NatApi::create_nat_rule_masquerade_enable_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response nat_rule_masquerade_enable_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void NatApi::create_nat_rule_port_forwarding_append_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response nat_rule_port_forwarding_append_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = RulePortForwardingAppendInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-void NatApi::create_nat_rule_snat_append_by_id_help(
-  const polycube::service::Rest::Request &request,
-  polycube::service::HttpHandleResponse &response) {
+
+Response nat_rule_snat_append_by_id_help(
+  HelpType type, const char *name,
+  const Key *keys, size_t num_keys) {
   nlohmann::json val = nlohmann::json::object();
   val["in"] = RuleSnatAppendInputJsonObject::helpElements();
 
-  response.send(polycube::service::Http::Code::Ok, val.dump(4));
+  return { kOk, ::strdup(val.dump().c_str()) };
 }
-
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 

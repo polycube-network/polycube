@@ -34,8 +34,6 @@ CubeFactoryImpl::CubeFactoryImpl(const std::string &service_name)
       controller_xdp_(Controller::get_xdp_instance()),
       datapathlog_(DatapathLog::get_instance()) {}
 
-CubeFactoryImpl::~CubeFactoryImpl() {}
-
 std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
     const std::string &name, const std::vector<std::string> &ingress_code,
     const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,

@@ -1,3 +1,5 @@
+include(${PROJECT_SOURCE_DIR}/cmake/LoadFileAsVariable.cmake)
+
 aux_source_directory(serializer SERIALIZER_SOURCES)
 aux_source_directory(api API_SOURCES)
 aux_source_directory(default-src SRC_SOURCES)
@@ -26,6 +28,9 @@ load_file_as_variable(pcn-transparenthelloworld
 load_file_as_variable(pcn-transparenthelloworld
   TransparentHelloworld_dp_egress.c transparent_helloworld_code_egress)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-transparenthelloworld
+    ../datamodel/transparent-helloworld.yang transparenthelloworld_datamodel)
 
 # Specify shared library install directory
 

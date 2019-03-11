@@ -42,17 +42,13 @@ enum class PortsTypeEnum {
 class  PortsJsonObject : public JsonObjectBase {
 public:
   PortsJsonObject();
-  virtual ~PortsJsonObject();
+  PortsJsonObject(nlohmann::json& json);
+  ~PortsJsonObject() final = default;
 
   /////////////////////////////////////////////
   /// JsonObjectBase overrides
 
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
+  nlohmann::json toJson() const final;
 
   static nlohmann::json helpKeys();
   static nlohmann::json helpElements();
@@ -107,7 +103,7 @@ public:
   static PortsTypeEnum string_to_PortsTypeEnum(const std::string &str);
 
 
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
   std::string m_uuid;
@@ -118,8 +114,6 @@ protected:
   bool m_peerIsSet;
   PortsTypeEnum m_type;
   bool m_typeIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "status", "peer", "type" };
 };
 
 }
