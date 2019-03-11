@@ -44,7 +44,7 @@ Download and set up the following packages.
 
 **Follow the instruction below, after the pre-requisite:**
 
-1. Use this `PCN-K8S Vagrantfile <https://raw.githubusercontent.com/polycube-network/polycube/2a23469853bed0ce38774512d0180629f13fe7fb/tests/vagrant/pcn-k8s/Vagrantfile>`_ for your setup.
+1. Use this `PCN-K8S Vagrantfile <https://raw.githubusercontent.com/polycube-network/polycube/tests/vagrant/pcn-k8s/Vagrantfile>`_ for your setup.
 2. Execute ``vagrant up`` to bring all the nodes up and running.
 3. ``vagrant status`` to check all the nodes and it's status
 4. ``vagrant ssh <node-name>`` to SSH to the node.
