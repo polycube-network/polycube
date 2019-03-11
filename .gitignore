@@ -4,3 +4,5 @@ build/*
 *.swagger-codegen
 swagger-codegen*
 .vscode/*
+.idea/*
+cmake-build-debug/*
