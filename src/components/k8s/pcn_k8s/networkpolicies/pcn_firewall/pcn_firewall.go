@@ -422,8 +422,8 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	}
 
 	//	The last ID is always the default one's, which always increments by one as we push rules.
-	if ID = chain.Rule[len(chain.Rule)-1].Id; ID == 0 {
-		ID++
+	if len(chain.Rule) > 1 {
+		ID = chain.Rule[len(chain.Rule)-2].Id + 1
 	}
 
 	for i := 0; i < len(rules); i++ {
