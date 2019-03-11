@@ -87,6 +87,10 @@ class BaseCube {
 
   nlohmann::json to_json() const;
 
+  // The code generation depends on this function, that's the reason why
+  // this uses a different naming convention
+  const std::string getName() const;
+
  protected:
   int get_table_fd(const std::string &table_name, int index, ProgramType type);
 

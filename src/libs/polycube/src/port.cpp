@@ -137,6 +137,10 @@ std::string Port::name() const {
   return pimpl_->name();
 }
 
+std::string Port::getName() const {
+  return pimpl_->name();
+}
+
 void Port::set_peer(const std::string &peer) {
   return pimpl_->set_peer(peer);
 }

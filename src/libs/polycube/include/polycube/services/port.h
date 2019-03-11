@@ -51,6 +51,10 @@ class Port {
   virtual void set_conf(const nlohmann::json &conf);
   virtual nlohmann::json to_json() const;
 
+  // The code generation depends on this function, that's the reason why
+  // this uses a different naming convention
+  std::string getName() const;
+
  private:
   class impl;
   std::unique_ptr<impl> pimpl_;

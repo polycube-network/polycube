@@ -107,6 +107,10 @@ const std::string BaseCube::get_name() const {
   return cube_->get_name();
 }
 
+const std::string BaseCube::getName() const {
+  return get_name();
+}
+
 CubeType BaseCube::get_type() const {
   return type_;
 }
