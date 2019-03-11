@@ -7,7 +7,7 @@ servers = [
         :type => "master",
         :box => "ubuntu/bionic64",
         :box_version => "20190307.0.0",
-        :eth1 => "192.168.192.10",
+        :eth1 => "172.10.10.10",
         :mem => "2048",
         :cpu => "2"
     },
@@ -16,7 +16,7 @@ servers = [
         :type => "node",
         :box => "ubuntu/bionic64",
         :box_version => "20190307.0.0",
-        :eth1 => "192.168.192.11",
+        :eth1 => "172.10.10.11",
         :mem => "2048",
         :cpu => "2"
     },
@@ -25,7 +25,7 @@ servers = [
         :type => "node",
         :box => "ubuntu/bionic64",
         :box_version => "20190307.0.0",
-        :eth1 => "192.168.192.12",
+        :eth1 => "172.10.10.12",
         :mem => "2048",
         :cpu => "2"
     }
@@ -80,10 +80,10 @@ $configureMaster = <<-SCRIPT
     cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
     chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
 
-    # install Calico pod network addon
+    # install PCN-K8S-CNI pod network addon
     export KUBECONFIG=/etc/kubernetes/admin.conf
-    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/c08c4f84ccbaf9788a41e813eb87883fc63fe80d/src/components/k8s/standalone_etcd.yaml
-    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/c08c4f84ccbaf9788a41e813eb87883fc63fe80d/src/components/k8s/pcn-k8s.yaml
+    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/src/components/k8s/standalone_etcd.yaml
+    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/src/components/k8s/pcn-k8s.yaml
 
     kubeadm token create --print-join-command > /etc/kubeadm_join_cmd.sh
     chmod +x /etc/kubeadm_join_cmd.sh
@@ -97,7 +97,7 @@ SCRIPT
 $configureNode = <<-SCRIPT
     echo "This is worker"
     apt-get install -y sshpass
-    sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@192.168.192.10:/etc/kubeadm_join_cmd.sh .
+    sshpass -p "vagrant" scp -o StrictHostKeyChecking=no vagrant@172.10.10.10:/etc/kubeadm_join_cmd.sh .
     sh ./kubeadm_join_cmd.sh
 SCRIPT
 
@@ -114,7 +114,7 @@ Vagrant.configure("2") do |config|
             config.vm.provider "virtualbox" do |v|
 
                 v.name = opts[:name]
-            	v.customize ["modifyvm", :id, "--groups", "/PCN-K8S Development"]
+                v.customize ["modifyvm", :id, "--groups", "/PCN-K8S-CNI Development"]
                 v.customize ["modifyvm", :id, "--memory", opts[:mem]]
                 v.customize ["modifyvm", :id, "--cpus", opts[:cpu]]
 
