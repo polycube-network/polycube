@@ -32,8 +32,7 @@ class ParentResource : public Resource {
                  const ParentResource *const parent, PolycubedCore *core,
                  const std::vector<JsonNodeField> &node_fields,
                  bool configuration, bool init_only_config,
-                 bool container_presence = false,
-                 bool rpc_action = false);
+                 bool container_presence = false, bool rpc_action = false);
 
   ~ParentResource() override = default;
 

@@ -153,9 +153,8 @@ std::unique_ptr<Endpoint::ListResource> ConcreteFactory::RestList(
     return std::make_unique<ListResource>(
         std::move(read_entry_handler), std::move(read_whole_handler),
         std::move(help), std::move(help_multiple), name, description,
-        cli_example, rest_endpoint, std::move(rest_endpoint_whole_list),
-        parent, configuration, init_only_config, core_, std::move(keys),
-        node_fields);
+        cli_example, rest_endpoint, std::move(rest_endpoint_whole_list), parent,
+        configuration, init_only_config, core_, std::move(keys), node_fields);
   }
 
   auto create_name = GenerateHandlerName(tree_names, Operation::kCreate);
@@ -200,9 +199,9 @@ std::unique_ptr<Endpoint::ListResource> ConcreteFactory::RestList(
       std::move(delete_entry_handler), std::move(create_whole_handler),
       std::move(replace_whole_handler), std::move(update_whole_handler),
       std::move(read_whole_handler), std::move(delete_whole_handler),
-      std::move(help), std::move(help_multiple), name, description,
-      cli_example, rest_endpoint, std::move(rest_endpoint_whole_list), parent,
-      core_, std::move(keys), node_fields);
+      std::move(help), std::move(help_multiple), name, description, cli_example,
+      rest_endpoint, std::move(rest_endpoint_whole_list), parent, core_,
+      std::move(keys), node_fields);
 }
 
 std::unique_ptr<Endpoint::ParentResource> ConcreteFactory::RestGeneric(

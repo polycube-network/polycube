@@ -56,7 +56,8 @@ ListResource::ListResource(const std::string &name,
   }
   auto router = core_->get_rest_server()->get_router();
   router->get(multiple_endpoint_, bind(&ListResource::get_multiple, this));
-  router->options(multiple_endpoint_, bind(&ListResource::options_multiple, this));
+  router->options(multiple_endpoint_,
+                  bind(&ListResource::options_multiple, this));
   if (configuration_ && !init_only_config) {
     router->post(multiple_endpoint_, bind(&ListResource::post_multiple, this));
     router->put(multiple_endpoint_, bind(&ListResource::put_multiple, this));
@@ -205,8 +206,7 @@ void ListResource::del_multiple(const Request &request,
 }
 
 void ListResource::options_common(const Request &request,
-                                  ResponseWriter response,
-                                  bool multiple) {
+                                  ResponseWriter response, bool multiple) {
   const auto &query_param = request.query();
   if (!query_param.has("help")) {
     Server::ResponseGenerator::Generate({{kBadRequest, nullptr}},
@@ -251,7 +251,8 @@ void ListResource::options(const Request &request, ResponseWriter response) {
   return options_common(request, std::move(response), false);
 }
 
-void ListResource::options_multiple(const Request &request, ResponseWriter response) {
+void ListResource::options_multiple(const Request &request,
+                                    ResponseWriter response) {
   return options_common(request, std::move(response), true);
 }
 
