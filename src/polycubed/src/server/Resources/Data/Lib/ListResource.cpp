@@ -174,11 +174,11 @@ Response ListResource::Help(const std::string &cube_name, HelpType type,
   return help_(type, cube_name.data(), key_params.data(), key_params.size());
 }
 
-Response ListResource::HelpMultiple(const std::string &cube_name,
-                                    HelpType type,
+Response ListResource::HelpMultiple(const std::string &cube_name, HelpType type,
                                     const ListKeyValues &keys) {
   const auto &key_params = KeyListArray::Generate(keys);
-  return help_multiple_(type, cube_name.data(), key_params.data(), key_params.size());
+  return help_multiple_(type, cube_name.data(), key_params.data(),
+                        key_params.size());
 }
 
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

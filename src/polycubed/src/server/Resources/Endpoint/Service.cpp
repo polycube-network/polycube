@@ -227,7 +227,7 @@ void Service::options(const Request &request, ResponseWriter response) {
 
   ListKeyValues keys{};
   auto cube_name = request.hasParam(":name") ? Service::Cube(request) : "";
-  Server::ResponseGenerator::Generate(
-      {Help(cube_name, type, keys)}, std::move(response));
+  Server::ResponseGenerator::Generate({Help(cube_name, type, keys)},
+                                      std::move(response));
 }
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

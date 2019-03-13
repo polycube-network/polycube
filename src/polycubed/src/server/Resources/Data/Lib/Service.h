@@ -67,6 +67,7 @@ class Service : public Endpoint::Service {
 
   Response Help(const std::string &cube_name, HelpType type,
                 const ListKeyValues &keys) final;
+
  private:
   const std::shared_ptr<void> handle_;
   const std::function<Response(const char *, const Key *, size_t, const char *)>

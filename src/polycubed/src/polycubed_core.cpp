@@ -436,7 +436,7 @@ std::string PolycubedCore::get_cube_port_parameter(
   auto &ctrl = get_service_controller(service_name);
   auto res = ctrl.get_management_interface()->get_service()->Child("ports");
 
-  ListKeyValues k { {"ports_name", ListType::kString, port_name } };
+  ListKeyValues k{{"ports_name", ListType::kString, port_name}};
 
   std::istringstream iss(port_name + "/" + parameter);
   for (std::string segment; std::getline(iss, segment, '/');) {
@@ -447,7 +447,7 @@ std::string PolycubedCore::get_cube_port_parameter(
         for (const auto &key : list->keys_) {
           ListKeyValue v{key.Name(), key.Type(), segment};
           k.emplace_back(v);
-          std::getline(iss, segment, '/'); // if null raise error
+          std::getline(iss, segment, '/');  // if null raise error
         }
       }
       res = current->Child(segment);
@@ -473,7 +473,8 @@ std::string PolycubedCore::get_cube_port_parameter(
 std::string PolycubedCore::set_cube_parameter(const std::string &cube,
                                               const std::string &parameter,
                                               const std::string &value) {
-  throw std::logic_error("PolycubedCore::set_cube_parameter is not implemented");
+  throw std::logic_error(
+      "PolycubedCore::set_cube_parameter is not implemented");
 }
 
 void PolycubedCore::set_rest_server(RestServer *rest_server) {

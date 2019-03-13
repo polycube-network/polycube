@@ -28,12 +28,14 @@
 
 namespace polycube::polycubed::Rest::Resources::Body {
 
-ParentResource::ParentResource(
-    const std::string &name, const std::string &description,
-    const std::string &cli_example, const Body::ParentResource *parent,
-    PolycubedCore *core, const std::vector<JsonNodeField> &node_fields,
-    bool configuration, bool init_only_config, bool container_presence,
-    bool rpc_action)
+ParentResource::ParentResource(const std::string &name,
+                               const std::string &description,
+                               const std::string &cli_example,
+                               const Body::ParentResource *parent,
+                               PolycubedCore *core,
+                               const std::vector<JsonNodeField> &node_fields,
+                               bool configuration, bool init_only_config,
+                               bool container_presence, bool rpc_action)
     : Resource(name, description, cli_example, parent, core, configuration,
                init_only_config, node_fields),
       children_{},
