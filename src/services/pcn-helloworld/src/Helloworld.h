@@ -34,8 +34,7 @@ class Helloworld : public polycube::service::Cube<Ports>,
   friend class Ports;
 
  public:
-  Helloworld(const std::string name, const HelloworldJsonObject &conf,
-             CubeType type = CubeType::TC);
+  Helloworld(const std::string name, const HelloworldJsonObject &conf);
   virtual ~Helloworld();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -46,28 +45,11 @@ class Helloworld : public polycube::service::Cube<Ports>,
   HelloworldJsonObject toJsonObject() override;
 
   /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: INFO
-  /// </summary>
-  HelloworldLoglevelEnum getLoglevel() override;
-  void setLoglevel(const HelloworldLoglevelEnum &value) override;
-
-  /// <summary>
   /// Action performed on the received packet (i.e., DROP, SLOWPATH, or FORWARD;
   /// default: DROP)
   /// </summary>
   HelloworldActionEnum getAction() override;
   void setAction(const HelloworldActionEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Entry of the ports table
@@ -80,9 +62,4 @@ class Helloworld : public polycube::service::Cube<Ports>,
                     const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
-
-  /// <summary>
-  /// Name of the helloworld service
-  /// </summary>
-  std::string getName() override;
 };

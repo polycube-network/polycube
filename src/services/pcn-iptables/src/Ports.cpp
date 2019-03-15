@@ -22,10 +22,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
              const PortsJsonObject &conf)
     : Port(port), parent_(static_cast<Iptables &>(parent)) {
   logger()->info("Creating Ports instance");
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
@@ -34,19 +30,12 @@ void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-  conf.setPeer(getPeer());
-  conf.setName(getName());
-  conf.setUuid(getUuid());
-
+  conf.setBase(Port::to_json());
   return conf;
 }
 

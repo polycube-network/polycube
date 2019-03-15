@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -446,23 +446,6 @@ Response read_simplebridge_list_by_id_handler(
   }
 }
 
-Response read_simplebridge_loglevel_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_simplebridge_loglevel_by_id(unique_name);
-    nlohmann::json response_body;
-    response_body = SimplebridgeJsonObject::SimplebridgeLoglevelEnum_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response read_simplebridge_ports_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ) {
@@ -524,115 +507,6 @@ Response read_simplebridge_ports_mac_by_id_handler(
   try {
 
     auto x = read_simplebridge_ports_mac_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_simplebridge_ports_peer_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_simplebridge_ports_peer_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_simplebridge_ports_status_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_simplebridge_ports_status_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = PortsJsonObject::PortsStatusEnum_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_simplebridge_ports_uuid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_simplebridge_ports_uuid_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_simplebridge_type_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_simplebridge_type_by_id(unique_name);
-    nlohmann::json response_body;
-    response_body = SimplebridgeJsonObject::CubeType_to_string(x);
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response read_simplebridge_uuid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_simplebridge_uuid_by_id(unique_name);
     nlohmann::json response_body;
     response_body = x;
     return { kOk, ::strdup(response_body.dump().c_str()) };
@@ -942,23 +816,6 @@ Response update_simplebridge_list_by_id_handler(
   }
 }
 
-Response update_simplebridge_loglevel_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    SimplebridgeLoglevelEnum unique_value_ = SimplebridgeJsonObject::string_to_SimplebridgeLoglevelEnum(request_body);
-    update_simplebridge_loglevel_by_id(unique_name, unique_value_);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response update_simplebridge_ports_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ,
@@ -1005,32 +862,6 @@ Response update_simplebridge_ports_list_by_id_handler(
       unique_value.push_back(a);
     }
     update_simplebridge_ports_list_by_id(unique_name, unique_value);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response update_simplebridge_ports_peer_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    // The conversion is done automatically by the json library
-    std::string unique_value = request_body;
-    update_simplebridge_ports_peer_by_id(unique_name, unique_portsName, unique_value);
     return { kOk, nullptr };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };

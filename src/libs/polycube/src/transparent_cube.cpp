@@ -21,11 +21,10 @@
 namespace polycube {
 namespace service {
 
-TransparentCube::TransparentCube(const std::string &name,
+TransparentCube::TransparentCube(const nlohmann::json &conf,
                                  const std::vector<std::string> &ingress_code,
-                                 const std::vector<std::string> &egress_code,
-                                 const CubeType type, LogLevel level)
-    : BaseCube(name, ingress_code, egress_code, type, level) {
+                                 const std::vector<std::string> &egress_code)
+    : BaseCube(conf, ingress_code, egress_code) {
   handle_packet_in = [&](const PacketIn *md,
                          const std::vector<uint8_t> &packet) -> void {
     // This lock guarantees:
@@ -44,8 +43,8 @@ TransparentCube::TransparentCube(const std::string &name,
   };
 
   cube_ = factory_->create_transparent_cube(
-      name, ingress_code, egress_code, handle_log_msg, type, handle_packet_in,
-      std::bind(&TransparentCube::attach, this), level);
+      conf, ingress_code, egress_code, handle_log_msg, handle_packet_in,
+      std::bind(&TransparentCube::attach, this));
   // TODO: where to keep this reference?, keep a double reference?
   BaseCube::cube_ = cube_;
 }
@@ -67,6 +66,14 @@ std::string TransparentCube::get_parent_parameter(
 void TransparentCube::send_packet_out(EthernetII &packet, Sense sense,
                                       bool recirculate) {
   cube_->send_packet_out(packet.serialize(), sense, recirculate);
+}
+
+void TransparentCube::set_conf(const nlohmann::json &conf) {
+  cube_->set_conf(conf);
+}
+
+nlohmann::json TransparentCube::to_json() const  {
+  return cube_->to_json();
 }
 
 void TransparentCube::attach() {}

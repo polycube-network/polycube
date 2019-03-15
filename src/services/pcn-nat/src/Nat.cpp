@@ -22,12 +22,11 @@
 #include "Nat_dp_egress.h"
 #include "Nat_dp_ingress.h"
 
-Nat::Nat(const std::string name, const NatJsonObject &conf, CubeType type)
+Nat::Nat(const std::string name, const NatJsonObject &conf)
     : TransparentCube(
-          name,
+          conf.getBase(),
           {generate_code() + nat_code_common + nat_code_ingress + nat_code},
-          {generate_code() + nat_code_common + nat_code_egress + nat_code},
-          type, conf.getPolycubeLoglevel()) {
+          {generate_code() + nat_code_common + nat_code_egress + nat_code}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Nat] [%n] [%l] %v");
   logger()->info("Creating Nat instance");
 
@@ -41,9 +40,8 @@ void Nat::update(const NatJsonObject &conf) {
   // This method updates all the object/parameter in Nat object specified in the
   // conf JsonObject.
   // You can modify this implementation.
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  TransparentCube::set_conf(conf.getBase());
+
   if (conf.ruleIsSet()) {
     auto m = getRule();
     m->update(conf.getRule());
@@ -64,10 +62,8 @@ void Nat::update(const NatJsonObject &conf) {
 
 NatJsonObject Nat::toJsonObject() {
   NatJsonObject conf;
-  conf.setName(getName());
-  conf.setUuid(getUuid());
-  conf.setType(getType());
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(TransparentCube::to_json());
+
   conf.setRule(getRule()->toJsonObject());
 
   for (auto &i : getNattingTableList()) {

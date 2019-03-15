@@ -89,17 +89,11 @@ Response read_iptables_conntrack_by_id_handler(const char *name, const Key *keys
 Response read_iptables_horus_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_state_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_iptables_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_iptables_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_iptables_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_iptables_chain_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -127,10 +121,8 @@ Response update_iptables_conntrack_by_id_handler(const char *name, const Key *ke
 Response update_iptables_horus_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_iptables_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_iptables_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_iptables_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_iptables_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_iptables_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_iptables_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response iptables_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 Response iptables_chain_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);

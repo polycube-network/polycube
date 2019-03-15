@@ -64,8 +64,7 @@ class K8switch : public polycube::service::Cube<Ports>,
   friend class Service;
 
  public:
-  K8switch(const std::string name, const K8switchJsonObject &conf,
-           CubeType type = CubeType::TC);
+  K8switch(const std::string name, const K8switchJsonObject &conf);
   virtual ~K8switch();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -74,11 +73,6 @@ class K8switch : public polycube::service::Cube<Ports>,
 
   void update(const K8switchJsonObject &conf) override;
   K8switchJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the k8switch service
-  /// </summary>
-  std::string getName() override;
 
   /// <summary>
   /// Services (i.e., virtual ip:port) exported to the client
@@ -120,18 +114,6 @@ class K8switch : public polycube::service::Cube<Ports>,
   void doSetVirtualClientSubnet(const std::string &value);
 
   /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: OFF
-  /// </summary>
-  K8switchLoglevelEnum getLoglevel() override;
-  void setLoglevel(const K8switchLoglevelEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
@@ -142,11 +124,6 @@ class K8switch : public polycube::service::Cube<Ports>,
                     const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   /// <summary>
   /// Entry associated with the forwarding table

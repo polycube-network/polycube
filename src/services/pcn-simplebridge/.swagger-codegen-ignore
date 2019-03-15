@@ -5,16 +5,14 @@
 
 .swagger-codegen-ignore
 
-src/Simplebridge.cpp
-src/Simplebridge.h
-src/Fdb.cpp
-src/Fdb.h
-src/FdbEntry.cpp
-src/FdbEntry.h
-src/Ports.cpp
-src/Ports.h
-src/Simplebridge_dp.h
+cmake/
 
-!src/*Interface.h
-!src/*JsonObject.h
-!src/*JsonObject.cpp
+CMakeLists.txt
+
+src/*.cpp
+src/*.c
+src/*.h
+
+!src/*lib.cpp
+
+src/CMakeLists.txt

@@ -22,17 +22,21 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ChainStatsJsonObject::ChainStatsJsonObject() : 
-  m_idIsSet(false),
-  m_pktsIsSet(false),
-  m_bytesIsSet(false),
-  m_descriptionIsSet(false) { }
+ChainStatsJsonObject::ChainStatsJsonObject() {
+  m_idIsSet = false;
+  m_pktsIsSet = false;
+  m_bytesIsSet = false;
+  m_descriptionIsSet = false;
+}
 
-ChainStatsJsonObject::ChainStatsJsonObject(nlohmann::json &val) : 
-  m_idIsSet(false),
-  m_pktsIsSet(false),
-  m_bytesIsSet(false),
-  m_descriptionIsSet(false) { 
+ChainStatsJsonObject::ChainStatsJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_idIsSet = false;
+  m_pktsIsSet = false;
+  m_bytesIsSet = false;
+  m_descriptionIsSet = false;
+
+
   if (val.count("id")) {
     setId(val.at("id").get<uint32_t>());
   }
@@ -52,6 +56,9 @@ ChainStatsJsonObject::ChainStatsJsonObject(nlohmann::json &val) :
 
 nlohmann::json ChainStatsJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_idIsSet) {
     val["id"] = m_id;
@@ -69,9 +76,75 @@ nlohmann::json ChainStatsJsonObject::toJson() const {
     val["description"] = m_description;
   }
 
-
   return val;
 }
+
+uint32_t ChainStatsJsonObject::getId() const {
+  return m_id;
+}
+
+void ChainStatsJsonObject::setId(uint32_t value) {
+  m_id = value;
+  m_idIsSet = true;
+}
+
+bool ChainStatsJsonObject::idIsSet() const {
+  return m_idIsSet;
+}
+
+
+
+uint64_t ChainStatsJsonObject::getPkts() const {
+  return m_pkts;
+}
+
+void ChainStatsJsonObject::setPkts(uint64_t value) {
+  m_pkts = value;
+  m_pktsIsSet = true;
+}
+
+bool ChainStatsJsonObject::pktsIsSet() const {
+  return m_pktsIsSet;
+}
+
+void ChainStatsJsonObject::unsetPkts() {
+  m_pktsIsSet = false;
+}
+
+uint64_t ChainStatsJsonObject::getBytes() const {
+  return m_bytes;
+}
+
+void ChainStatsJsonObject::setBytes(uint64_t value) {
+  m_bytes = value;
+  m_bytesIsSet = true;
+}
+
+bool ChainStatsJsonObject::bytesIsSet() const {
+  return m_bytesIsSet;
+}
+
+void ChainStatsJsonObject::unsetBytes() {
+  m_bytesIsSet = false;
+}
+
+std::string ChainStatsJsonObject::getDescription() const {
+  return m_description;
+}
+
+void ChainStatsJsonObject::setDescription(std::string value) {
+  m_description = value;
+  m_descriptionIsSet = true;
+}
+
+bool ChainStatsJsonObject::descriptionIsSet() const {
+  return m_descriptionIsSet;
+}
+
+void ChainStatsJsonObject::unsetDescription() {
+  m_descriptionIsSet = false;
+}
+
 
 nlohmann::json ChainStatsJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -125,81 +198,6 @@ std::vector<std::string> ChainStatsJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-uint32_t ChainStatsJsonObject::getId() const {
-  return m_id;
-}
-
-void ChainStatsJsonObject::setId(uint32_t value) {
-  m_id = value;
-  m_idIsSet = true;
-}
-
-bool ChainStatsJsonObject::idIsSet() const {
-  return m_idIsSet;
-}
-
-
-
-
-
-uint64_t ChainStatsJsonObject::getPkts() const {
-  return m_pkts;
-}
-
-void ChainStatsJsonObject::setPkts(uint64_t value) {
-  m_pkts = value;
-  m_pktsIsSet = true;
-}
-
-bool ChainStatsJsonObject::pktsIsSet() const {
-  return m_pktsIsSet;
-}
-
-void ChainStatsJsonObject::unsetPkts() {
-  m_pktsIsSet = false;
-}
-
-
-
-uint64_t ChainStatsJsonObject::getBytes() const {
-  return m_bytes;
-}
-
-void ChainStatsJsonObject::setBytes(uint64_t value) {
-  m_bytes = value;
-  m_bytesIsSet = true;
-}
-
-bool ChainStatsJsonObject::bytesIsSet() const {
-  return m_bytesIsSet;
-}
-
-void ChainStatsJsonObject::unsetBytes() {
-  m_bytesIsSet = false;
-}
-
-
-
-std::string ChainStatsJsonObject::getDescription() const {
-  return m_description;
-}
-
-void ChainStatsJsonObject::setDescription(std::string value) {
-  m_description = value;
-  m_descriptionIsSet = true;
-}
-
-bool ChainStatsJsonObject::descriptionIsSet() const {
-  return m_descriptionIsSet;
-}
-
-void ChainStatsJsonObject::unsetDescription() {
-  m_descriptionIsSet = false;
-}
-
-
-
 
 }
 }

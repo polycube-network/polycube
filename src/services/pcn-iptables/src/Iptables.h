@@ -42,7 +42,6 @@
 #define REQUIRED_FIB_LOOKUP_KERNEL ("4.19.0")
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 struct ct_k {
   uint32_t srcIp;
@@ -71,19 +70,13 @@ class Iptables : public polycube::service::Cube<Ports>,
   friend class SessionTable;
 
  public:
-  Iptables(const std::string name, const IptablesJsonObject &conf,
-           CubeType type = CubeType::TC);
+  Iptables(const std::string name, const IptablesJsonObject &conf);
   virtual ~Iptables();
 
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
   /*APIs*/
-  std::string getName() override;
-
-  IptablesLoglevelEnum getLoglevel() override;
-  void setLoglevel(const IptablesLoglevelEnum &value) override;
-
   /// <summary>
   /// Enables the Connection Tracking module. Mandatory if connection tracking
   /// rules are needed. Default is ON.
@@ -104,16 +97,6 @@ class Iptables : public polycube::service::Cube<Ports>,
   /// </summary>
   bool getInteractive() override;
   void setInteractive(const bool &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   /// <summary>
   /// Entry of the ports table

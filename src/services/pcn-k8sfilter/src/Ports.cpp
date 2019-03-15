@@ -26,10 +26,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
   logger()->info("Creating Ports instance");
 
   port_type_ = conf.getType();
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
@@ -38,24 +34,13 @@ void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-
+  Port::set_conf(conf.getBase());
   port_type_ = conf.getType();
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
+  conf.setBase(Port::to_json());
 
   conf.setType(getType());
 

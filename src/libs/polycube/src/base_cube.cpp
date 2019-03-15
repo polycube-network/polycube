@@ -19,18 +19,17 @@
 namespace polycube {
 namespace service {
 
-BaseCube::BaseCube(const std::string &name,
+BaseCube::BaseCube(const nlohmann::json &conf,
                    const std::vector<std::string> &ingress_code,
-                   const std::vector<std::string> &egress_code,
-                   const CubeType type, LogLevel level)
-    : type_(type),
-      dismounted_(false),
-      logger_(std::make_shared<spdlog::logger>(
-          name, (spdlog::sinks_init_list){
+                   const std::vector<std::string> &egress_code)
+  : dismounted_(false),
+    logger_(std::make_shared<spdlog::logger>(
+          conf.at("name").get<std::string>(), (spdlog::sinks_init_list){
                     std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
                         logfile_, 1048576 * 5, 3),
                     std::make_shared<spdlog::sinks::stdout_sink_mt>()})) {
-  logger()->set_level(logLevelToSPDLog(level));
+  auto loglevel_ = stringLogLevel(conf.at("loglevel").get<std::string>());
+  logger()->set_level(logLevelToSPDLog(loglevel_));
   handle_log_msg = [&](const LogMsg *msg) -> void { datapath_log_msg(msg); };
 }
 
@@ -108,6 +107,10 @@ const std::string BaseCube::get_name() const {
   return cube_->get_name();
 }
 
+const std::string BaseCube::getName() const {
+  return get_name();
+}
+
 CubeType BaseCube::get_type() const {
   return type_;
 }
@@ -127,6 +130,10 @@ void BaseCube::dismount() {
   handle_log_msg = nullptr;
 
   // TODO: remove from controller and datapathlog?
+}
+
+nlohmann::json BaseCube::to_json() const {
+  return cube_->to_json();
 }
 
 }  // namespace service

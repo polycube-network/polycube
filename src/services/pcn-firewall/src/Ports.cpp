@@ -23,30 +23,17 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     : Port(port), parent_(static_cast<Firewall &>(parent)) {
   logger()->info(
       "Creating Port. Please remember to set it as ingress or egress.");
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
 
 void Ports::update(const PortsJsonObject &conf) {
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
-
+  conf.setBase(Port::to_json());
   return conf;
 }
 

@@ -42,6 +42,21 @@ class CubeFactoryImpl : public CubeFactory {
   ~CubeFactoryImpl() = default;
 
   std::shared_ptr<CubeIface> create_cube(
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const packet_in_cb &cb) override;
+
+  std::shared_ptr<TransparentCubeIface> create_transparent_cube(
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const packet_in_cb &cb, const attach_cb &attach) override;
+
+  void destroy_cube(const std::string &name) override;
+
+  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
+
+ private:
+  std::shared_ptr<CubeIface> create_cube(
       const std::string &name, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
       const CubeType type, const packet_in_cb &cb, LogLevel level);
@@ -52,11 +67,6 @@ class CubeFactoryImpl : public CubeFactory {
       const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
       LogLevel level);
 
-  void destroy_cube(const std::string &name);
-
-  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
-
- private:
   std::string service_name_;
   std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes_;
   Controller &controller_tc_;

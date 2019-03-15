@@ -28,15 +28,13 @@
 #include "Ports.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class K8sfilter : public polycube::service::Cube<Ports>,
                   public K8sfilterInterface {
   friend class Ports;
 
  public:
-  K8sfilter(const std::string name, const K8sfilterJsonObject &conf,
-            CubeType type = CubeType::TC);
+  K8sfilter(const std::string name, const K8sfilterJsonObject &conf);
   virtual ~K8sfilter();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -45,28 +43,6 @@ class K8sfilter : public polycube::service::Cube<Ports>,
 
   void update(const K8sfilterJsonObject &conf) override;
   K8sfilterJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the k8sfilter service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE)
-  /// </summary>
-  K8sfilterLoglevelEnum getLoglevel() override;
-  void setLoglevel(const K8sfilterLoglevelEnum &value) override;
 
   /// <summary>
   /// Entry of the ports table

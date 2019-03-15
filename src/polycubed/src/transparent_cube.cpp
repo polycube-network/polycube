@@ -141,5 +141,24 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
   c.send_packet_to_cube(module, port, packet);
 }
 
+void TransparentCube::set_conf(const nlohmann::json &conf) {
+  return BaseCube::set_conf(conf);
+}
+
+nlohmann::json TransparentCube::to_json() const {
+  nlohmann::json j;
+  j.update(BaseCube::to_json());
+
+  std::string parent;
+  if (parent_) {
+    auto port_parent = dynamic_cast<Port *>(parent_);
+    parent = port_parent->get_path();
+  }
+
+  j["parent"] = parent;
+
+  return j;
+}
+
 }  // namespace polycubed
 }  // namespace polycube

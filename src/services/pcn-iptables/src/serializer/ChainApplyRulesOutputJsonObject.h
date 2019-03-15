@@ -36,7 +36,7 @@ namespace model {
 class  ChainApplyRulesOutputJsonObject : public JsonObjectBase {
 public:
   ChainApplyRulesOutputJsonObject();
-  ChainApplyRulesOutputJsonObject(nlohmann::json& json);
+  ChainApplyRulesOutputJsonObject(const nlohmann::json &json);
   ~ChainApplyRulesOutputJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -59,7 +59,6 @@ public:
   void setResult(bool value);
   bool resultIsSet() const;
   void unsetResult();
-
 
 private:
   bool m_result;

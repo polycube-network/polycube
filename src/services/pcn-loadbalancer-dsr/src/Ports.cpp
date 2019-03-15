@@ -40,10 +40,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     parent_.setBackendPort(port->name(), this->index());
     break;
   }
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
@@ -52,10 +48,7 @@ void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 
   if (conf.typeIsSet()) {
     setType(conf.getType());
@@ -64,16 +57,11 @@ void Ports::update(const PortsJsonObject &conf) {
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
+  conf.setBase(Port::to_json());
 
   conf.setType(getType());
 
   conf.setName(getName());
-
-  conf.setUuid(getUuid());
 
   return conf;
 }

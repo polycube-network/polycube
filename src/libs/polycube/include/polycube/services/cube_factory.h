@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "polycube/common.h"
+#include "polycube/services/json.hpp"
 
 namespace polycube {
 namespace service {
@@ -65,16 +66,14 @@ typedef std::function<void(void)> attach_cb;
 class CubeFactory {
  public:
   virtual std::shared_ptr<CubeIface> create_cube(
-      const std::string &name, const std::vector<std::string> &ingress_code,
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const CubeType type, const packet_in_cb &cb = empty_packet_in_cb,
-      LogLevel level = LogLevel::OFF) = 0;
+      const packet_in_cb &cb = empty_packet_in_cb) = 0;
 
   virtual std::shared_ptr<TransparentCubeIface> create_transparent_cube(
-      const std::string &name, const std::vector<std::string> &ingress_code,
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
-      LogLevel level) = 0;
+      const packet_in_cb &cb, const attach_cb &attach) = 0;
 
   virtual void destroy_cube(const std::string &name) = 0;
 };

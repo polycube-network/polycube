@@ -79,7 +79,8 @@ class BaseCube : virtual public BaseCubeIface {
   void set_log_level(LogLevel level);
   LogLevel get_log_level() const;
 
-  virtual json to_json() const;
+  void set_conf(const nlohmann::json &conf);
+  virtual nlohmann::json to_json() const;
 
  protected:
   static const int _POLYCUBE_MAX_BPF_PROGRAMS = 64;

@@ -28,7 +28,8 @@ extern polycube::polycubed::PolycubedCore *core;
 namespace polycube {
 namespace polycubed {
 
-Port::Port(CubeIface &parent, const std::string &name, uint16_t index)
+Port::Port(CubeIface &parent, const std::string &name, uint16_t index,
+           const nlohmann::json &conf)
     : PeerIface(port_mutex_),
       parent_(parent),
       name_(name),
@@ -171,6 +172,23 @@ PortStatus Port::get_status() const {
 
 PortType Port::get_type() const {
   return type_;
+}
+
+void Port::set_conf(const nlohmann::json &conf) {
+  if (conf.count("peer")) {
+    set_peer(conf.at("peer").get<std::string>());
+  }
+}
+
+nlohmann::json Port::to_json() const {
+  nlohmann::json val;
+
+  val["name"] = name();
+  val["uuid"] = uuid().str();
+  val["status"] = port_status_to_string(get_status());
+  val["peer"] = peer();
+
+  return val;
 }
 
 void Port::send_packet_out(const std::vector<uint8_t> &packet,

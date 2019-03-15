@@ -14,75 +14,8 @@
 
 
 #include "../Iptables.h"
-#include "../Iptables_dp.h"
 
 
-
-
-std::string Iptables::getName(){
-  // This method retrieves the name value.
-  return Cube::get_name();
-}
-
-
-std::string Iptables::getUuid(){
-  // This method retrieves the uuid value.
-  return Cube::get_uuid().str();
-}
-
-
-CubeType Iptables::getType(){
-  // This method retrieves the type value.
-  return Cube::get_type();
-}
-
-
-IptablesLoglevelEnum Iptables::getLoglevel(){
-  // This method retrieves the loglevel value.
-    switch(Cube::get_log_level()){
-      case polycube::LogLevel::TRACE:
-        return IptablesLoglevelEnum::TRACE;
-      case polycube::LogLevel::DEBUG:
-        return IptablesLoglevelEnum::DEBUG;
-      case polycube::LogLevel::INFO:
-        return IptablesLoglevelEnum::INFO;
-      case polycube::LogLevel::WARN:
-        return IptablesLoglevelEnum::WARN;
-      case polycube::LogLevel::ERR:
-        return IptablesLoglevelEnum::ERR;
-      case polycube::LogLevel::CRITICAL:
-        return IptablesLoglevelEnum::CRITICAL;
-      case polycube::LogLevel::OFF:
-        return IptablesLoglevelEnum::OFF;
-    }
-}
-
-void Iptables::setLoglevel(const IptablesLoglevelEnum &value){
-  // This method sets the loglevel value.
-    switch(value){
-      case IptablesLoglevelEnum::TRACE:
-        Cube::set_log_level(polycube::LogLevel::TRACE);
-        break;
-      case IptablesLoglevelEnum::DEBUG:
-        Cube::set_log_level(polycube::LogLevel::DEBUG);
-        break;
-      case IptablesLoglevelEnum::INFO:
-        Cube::set_log_level(polycube::LogLevel::INFO);
-        break;
-      case IptablesLoglevelEnum::WARN:
-        Cube::set_log_level(polycube::LogLevel::WARN);
-        break;
-      case IptablesLoglevelEnum::ERR:
-        Cube::set_log_level(polycube::LogLevel::ERR);
-        break;
-      case IptablesLoglevelEnum::CRITICAL:
-        Cube::set_log_level(polycube::LogLevel::CRITICAL);
-        break;
-      case IptablesLoglevelEnum::OFF:
-        Cube::set_log_level(polycube::LogLevel::OFF);
-        break;
-    }
-}
 
 std::shared_ptr<Ports> Iptables::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
@@ -117,8 +50,6 @@ void Iptables::delPorts(const std::string &name){
 void Iptables::delPortsList(){
   Ports::remove(*this);
 }
-
-
 
 std::shared_ptr<SessionTable> Iptables::getSessionTable(const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport){
   return SessionTable::getEntry(*this, src, dst, l4proto, sport, dport);

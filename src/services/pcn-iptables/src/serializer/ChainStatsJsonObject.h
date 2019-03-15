@@ -36,7 +36,7 @@ namespace model {
 class  ChainStatsJsonObject : public JsonObjectBase {
 public:
   ChainStatsJsonObject();
-  ChainStatsJsonObject(nlohmann::json& json);
+  ChainStatsJsonObject(const nlohmann::json &json);
   ~ChainStatsJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -58,7 +58,6 @@ public:
   uint32_t getId() const;
   void setId(uint32_t value);
   bool idIsSet() const;
-  void unsetId();
 
   /// <summary>
   /// Number of packets matching the rule
@@ -83,7 +82,6 @@ public:
   void setDescription(std::string value);
   bool descriptionIsSet() const;
   void unsetDescription();
-
 
 private:
   uint32_t m_id;

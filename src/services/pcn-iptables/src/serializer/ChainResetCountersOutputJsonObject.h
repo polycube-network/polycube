@@ -36,7 +36,7 @@ namespace model {
 class  ChainResetCountersOutputJsonObject : public JsonObjectBase {
 public:
   ChainResetCountersOutputJsonObject();
-  ChainResetCountersOutputJsonObject(nlohmann::json& json);
+  ChainResetCountersOutputJsonObject(const nlohmann::json &json);
   ~ChainResetCountersOutputJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -59,7 +59,6 @@ public:
   void setResult(bool value);
   bool resultIsSet() const;
   void unsetResult();
-
 
 private:
   bool m_result;

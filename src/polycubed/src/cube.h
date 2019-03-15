@@ -45,8 +45,6 @@ using polycube::service::PortIface;
 using polycube::service::ProgramType;
 using polycube::service::CubeType;
 
-using json = nlohmann::json;
-
 namespace polycube {
 namespace polycubed {
 
@@ -57,13 +55,15 @@ class Cube : public BaseCube, public CubeIface {
                 PatchPanel &patch_panel_egress_, LogLevel level, CubeType type);
   virtual ~Cube();
 
-  std::shared_ptr<PortIface> add_port(const std::string &name);
+  std::shared_ptr<PortIface> add_port(const std::string &name,
+                                      const nlohmann::json &conf);
   void remove_port(const std::string &name);
   std::shared_ptr<PortIface> get_port(const std::string &name);
 
   void update_forwarding_table(int index, int value);
 
-  json to_json() const;
+  void set_conf(const nlohmann::json &conf);
+  nlohmann::json to_json() const;
 
  protected:
   static std::string get_wrapper_code();

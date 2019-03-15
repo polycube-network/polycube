@@ -19,8 +19,9 @@
 namespace polycube {
 namespace polycubed {
 
-PortTC::PortTC(CubeIface &parent, const std::string &name, uint16_t id)
-    : Port(parent, name, id) {
+PortTC::PortTC(CubeIface &parent, const std::string &name, uint16_t id,
+               const nlohmann::json &conf)
+    : Port(parent, name, id, conf) {
   type_ = PortType::TC;
 }
 

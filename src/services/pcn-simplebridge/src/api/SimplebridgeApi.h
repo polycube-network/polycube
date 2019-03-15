@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -58,15 +58,9 @@ Response read_simplebridge_fdb_entry_by_id_handler(const char *name, const Key *
 Response read_simplebridge_fdb_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_fdb_entry_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_ports_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_ports_status_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_ports_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_uuid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_simplebridge_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_simplebridge_fdb_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_simplebridge_fdb_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -80,10 +74,8 @@ Response update_simplebridge_fdb_entry_by_id_handler(const char *name, const Key
 Response update_simplebridge_fdb_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simplebridge_fdb_entry_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simplebridge_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_simplebridge_loglevel_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simplebridge_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simplebridge_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_simplebridge_ports_peer_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response simplebridge_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
 Response simplebridge_fdb_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);

@@ -31,9 +31,10 @@ namespace swagger {
 namespace server {
 namespace model {
 
-class  JsonObjectBase
-{
-public:
+class  JsonObjectBase {
+ public:
+  JsonObjectBase() = default;
+  JsonObjectBase(const nlohmann::json &base);
   virtual ~JsonObjectBase() = default;
 
   virtual nlohmann::json toJson() const = 0;
@@ -47,6 +48,11 @@ public:
   static bool toJson(bool value);
   static nlohmann::json toJson(const JsonObjectBase &content);
 
+  const nlohmann::json &getBase() const;
+  void setBase(const nlohmann::json &base);
+
+ private:
+  nlohmann::json base_;
 };
 
 }

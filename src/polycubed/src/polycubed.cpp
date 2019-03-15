@@ -240,7 +240,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  core = new PolycubedCore();
+  auto base_model = new BaseModel();
+  core = new PolycubedCore(base_model);
 
   // setup rest server
   int thr = 4;

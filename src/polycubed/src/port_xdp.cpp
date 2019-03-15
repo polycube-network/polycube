@@ -22,8 +22,9 @@
 namespace polycube {
 namespace polycubed {
 
-PortXDP::PortXDP(CubeIface &parent, const std::string &name, uint16_t id)
-    : Port(parent, name, id) {
+PortXDP::PortXDP(CubeIface &parent, const std::string &name, uint16_t id,
+                 const nlohmann::json &conf)
+    : Port(parent, name, id, conf) {
   type_ = PortType::XDP;
 }
 

@@ -22,55 +22,40 @@ namespace swagger {
 namespace server {
 namespace model {
 
-IptablesJsonObject::IptablesJsonObject() : 
-  m_nameIsSet(false),
-  m_uuidIsSet(false),
-  m_type(CubeType::TC),
-  m_typeIsSet(true),
-  m_loglevel(IptablesLoglevelEnum::INFO),
-  m_loglevelIsSet(true),
-  m_portsIsSet(false),
-  m_interactive(true),
-  m_interactiveIsSet(true),
-  m_conntrackIsSet(false),
-  m_horusIsSet(false),
-  m_sessionTableIsSet(false),
-  m_chainIsSet(false) { }
+IptablesJsonObject::IptablesJsonObject() {
+  m_nameIsSet = false;
+  m_portsIsSet = false;
+  m_interactive = true;
+  m_interactiveIsSet = true;
+  m_conntrackIsSet = false;
+  m_horusIsSet = false;
+  m_sessionTableIsSet = false;
+  m_chainIsSet = false;
+}
 
-IptablesJsonObject::IptablesJsonObject(nlohmann::json &val) : 
-  m_nameIsSet(false),
-  m_uuidIsSet(false),
-  m_typeIsSet(false),
-  m_loglevelIsSet(false),
-  m_portsIsSet(false),
-  m_interactiveIsSet(false),
-  m_conntrackIsSet(false),
-  m_horusIsSet(false),
-  m_sessionTableIsSet(false),
-  m_chainIsSet(false) { 
+IptablesJsonObject::IptablesJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_nameIsSet = false;
+  m_portsIsSet = false;
+  m_interactiveIsSet = false;
+  m_conntrackIsSet = false;
+  m_horusIsSet = false;
+  m_sessionTableIsSet = false;
+  m_chainIsSet = false;
+
+
   if (val.count("name")) {
     setName(val.at("name").get<std::string>());
   }
 
-  if (val.count("uuid")) {
-    setUuid(val.at("uuid").get<std::string>());
-  }
+  if (val.count("ports")) {
+    for (auto& item : val["ports"]) {
+      PortsJsonObject newItem{ item };
+      m_ports.push_back(newItem);
+    }
 
-  if (val.count("type")) {
-    setType(string_to_CubeType(val.at("type").get<std::string>()));
+    m_portsIsSet = true;
   }
-
-  if (val.count("loglevel")) {
-    setLoglevel(string_to_IptablesLoglevelEnum(val.at("loglevel").get<std::string>()));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) { 
-    PortsJsonObject newItem { item };
-    m_ports.push_back(newItem);
-  }
-  m_portsIsSet = !m_ports.empty();
-  
 
   if (val.count("interactive")) {
     setInteractive(val.at("interactive").get<bool>());
@@ -84,40 +69,33 @@ IptablesJsonObject::IptablesJsonObject(nlohmann::json &val) :
     setHorus(string_to_IptablesHorusEnum(val.at("horus").get<std::string>()));
   }
 
-  m_sessionTable.clear();
-  for (auto& item : val["session-table"]) { 
-    SessionTableJsonObject newItem { item };
-    m_sessionTable.push_back(newItem);
-  }
-  m_sessionTableIsSet = !m_sessionTable.empty();
-  
+  if (val.count("session-table")) {
+    for (auto& item : val["session-table"]) {
+      SessionTableJsonObject newItem{ item };
+      m_sessionTable.push_back(newItem);
+    }
 
-  m_chain.clear();
-  for (auto& item : val["chain"]) { 
-    ChainJsonObject newItem { item };
-    m_chain.push_back(newItem);
+    m_sessionTableIsSet = true;
   }
-  m_chainIsSet = !m_chain.empty();
-  
+
+  if (val.count("chain")) {
+    for (auto& item : val["chain"]) {
+      ChainJsonObject newItem{ item };
+      m_chain.push_back(newItem);
+    }
+
+    m_chainIsSet = true;
+  }
 }
 
 nlohmann::json IptablesJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  if (m_uuidIsSet) {
-    val["uuid"] = m_uuid;
-  }
-
-  if (m_typeIsSet) {
-    val["type"] = CubeType_to_string(m_type);
-  }
-
-  if (m_loglevelIsSet) {
-    val["loglevel"] = IptablesLoglevelEnum_to_string(m_loglevel);
   }
 
   {
@@ -125,10 +103,12 @@ nlohmann::json IptablesJsonObject::toJson() const {
     for (auto& item : m_ports) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
+
     if (jsonArray.size() > 0) {
       val["ports"] = jsonArray;
     }
   }
+
   if (m_interactiveIsSet) {
     val["interactive"] = m_interactive;
   }
@@ -146,15 +126,18 @@ nlohmann::json IptablesJsonObject::toJson() const {
     for (auto& item : m_sessionTable) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
+
     if (jsonArray.size() > 0) {
       val["session-table"] = jsonArray;
     }
   }
+
   {
     nlohmann::json jsonArray;
     for (auto& item : m_chain) {
       jsonArray.push_back(JsonObjectBase::toJson(item));
     }
+
     if (jsonArray.size() > 0) {
       val["chain"] = jsonArray;
     }
@@ -162,6 +145,163 @@ nlohmann::json IptablesJsonObject::toJson() const {
 
   return val;
 }
+
+std::string IptablesJsonObject::getName() const {
+  return m_name;
+}
+
+void IptablesJsonObject::setName(std::string value) {
+  m_name = value;
+  m_nameIsSet = true;
+}
+
+bool IptablesJsonObject::nameIsSet() const {
+  return m_nameIsSet;
+}
+
+
+
+const std::vector<PortsJsonObject>& IptablesJsonObject::getPorts() const{
+  return m_ports;
+}
+
+void IptablesJsonObject::addPorts(PortsJsonObject value) {
+  m_ports.push_back(value);
+  m_portsIsSet = true;
+}
+
+
+bool IptablesJsonObject::portsIsSet() const {
+  return m_portsIsSet;
+}
+
+void IptablesJsonObject::unsetPorts() {
+  m_portsIsSet = false;
+}
+
+bool IptablesJsonObject::getInteractive() const {
+  return m_interactive;
+}
+
+void IptablesJsonObject::setInteractive(bool value) {
+  m_interactive = value;
+  m_interactiveIsSet = true;
+}
+
+bool IptablesJsonObject::interactiveIsSet() const {
+  return m_interactiveIsSet;
+}
+
+void IptablesJsonObject::unsetInteractive() {
+  m_interactiveIsSet = false;
+}
+
+IptablesConntrackEnum IptablesJsonObject::getConntrack() const {
+  return m_conntrack;
+}
+
+void IptablesJsonObject::setConntrack(IptablesConntrackEnum value) {
+  m_conntrack = value;
+  m_conntrackIsSet = true;
+}
+
+bool IptablesJsonObject::conntrackIsSet() const {
+  return m_conntrackIsSet;
+}
+
+void IptablesJsonObject::unsetConntrack() {
+  m_conntrackIsSet = false;
+}
+
+std::string IptablesJsonObject::IptablesConntrackEnum_to_string(const IptablesConntrackEnum &value){
+  switch(value) {
+    case IptablesConntrackEnum::ON:
+      return std::string("on");
+    case IptablesConntrackEnum::OFF:
+      return std::string("off");
+    default:
+      throw std::runtime_error("Bad Iptables conntrack");
+  }
+}
+
+IptablesConntrackEnum IptablesJsonObject::string_to_IptablesConntrackEnum(const std::string &str){
+  if (JsonObjectBase::iequals("on", str))
+    return IptablesConntrackEnum::ON;
+  if (JsonObjectBase::iequals("off", str))
+    return IptablesConntrackEnum::OFF;
+  throw std::runtime_error("Iptables conntrack is invalid");
+}
+IptablesHorusEnum IptablesJsonObject::getHorus() const {
+  return m_horus;
+}
+
+void IptablesJsonObject::setHorus(IptablesHorusEnum value) {
+  m_horus = value;
+  m_horusIsSet = true;
+}
+
+bool IptablesJsonObject::horusIsSet() const {
+  return m_horusIsSet;
+}
+
+void IptablesJsonObject::unsetHorus() {
+  m_horusIsSet = false;
+}
+
+std::string IptablesJsonObject::IptablesHorusEnum_to_string(const IptablesHorusEnum &value){
+  switch(value) {
+    case IptablesHorusEnum::ON:
+      return std::string("on");
+    case IptablesHorusEnum::OFF:
+      return std::string("off");
+    default:
+      throw std::runtime_error("Bad Iptables horus");
+  }
+}
+
+IptablesHorusEnum IptablesJsonObject::string_to_IptablesHorusEnum(const std::string &str){
+  if (JsonObjectBase::iequals("on", str))
+    return IptablesHorusEnum::ON;
+  if (JsonObjectBase::iequals("off", str))
+    return IptablesHorusEnum::OFF;
+  throw std::runtime_error("Iptables horus is invalid");
+}
+const std::vector<SessionTableJsonObject>& IptablesJsonObject::getSessionTable() const{
+  return m_sessionTable;
+}
+
+void IptablesJsonObject::addSessionTable(SessionTableJsonObject value) {
+  m_sessionTable.push_back(value);
+  m_sessionTableIsSet = true;
+}
+
+
+bool IptablesJsonObject::sessionTableIsSet() const {
+  return m_sessionTableIsSet;
+}
+
+void IptablesJsonObject::unsetSessionTable() {
+  m_sessionTableIsSet = false;
+}
+
+const std::vector<ChainJsonObject>& IptablesJsonObject::getChain() const{
+  return m_chain;
+}
+
+void IptablesJsonObject::addChain(ChainJsonObject value) {
+  m_chain.push_back(value);
+  m_chainIsSet = true;
+}
+
+
+bool IptablesJsonObject::chainIsSet() const {
+  return m_chainIsSet;
+}
+
+void IptablesJsonObject::unsetChain() {
+  m_chainIsSet = false;
+}
+
 
 nlohmann::json IptablesJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -273,308 +413,6 @@ std::vector<std::string> IptablesJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-std::string IptablesJsonObject::getName() const {
-  return m_name;
-}
-
-void IptablesJsonObject::setName(std::string value) {
-  m_name = value;
-  m_nameIsSet = true;
-}
-
-bool IptablesJsonObject::nameIsSet() const {
-  return m_nameIsSet;
-}
-
-
-
-
-
-std::string IptablesJsonObject::getUuid() const {
-  return m_uuid;
-}
-
-void IptablesJsonObject::setUuid(std::string value) {
-  m_uuid = value;
-  m_uuidIsSet = true;
-}
-
-bool IptablesJsonObject::uuidIsSet() const {
-  return m_uuidIsSet;
-}
-
-void IptablesJsonObject::unsetUuid() {
-  m_uuidIsSet = false;
-}
-
-
-
-CubeType IptablesJsonObject::getType() const {
-  return m_type;
-}
-
-void IptablesJsonObject::setType(CubeType value) {
-  m_type = value;
-  m_typeIsSet = true;
-}
-
-bool IptablesJsonObject::typeIsSet() const {
-  return m_typeIsSet;
-}
-
-void IptablesJsonObject::unsetType() {
-  m_typeIsSet = false;
-}
-
-std::string IptablesJsonObject::CubeType_to_string(const CubeType &value){
-  switch(value){
-    case CubeType::TC:
-      return std::string("tc");
-    case CubeType::XDP_SKB:
-      return std::string("xdp_skb");
-    case CubeType::XDP_DRV:
-      return std::string("xdp_drv");
-    default:
-      throw std::runtime_error("Bad Iptables type");
-  }
-}
-
-CubeType IptablesJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("tc", str))
-    return CubeType::TC;
-  if (JsonObjectBase::iequals("xdp_skb", str))
-    return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("xdp_drv", str))
-    return CubeType::XDP_DRV;
-  throw std::runtime_error("Iptables type is invalid");
-}
-
-
-IptablesLoglevelEnum IptablesJsonObject::getLoglevel() const {
-  return m_loglevel;
-}
-
-void IptablesJsonObject::setLoglevel(IptablesLoglevelEnum value) {
-  m_loglevel = value;
-  m_loglevelIsSet = true;
-}
-
-bool IptablesJsonObject::loglevelIsSet() const {
-  return m_loglevelIsSet;
-}
-
-void IptablesJsonObject::unsetLoglevel() {
-  m_loglevelIsSet = false;
-}
-
-std::string IptablesJsonObject::IptablesLoglevelEnum_to_string(const IptablesLoglevelEnum &value){
-  switch(value){
-    case IptablesLoglevelEnum::TRACE:
-      return std::string("trace");
-    case IptablesLoglevelEnum::DEBUG:
-      return std::string("debug");
-    case IptablesLoglevelEnum::INFO:
-      return std::string("info");
-    case IptablesLoglevelEnum::WARN:
-      return std::string("warn");
-    case IptablesLoglevelEnum::ERR:
-      return std::string("err");
-    case IptablesLoglevelEnum::CRITICAL:
-      return std::string("critical");
-    case IptablesLoglevelEnum::OFF:
-      return std::string("off");
-    default:
-      throw std::runtime_error("Bad Iptables loglevel");
-  }
-}
-
-IptablesLoglevelEnum IptablesJsonObject::string_to_IptablesLoglevelEnum(const std::string &str){
-  if (JsonObjectBase::iequals("trace", str))
-    return IptablesLoglevelEnum::TRACE;
-  if (JsonObjectBase::iequals("debug", str))
-    return IptablesLoglevelEnum::DEBUG;
-  if (JsonObjectBase::iequals("info", str))
-    return IptablesLoglevelEnum::INFO;
-  if (JsonObjectBase::iequals("warn", str))
-    return IptablesLoglevelEnum::WARN;
-  if (JsonObjectBase::iequals("err", str))
-    return IptablesLoglevelEnum::ERR;
-  if (JsonObjectBase::iequals("critical", str))
-    return IptablesLoglevelEnum::CRITICAL;
-  if (JsonObjectBase::iequals("off", str))
-    return IptablesLoglevelEnum::OFF;
-  throw std::runtime_error("Iptables loglevel is invalid");
-}
-
-  polycube::LogLevel IptablesJsonObject::getPolycubeLoglevel() const {
-    switch(m_loglevel) {
-      case IptablesLoglevelEnum::TRACE:
-        return polycube::LogLevel::TRACE;
-      case IptablesLoglevelEnum::DEBUG:
-        return polycube::LogLevel::DEBUG;
-      case IptablesLoglevelEnum::INFO:
-        return polycube::LogLevel::INFO;
-      case IptablesLoglevelEnum::WARN:
-        return polycube::LogLevel::WARN;
-      case IptablesLoglevelEnum::ERR:
-        return polycube::LogLevel::ERR;
-      case IptablesLoglevelEnum::CRITICAL:
-        return polycube::LogLevel::CRITICAL;
-      case IptablesLoglevelEnum::OFF:
-        return polycube::LogLevel::OFF;
-    }
-  }
-const std::vector<PortsJsonObject>& IptablesJsonObject::getPorts() const{
-  return m_ports;
-}
-
-void IptablesJsonObject::addPorts(PortsJsonObject value) {
-  m_ports.push_back(value);
-}
-
-
-bool IptablesJsonObject::portsIsSet() const {
-  return m_portsIsSet;
-}
-
-void IptablesJsonObject::unsetPorts() {
-  m_portsIsSet = false;
-}
-
-
-
-bool IptablesJsonObject::getInteractive() const {
-  return m_interactive;
-}
-
-void IptablesJsonObject::setInteractive(bool value) {
-  m_interactive = value;
-  m_interactiveIsSet = true;
-}
-
-bool IptablesJsonObject::interactiveIsSet() const {
-  return m_interactiveIsSet;
-}
-
-void IptablesJsonObject::unsetInteractive() {
-  m_interactiveIsSet = false;
-}
-
-
-
-IptablesConntrackEnum IptablesJsonObject::getConntrack() const {
-  return m_conntrack;
-}
-
-void IptablesJsonObject::setConntrack(IptablesConntrackEnum value) {
-  m_conntrack = value;
-  m_conntrackIsSet = true;
-}
-
-bool IptablesJsonObject::conntrackIsSet() const {
-  return m_conntrackIsSet;
-}
-
-void IptablesJsonObject::unsetConntrack() {
-  m_conntrackIsSet = false;
-}
-
-std::string IptablesJsonObject::IptablesConntrackEnum_to_string(const IptablesConntrackEnum &value){
-  switch(value){
-    case IptablesConntrackEnum::ON:
-      return std::string("on");
-    case IptablesConntrackEnum::OFF:
-      return std::string("off");
-    default:
-      throw std::runtime_error("Bad Iptables conntrack");
-  }
-}
-
-IptablesConntrackEnum IptablesJsonObject::string_to_IptablesConntrackEnum(const std::string &str){
-  if (JsonObjectBase::iequals("on", str))
-    return IptablesConntrackEnum::ON;
-  if (JsonObjectBase::iequals("off", str))
-    return IptablesConntrackEnum::OFF;
-  throw std::runtime_error("Iptables conntrack is invalid");
-}
-
-
-IptablesHorusEnum IptablesJsonObject::getHorus() const {
-  return m_horus;
-}
-
-void IptablesJsonObject::setHorus(IptablesHorusEnum value) {
-  m_horus = value;
-  m_horusIsSet = true;
-}
-
-bool IptablesJsonObject::horusIsSet() const {
-  return m_horusIsSet;
-}
-
-void IptablesJsonObject::unsetHorus() {
-  m_horusIsSet = false;
-}
-
-std::string IptablesJsonObject::IptablesHorusEnum_to_string(const IptablesHorusEnum &value){
-  switch(value){
-    case IptablesHorusEnum::ON:
-      return std::string("on");
-    case IptablesHorusEnum::OFF:
-      return std::string("off");
-    default:
-      throw std::runtime_error("Bad Iptables horus");
-  }
-}
-
-IptablesHorusEnum IptablesJsonObject::string_to_IptablesHorusEnum(const std::string &str){
-  if (JsonObjectBase::iequals("on", str))
-    return IptablesHorusEnum::ON;
-  if (JsonObjectBase::iequals("off", str))
-    return IptablesHorusEnum::OFF;
-  throw std::runtime_error("Iptables horus is invalid");
-}
-
-
-const std::vector<SessionTableJsonObject>& IptablesJsonObject::getSessionTable() const{
-  return m_sessionTable;
-}
-
-void IptablesJsonObject::addSessionTable(SessionTableJsonObject value) {
-  m_sessionTable.push_back(value);
-}
-
-
-bool IptablesJsonObject::sessionTableIsSet() const {
-  return m_sessionTableIsSet;
-}
-
-void IptablesJsonObject::unsetSessionTable() {
-  m_sessionTableIsSet = false;
-}
-
-
-
-const std::vector<ChainJsonObject>& IptablesJsonObject::getChain() const{
-  return m_chain;
-}
-
-void IptablesJsonObject::addChain(ChainJsonObject value) {
-  m_chain.push_back(value);
-}
-
-
-bool IptablesJsonObject::chainIsSet() const {
-  return m_chainIsSet;
-}
-
-void IptablesJsonObject::unsetChain() {
-  m_chainIsSet = false;
-}
-
-
-
 
 }
 }

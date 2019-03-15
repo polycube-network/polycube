@@ -24,10 +24,6 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
              const PortsJsonObject &conf)
     : Port(port), parent_(static_cast<K8switch &>(parent)) {
   logger()->info("Creating Ports instance");
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
-
   port_type_ = conf.getType();
 }
 
@@ -37,10 +33,7 @@ void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
   // the conf JsonObject.
   // You can modify this implementation.
-
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 
   if (conf.typeIsSet()) {
     setType(conf.getType());
@@ -49,12 +42,10 @@ void Ports::update(const PortsJsonObject &conf) {
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
+  conf.setBase(Port::to_json());
 
-  conf.setStatus(getStatus());
-  conf.setPeer(getPeer());
   conf.setType(getType());
-  conf.setName(getName());
-  conf.setUuid(getUuid());
+
   return conf;
 }
 

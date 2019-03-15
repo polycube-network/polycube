@@ -45,7 +45,8 @@ class Port : public polycube::service::PortIface, public PeerIface {
   friend class TransparentCube;
 
  public:
-  Port(CubeIface &parent, const std::string &name, uint16_t index);
+  Port(CubeIface &parent, const std::string &name, uint16_t index,
+       const nlohmann::json &conf);
   virtual ~Port();
   Port(const Port &p) = delete;
   Port &operator=(const Port &) = delete;
@@ -71,6 +72,9 @@ class Port : public polycube::service::PortIface, public PeerIface {
                        bool recirculate = false);
   PortStatus get_status() const;
   PortType get_type() const;
+
+  virtual void set_conf(const nlohmann::json &conf);
+  virtual nlohmann::json to_json() const;
 
   void netlink_notification(int ifindex, const std::string &ifname);
 

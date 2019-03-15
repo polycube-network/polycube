@@ -23,9 +23,8 @@
 using namespace polycube::service;
 using namespace Tins;
 
-K8switch::K8switch(const std::string name, const K8switchJsonObject &conf,
-                   CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+K8switch::K8switch(const std::string name, const K8switchJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8switch] [%n] [%l] %v");
   logger()->info("Creating K8switch instance");
 
@@ -82,6 +81,8 @@ K8switch::~K8switch() {
 }
 
 void K8switch::update(const K8switchJsonObject &conf) {
+  Cube::set_conf(conf.getBase());
+
   if (conf.serviceIsSet()) {
     for (auto &i : conf.getService()) {
       auto vip = i.getVip();
@@ -90,10 +91,6 @@ void K8switch::update(const K8switchJsonObject &conf) {
       auto m = getService(vip, vport, proto);
       m->update(i);
     }
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.portsIsSet()) {
@@ -107,21 +104,15 @@ void K8switch::update(const K8switchJsonObject &conf) {
 
 K8switchJsonObject K8switch::toJsonObject() {
   K8switchJsonObject conf;
-
-  conf.setName(getName());
+  conf.setBase(Cube::to_json());
 
   for (auto &i : getServiceList()) {
     conf.addService(i->toJsonObject());
   }
 
-  conf.setLoglevel(getLoglevel());
-  conf.setType(getType());
-
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
 
   conf.setClusterIpSubnet(getClusterIpSubnet());
   conf.setClientSubnet(getClientSubnet());

@@ -28,7 +28,6 @@
 #include "Rule.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 /* definitions copied from datapath */
 struct dp_k {
@@ -58,8 +57,7 @@ class Nat : public polycube::service::TransparentCube, public NatInterface {
   friend class Rule;
 
  public:
-  Nat(const std::string name, const NatJsonObject &conf,
-      CubeType type = CubeType::TC);
+  Nat(const std::string name, const NatJsonObject &conf);
   virtual ~Nat();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
@@ -72,28 +70,6 @@ class Nat : public polycube::service::TransparentCube, public NatInterface {
                  const std::vector<uint8_t> &packet) override;
 
   void attach() override;
-
-  /// <summary>
-  /// Name of the nat service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE)
-  /// </summary>
-  NatLoglevelEnum getLoglevel() override;
-  void setLoglevel(const NatLoglevelEnum &value) override;
 
   /// <summary>
   ///

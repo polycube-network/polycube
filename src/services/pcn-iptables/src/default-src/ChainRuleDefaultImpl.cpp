@@ -15,6 +15,7 @@
 
 #include "../ChainRule.h"
 
+
 nlohmann::fifo_map<std::string, std::string>  ChainRule::getKeys() {
   nlohmann::fifo_map<std::string, std::string>  r;
 
@@ -22,12 +23,6 @@ nlohmann::fifo_map<std::string, std::string>  ChainRule::getKeys() {
 
   return r;
 }
-
-
-
-
-
-
 
 
 

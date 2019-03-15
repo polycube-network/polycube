@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -36,7 +36,7 @@ namespace model {
 class  FdbEntryJsonObject : public JsonObjectBase {
 public:
   FdbEntryJsonObject();
-  FdbEntryJsonObject(nlohmann::json& json);
+  FdbEntryJsonObject(const nlohmann::json &json);
   ~FdbEntryJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -58,7 +58,6 @@ public:
   std::string getAddress() const;
   void setAddress(std::string value);
   bool addressIsSet() const;
-  void unsetAddress();
 
   /// <summary>
   /// Output port name
@@ -66,7 +65,6 @@ public:
   std::string getPort() const;
   void setPort(std::string value);
   bool portIsSet() const;
-  void unsetPort();
 
   /// <summary>
   /// Age of the current filtering database entry
@@ -75,7 +73,6 @@ public:
   void setAge(uint32_t value);
   bool ageIsSet() const;
   void unsetAge();
-
 
 private:
   std::string m_address;

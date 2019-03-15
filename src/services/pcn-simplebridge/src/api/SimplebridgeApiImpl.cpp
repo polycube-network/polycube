@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -39,19 +39,15 @@ std::shared_ptr<Simplebridge> get_cube(const std::string &name) {
 
 }
 
-/*
-* These functions include a default basic implementation.  The user could
-* extend adapt this implementation to his needs.
-*/
 void create_simplebridge_by_id(const std::string &name, const SimplebridgeJsonObject &jsonObject) {
   {
     // check if name is valid before creating it
     std::lock_guard<std::mutex> guard(cubes_mutex);
     if (cubes.count(name) != 0) {
-      throw std::runtime_error("There is already an Cube with name " + name);
+      throw std::runtime_error("There is already a cube with name " + name);
     }
   }
-  auto ptr = std::make_shared<Simplebridge>(name, jsonObject, jsonObject.getType());
+  auto ptr = std::make_shared<Simplebridge>(name, jsonObject);
   std::unordered_map<std::string, std::shared_ptr<Simplebridge>>::iterator iter;
   bool inserted;
 
@@ -59,7 +55,7 @@ void create_simplebridge_by_id(const std::string &name, const SimplebridgeJsonOb
   std::tie(iter, inserted) = cubes.emplace(name, std::move(ptr));
 
   if (!inserted) {
-    throw std::runtime_error("There is already an Cube with name " + name);
+    throw std::runtime_error("There is already a cube with name " + name);
   }
 }
 
@@ -73,11 +69,6 @@ void delete_simplebridge_by_id(const std::string &name) {
     throw std::runtime_error("Cube " + name + " does not exist");
   }
   cubes.erase(name);
-}
-
-std::string read_simplebridge_uuid_by_id(const std::string &name) {
-  auto m = get_cube(name);
-  return m->getUuid();
 }
 
 std::vector<SimplebridgeJsonObject> read_simplebridge_list_by_id() {
@@ -98,91 +89,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_list
   }
   return r;
 }
-
-/*
-* Ports list related functions
-*/
-void create_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  auto m = get_cube(name);
-  m->addPortsList(ports);
-}
-
-std::vector<PortsJsonObject> read_simplebridge_ports_list_by_id(const std::string &name) {
-  std::vector<PortsJsonObject> vect;
-  auto m = get_cube(name);
-  for (auto &i : m->getPortsList()) {
-    vect.push_back(i->toJsonObject());
-  }
-  return vect;
-}
-
-void replace_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &ports) {
-  throw std::runtime_error("Method not supported");
-}
-
-void delete_simplebridge_ports_list_by_id(const std::string &name) {
-  auto m = get_cube(name);
-  m->delPortsList();
-}
-
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto m = get_cube(name);
-  for(auto &i : m->getPortsList()){
-    nlohmann::fifo_map<std::string, std::string> m;
-    m["name"] = i->getName();
-    r.push_back(std::move(m));
-  }
-  return r;
-}
-
-/*
-* Ports related functions
-*/
-void create_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  return m->addPorts(portsName, ports);
-}
-
-PortsJsonObject read_simplebridge_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  return m->getPorts(portsName)->toJsonObject();
-}
-
-void replace_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &ports) {
-  auto m = get_cube(name);
-  m->replacePorts(portsName, ports);
-}
-
-void delete_simplebridge_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  m->delPorts(portsName);
-}
-
-std::string read_simplebridge_ports_peer_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getPeer();
-}
-
-PortsStatusEnum read_simplebridge_ports_status_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getStatus();
-}
-
-std::string read_simplebridge_ports_uuid_by_id(const std::string &name, const std::string &portsName) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  return p->getUuid();
-}
-
-void update_simplebridge_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &peer) {
-  auto m = get_cube(name);
-  auto p = m->getPorts(portsName);
-  p->setPeer(peer);
-}
-
 
 /**
 * @brief   Create fdb by ID
@@ -284,6 +190,60 @@ return fdb->flush();
 
 
 /**
+* @brief   Create ports by ID
+*
+* Create operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+create_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+  auto simplebridge = get_cube(name);
+
+  simplebridge->addPorts(portsName, value);
+}
+
+
+
+
+/**
+* @brief   Create ports by ID
+*
+* Create operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+create_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  auto simplebridge = get_cube(name);
+  simplebridge->addPortsList(value);
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> create_simplebridge_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&simplebridge = get_cube(name);
+
+  auto &&ports = simplebridge->addPortsList(value);
+  for(auto &i : ports) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+
+/**
 * @brief   Delete fdb by ID
 *
 * Delete operation of resource: fdb*
@@ -351,6 +311,58 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> delete_simplebridge_fd
 
   auto &&entry = fdb->delEntryList();
   for(auto &i : entry) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+
+/**
+* @brief   Delete ports by ID
+*
+* Delete operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+*
+* Responses:
+*
+*/
+void
+delete_simplebridge_ports_by_id(const std::string &name, const std::string &portsName) {
+  auto simplebridge = get_cube(name);
+
+  simplebridge->delPorts(portsName);
+}
+
+
+
+
+/**
+* @brief   Delete ports by ID
+*
+* Delete operation of resource: ports*
+*
+* @param[in] name ID of name
+*
+* Responses:
+*
+*/
+void
+delete_simplebridge_ports_list_by_id(const std::string &name) {
+  auto simplebridge = get_cube(name);
+  simplebridge->delPortsList();
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> delete_simplebridge_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&simplebridge = get_cube(name);
+
+  auto &&ports = simplebridge->delPortsList();
+  for(auto &i : ports) {
     r.push_back(i->getKeys());
   }
   return r;
@@ -526,24 +538,62 @@ read_simplebridge_fdb_entry_port_by_id(const std::string &name, const std::strin
 
 
 /**
-* @brief   Read loglevel by ID
+* @brief   Read ports by ID
 *
-* Read operation of resource: loglevel*
+* Read operation of resource: ports*
 *
 * @param[in] name ID of name
+* @param[in] portsName ID of ports_name
 *
 * Responses:
-* SimplebridgeLoglevelEnum
+* PortsJsonObject
 */
-SimplebridgeLoglevelEnum
-read_simplebridge_loglevel_by_id(const std::string &name) {
+PortsJsonObject
+read_simplebridge_ports_by_id(const std::string &name, const std::string &portsName) {
   auto simplebridge = get_cube(name);
-  return simplebridge->getLoglevel();
+  return simplebridge->getPorts(portsName)->toJsonObject();
 
 }
 
 
 
+
+/**
+* @brief   Read ports by ID
+*
+* Read operation of resource: ports*
+*
+* @param[in] name ID of name
+*
+* Responses:
+* std::vector<PortsJsonObject>
+*/
+std::vector<PortsJsonObject>
+read_simplebridge_ports_list_by_id(const std::string &name) {
+  auto simplebridge = get_cube(name);
+  auto &&ports = simplebridge->getPortsList();
+  std::vector<PortsJsonObject> m;
+  for(auto &i : ports)
+    m.push_back(i->toJsonObject());
+  return m;
+}
+
+#define IMPLEMENT_POLYCUBE_GET_LIST
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&simplebridge = get_cube(name);
+
+  auto &&ports = simplebridge->getPortsList();
+  for(auto &i : ports) {
+    r.push_back(i->getKeys());
+  }
+  return r;
+}
+#endif
+
+#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read mac by ID
@@ -561,26 +611,6 @@ read_simplebridge_ports_mac_by_id(const std::string &name, const std::string &po
   auto simplebridge = get_cube(name);
   auto ports = simplebridge->getPorts(portsName);
   return ports->getMac();
-
-}
-
-
-
-
-/**
-* @brief   Read type by ID
-*
-* Read operation of resource: type*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* CubeType
-*/
-CubeType
-read_simplebridge_type_by_id(const std::string &name) {
-  auto simplebridge = get_cube(name);
-  return simplebridge->getType();
 
 }
 
@@ -650,6 +680,52 @@ replace_simplebridge_fdb_entry_list_by_id(const std::string &name, const std::ve
 
 #ifdef IMPLEMENT_POLYCUBE_GET_LIST
 std::vector<nlohmann::fifo_map<std::string, std::string>> replace_simplebridge_fdb_entry_list_by_id_get_list(const std::string &name, const std::vector<FdbEntryJsonObject> &value) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+}
+#endif
+
+
+/**
+* @brief   Replace ports by ID
+*
+* Replace operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+replace_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
+  auto simplebridge = get_cube(name);
+
+  simplebridge->replacePorts(portsName, value);
+}
+
+
+
+
+/**
+* @brief   Replace ports by ID
+*
+* Replace operation of resource: ports*
+*
+* @param[in] name ID of name
+* @param[in] value portsbody object
+*
+* Responses:
+*
+*/
+void
+replace_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
+  throw std::runtime_error("Method not supported");
+}
+
+
+#ifdef IMPLEMENT_POLYCUBE_GET_LIST
+std::vector<nlohmann::fifo_map<std::string, std::string>> replace_simplebridge_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
@@ -813,27 +889,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> update_simplebridge_li
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
 }
 #endif
-
-
-/**
-* @brief   Update loglevel by ID
-*
-* Update operation of resource: loglevel*
-*
-* @param[in] name ID of name
-* @param[in] value Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
-*
-* Responses:
-*
-*/
-void
-update_simplebridge_loglevel_by_id(const std::string &name, const SimplebridgeLoglevelEnum &value) {
-  auto simplebridge = get_cube(name);
-
-  simplebridge->setLoglevel(value);
-}
-
-
 
 
 /**

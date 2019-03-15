@@ -29,7 +29,6 @@
 #include "Ports.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
   friend class Ports;
@@ -37,8 +36,7 @@ class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
   friend class Backend;
 
  public:
-  Lbdsr(const std::string name, const LbdsrJsonObject &conf,
-        CubeType type = CubeType::TC);
+  Lbdsr(const std::string name, const LbdsrJsonObject &conf);
   virtual ~Lbdsr();
   std::string generate_code(bool first);
   std::vector<std::string> generate_code_vector();
@@ -57,33 +55,11 @@ class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
   void delFrontend() override;
 
   /// <summary>
-  /// Name of the lbdsr service
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
   /// Defines the algorithm which LB use to direct requests to the node of the
   /// pool (Random, RoundRobin, ..)
   /// </summary>
   std::string getAlgorithm() override;
   void setAlgorithm(const std::string &value) override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: INFO
-  /// </summary>
-  LbdsrLoglevelEnum getLoglevel() override;
-  void setLoglevel(const LbdsrLoglevelEnum &value) override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Entry of the ports table

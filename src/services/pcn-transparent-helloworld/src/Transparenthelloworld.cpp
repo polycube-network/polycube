@@ -21,11 +21,9 @@
 #include "TransparentHelloworld_dp_ingress.h"
 
 Transparenthelloworld::Transparenthelloworld(
-    const std::string name, const TransparenthelloworldJsonObject &conf,
-    CubeType type)
-    : TransparentCube(name, {transparent_helloworld_code_ingress},
-                      {transparent_helloworld_code_egress}, type,
-                      conf.getPolycubeLoglevel()) {
+    const std::string name, const TransparenthelloworldJsonObject &conf)
+    : TransparentCube(conf.getBase(), {transparent_helloworld_code_ingress},
+                      {transparent_helloworld_code_egress}) {
   logger()->set_pattern(
       "[%Y-%m-%d %H:%M:%S.%e] [Transparenthelloworld] [%n] [%l] %v");
   logger()->info("Creating Transparenthelloworld instance");
@@ -38,9 +36,7 @@ Transparenthelloworld::~Transparenthelloworld() {}
 
 void Transparenthelloworld::update(
     const TransparenthelloworldJsonObject &conf) {
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  TransparentCube::set_conf(conf.getBase());
 
   if (conf.ingressActionIsSet()) {
     setIngressAction(conf.getIngressAction());
@@ -53,11 +49,8 @@ void Transparenthelloworld::update(
 
 TransparenthelloworldJsonObject Transparenthelloworld::toJsonObject() {
   TransparenthelloworldJsonObject conf;
+  conf.setBase(TransparentCube::to_json());
 
-  conf.setName(getName());
-  conf.setUuid(getUuid());
-  conf.setType(getType());
-  conf.setLoglevel(getLoglevel());
   conf.setIngressAction(getIngressAction());
   conf.setEgressAction(getEgressAction());
 

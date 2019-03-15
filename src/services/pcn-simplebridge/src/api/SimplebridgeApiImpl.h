@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -64,16 +64,10 @@ namespace SimplebridgeApiImpl {
   std::string read_simplebridge_fdb_entry_port_by_id(const std::string &name, const std::string &address);
   std::vector<SimplebridgeJsonObject> read_simplebridge_list_by_id();
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_list_by_id_get_list();
-  SimplebridgeLoglevelEnum read_simplebridge_loglevel_by_id(const std::string &name);
   PortsJsonObject read_simplebridge_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_simplebridge_ports_list_by_id(const std::string &name);
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_ports_list_by_id_get_list(const std::string &name);
   std::string read_simplebridge_ports_mac_by_id(const std::string &name, const std::string &portsName);
-  std::string read_simplebridge_ports_peer_by_id(const std::string &name, const std::string &portsName);
-  PortsStatusEnum read_simplebridge_ports_status_by_id(const std::string &name, const std::string &portsName);
-  std::string read_simplebridge_ports_uuid_by_id(const std::string &name, const std::string &portsName);
-  CubeType read_simplebridge_type_by_id(const std::string &name);
-  std::string read_simplebridge_uuid_by_id(const std::string &name);
   void replace_simplebridge_by_id(const std::string &name, const SimplebridgeJsonObject &value);
   void replace_simplebridge_fdb_by_id(const std::string &name, const FdbJsonObject &value);
   void replace_simplebridge_fdb_entry_by_id(const std::string &name, const std::string &address, const FdbEntryJsonObject &value);
@@ -87,10 +81,8 @@ namespace SimplebridgeApiImpl {
   void update_simplebridge_fdb_entry_list_by_id(const std::string &name, const std::vector<FdbEntryJsonObject> &value);
   void update_simplebridge_fdb_entry_port_by_id(const std::string &name, const std::string &address, const std::string &value);
   void update_simplebridge_list_by_id(const std::vector<SimplebridgeJsonObject> &value);
-  void update_simplebridge_loglevel_by_id(const std::string &name, const SimplebridgeLoglevelEnum &value);
   void update_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_simplebridge_ports_peer_by_id(const std::string &name, const std::string &portsName, const std::string &value);
 }
 }
 }

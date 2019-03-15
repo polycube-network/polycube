@@ -36,7 +36,7 @@ namespace model {
 class  ChainAppendOutputJsonObject : public JsonObjectBase {
 public:
   ChainAppendOutputJsonObject();
-  ChainAppendOutputJsonObject(nlohmann::json& json);
+  ChainAppendOutputJsonObject(const nlohmann::json &json);
   ~ChainAppendOutputJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -59,7 +59,6 @@ public:
   void setId(uint32_t value);
   bool idIsSet() const;
   void unsetId();
-
 
 private:
   uint32_t m_id;

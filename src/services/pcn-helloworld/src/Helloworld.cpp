@@ -24,16 +24,9 @@
 
 using namespace polycube::service;
 
-Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf,
-                       CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
-  //: Cube(name, {generate_code()}, type, conf.getPolycubeLoglevel()) {
+Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [helloworld] [%n] [%l] %v");
-  // TODO: this should be done at initalization time
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
-
   logger()->info("Creating helloworld instance");
 
   // TODO: action should have a default value, so the actionIsSet control could
@@ -62,9 +55,8 @@ void Helloworld::update(const HelloworldJsonObject &conf) {
   // in the conf JsonObject.
   // You can modify this implementation.
 
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  // update base cube implementation
+  Cube::set_conf(conf.getBase());
 
   if (conf.actionIsSet()) {
     setAction(conf.getAction());
@@ -81,20 +73,13 @@ void Helloworld::update(const HelloworldJsonObject &conf) {
 
 HelloworldJsonObject Helloworld::toJsonObject() {
   HelloworldJsonObject conf;
-
-  conf.setUuid(getUuid());
-
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(Cube::to_json());
 
   conf.setAction(getAction());
-
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setName(getName());
 
   return conf;
 }

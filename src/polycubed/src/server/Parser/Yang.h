@@ -29,6 +29,8 @@
 #include "../../management_interface.h"
 #include "../Resources/Data/AbstractFactory.h"
 
+#include "../Resources/Data/BaseModel/ConcreteFactory.h"
+
 namespace polycube::polycubed::Rest::Validators {
 class ValueValidator;
 class LengthValidator;
@@ -50,13 +52,17 @@ using ValidatorsType =
 class Yang {
  public:
   explicit Yang(const std::string &datamodel,
-                std::unique_ptr<Resources::Data::AbstractFactory> &&factory);
+                std::unique_ptr<Resources::Data::AbstractFactory> &&factory,
+                std::unique_ptr<Resources::Data::BaseModel::ConcreteFactory>
+                    &&base_model_factory);
   const std::string ServiceName();
   const std::shared_ptr<Resources::Endpoint::Service> Parse(
       const std::string &base, const std::string &name, ServiceMetadata *md);
 
  private:
   const std::unique_ptr<Resources::Data::AbstractFactory> factory_;
+  const std::unique_ptr<Resources::Data::BaseModel::ConcreteFactory>
+      base_model_factory_;
   const lys_module *module_;
   /** Stores typedef name and associated list of Validators */
   std::unordered_map<std::string, ValidatorList>

@@ -23,6 +23,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "base_model.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "service_controller.h"
@@ -40,7 +41,7 @@ class RestServer;
 
 class PolycubedCore {
  public:
-  PolycubedCore();
+  PolycubedCore(BaseModel *base_model);
   ~PolycubedCore();
 
   void add_servicectrl(const std::string &name, ServiceControllerType type,
@@ -80,6 +81,7 @@ class PolycubedCore {
 
   void set_rest_server(RestServer *rest_server);
   RestServer *get_rest_server();
+  BaseModel *base_model();
 
  private:
   bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
@@ -88,6 +90,7 @@ class PolycubedCore {
   std::string polycubeendpoint_;
   std::shared_ptr<spdlog::logger> logger;
   RestServer *rest_server_;
+  BaseModel *base_model_;
 };
 
 }  // namespace polycubed

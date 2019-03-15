@@ -25,8 +25,11 @@
 
 polycube::polycubed::Rest::Parser::Yang::Yang(
     const std::string &datamodel,
-    std::unique_ptr<Resources::Data::AbstractFactory> &&factory)
+    std::unique_ptr<Resources::Data::AbstractFactory> &&factory,
+    std::unique_ptr<Resources::Data::BaseModel::ConcreteFactory>
+        &&base_model_factory)
     : factory_(std::move(factory)),
+      base_model_factory_(std::move(base_model_factory)),
       module_(lys_parse_mem(ly_ctx_new("/usr/local/include/polycube/"
                                        "datamodel-common/",
                                        0),

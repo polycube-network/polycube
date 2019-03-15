@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -36,7 +36,7 @@ namespace model {
 class  FdbFlushOutputJsonObject : public JsonObjectBase {
 public:
   FdbFlushOutputJsonObject();
-  FdbFlushOutputJsonObject(nlohmann::json& json);
+  FdbFlushOutputJsonObject(const nlohmann::json &json);
   ~FdbFlushOutputJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -58,8 +58,6 @@ public:
   bool getFlushed() const;
   void setFlushed(bool value);
   bool flushedIsSet() const;
-  void unsetFlushed();
-
 
 private:
   bool m_flushed;

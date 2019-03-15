@@ -22,11 +22,15 @@ namespace swagger {
 namespace server {
 namespace model {
 
-ChainAppendOutputJsonObject::ChainAppendOutputJsonObject() : 
-  m_idIsSet(false) { }
+ChainAppendOutputJsonObject::ChainAppendOutputJsonObject() {
+  m_idIsSet = false;
+}
 
-ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(nlohmann::json &val) : 
-  m_idIsSet(false) { 
+ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_idIsSet = false;
+
+
   if (val.count("id")) {
     setId(val.at("id").get<uint32_t>());
   }
@@ -34,14 +38,34 @@ ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(nlohmann::json &val) :
 
 nlohmann::json ChainAppendOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_idIsSet) {
     val["id"] = m_id;
   }
 
-
   return val;
 }
+
+uint32_t ChainAppendOutputJsonObject::getId() const {
+  return m_id;
+}
+
+void ChainAppendOutputJsonObject::setId(uint32_t value) {
+  m_id = value;
+  m_idIsSet = true;
+}
+
+bool ChainAppendOutputJsonObject::idIsSet() const {
+  return m_idIsSet;
+}
+
+void ChainAppendOutputJsonObject::unsetId() {
+  m_idIsSet = false;
+}
+
 
 nlohmann::json ChainAppendOutputJsonObject::helpKeys() {
   nlohmann::json val = nlohmann::json::object();
@@ -84,26 +108,6 @@ std::vector<std::string> ChainAppendOutputJsonObject::helpActions() {
   std::vector<std::string> val;
   return val;
 }
-
-uint32_t ChainAppendOutputJsonObject::getId() const {
-  return m_id;
-}
-
-void ChainAppendOutputJsonObject::setId(uint32_t value) {
-  m_id = value;
-  m_idIsSet = true;
-}
-
-bool ChainAppendOutputJsonObject::idIsSet() const {
-  return m_idIsSet;
-}
-
-void ChainAppendOutputJsonObject::unsetId() {
-  m_idIsSet = false;
-}
-
-
-
 
 }
 }

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -38,7 +38,7 @@ namespace model {
 class  FdbJsonObject : public JsonObjectBase {
 public:
   FdbJsonObject();
-  FdbJsonObject(nlohmann::json& json);
+  FdbJsonObject(const nlohmann::json &json);
   ~FdbJsonObject() final = default;
 
   /////////////////////////////////////////////
@@ -69,7 +69,6 @@ public:
   void addFdbEntry(FdbEntryJsonObject value);
   bool entryIsSet() const;
   void unsetEntry();
-
 
 private:
   uint32_t m_agingTime;

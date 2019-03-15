@@ -92,7 +92,7 @@ module router {
     }
 
     leaf pathcost {
-      type int32;
+      type uint32;
       default 1;
       description "Cost of this route";
       polycube-base:cli-example "10";

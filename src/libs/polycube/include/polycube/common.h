@@ -21,6 +21,14 @@
 
 namespace polycube {
 
+namespace service {
+  enum class CubeType;
+  enum class PortStatus;
+}
+
+using polycube::service::CubeType;
+using polycube::service::PortStatus;
+
 // Taken from
 // https://github.com/gabime/spdlog/blob/master/include/spdlog/common.h
 
@@ -34,6 +42,9 @@ enum class LogLevel {
   OFF = 6
 };
 
+// https://stackoverflow.com/a/4119881
+bool iequals(const std::string &a, const std::string &b);
+
 std::string logLevelString(polycube::LogLevel l);
 polycube::LogLevel stringLogLevel(const std::string &level);
 /* Log level representation in polycube and spdlog library could change,
@@ -41,6 +52,12 @@ polycube::LogLevel stringLogLevel(const std::string &level);
  * between the two representations
  */
 spdlog::level::level_enum logLevelToSPDLog(polycube::LogLevel level);
+
+std::string cube_type_to_string(CubeType type);
+CubeType string_to_cube_type(const std::string &type_str);
+
+std::string port_status_to_string(PortStatus status);
+PortStatus string_to_port_status(const std::string &status);
 
 size_t get_possible_cpu_count();
 
