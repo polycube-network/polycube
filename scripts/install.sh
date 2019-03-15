@@ -60,6 +60,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 mkdir -p $WORKDIR
 
+$SUDO apt update
+$SUDO apt install -y wget gnupg2
+
 $SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
 wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
 $SUDO apt-key add - < Release.key
@@ -77,6 +80,7 @@ PACKAGES+=" pkg-config"
 PACKAGES+=" libyang-dev"
 PACKAGES+=" autoconf libtool m4 automake"
 PACKAGES+=" libssl-dev" # needed for certificate based security
+PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary
