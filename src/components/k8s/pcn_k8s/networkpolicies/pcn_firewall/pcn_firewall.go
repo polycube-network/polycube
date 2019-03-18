@@ -462,7 +462,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	//	Actually Inject
 	//-------------------------------------
 
-	response, err = d.fwAPI.CreateFirewallChainRuleListByID(nil, d.firewall.Name, direction, rules)
+	response, err = d.fwAPI.CreateFirewallChainRuleListByID(nil, d.firewall.Name, direction, rulesToInject)
 	if err != nil {
 		l.Errorln("Error while trying to inject rules for firewall", d.firewall.Name, "in", direction, ":", err, response)
 		return []k8sfirewall.ChainRule{}, err
@@ -475,7 +475,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		l.Debugln("applying injection result", out)
 	}
 
-	return rules, nil
+	return rulesToInject, nil
 }
 
 func (d *DeployedFirewall) RemoveRules(direction string, rules []k8sfirewall.ChainRule) []k8sfirewall.ChainRule {
