@@ -26,8 +26,14 @@ type PcnFirewall interface {
 }
 
 type DeployedFirewall struct {
-	firewall     *k8sfirewall.Firewall
-	rules        map[string]*rulesContainer
+	firewall *k8sfirewall.Firewall
+	rules    map[string]*rulesContainer
+
+	//	TODO: Change with the following:
+	/*
+		ingressRules map[string]*rulesContainer
+		egressRules map[string]*rulesContainer
+	*/
 	ingressChain *k8sfirewall.Chain
 	egressChain  *k8sfirewall.Chain
 	fwAPI        k8sfirewall.FirewallAPI
@@ -220,6 +226,12 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 			d.rules[policyName] = &injectedRules
 		} else {
 			//	This piece of code only executes if this policy is being updated and couldn't delete rules
+
+			/*
+				TODO: to be changed with the following
+				d.ingressRules[policyName] = append(d.ingressRules[policyName], injectedRules.ingress...)
+				d.egressRules[policyName] = append(d.egressRules[policyName], injectedRules.egress...)
+			*/
 			d.rules[policyName].ingress = append(d.rules[policyName].ingress, injectedRules.ingress...)
 			d.rules[policyName].egress = append(d.rules[policyName].egress, injectedRules.egress...)
 		}
@@ -356,11 +368,27 @@ func (d *DeployedFirewall) updateDefaultActions(to string) (error, error) {
 		l.Errorln("Could not set default ingress action to forward for firewall", d.firewall.Name, ":", err, response)
 		iErr = err
 	}
+
+	//	Apply the changes in ingress
+	out, response, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, "ingress")
+	if err != nil {
+		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", "ingress", ":", err, response)
+	} else {
+		l.Debugln("applying changes to default action in ingress: result", out)
+	}
 	//l.Debugln("Successfully set default ingress action to forward for firewall", d.firewall.Name)
 
 	if response, err := d.fwAPI.UpdateFirewallChainDefaultByID(nil, d.firewall.Name, "egress", to); err != nil {
 		l.Errorln("Could not set default egress action to forward for firewall", d.firewall.Name, ":", err, response)
 		eErr = err
+	}
+
+	//	Apply the changes in egress
+	out, response, err = d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, "egress")
+	if err != nil {
+		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", "egress", ":", err, response)
+	} else {
+		l.Debugln("applying changes to default action in egress: result", out)
 	}
 	//l.Debugln("Successfully set default egress action to forward for firewall", d.firewall.Name)
 
@@ -386,35 +414,12 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	}
 
 	var ID int32 = 1
+	rulesToInject := []k8sfirewall.ChainRule{}
 
 	//-------------------------------------
 	//	Build the IDs
 	//-------------------------------------
 
-	//	In order to be able to inject multiple IDs at once, we need to create the IDs, and to do that we need to check
-	//	the last one.
-	/*for i := 0; i < len(rules); i++ {
-		appendRule := k8sfirewall.ChainAppendInput{
-			Src:     rules[i].Src,
-			Dst:     rules[i].Dst,
-			L4proto: rules[i].L4proto,
-			Sport:   rules[i].Sport,
-			Dport:   rules[i].Dport,
-			Action:  rules[i].Action,
-		}
-
-		if out, _, err := d.fwAPI.CreateFirewallChainAppendByID(nil, d.firewall.Name, direction, appendRule); err == nil {
-			rules[i].Id = out.Id
-			l.Debugf("###", direction, " applied rule %+v\n", rules[i])
-		}
-	}
-
-	out, response, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, d.firewall.Name, direction)
-	if err != nil {
-		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
-	} else {
-		l.Debugln("applying injection result", out)
-	}*/
 	chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
 	if err != nil {
 		l.Errorln("Error while trying to get chain for firewall", d.firewall.Name, "in", direction, ":", err, response)
@@ -426,10 +431,31 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		ID = chain.Rule[len(chain.Rule)-2].Id + 1
 	}
 
-	for i := 0; i < len(rules); i++ {
-		//rules[i].Id = ID + i
-		rules[i].Id = ID
+	//	Modify the rules
+	for _, rule := range rules {
+		workedRule := k8sfirewall.ChainRule{}
+		if direction == "ingress" {
+			//	Make sure not to target myself
+			if rule.Src != d.podIP {
+				workedRule := rule
+				workedRule.Dst = d.podIP
+			}
+		}
+		if direction == "egress" {
+			//	Make sure not to target myself
+			if rule.Dst != d.podIP {
+				workedRule := rule
+				workedRule.Src = d.podIP
+			}
+		}
+
+		workedRule.Id = ID
 		ID++
+		rulesToInject = append(rulesToInject, workedRule)
+	}
+
+	if len(rulesToInject) < 1 {
+		return rulesToInject, nil
 	}
 
 	//-------------------------------------
@@ -579,6 +605,7 @@ func (d *DeployedFirewall) RemoveIPReferences(ip string) {
 	removeWait.Wait()*/
 }
 
+//	TODO: to be changed (read inside)
 func (d *DeployedFirewall) ImplementsPolicy(name string) bool {
 
 	d.lock.Lock()
@@ -586,6 +613,21 @@ func (d *DeployedFirewall) ImplementsPolicy(name string) bool {
 
 	_, exists := d.rules[name]
 	return exists
+
+	/*	TODO: change with the following
+		ImplementsPolicy(name, direction string) (direction: ingress, egress, any)
+		=>
+		d.lock.Lock()
+		defer d.lock.Unlock()
+
+		if direction == "ingress" || direction == "any" {
+			_, exists := d.ingressRules[name]
+			return exists
+		}
+
+		_, exists := d.egressRules[name]
+		return exists
+	*/
 }
 
 func (d *DeployedFirewall) isFirewallOk() bool {

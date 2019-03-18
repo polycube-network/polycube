@@ -282,10 +282,10 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 					//	Deploy the policy just for this pod
 					ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
 					parsed := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
-					parsed = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
+					/*parsed = manager.defaultPolicyParser.FillChains(pcn_types.Pod{
 						Pod:  *pod,
 						Veth: "",
-					}, parsed.Ingress, parsed.Egress)
+					}, parsed.Ingress, parsed.Egress)*/
 
 					fw.EnforcePolicy(k8sPolicy.Name, parsed.Ingress, parsed.Egress)
 					//l.Debugln("pod", pod.Name, "should now enforce", k8sPolicy.Name)

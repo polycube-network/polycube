@@ -5,8 +5,11 @@ import (
 )
 
 const (
-	ActionForward = "forward"
-	ActionDrop    = "drop"
+	ActionForward        = "forward"
+	ActionDrop           = "drop"
+	ConnTrackNew         = "new"
+	ConnTrackEstablished = "established"
+	ConnTrackInvalid     = "invalid"
 )
 
 type ParsedRules struct {
