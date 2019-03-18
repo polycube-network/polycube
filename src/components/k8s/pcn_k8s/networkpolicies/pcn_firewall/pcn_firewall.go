@@ -437,21 +437,23 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		if direction == "ingress" {
 			//	Make sure not to target myself
 			if rule.Src != d.podIP {
-				workedRule := rule
+				workedRule = rule
 				workedRule.Dst = d.podIP
 			}
 		}
 		if direction == "egress" {
 			//	Make sure not to target myself
 			if rule.Dst != d.podIP {
-				workedRule := rule
+				workedRule = rule
 				workedRule.Src = d.podIP
 			}
 		}
 
-		workedRule.Id = ID
-		ID++
-		rulesToInject = append(rulesToInject, workedRule)
+		if len(workedRule.Action) > 0 {
+			workedRule.Id = ID
+			ID++
+			rulesToInject = append(rulesToInject, workedRule)
+		}
 	}
 
 	if len(rulesToInject) < 1 {
