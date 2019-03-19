@@ -343,15 +343,18 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 
 	if len(failedRules.ingress) < 1 && len(failedRules.egress) < 1 {
 		//	All rules were delete successfully: we may delete the entry
+		l.Debugln("####all rules deleted successfully")
 		delete(d.rules, policyName)
 
 	} else {
 		//	Some rules were not deleted. We can't delete the entry: we need to change it with the still active rules.
+		l.Debugln("####some rules not deleted")
 		d.rules[policyName] = &failedRules
 	}
 
 	//	If this pod doesn't enfoce any policy, we must change the default action to forward.
 	if len(d.rules) < 1 {
+		l.Debugln("####Going to changed the action in a bit")
 		d.updateDefaultActions(pcn_types.ActionForward)
 	}
 }
