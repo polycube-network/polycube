@@ -218,17 +218,19 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 	if iError == nil || eError == nil {
 		//	Add the newly created rules on our struct, so we can reference them at all times
 
-		if _, exists := d.ingressRules[policyName]; !exists {
-			d.ingressRules[policyName] = []k8sfirewall.ChainRule{}
-		}
-		if _, exists := d.egressRules[policyName]; !exists {
-			d.egressRules[policyName] = []k8sfirewall.ChainRule{}
-		}
-
+		//	Ingress
 		if len(injectedRules.ingress) > 0 {
+			if _, exists := d.ingressRules[policyName]; !exists {
+				d.ingressRules[policyName] = []k8sfirewall.ChainRule{}
+			}
 			d.ingressRules[policyName] = append(d.ingressRules[policyName], injectedRules.ingress...)
 		}
+
+		//	Egress
 		if len(injectedRules.egress) > 0 {
+			if _, exists := d.egressRules[policyName]; !exists {
+				d.egressRules[policyName] = []k8sfirewall.ChainRule{}
+			}
 			d.egressRules[policyName] = append(d.egressRules[policyName], injectedRules.egress...)
 		}
 
@@ -269,8 +271,8 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		egress:  []k8sfirewall.ChainRule{},
 	}
 
-	_, iexists := d.ingressRules[policyName]
-	_, eexists := d.ingressRules[policyName]
+	policyIngress, iexists := d.ingressRules[policyName]
+	policyEgress, eexists := d.ingressRules[policyName]
 	if !iexists && !eexists {
 		l.Infoln("fw", d.firewall.Name, "has no", policyName, "in its list of implemented policies rules")
 		return
@@ -295,33 +297,36 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		}
 		return
 	}*/
-	if len(d.ingressRules) < 1 && len(d.egressRules) < 1 {
-		//l.Infoln("fw", d.firewall.Name, "has no ingress nor egress rules for policy", policyName)
-		d.lock.Lock()
-		defer d.lock.Unlock()
 
+	//-------------------------------------
+	//	Are there any rules on this policy?
+	//-------------------------------------
+	//	NOTE: check on exists and len are actually useless (read EnforcePolicy). But since I'm paranoid, I'll do it anyway.
+	//	Check for ingress rules
+	d.lock.Lock()
+	if iexists && len(policyIngress) < 1 {
 		delete(d.ingressRules, policyName)
-		delete(d.egressRules, policyName)
-
 		if len(d.ingressRules) < 1 {
 			d.updateDefaultAction("ingress", pcn_types.ActionForward)
 			d.applyRules("ingress")
 		}
-		if len(d.egressRules) < 1 {
-			d.updateDefaultAction("egress", pcn_types.ActionForward)
-			d.applyRules("egress")
+	}
+	//	Check for egress rules
+	if eexists && len(policyEgress) < 1 {
+		delete(d.ingressRules, policyName)
+		if len(d.ingressRules) < 1 {
+			d.updateDefaultAction("ingress", pcn_types.ActionForward)
+			d.applyRules("ingress")
 		}
+	}
+	d.lock.Unlock()
 
+	//	After the above, policy is not even listed anymore? (which means: both ingress and egress were actually empty?)
+	policyIngress, iexists = d.ingressRules[policyName]
+	policyEgress, eexists = d.ingressRules[policyName]
+	if !iexists && !eexists {
 		return
 	}
-
-	if len(d.ingressRules) > 0 {
-		deleteNumber++
-	}
-	if len(d.egressRules) > 0 {
-		deleteNumber++
-	}
-	deleteWait.Add(deleteNumber)
 
 	//-------------------------------------
 	//	Remove the rules
@@ -335,8 +340,16 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		return
 	}
 
+	if len(policyIngress) > 0 {
+		deleteNumber++
+	}
+	if len(policyEgress) > 0 {
+		deleteNumber++
+	}
+	deleteWait.Add(deleteNumber)
+
 	//	Ingress
-	if len(d.ingressRules) > 0 {
+	if len(policyIngress) > 0 {
 		go func(rules []k8sfirewall.ChainRule) {
 			defer deleteWait.Done()
 
@@ -344,11 +357,11 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 			if len(iFailedRules) > 0 {
 				failedRules.ingress = iFailedRules
 			}
-		}(d.ingressRules[policyName])
+		}(policyIngress)
 	}
 
 	//	Egress
-	if len(d.egressRules) > 0 {
+	if len(policyEgress) > 0 {
 		go func(rules []k8sfirewall.ChainRule) {
 			defer deleteWait.Done()
 
@@ -356,7 +369,7 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 			if len(eFailedRules) > 0 {
 				failedRules.egress = eFailedRules
 			}
-		}(d.egressRules[policyName])
+		}(policyEgress)
 	}
 
 	deleteWait.Wait()
