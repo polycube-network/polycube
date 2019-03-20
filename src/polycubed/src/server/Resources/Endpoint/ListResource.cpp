@@ -205,8 +205,8 @@ void ListResource::del_multiple(const Request &request,
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }
 
-void ListResource::options_common(const Request &request,
-                                  ResponseWriter response, bool multiple) {
+void ListResource::options_multiple(const Request &request,
+                                    ResponseWriter response) {
   const auto &query_param = request.query();
   if (!query_param.has("help")) {
     Server::ResponseGenerator::Generate({{kBadRequest, nullptr}},
@@ -235,25 +235,53 @@ void ListResource::options_common(const Request &request,
   }
   ListKeyValues keys{};
 
-  auto ptr = dynamic_cast<Data::Lib::ListResource *>(this);
-
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
-  if (multiple) {
-    auto helpresp = ptr->HelpMultiple(Service::Cube(request), type, keys);
-    Server::ResponseGenerator::Generate({helpresp}, std::move(response));
-  } else {
-    auto helpresp = Help(Service::Cube(request), type, keys);
-    Server::ResponseGenerator::Generate({helpresp}, std::move(response));
+  auto helpresp = Help(Service::Cube(request), type, keys);
+  Server::ResponseGenerator::Generate({helpresp}, std::move(response));
+}
+
+Response ListResource::Help(const std::string &cube_name, HelpType type,
+                            const ListKeyValues &keys) {
+  nlohmann::json val = nlohmann::json::object();
+
+  switch (type) {
+  case HelpType::SHOW:
+    val["params"] = helpKeys();
+    val["elements"] =
+        nlohmann::json::parse(GetElementsList(cube_name, keys).message);
+    break;
+  case HelpType::ADD:
+    val["params"] = helpKeys();
+    val["optional-params"] = helpWritableLeafs(true);
+    break;
+  case HelpType::DEL:
+    val["params"] = helpKeys();
+    val["elements"] =
+        nlohmann::json::parse(GetElementsList(cube_name, keys).message);
+    break;
+  case HelpType::NONE:
+    val["commands"] = {"add", "del", "show"};
+    val["params"] = helpKeys();
+    val["elements"] =
+        nlohmann::json::parse(GetElementsList(cube_name, keys).message);
+    break;
+  default:
+    return {kBadRequest, nullptr};
   }
+
+  return {kOk, ::strdup(val.dump().c_str())};
 }
 
-void ListResource::options(const Request &request, ResponseWriter response) {
-  return options_common(request, std::move(response), false);
-}
+nlohmann::json ListResource::helpKeys() const {
+  nlohmann::json val = nlohmann::json::object();
 
-void ListResource::options_multiple(const Request &request,
-                                    ResponseWriter response) {
-  return options_common(request, std::move(response), true);
+  for (auto &i : children_) {
+    if (i->IsKey()) {
+      val[i->Name()] = i->ToHelpJson();
+    }
+  }
+
+  return val;
 }
 
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

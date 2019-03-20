@@ -57,6 +57,14 @@ class ListResource : public ParentResource, public Body::ListResource {
 
   virtual Response DeleteWhole(const std::string &cube_name,
                                const ListKeyValues &keys) = 0;
+  Response Help(const std::string &cube_name, HelpType type,
+                const ListKeyValues &keys);
+
+  virtual Response GetElementsList(const std::string &cube_name,
+                                   const ListKeyValues &keys) = 0;
+
+ protected:
+  nlohmann::json helpKeys() const;
 
  private:
   std::vector<PathParamField> key_params_;
@@ -76,11 +84,6 @@ class ListResource : public ParentResource, public Body::ListResource {
 
   void del_multiple(const Request &request, ResponseWriter response);
 
-  void options(const Request &request, ResponseWriter response) final;
-
   void options_multiple(const Request &request, ResponseWriter response);
-
-  void options_common(const Request &request, ResponseWriter response,
-                      bool multiple);
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

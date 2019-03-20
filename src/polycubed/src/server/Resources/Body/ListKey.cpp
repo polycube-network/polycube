@@ -23,11 +23,12 @@
 
 namespace polycube::polycubed::Rest::Resources::Body {
 ListKey::ListKey(
-    LY_DATA_TYPE type, std::string name,
+    LY_DATA_TYPE type, std::string name, std::string original_name,
     std::vector<std::shared_ptr<
         polycube::polycubed::Rest::Validators::ValueValidator>> &&validators)
     : type_(FromYang(type)),
       name_{std::move(name)},
+      original_name_{std::move(original_name)},
       validators_{std::move(validators)} {}
 
 ListType ListKey::Type() const {
@@ -36,6 +37,10 @@ ListType ListKey::Type() const {
 
 const std::string &ListKey::Name() const {
   return name_;
+}
+
+const std::string &ListKey::OriginalName() const {
+  return original_name_;
 }
 
 const std::vector<std::shared_ptr<Validators::ValueValidator>>

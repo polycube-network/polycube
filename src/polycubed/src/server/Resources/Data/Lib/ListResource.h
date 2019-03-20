@@ -49,10 +49,8 @@ class ListResource : public Endpoint::ListResource {
           read_whole_handler,
       std::function<Response(const char *, const Key *, size_t)>
           delete_whole_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help_multiple,
+      std::function<Response(const char *name, const Key *, size_t)>
+          get_elements_list,
       const std::string &name, const std::string &description,
       const std::string &cli_example, const std::string &rest_endpoint,
       const std::string &rest_endpoint_multiple,
@@ -60,22 +58,19 @@ class ListResource : public Endpoint::ListResource {
       std::vector<Body::ListKey> &&keys,
       const std::vector<Body::JsonNodeField> &node_fields);
 
-  ListResource(
-      std::function<Response(const char *, const Key *, size_t)>
-          read_entry_handler,
-      std::function<Response(const char *, const Key *, size_t)>
-          read_whole_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help_multiple,
-      const std::string &name, const std::string &description,
-      const std::string &cli_example, const std::string &rest_endpoint,
-      const std::string &rest_endpoint_multiple,
-      const Body::ParentResource *parent, bool configuration,
-      bool init_only_config, PolycubedCore *core,
-      std::vector<Body::ListKey> &&keys,
-      const std::vector<Body::JsonNodeField> &node_fields);
+  ListResource(std::function<Response(const char *, const Key *, size_t)>
+                   read_entry_handler,
+               std::function<Response(const char *, const Key *, size_t)>
+                   read_whole_handler,
+               std::function<Response(const char *name, const Key *, size_t)>
+                   get_elements_list,
+               const std::string &name, const std::string &description,
+               const std::string &cli_example, const std::string &rest_endpoint,
+               const std::string &rest_endpoint_multiple,
+               const Body::ParentResource *parent, bool configuration,
+               bool init_only_config, PolycubedCore *core,
+               std::vector<Body::ListKey> &&keys,
+               const std::vector<Body::JsonNodeField> &node_fields);
 
   const Response ReadValue(const std::string &cube_name,
                            const ListKeyValues &keys) const final;
@@ -97,10 +92,8 @@ class ListResource : public Endpoint::ListResource {
   Response DeleteWhole(const std::string &cube_name,
                        const ListKeyValues &keys) final;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
-  Response HelpMultiple(const std::string &cube_name, HelpType type,
-                        const ListKeyValues &keys);
+  Response GetElementsList(const std::string &cube_name,
+                           const ListKeyValues &keys) final;
 
  private:
   const std::function<Response(const char *, const Key *, size_t, const char *)>
@@ -123,9 +116,7 @@ class ListResource : public Endpoint::ListResource {
       read_whole_handler_;
   const std::function<Response(const char *, const Key *, size_t)>
       delete_whole_handler_;
-  const std::function<Response(HelpType, const char *name, const Key *, size_t)>
-      help_;
-  const std::function<Response(HelpType, const char *name, const Key *, size_t)>
-      help_multiple_;
+  const std::function<Response(const char *name, const Key *, size_t)>
+      get_elements_list_;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

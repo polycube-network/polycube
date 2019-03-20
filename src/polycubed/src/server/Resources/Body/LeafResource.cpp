@@ -85,4 +85,16 @@ void LeafResource::SetDefaultIfMissing(nlohmann::json &body,
     }
   }
 }
+
+nlohmann::json LeafResource::ToHelpJson() const {
+  nlohmann::json val = Resource::ToHelpJson();
+
+  if (val.count("type") == 0) {
+    val["type"] = "leaf";
+  }
+  val["simpletype"] = Types::ScalarToString(type_);
+
+  return val;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Body

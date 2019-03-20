@@ -16,9 +16,13 @@
 #pragma once
 
 #include <libyang/libyang.h>
+#include <string>
 
 namespace polycube::polycubed::Rest::Types {
 enum class Scalar { Integer, Unsigned, Decimal, String, Boolean, Empty };
 
 Scalar ScalarFromYang(LY_DATA_TYPE type);
+
+std::string ScalarToString(Scalar value);
+
 }  // namespace polycube::polycubed::Rest::Types

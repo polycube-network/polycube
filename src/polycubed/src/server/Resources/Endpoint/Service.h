@@ -50,14 +50,19 @@ class Service : public ParentResource, public Body::Service {
 
   void ClearCubes();
 
+  Response Help(HelpType type);
+
+  virtual Response ReadHelp() = 0;
+
  private:
   const std::string body_rest_endpoint_;
-
   Validators::InSetValidator path_param_;
 
   void CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
                            ResponseWriter response, bool replace,
                            bool initialization);
+
+  nlohmann::json getServiceKeys() const;
 
   std::vector<Response> RequestValidate(
       const Pistache::Rest::Request &request,
@@ -77,6 +82,6 @@ class Service : public ParentResource, public Body::Service {
 
   void patch_body(const Request &request, ResponseWriter response);
 
-  void options(const Request &request, ResponseWriter response) final;
+  void options_body(const Request &request, ResponseWriter response);
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

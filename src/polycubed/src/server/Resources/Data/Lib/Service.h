@@ -43,13 +43,9 @@ class Service : public Endpoint::Service {
       std::function<Response(const char *, const Key *, size_t, const char *)>
           update_list_handler,
       std::function<void(service::CubeFactory *, const char *)> init_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          service_help,
-      const std::string &name, const std::string &description,
-      const std::string &cli_example, std::string base_address,
-      std::string version, PolycubedCore *core);
+      std::function<Response()> service_help, const std::string &name,
+      const std::string &description, const std::string &cli_example,
+      std::string base_address, std::string version, PolycubedCore *core);
 
   ~Service() final;
 
@@ -65,8 +61,7 @@ class Service : public Endpoint::Service {
 
   void init(service::CubeFactory *factory, const std::string &log_file) final;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
+  Response ReadHelp() override;
 
  private:
   const std::shared_ptr<void> handle_;
@@ -85,9 +80,6 @@ class Service : public Endpoint::Service {
   const std::function<Response(const char *, const Key *, size_t, const char *)>
       update_list_handler_;
   const std::function<void(service::CubeFactory *, const char *)> init_handler_;
-  const std::function<Response(HelpType, const char *name, const Key *, size_t)>
-      help_;
-  const std::function<Response(HelpType, const char *name, const Key *, size_t)>
-      service_help_;
+  const std::function<Response()> service_help_;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

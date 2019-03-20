@@ -37,13 +37,9 @@ Service::Service(
     std::function<Response(const char *, const Key *, size_t, const char *)>
         update_list_handler,
     std::function<void(service::CubeFactory *, const char *)> init_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        service_help,
-    const std::string &name, const std::string &description,
-    const std::string &cli_example, std::string base_address,
-    std::string version, PolycubedCore *core)
+    std::function<Response()> service_help, const std::string &name,
+    const std::string &description, const std::string &cli_example,
+    std::string base_address, std::string version, PolycubedCore *core)
     : Body::ParentResource(name, description, cli_example, nullptr, core,
                            std::vector<Body::JsonNodeField>{}, true, false),
       Endpoint::Service(name, description, cli_example, std::move(base_address),
@@ -57,7 +53,6 @@ Service::Service(
       read_list_handler_{std::move(read_list_handler)},
       update_list_handler_{std::move(update_list_handler)},
       init_handler_{std::move(init_handler)},
-      help_{std::move(help)},
       service_help_{std::move(service_help)} {
   spdlog::get("polycubed")->trace("loading {0} shared object", name_);
 }
@@ -95,15 +90,8 @@ void Service::init(service::CubeFactory *factory, const std::string &log_file) {
   return init_handler_(factory, log_file.data());
 }
 
-Response Service::Help(const std::string &cube_name, HelpType type,
-                       const ListKeyValues &keys) {
-  const auto &key_params = KeyListArray::Generate(keys);
-  if (!cube_name.empty()) {
-    return help_(type, cube_name.data(), key_params.data(), key_params.size());
-  } else {
-    return service_help_(type, cube_name.data(), key_params.data(),
-                         key_params.size());
-  }
+Response Service::ReadHelp() {
+  return service_help_();
 }
 
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

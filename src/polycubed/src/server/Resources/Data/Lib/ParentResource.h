@@ -38,8 +38,6 @@ class ParentResource : public Endpoint::ParentResource {
           update_handler,
       std::function<Response(const char *, const Key *, size_t)> read_handler,
       std::function<Response(const char *, const Key *, size_t)> delete_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
       const std::string &name, const std::string &description,
       const std::string &cli_example, const std::string &rest_endpoint,
       const Body::ParentResource *parent, PolycubedCore *core,
@@ -49,8 +47,6 @@ class ParentResource : public Endpoint::ParentResource {
   ParentResource(
       std::function<Response(const char *, const Key *, size_t, const char *)>
           create_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
       const std::string &name, const std::string &description,
       const std::string &cli_example, const std::string &rest_endpoint,
       const Body::ParentResource *parent, PolycubedCore *core,
@@ -58,8 +54,6 @@ class ParentResource : public Endpoint::ParentResource {
 
   ParentResource(
       std::function<Response(const char *, const Key *, size_t)> read_handler,
-      std::function<Response(HelpType, const char *name, const Key *, size_t)>
-          help,
       const std::string &name, const std::string &description,
       const std::string &cli_example, const std::string &rest_endpoint,
       const Body::ParentResource *parent, bool configuration,
@@ -77,9 +71,6 @@ class ParentResource : public Endpoint::ParentResource {
   Response DeleteValue(const std::string &cube_name,
                        const ListKeyValues &keys) final;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
-
  private:
   const std::function<Response(const char *, const Key *, size_t, const char *)>
       create_handler_;
@@ -91,7 +82,5 @@ class ParentResource : public Endpoint::ParentResource {
       read_handler_;
   const std::function<Response(const char *, const Key *, size_t)>
       delete_handler_;
-  const std::function<Response(HelpType, const char *name, const Key *, size_t)>
-      help_;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

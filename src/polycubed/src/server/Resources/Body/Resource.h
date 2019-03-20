@@ -63,6 +63,14 @@ class Resource {
     return name_;
   }
 
+  const bool IsKey() const {
+    return is_key_;
+  }
+
+  void SetIsKey(bool is_key) {
+    is_key_ = is_key;
+  }
+
   const std::string &Description() const {
     return description_;
   }
@@ -89,10 +97,13 @@ class Resource {
   virtual const Response ReadValue(const std::string &cube_name,
                                    const ListKeyValues &keys) const;
 
+  virtual nlohmann::json ToHelpJson() const;
+
  protected:
   const std::string name_;
   const std::string description_;
   const std::string cli_example_;
+  bool is_key_;
   const Body::ParentResource *const parent_;
   const bool configuration_;
   const bool init_only_config_;

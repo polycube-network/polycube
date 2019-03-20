@@ -45,9 +45,6 @@ class LeafResource : public Resource, public virtual Body::LeafResource {
   void Keys(const Pistache::Rest::Request &request,
             ListKeyValues &parsed) const final;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) override;
-
  private:
   void get(const Request &request, ResponseWriter response);
 

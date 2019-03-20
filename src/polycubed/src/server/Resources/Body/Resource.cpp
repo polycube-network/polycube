@@ -32,6 +32,7 @@ Resource::Resource(const std::string &name, const std::string &description,
       parent_(parent),
       description_{description},
       cli_example_{cli_example},
+      is_key_{false},
       configuration_(configuration),
       init_only_config_(init_only_config),
       core_(core),
@@ -52,4 +53,19 @@ const Response Resource::ReadValue(const std::string &cube_name,
   ::free(response.message);
   return {response.error_tag, ::strdup(body.data())};
 }
+
+nlohmann::json Resource::ToHelpJson() const {
+  nlohmann::json val = nlohmann::json::object();
+
+  val["name"] = Name();
+  val["description"] = Description();
+  val["example"] = CliExample();
+
+  if (IsKey()) {
+    val["type"] = "key";
+  }
+
+  return val;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Body

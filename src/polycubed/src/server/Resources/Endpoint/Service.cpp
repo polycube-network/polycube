@@ -40,10 +40,11 @@ Service::Service(const std::string &name, const std::string &description,
       path_param_{} {
   using Pistache::Rest::Routes::bind;
   auto router = core_->get_rest_server()->get_router();
+
   router->get(body_rest_endpoint_, bind(&Service::get_body, this));
   router->post(body_rest_endpoint_, bind(&Service::post_body, this));
   router->patch(body_rest_endpoint_, bind(&Service::patch_body, this));
-  router->options(body_rest_endpoint_, bind(&Service::options, this));
+  router->options(body_rest_endpoint_, bind(&Service::options_body, this));
 }
 
 Service::~Service() {
@@ -201,7 +202,7 @@ void Service::patch_body(const Request &request, ResponseWriter response) {
                       std::move(response), true, false);
 }
 
-void Service::options(const Request &request, ResponseWriter response) {
+void Service::options_body(const Request &request, ResponseWriter response) {
   const auto &query_param = request.query();
   if (!query_param.has("help")) {
     Server::ResponseGenerator::Generate({{kBadRequest, nullptr}},
@@ -226,8 +227,49 @@ void Service::options(const Request &request, ResponseWriter response) {
   }
 
   ListKeyValues keys{};
-  auto cube_name = request.hasParam(":name") ? Service::Cube(request) : "";
-  Server::ResponseGenerator::Generate({Help(cube_name, type, keys)},
-                                      std::move(response));
+  Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
 }
+
+Response Service::Help(HelpType type) {
+  nlohmann::json val = nlohmann::json::object();
+
+  switch (type) {
+  case HelpType::SHOW:
+    val["params"] = getServiceKeys();
+    val["elements"] = nlohmann::json::parse(ReadHelp().message);
+    break;
+  case HelpType::ADD:
+    val["params"] = getServiceKeys();
+    val["optional-params"] = helpWritableLeafs(true);
+    break;
+  case HelpType::DEL:
+    val["params"] = getServiceKeys();
+    val["elements"] = nlohmann::json::parse(ReadHelp().message);
+    break;
+  case HelpType::NONE:
+    val["commands"] = {"add", "del", "show"};
+    val["params"] = getServiceKeys();
+    val["elements"] = nlohmann::json::parse(ReadHelp().message);
+    break;
+  default:
+    return {kBadRequest, nullptr};
+  }
+
+  return {kOk, ::strdup(val.dump().c_str())};
+}
+
+nlohmann::json Service::getServiceKeys() const {
+  nlohmann::json val = nlohmann::json::object();
+  auto description = "Name of the " + Name() + " service";
+  auto example = Name() + "1";
+
+  val["name"]["name"] = "name";
+  val["name"]["type"] = "key";
+  val["name"]["simpletype"] = "string";
+  val["name"]["description"] = description;
+  val["name"]["example"] = example;
+
+  return val;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

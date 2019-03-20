@@ -40,9 +40,4 @@ void ChoiceResource::AddChild(std::shared_ptr<Body::Resource> &&child) {
   choice_.AddValue(child->Name());
   Body::ParentResource::AddChild(std::move(child));
 }
-
-Response ChoiceResource::Help(const std::string &cube_name, HelpType type,
-                              const ListKeyValues &keys) {
-  return {kOperationNotSupported, nullptr};
-}
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

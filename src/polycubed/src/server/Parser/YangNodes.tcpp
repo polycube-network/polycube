@@ -245,7 +245,7 @@ void Yang::ParseList(
       const auto &key = reinterpret_cast<const lys_node_leaf *>(child);
       auto validator = GetValidators(key->type);
       keys.emplace_back(key->type.base, key_name_fixed.at(child->name),
-                        std::move(validator));
+                        child->name, std::move(validator));
       parsed_keys++;
     }
   }
@@ -282,6 +282,11 @@ void Yang::ParseList(
   while (child != nullptr) {
     if (key_name_fixed.count(child->name) == 0) {
       ParseNode(child, parsed_names, resource, generate_endpoint);
+    } else {
+      ParseNode(child, parsed_names, resource, false);
+      // TODO: we can pass this in the ParseNode parameter list, but that'd
+      // require to change the signature of all functions, let's skip for now
+      resource->Child(child->name)->SetIsKey(true);
     }
     child = child->next;
   }

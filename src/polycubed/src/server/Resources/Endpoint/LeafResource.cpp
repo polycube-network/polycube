@@ -130,12 +130,6 @@ std::vector<Response> LeafResource::RequestValidate(
   return errors;
 }
 
-Response LeafResource::Help([[maybe_unused]] const std::string &cube_name,
-                            [[maybe_unused]] HelpType type,
-                            [[maybe_unused]] const ListKeyValues &keys) {
-  throw std::logic_error("Unreachable");
-}
-
 void LeafResource::patch(const Request &request, ResponseWriter response) {
   CreateReplaceUpdate(request, std::move(response), true, false);
 }

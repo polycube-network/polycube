@@ -109,4 +109,14 @@ bool ListResource::IsMandatory() const {
   return false;
 }
 
+nlohmann::json ListResource::ToHelpJson() const {
+  nlohmann::json val = Resource::ToHelpJson();
+
+  if (val.count("type") == 0) {
+    val["type"] = "list";
+  }
+
+  return val;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Body

@@ -60,6 +60,12 @@ std::vector<Response> ParentResource::BodyValidate(const std::string &cube_name,
   auto body_copy = body;
   for (auto &child : children_) {
     const auto &child_name = child->Name();
+
+    // TODO: what are the implications of it?
+    if (child->IsKey()) {
+      continue;
+    }
+
     // Choices are a special case
     if (std::dynamic_pointer_cast<ChoiceResource>(child) != nullptr) {
       choices.push_back(child);
@@ -180,4 +186,19 @@ std::shared_ptr<Resource> ParentResource::Child(
       [=](std::shared_ptr<Resource> r) { return r->Name() == child_name; });
   return (child == std::end(children_)) ? nullptr : *child;
 }
+
+nlohmann::json ParentResource::ToHelpJson() const {
+  nlohmann::json val = Resource::ToHelpJson();
+
+  if (val.count("type") == 0) {
+    if (rpc_action_) {
+      val["type"] = "action";
+    } else {
+      val["type"] = "complex";
+    }
+  }
+
+  return val;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Body

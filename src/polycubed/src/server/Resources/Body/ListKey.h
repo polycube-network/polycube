@@ -44,12 +44,14 @@ enum class ListType {
 class ListKey {
  public:
   ListKey(
-      LY_DATA_TYPE type, std::string name,
+      LY_DATA_TYPE type, std::string name, std::string original_name,
       std::vector<std::shared_ptr<Validators::ValueValidator>> &&validators);
 
   ListType Type() const;
 
   const std::string &Name() const;
+
+  const std::string &OriginalName() const;
 
   const std::vector<std::shared_ptr<Validators::ValueValidator>> &Validators()
       const;
@@ -57,6 +59,7 @@ class ListKey {
  private:
   const ListType type_;
   const std::string name_;
+  const std::string original_name_;
   const std::vector<std::shared_ptr<Validators::ValueValidator>> validators_;
   static ListType FromYang(LY_DATA_TYPE type);
 };

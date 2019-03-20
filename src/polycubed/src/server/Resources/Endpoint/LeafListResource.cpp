@@ -85,9 +85,4 @@ void LeafListResource::get_entry(const Request &request,
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }
-
-Response LeafListResource::Help(const std::string &cube_name, HelpType type,
-                                const ListKeyValues &keys) {
-  return {kOperationNotSupported, nullptr};
-}
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

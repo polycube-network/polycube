@@ -27,6 +27,9 @@
 #include "../Body/ListKey.h"
 #include "Service.h"
 
+#include "LeafResource.h"
+#include "ListResource.h"
+
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 ParentResource::ParentResource(
     const std::string &name, const std::string &description,
@@ -224,6 +227,8 @@ void ParentResource::options(const Request &request, ResponseWriter response) {
     type = SET;
   } else if (help == "NONE") {
     type = NONE;
+  } else if (help == "ADD") {
+    type = ADD;
   } else {
     Server::ResponseGenerator::Generate({{kBadRequest, nullptr}},
                                         std::move(response));
@@ -234,6 +239,115 @@ void ParentResource::options(const Request &request, ResponseWriter response) {
 
   Server::ResponseGenerator::Generate(
       {Help(Service::Cube(request), type, keys)}, std::move(response));
+}
+
+Response ParentResource::Help(const std::string &cube_name, HelpType type,
+                              const ListKeyValues &keys) {
+  nlohmann::json val = nlohmann::json::object();
+  if (rpc_action_) {
+    if (type != HelpType::NONE) {
+      return {kBadRequest, nullptr};
+    }
+
+    val["params"] = helpElements(true);
+    return {kOk, ::strdup(val.dump().c_str())};
+  }
+
+  switch (type) {
+  case HelpType::SHOW:
+    val["params"] = helpElements();
+    break;
+  case HelpType::SET:
+    val["params"] = helpWritableLeafs();
+    break;
+  case HelpType::NONE:
+    val["commands"] = {"set", "show"};
+    val["params"] = helpComplexElements();
+    break;
+  case HelpType::ADD:
+    if (dynamic_cast<const ListResource *const>(this) ||
+        dynamic_cast<const Service *const>(this)) {
+      val["params"] = nlohmann::json::object();
+      val["optional-params"] = helpWritableLeafs(true);
+    }
+    break;
+  default:
+    return {kBadRequest, nullptr};
+  }
+
+  return {kOk, ::strdup(val.dump().c_str())};
+}
+
+nlohmann::json ParentResource::helpElements(bool mark_as_keys) const {
+  nlohmann::json val = nlohmann::json::object();
+
+  for (auto i : children_) {
+    if (i->IsKey()) {
+      continue;
+    }
+
+    auto ptr = std::dynamic_pointer_cast<ParentResource>(i);
+    if (ptr && ptr->rpc_action_) {
+      continue;
+    }
+
+    val[i->Name()] = i->ToHelpJson();
+    if (mark_as_keys) {
+      val[i->Name()]["type"] = "key";
+    }
+  }
+
+  return val;
+}
+
+nlohmann::json ParentResource::helpWritableLeafs(bool include_init_only) const {
+  nlohmann::json val = nlohmann::json::object();
+
+  for (auto i : children_) {
+    if (i->IsInitOnlyConfig() && !include_init_only) {
+      continue;
+    }
+
+    if (i->IsConfiguration() && std::dynamic_pointer_cast<LeafResource>(i)) {
+      val[i->Name()] = i->ToHelpJson();
+    }
+  }
+
+  return val;
+}
+
+nlohmann::json ParentResource::helpComplexElements() const {
+  nlohmann::json val = nlohmann::json::object();
+
+  for (auto i : children_) {
+    if (i->IsKey()) {
+      continue;
+    }
+
+    auto ptr = std::dynamic_pointer_cast<ParentResource>(i);
+    if (ptr) {
+      val[i->Name()] = i->ToHelpJson();
+    }
+  }
+
+  return val;
+}
+
+std::vector<std::string> ParentResource::helpActions() const {
+  std::vector<std::string> r;
+
+  for (auto i : children_) {
+    auto ptr = std::dynamic_pointer_cast<ParentResource>(i);
+    if (!ptr) {
+      continue;
+    }
+
+    if (ptr->rpc_action_) {
+      r.push_back(ptr->Name());
+    }
+  }
+
+  return r;
 }
 
 ParentResource::ParentResource(

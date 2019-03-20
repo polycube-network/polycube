@@ -47,9 +47,6 @@ class Resource {
                               const ListKeyValues &keys,
                               Operation operation) = 0;
 
-  virtual Response Help(const std::string &cube_name, HelpType type,
-                        const ListKeyValues &keys) = 0;
-
  protected:
   const std::string rest_endpoint_;
 
