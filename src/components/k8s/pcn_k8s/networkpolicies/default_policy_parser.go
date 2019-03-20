@@ -18,7 +18,7 @@ import (
 type PcnDefaultPolicyParser interface {
 	Parse(*networking_v1.NetworkPolicy, bool)
 	//Parse(*networking_v1.NetworkPolicy, deploy bool) map[string]map[k8s_types.UID]pcn_types.ParsedRules
-	ParsePolicyTypes(*networking_v1.NetworkPolicySpec) ([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule)
+	ParsePolicyTypes(*networking_v1.NetworkPolicySpec) ([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string)
 	//ParseAndDeploy(*networking_v1.NetworkPolicy)
 	ParseRules([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string) pcn_types.ParsedRules
 	ParseIngress([]networking_v1.NetworkPolicyIngressRule, string) pcn_types.ParsedRules
@@ -56,12 +56,11 @@ func newDefaultPolicyParser(podController pcn_controllers.PodController, firewal
 }
 
 func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy bool) {
-	//func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy bool) map[string]map[k8s_types.UID]pcn_types.ParsedRules {
 
-	/*var l = log.WithFields(log.Fields{
+	var l = log.WithFields(log.Fields{
 		"by":     DPS,
 		"method": "Parse() [" + policy.Name + "]",
-	})*/
+	})
 
 	//l.Debugln("Going to parse a default policy")
 
@@ -85,8 +84,11 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 
 	//	Get the spec, with the ingress & egress rules
 	spec := policy.Spec
-	ingress, egress := d.ParsePolicyTypes(&spec)
-
+	ingress, egress, policyType := d.ParsePolicyTypes(&spec)
+	if ingress == nil && egress == nil {
+		l.Errorln("Policy doesn't have a spec: I don't know what to do!")
+		return
+	}
 	//parsed := map[string]map[k8s_types.UID]pcn_types
 
 	//-------------------------------------
@@ -134,7 +136,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 					//-------------------------------------
 
 					//log.Debugf("--ingress: %+v\n --egress: %+v\n")
-					iErr, eErr := fw.EnforcePolicy(policy.Name, parsed.Ingress, parsed.Egress)
+					iErr, eErr := fw.EnforcePolicy(policy.Name, policyType, parsed.Ingress, parsed.Egress)
 
 					//-------------------------------------
 					//	Phew... all done for this pod
@@ -621,21 +623,27 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 	return parsed
 }
 
-func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.NetworkPolicySpec) ([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule) {
+func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.NetworkPolicySpec) ([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string) {
 	var ingress []networking_v1.NetworkPolicyIngressRule
 	var egress []networking_v1.NetworkPolicyEgressRule
 
-	//	What it spec is not even there?
+	ingress = nil
+	egress = nil
+	policyType := "*"
+
+	//	What if spec is not even there?
 	if policySpec == nil {
-		return ingress, egress
+		return nil, nil, policyType
 	}
 
 	//	Documentation is not very specific about the possibility of PolicyTypes being [], so I made this dumb piece of code just in case
 	if policySpec.PolicyTypes == nil {
 		ingress = policySpec.Ingress
+		policyType = "ingress"
 	} else {
 		if len(policySpec.PolicyTypes) < 1 {
 			ingress = policySpec.Ingress
+			policyType = "ingress"
 		} else {
 			policyTypes := policySpec.PolicyTypes
 
@@ -644,8 +652,10 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 				switch val {
 				case "Ingress":
 					ingress = policySpec.Ingress
+					policyType = "ingress"
 				case "Egress":
 					egress = policySpec.Egress
+					policyType = "egress"
 				case "Ingress,Egress":
 					ingress = policySpec.Ingress
 					egress = policySpec.Egress
@@ -654,7 +664,7 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 		}
 	}
 
-	return ingress, egress
+	return ingress, egress, policyType
 }
 
 /*func (d *DefaultPolicyParser) FillChains(pod pcn_types.Pod, ingressRules, egressRules []k8sfirewall.ChainRule) pcn_types.ParsedRules {
@@ -1112,7 +1122,7 @@ func (d *DefaultPolicyParser) DoesPolicyTargetPod(policy *networking_v1.NetworkP
 
 	//	Get the spec, with the ingress & egress rules
 	spec := policy.Spec
-	ingress, egress := d.ParsePolicyTypes(&spec)
+	ingress, egress, _ := d.ParsePolicyTypes(&spec)
 
 	if ingress == nil && egress == nil {
 		return pcn_types.ParsedRules{

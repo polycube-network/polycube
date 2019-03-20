@@ -14,7 +14,7 @@ import (
 )
 
 type PcnFirewall interface {
-	EnforcePolicy(string, []k8sfirewall.ChainRule, []k8sfirewall.ChainRule) (error, error)
+	EnforcePolicy(string, string, []k8sfirewall.ChainRule, []k8sfirewall.ChainRule) (error, error)
 	CeasePolicy(string)
 	//	UPDATE: it's better to always inject with a policy instead of doing it anonymously.
 	//	That's why it is now unexported
@@ -38,6 +38,10 @@ type DeployedFirewall struct {
 	fwAPI  k8sfirewall.FirewallAPI
 	podUID k8s_types.UID
 	podIP  string
+
+	policyTypes          map[string]string
+	ingressPoliciesCount int
+	egressPoliciesCount  int
 	//	For caching.
 	/*lastIngressID int32
 	lastEgressID int32*/
@@ -95,6 +99,10 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	//	The pod's ip
 	deployedFw.podIP = pod.Status.PodIP
 
+	deployedFw.ingressPoliciesCount = 0
+	deployedFw.egressPoliciesCount = 0
+	deployedFw.policyTypes = map[string]string{}
+
 	//-------------------------------------
 	//	Get the firewall
 	//-------------------------------------
@@ -128,7 +136,7 @@ func (d *DeployedFirewall) ForPod() k8s_types.UID {
 	return d.podUID
 }
 
-func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8sfirewall.ChainRule) (error, error) {
+func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress, egress []k8sfirewall.ChainRule) (error, error) {
 
 	//-------------------------------------
 	//	Init
@@ -151,16 +159,13 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 	var applyWait sync.WaitGroup
 	waitChains := 0
 
-	//	Default values
-	//	NOTE: these may remain empty, example: when blocking/allowing everything regardless of port and protocol.
-	//	But they also remain empty if an error occurred while deploy rules. While this may seem like an
-	//	incorrect behaviour, it is actually correct: for kubernetes this policy is actually *deployed*,
-	//	it doesn't care if errors occurred while injecting rules.
+	//	Default values (empty)
 	injectedRules := rulesContainer{
 		ingress: []k8sfirewall.ChainRule{},
 		egress:  []k8sfirewall.ChainRule{},
 	}
 
+	//	How many threads should we wait for?
 	if ingress != nil && len(ingress) > 0 {
 		waitChains++
 	}
@@ -233,25 +238,22 @@ func (d *DeployedFirewall) EnforcePolicy(policyName string, ingress, egress []k8
 			}
 			d.egressRules[policyName] = append(d.egressRules[policyName], injectedRules.egress...)
 		}
-
-		/*if _, exists := d.rules[policyName]; !exists {
-			d.rules[policyName] = &injectedRules
-		} else {
-			//	This piece of code only executes if this policy is being updated and couldn't delete rules
-			d.rules[policyName].ingress = append(d.rules[policyName].ingress, injectedRules.ingress...)
-			d.rules[policyName].egress = append(d.rules[policyName].egress, injectedRules.egress...)
-		}*/
 	}
 
-	//	If these are the first rules, it means that a policy exists for this pod.
-	//	Which also means that now we have to change the default action
-	if len(d.ingressRules) == 1 {
-		d.updateDefaultAction("ingress", pcn_types.ActionDrop)
-		d.applyRules("ingress")
-	}
-	if len(d.egressRules) == 1 {
-		d.updateDefaultAction("egress", pcn_types.ActionDrop)
-		d.applyRules("egress")
+	//-------------------------------------
+	//	Update the default actions
+	//-------------------------------------
+
+	//	So we just enforced a new policy. The final step is to change actions (if needed: that's what increaseCount does)
+	d.policyTypes[policyName] = policyType
+	switch policyType {
+	case "ingress":
+		d.increaseCount("ingress")
+	case "egress":
+		d.increaseCount("egress")
+	case "*":
+		d.increaseCount("ingress")
+		d.increaseCount("egress")
 	}
 
 	return iError, eError
@@ -271,60 +273,50 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		egress:  []k8sfirewall.ChainRule{},
 	}
 
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	//	Do they exist?
 	policyIngress, iexists := d.ingressRules[policyName]
 	policyEgress, eexists := d.ingressRules[policyName]
 	if !iexists && !eexists {
 		l.Infoln("fw", d.firewall.Name, "has no", policyName, "in its list of implemented policies rules")
 		return
 	}
-	/*if !d.ImplementsPolicy(policyName) {
-		l.Infoln("fw", d.firewall.Name, "has no", policyName, "in its list of implemented policies rules")
-		return
-	}*/
 
-	//rules := d.rules[policyName]
-	/*if len(rules.ingress) < 1 && len(rules.egress) < 1 {
-		l.Infoln("fw", d.firewall.Name, "has no ingress nor egress rules for policy", policyName)
-		d.lock.Lock()
-		defer d.lock.Unlock()
-
-		delete(d.rules, policyName)
-		if len(d.rules) < 1 {
-			d.updateDefaultAction("ingress", pcn_types.ActionForward)
-			d.applyRules("ingress")
-			d.updateDefaultAction("egress", pcn_types.ActionForward)
-			d.applyRules("egress")
-		}
-		return
-	}*/
+	//	What type was this policy?
+	policyType := d.policyTypes[policyName]
 
 	//-------------------------------------
 	//	Are there any rules on this policy?
 	//-------------------------------------
 	//	NOTE: check on exists and len are actually useless (read EnforcePolicy). But since I'm paranoid, I'll do it anyway.
+
 	//	Check for ingress rules
-	d.lock.Lock()
 	if iexists && len(policyIngress) < 1 {
 		delete(d.ingressRules, policyName)
-		if len(d.ingressRules) < 1 {
-			d.updateDefaultAction("ingress", pcn_types.ActionForward)
-			d.applyRules("ingress")
-		}
 	}
 	//	Check for egress rules
 	if eexists && len(policyEgress) < 1 {
 		delete(d.ingressRules, policyName)
-		if len(d.ingressRules) < 1 {
-			d.updateDefaultAction("ingress", pcn_types.ActionForward)
-			d.applyRules("ingress")
-		}
 	}
-	d.lock.Unlock()
 
 	//	After the above, policy is not even listed anymore? (which means: both ingress and egress were actually empty?)
 	policyIngress, iexists = d.ingressRules[policyName]
 	policyEgress, eexists = d.ingressRules[policyName]
 	if !iexists && !eexists {
+
+		//	They were empty: no point in going on. Let's now decrease counts.
+		switch policyType {
+		case "ingress":
+			d.decreaseCount("ingress")
+		case "egress":
+			d.decreaseCount("egress")
+		case "*":
+			d.decreaseCount("ingress")
+			d.decreaseCount("egress")
+		}
+
 		return
 	}
 
@@ -332,24 +324,21 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	//	Remove the rules
 	//-------------------------------------
 
-	d.lock.Lock()
-	defer d.lock.Unlock()
-
 	if !d.isFirewallOk() {
 		l.Errorln("Firewall seems not to be ok! Will not remove rules.")
 		return
 	}
 
-	if len(policyIngress) > 0 {
+	if iexists && len(policyIngress) > 0 {
 		deleteNumber++
 	}
-	if len(policyEgress) > 0 {
+	if eexists && len(policyEgress) > 0 {
 		deleteNumber++
 	}
 	deleteWait.Add(deleteNumber)
 
 	//	Ingress
-	if len(policyIngress) > 0 {
+	if iexists && len(policyIngress) > 0 {
 		go func(rules []k8sfirewall.ChainRule) {
 			defer deleteWait.Done()
 
@@ -361,7 +350,7 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	}
 
 	//	Egress
-	if len(policyEgress) > 0 {
+	if eexists && len(policyEgress) > 0 {
 		go func(rules []k8sfirewall.ChainRule) {
 			defer deleteWait.Done()
 
@@ -375,36 +364,33 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	deleteWait.Wait()
 
 	//-------------------------------------
-	//	Update the implemented policies
+	//	Update the enforced policies
 	//-------------------------------------
 
 	if len(failedRules.ingress) < 1 && len(failedRules.egress) < 1 {
 		//	All rules were delete successfully: we may delete the entry
-		//delete(d.rules, policyName)
 		delete(d.ingressRules, policyName)
 		delete(d.egressRules, policyName)
 
 	} else {
 		//	Some rules were not deleted. We can't delete the entry: we need to change it with the still active rules.
-		//d.rules[policyName] = &failedRules
 		d.ingressRules[policyName] = failedRules.ingress
 		d.egressRules[policyName] = failedRules.egress
 	}
 
-	//	If this pod doesn't enfoce any policy anymore, we must change the default action to forward.
-	/*if len(d.rules) < 1 {
-		d.updateDefaultAction("ingress", pcn_types.ActionForward)
-		d.applyRules("ingress")
-		d.updateDefaultAction("egress", pcn_types.ActionForward)
-		d.applyRules("egress")
-	}*/
-	if len(d.ingressRules) < 1 {
-		d.updateDefaultAction("ingress", pcn_types.ActionForward)
-		d.applyRules("ingress")
-	}
-	if len(d.egressRules) < 1 {
-		d.updateDefaultAction("egress", pcn_types.ActionForward)
-		d.applyRules("egress")
+	//-------------------------------------
+	//	Update the actions
+	//-------------------------------------
+
+	//	We just removed a policy. We must change the actions (if needed: that's what decreaseCount does)
+	switch policyType {
+	case "ingress":
+		d.decreaseCount("ingress")
+	case "egress":
+		d.decreaseCount("egress")
+	case "*":
+		d.decreaseCount("ingress")
+		d.decreaseCount("egress")
 	}
 }
 
@@ -430,7 +416,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 	rulesToInject := []k8sfirewall.ChainRule{}
 
 	//-------------------------------------
-	//	Build the IDs
+	//	Build the IDs & put my pod's IP
 	//-------------------------------------
 
 	chain, response, err := d.fwAPI.ReadFirewallChainByID(nil, d.firewall.Name, direction)
@@ -483,7 +469,7 @@ func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.Cha
 		return []k8sfirewall.ChainRule{}, err
 	}
 
-	if _, err := d.applyRules(direction); err != nil {
+	if response, err := d.applyRules(direction); err != nil {
 		l.Errorln("Error while trying to apply rules", d.firewall.Name, "in", direction, ":", err, response)
 	}
 
@@ -514,6 +500,7 @@ func (d *DeployedFirewall) RemoveRules(direction string, rules []k8sfirewall.Cha
 	//	3) if not, add this rule to the failed ones
 	failedRules := []k8sfirewall.ChainRule{}
 
+	//	No need to do this with separate threads...
 	for _, rule := range rules {
 		response, err := d.fwAPI.DeleteFirewallChainRuleByID(nil, d.firewall.Name, direction, rule.Id)
 		if err != nil {
@@ -538,7 +525,6 @@ func (d *DeployedFirewall) RemoveIPReferences(ip string) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	//for _, policy := range d.rules {
 	var directionsWait sync.WaitGroup
 	directionsWait.Add(2)
 
@@ -565,7 +551,6 @@ func (d *DeployedFirewall) RemoveIPReferences(ip string) {
 	}()
 
 	directionsWait.Wait()
-	//}
 
 	if len(ingressIDs) < 1 && len(egressIDs) < 1 {
 		return
@@ -579,7 +564,70 @@ func (d *DeployedFirewall) RemoveIPReferences(ip string) {
 	}
 }
 
-//	TODO: to be changed (read inside)
+func (d *DeployedFirewall) increaseCount(which string) {
+
+	//	NOTE: this function must be called while holding a lock!
+	//	If there is at least one policy, then we must switch the default action to DROP for that type
+	//	E.g.: if the policy had only INGRESS in its spec, then the ingress chain must be set to drop
+
+	if which != "ingress" && which != "egress" {
+		return
+	}
+
+	//	Ingress
+	if which == "ingress" {
+		d.ingressPoliciesCount++
+
+		if d.ingressPoliciesCount == 1 {
+			d.updateDefaultAction("ingress", pcn_types.ActionDrop)
+			d.applyRules("ingress")
+		}
+
+		return
+	}
+
+	//	Egress
+	d.egressPoliciesCount++
+
+	if d.egressPoliciesCount == 1 {
+		d.updateDefaultAction("egress", pcn_types.ActionDrop)
+		d.applyRules("egress")
+	}
+
+}
+
+func (d *DeployedFirewall) decreaseCount(which string) {
+
+	//	NOTE: this function must be called while holding a lock!
+	//	If there are no policies enforced, then we must switch the default action to FORWARD for that type
+	//	E.g.: if the policy had only INGRESS in its spec, then the ingress chain must be set to FORWARD
+
+	if which != "ingress" && which != "egress" {
+		return
+	}
+
+	//	Ingress
+	if which == "ingress" {
+		d.ingressPoliciesCount--
+
+		if d.ingressPoliciesCount == 0 {
+			d.updateDefaultAction("ingress", pcn_types.ActionForward)
+			d.applyRules("ingress")
+		}
+
+		return
+	}
+
+	//	Egress
+	d.egressPoliciesCount--
+
+	if d.egressPoliciesCount == 0 {
+		d.updateDefaultAction("egress", pcn_types.ActionForward)
+		d.applyRules("egress")
+	}
+
+}
+
 func (d *DeployedFirewall) ImplementsPolicy(name string) bool {
 
 	d.lock.Lock()

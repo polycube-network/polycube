@@ -201,10 +201,10 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 			if !fw.ImplementsPolicy(k8sPolicy.Name) {
 				if manager.defaultPolicyParser.DoesPolicyAffectPod(&k8sPolicy, pod) {
 					//	Deploy the policy just for this pod
-					ingress, egress := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
+					ingress, egress, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
 					parsed := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
 
-					fw.EnforcePolicy(k8sPolicy.Name, parsed.Ingress, parsed.Egress)
+					fw.EnforcePolicy(k8sPolicy.Name, policyType, parsed.Ingress, parsed.Egress)
 				}
 			}
 		}
@@ -223,7 +223,8 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 				for _, currentFw := range manager.firewallManager.GetAll() {
 					if currentFw.ForPod() != pod.UID {
 						if currentFw.ImplementsPolicy(currentPolicy.Name) {
-							currentFw.EnforcePolicy(currentPolicy.Name, doesIt.Ingress, doesIt.Egress)
+							_, _, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&currentPolicy.Spec)
+							currentFw.EnforcePolicy(currentPolicy.Name, policyType, doesIt.Ingress, doesIt.Egress)
 						}
 					}
 				}
