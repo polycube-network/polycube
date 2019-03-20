@@ -147,6 +147,8 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 		"method": "InjectRules()",
 	})
 
+	l.Debugln("### called enforce with", policyType)
+
 	//	Ingress and egress can be empty (e.g.: when having default rules), but cannot be nil
 	if ingress == nil && egress == nil {
 		err := errors.New("Both ingress and egress are nil")
@@ -576,9 +578,11 @@ func (d *DeployedFirewall) increaseCount(which string) {
 
 	//	Ingress
 	if which == "ingress" {
+		log.Debugln("###  increasing ingress")
 		d.ingressPoliciesCount++
 
 		if d.ingressPoliciesCount == 1 {
+			log.Debugln("### 1 ingress policies count")
 			d.updateDefaultAction("ingress", pcn_types.ActionDrop)
 			d.applyRules("ingress")
 		}
@@ -586,10 +590,13 @@ func (d *DeployedFirewall) increaseCount(which string) {
 		return
 	}
 
+	log.Debugln("### here")
+
 	//	Egress
 	d.egressPoliciesCount++
 
 	if d.egressPoliciesCount == 1 {
+		log.Debugln("### here 1")
 		d.updateDefaultAction("egress", pcn_types.ActionDrop)
 		d.applyRules("egress")
 	}

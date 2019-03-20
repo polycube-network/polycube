@@ -136,6 +136,7 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 					//-------------------------------------
 
 					//log.Debugf("--ingress: %+v\n --egress: %+v\n")
+					l.Debugln("### policytype before enforcing is", policyType)
 					iErr, eErr := fw.EnforcePolicy(policy.Name, policyType, parsed.Ingress, parsed.Egress)
 
 					//-------------------------------------
@@ -663,6 +664,8 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 			}
 		}
 	}
+
+	log.Debugln("### policytype is", policyType)
 
 	return ingress, egress, policyType
 }
