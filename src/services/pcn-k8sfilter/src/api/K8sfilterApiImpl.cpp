@@ -109,9 +109,6 @@ create_k8sfilter_ports_by_id(const std::string &name, const std::string &portsNa
   k8sfilter->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -128,21 +125,6 @@ create_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<Por
   auto k8sfilter = get_cube(name);
   k8sfilter->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8sfilter_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8sfilter = get_cube(name);
-
-  auto &&ports = k8sfilter->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -162,9 +144,6 @@ delete_k8sfilter_ports_by_id(const std::string &name, const std::string &portsNa
   k8sfilter->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -181,21 +160,6 @@ delete_k8sfilter_ports_list_by_id(const std::string &name) {
   k8sfilter->delPortsList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8sfilter_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8sfilter = get_cube(name);
-
-  auto &&ports = k8sfilter->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Read k8sfilter by ID
 *
@@ -211,9 +175,6 @@ read_k8sfilter_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read nodeport-range by ID
@@ -232,9 +193,6 @@ read_k8sfilter_nodeport_range_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read ports by ID
 *
@@ -252,9 +210,6 @@ read_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName
   return k8sfilter->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -276,23 +231,6 @@ read_k8sfilter_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8sfilter = get_cube(name);
-
-  auto &&ports = k8sfilter->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read type by ID
 *
@@ -311,9 +249,6 @@ read_k8sfilter_ports_type_by_id(const std::string &name, const std::string &port
   return ports->getType();
 
 }
-
-
-
 
 /**
 * @brief   Replace ports by ID
@@ -334,9 +269,6 @@ replace_k8sfilter_ports_by_id(const std::string &name, const std::string &portsN
   k8sfilter->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -352,14 +284,6 @@ void
 replace_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8sfilter_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update k8sfilter by ID
@@ -379,9 +303,6 @@ update_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value
   k8sfilter->update(value);
 }
 
-
-
-
 /**
 * @brief   Update k8sfilter by ID
 *
@@ -396,14 +317,6 @@ void
 update_k8sfilter_list_by_id(const std::vector<K8sfilterJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8sfilter_list_by_id_get_list(const std::vector<K8sfilterJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update nodeport-range by ID
@@ -422,9 +335,6 @@ update_k8sfilter_nodeport_range_by_id(const std::string &name, const std::string
 
   k8sfilter->setNodeportRange(value);
 }
-
-
-
 
 /**
 * @brief   Update ports by ID
@@ -446,9 +356,6 @@ update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsNa
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -466,14 +373,29 @@ update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<Por
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8sfilter_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&k8sfilter = get_cube(name);
+
+  auto &&ports = k8sfilter->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
 
 
 }
+
 }
 }
 }

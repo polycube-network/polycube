@@ -15,8 +15,6 @@
 
 #include "../Helloworld.h"
 
-
-
 std::shared_ptr<Ports> Helloworld::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

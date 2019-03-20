@@ -117,58 +117,6 @@ void FdbEntryJsonObject::unsetAge() {
 }
 
 
-nlohmann::json FdbEntryJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["address"]["name"] = "address";
-  val["address"]["type"] = "key";
-  val["address"]["simpletype"] = "string";
-  val["address"]["description"] = R"POLYCUBE(Address of the filtering database entry)POLYCUBE";
-  val["address"]["example"] = R"POLYCUBE(C5:13:2D:36:27:9B)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbEntryJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["port"]["name"] = "port";
-  val["port"]["type"] = "leaf"; // Suppose that type is leaf
-  val["port"]["simpletype"] = "string";
-  val["port"]["description"] = R"POLYCUBE(Output port name)POLYCUBE";
-  val["port"]["example"] = R"POLYCUBE(port2)POLYCUBE";
-  val["age"]["name"] = "age";
-  val["age"]["type"] = "leaf"; // Suppose that type is leaf
-  val["age"]["simpletype"] = "integer";
-  val["age"]["description"] = R"POLYCUBE(Age of the current filtering database entry)POLYCUBE";
-  val["age"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbEntryJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["port"]["name"] = "port";
-  val["port"]["simpletype"] = "string";
-  val["port"]["description"] = R"POLYCUBE(Output port name)POLYCUBE";
-  val["port"]["example"] = R"POLYCUBE(port2)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbEntryJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> FdbEntryJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

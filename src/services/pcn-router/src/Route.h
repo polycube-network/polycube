@@ -76,7 +76,6 @@ class Route : public RouteInterface {
                           const std::string &nexthop);
   static std::vector<std::shared_ptr<Route>> get(Router &parent);
   static void remove(Router &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RouteJsonObject &conf) override;
   RouteJsonObject toJsonObject() override;

@@ -139,62 +139,6 @@ void ActionsJsonObject::unsetOutport() {
 }
 
 
-nlohmann::json ActionsJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["inport"]["name"] = "inport";
-  val["inport"]["type"] = "key";
-  val["inport"]["simpletype"] = "string";
-  val["inport"]["description"] = R"POLYCUBE(Ingress port)POLYCUBE";
-  val["inport"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ActionsJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["action"]["name"] = "action";
-  val["action"]["type"] = "leaf"; // Suppose that type is leaf
-  val["action"]["simpletype"] = "string";
-  val["action"]["description"] = R"POLYCUBE(Action associated to the current table entry (i.e., DROP, SLOWPATH, or FORWARD; default: DROP))POLYCUBE";
-  val["action"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["outport"]["name"] = "outport";
-  val["outport"]["type"] = "leaf"; // Suppose that type is leaf
-  val["outport"]["simpletype"] = "string";
-  val["outport"]["description"] = R"POLYCUBE(Output port (used only when action is FORWARD))POLYCUBE";
-  val["outport"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ActionsJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["action"]["name"] = "action";
-  val["action"]["simpletype"] = "string";
-  val["action"]["description"] = R"POLYCUBE(Action associated to the current table entry (i.e., DROP, SLOWPATH, or FORWARD; default: DROP))POLYCUBE";
-  val["action"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["outport"]["name"] = "outport";
-  val["outport"]["simpletype"] = "string";
-  val["outport"]["description"] = R"POLYCUBE(Output port (used only when action is FORWARD))POLYCUBE";
-  val["outport"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ActionsJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ActionsJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

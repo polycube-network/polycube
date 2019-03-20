@@ -80,48 +80,6 @@ void BackendJsonObject::unsetPool() {
 }
 
 
-nlohmann::json BackendJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json BackendJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pool"]["name"] = "pool";
-  val["pool"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pool"]["type"] = "list";
-  val["pool"]["description"] = R"POLYCUBE(pool of backend servers serving requests)POLYCUBE";
-  val["pool"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json BackendJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json BackendJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pool"]["name"] = "pool";
-  val["pool"]["type"] = "list";
-  val["pool"]["description"] = R"POLYCUBE(pool of backend servers serving requests)POLYCUBE";
-  val["pool"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> BackendJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

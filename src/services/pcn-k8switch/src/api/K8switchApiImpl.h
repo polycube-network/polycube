@@ -64,23 +64,18 @@ namespace K8switchApiImpl {
   std::string read_k8switch_cluster_ip_subnet_by_id(const std::string &name);
   FwdTableJsonObject read_k8switch_fwd_table_by_id(const std::string &name, const std::string &address);
   std::vector<FwdTableJsonObject> read_k8switch_fwd_table_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_fwd_table_list_by_id_get_list(const std::string &name);
   std::string read_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &address);
   std::string read_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &address);
   std::vector<K8switchJsonObject> read_k8switch_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_list_by_id_get_list();
   PortsJsonObject read_k8switch_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_k8switch_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_ports_list_by_id_get_list(const std::string &name);
   PortsTypeEnum read_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName);
   ServiceBackendJsonObject read_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port);
   std::vector<ServiceBackendJsonObject> read_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   std::string read_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port);
   uint16_t read_k8switch_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port);
   ServiceJsonObject read_k8switch_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   std::vector<ServiceJsonObject> read_k8switch_service_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_list_by_id_get_list(const std::string &name);
   std::string read_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   std::string read_k8switch_virtual_client_subnet_by_id(const std::string &name);
   void replace_k8switch_by_id(const std::string &name, const K8switchJsonObject &value);
@@ -111,6 +106,14 @@ namespace K8switchApiImpl {
   void update_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value);
   void update_k8switch_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &value);
   void update_k8switch_virtual_client_subnet_by_id(const std::string &name, const std::string &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_fwd_table_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_ports_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

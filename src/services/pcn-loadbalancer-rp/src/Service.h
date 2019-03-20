@@ -56,7 +56,6 @@ class Service : public ServiceInterface {
                           const uint16_t &vport, const ServiceProtoEnum &proto);
   static std::vector<std::shared_ptr<Service>> get(Lbrp &parent);
   static void remove(Lbrp &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceJsonObject &conf) override;
   ServiceJsonObject toJsonObject() override;

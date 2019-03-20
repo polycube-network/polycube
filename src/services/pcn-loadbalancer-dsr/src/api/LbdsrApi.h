@@ -84,15 +84,9 @@ Response update_lbdsr_ports_by_id_handler(const char *name, const Key *keys, siz
 Response update_lbdsr_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbdsr_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response lbdsr_backend_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_backend_pool_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_backend_pool_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_frontend_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbdsr_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response lbdsr_backend_pool_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response lbdsr_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response lbdsr_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

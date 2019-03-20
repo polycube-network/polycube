@@ -154,27 +154,11 @@ Response update_nat_rule_snat_entry_external_ip_by_id_handler(const char *name, 
 Response update_nat_rule_snat_entry_internal_net_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_nat_rule_snat_entry_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response nat_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_natting_table_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_natting_table_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_dnat_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_dnat_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_dnat_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_masquerade_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_port_forwarding_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_port_forwarding_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_port_forwarding_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_snat_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_snat_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_snat_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
-Response nat_rule_dnat_append_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_masquerade_disable_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_masquerade_enable_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_port_forwarding_append_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response nat_rule_snat_append_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response nat_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response nat_natting_table_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response nat_rule_dnat_entry_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response nat_rule_port_forwarding_entry_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response nat_rule_snat_entry_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

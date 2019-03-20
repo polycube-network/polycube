@@ -250,6 +250,11 @@ void Service::delBackendList() {
   removeServiceFromKernelMap();
 }
 
+void Service::replaceBackend(const std::string &ip, const uint16_t &port,
+                             const ServiceBackendJsonObject &conf) {
+  throw std::runtime_error("Not implemented");
+}
+
 /*
  * This method removes all entries for a service in the datapath map
  */

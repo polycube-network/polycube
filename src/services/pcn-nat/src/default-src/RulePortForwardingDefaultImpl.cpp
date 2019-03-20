@@ -15,8 +15,6 @@
 
 #include "../RulePortForwarding.h"
 
-
-
 std::shared_ptr<RulePortForwardingEntry> RulePortForwarding::getEntry(const uint32_t &id){
   return RulePortForwardingEntry::getEntry(*this, id);
 }

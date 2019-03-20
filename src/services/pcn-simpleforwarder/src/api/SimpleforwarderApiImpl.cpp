@@ -109,9 +109,6 @@ create_simpleforwarder_actions_by_id(const std::string &name, const std::string 
   simpleforwarder->addActions(inport, value);
 }
 
-
-
-
 /**
 * @brief   Create actions by ID
 *
@@ -128,21 +125,6 @@ create_simpleforwarder_actions_list_by_id(const std::string &name, const std::ve
   auto simpleforwarder = get_cube(name);
   simpleforwarder->addActionsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&actions = simpleforwarder->addActionsList(value);
-  for(auto &i : actions) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create ports by ID
@@ -163,9 +145,6 @@ create_simpleforwarder_ports_by_id(const std::string &name, const std::string &p
   simpleforwarder->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -182,21 +161,6 @@ create_simpleforwarder_ports_list_by_id(const std::string &name, const std::vect
   auto simpleforwarder = get_cube(name);
   simpleforwarder->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_simpleforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&ports = simpleforwarder->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete actions by ID
@@ -216,9 +180,6 @@ delete_simpleforwarder_actions_by_id(const std::string &name, const std::string 
   simpleforwarder->delActions(inport);
 }
 
-
-
-
 /**
 * @brief   Delete actions by ID
 *
@@ -234,21 +195,6 @@ delete_simpleforwarder_actions_list_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   simpleforwarder->delActionsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&actions = simpleforwarder->delActionsList();
-  for(auto &i : actions) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -268,9 +214,6 @@ delete_simpleforwarder_ports_by_id(const std::string &name, const std::string &p
   simpleforwarder->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -286,21 +229,6 @@ delete_simpleforwarder_ports_list_by_id(const std::string &name) {
   auto simpleforwarder = get_cube(name);
   simpleforwarder->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_simpleforwarder_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&ports = simpleforwarder->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Read action by ID
@@ -321,9 +249,6 @@ read_simpleforwarder_actions_action_by_id(const std::string &name, const std::st
 
 }
 
-
-
-
 /**
 * @brief   Read actions by ID
 *
@@ -341,9 +266,6 @@ read_simpleforwarder_actions_by_id(const std::string &name, const std::string &i
   return simpleforwarder->getActions(inport)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read actions by ID
@@ -365,23 +287,6 @@ read_simpleforwarder_actions_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&actions = simpleforwarder->getActionsList();
-  for(auto &i : actions) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read outport by ID
 *
@@ -401,9 +306,6 @@ read_simpleforwarder_actions_outport_by_id(const std::string &name, const std::s
 
 }
 
-
-
-
 /**
 * @brief   Read simpleforwarder by ID
 *
@@ -419,9 +321,6 @@ read_simpleforwarder_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -440,9 +339,6 @@ read_simpleforwarder_ports_by_id(const std::string &name, const std::string &por
   return simpleforwarder->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -464,23 +360,6 @@ read_simpleforwarder_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&simpleforwarder = get_cube(name);
-
-  auto &&ports = simpleforwarder->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Replace actions by ID
 *
@@ -500,9 +379,6 @@ replace_simpleforwarder_actions_by_id(const std::string &name, const std::string
   simpleforwarder->replaceActions(inport, value);
 }
 
-
-
-
 /**
 * @brief   Replace actions by ID
 *
@@ -518,14 +394,6 @@ void
 replace_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace ports by ID
@@ -546,9 +414,6 @@ replace_simpleforwarder_ports_by_id(const std::string &name, const std::string &
   simpleforwarder->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -564,14 +429,6 @@ void
 replace_simpleforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_simpleforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update action by ID
@@ -593,9 +450,6 @@ update_simpleforwarder_actions_action_by_id(const std::string &name, const std::
   actions->setAction(value);
 }
 
-
-
-
 /**
 * @brief   Update actions by ID
 *
@@ -616,9 +470,6 @@ update_simpleforwarder_actions_by_id(const std::string &name, const std::string 
   actions->update(value);
 }
 
-
-
-
 /**
 * @brief   Update actions by ID
 *
@@ -634,14 +485,6 @@ void
 update_simpleforwarder_actions_list_by_id(const std::string &name, const std::vector<ActionsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_actions_list_by_id_get_list(const std::string &name, const std::vector<ActionsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update outport by ID
@@ -663,9 +506,6 @@ update_simpleforwarder_actions_outport_by_id(const std::string &name, const std:
   actions->setOutport(value);
 }
 
-
-
-
 /**
 * @brief   Update simpleforwarder by ID
 *
@@ -684,9 +524,6 @@ update_simpleforwarder_by_id(const std::string &name, const SimpleforwarderJsonO
   simpleforwarder->update(value);
 }
 
-
-
-
 /**
 * @brief   Update simpleforwarder by ID
 *
@@ -701,14 +538,6 @@ void
 update_simpleforwarder_list_by_id(const std::vector<SimpleforwarderJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_list_by_id_get_list(const std::vector<SimpleforwarderJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -730,9 +559,6 @@ update_simpleforwarder_ports_by_id(const std::string &name, const std::string &p
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -750,14 +576,44 @@ update_simpleforwarder_ports_list_by_id(const std::string &name, const std::vect
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_simpleforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_actions_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&simpleforwarder = get_cube(name);
+
+  auto &&actions = simpleforwarder->getActionsList();
+  for(auto &i : actions) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["inport"] = i->getInport();
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_simpleforwarder_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&simpleforwarder = get_cube(name);
+
+  auto &&ports = simpleforwarder->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
 
 
 }
+
 }
 }
 }

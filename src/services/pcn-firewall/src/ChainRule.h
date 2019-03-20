@@ -39,7 +39,6 @@ class ChainRule : public ChainRuleInterface {
   static void removeEntry(Chain &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<ChainRule>> get(Chain &parent);
   static void remove(Chain &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainRuleJsonObject &conf) override;
   ChainRuleJsonObject toJsonObject() override;

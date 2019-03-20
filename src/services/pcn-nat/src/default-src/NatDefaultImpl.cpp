@@ -15,8 +15,6 @@
 
 #include "../Nat.h"
 
-
-
 std::shared_ptr<Rule> Nat::getRule(){
   return Rule::getEntry(*this);
 }

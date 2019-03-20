@@ -67,50 +67,6 @@ void RuleMasqueradeJsonObject::unsetEnabled() {
 }
 
 
-nlohmann::json RuleMasqueradeJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RuleMasqueradeJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["enabled"]["name"] = "enabled";
-  val["enabled"]["type"] = "leaf"; // Suppose that type is leaf
-  val["enabled"]["simpletype"] = "boolean";
-  val["enabled"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["enabled"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleMasqueradeJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["enabled"]["name"] = "enabled";
-  val["enabled"]["simpletype"] = "boolean";
-  val["enabled"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["enabled"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleMasqueradeJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RuleMasqueradeJsonObject::helpActions() {
-  std::vector<std::string> val;
-  val.push_back("enable");
-  val.push_back("disable");
-  return val;
-}
-
 }
 }
 }

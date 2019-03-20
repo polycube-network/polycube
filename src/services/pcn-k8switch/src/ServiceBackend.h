@@ -29,7 +29,6 @@ class ServiceBackend : public ServiceBackendInterface {
   ServiceBackend(Service &parent, const ServiceBackendJsonObject &conf);
   virtual ~ServiceBackend();
 
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceBackendJsonObject &conf) override;
   ServiceBackendJsonObject toJsonObject() override;

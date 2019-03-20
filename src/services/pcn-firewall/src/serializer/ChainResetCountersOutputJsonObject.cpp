@@ -67,48 +67,6 @@ void ChainResetCountersOutputJsonObject::unsetResult() {
 }
 
 
-nlohmann::json ChainResetCountersOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["type"] = "leaf"; // Suppose that type is leaf
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainResetCountersOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

@@ -50,19 +50,8 @@ public:
   ChainDeleteInputJsonObject();
   ChainDeleteInputJsonObject(const nlohmann::json &json);
   ~ChainDeleteInputJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainDeleteInputJsonObject members
 
   /// <summary>
   /// Name of the interface via which the packet is received

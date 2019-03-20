@@ -85,13 +85,9 @@ Response update_pbforwarder_rules_src_mac_by_id_handler(const char *name, const 
 Response update_pbforwarder_rules_src_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_pbforwarder_rules_vlan_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response pbforwarder_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response pbforwarder_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response pbforwarder_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response pbforwarder_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response pbforwarder_rules_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response pbforwarder_rules_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response pbforwarder_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response pbforwarder_rules_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

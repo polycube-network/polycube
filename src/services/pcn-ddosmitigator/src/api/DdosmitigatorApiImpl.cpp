@@ -90,17 +90,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_lis
   return r;
 }
 
-//std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_ports_list_by_id_get_list(const std::string &name) {
-//  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-//  auto m = get_cube(name);
-//  for(auto &i : m->getPortsList()){
-//    nlohmann::fifo_map<std::string, std::string> m;
-//    m["name"] = i->getName();
-//    r.push_back(std::move(m));
-//  }
-//  return r;
-//}
-
 /**
 * @brief   Create blacklist-dst by ID
 *
@@ -120,9 +109,6 @@ create_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::str
   ddosmitigator->addBlacklistDst(ip, value);
 }
 
-
-
-
 /**
 * @brief   Create blacklist-dst by ID
 *
@@ -139,21 +125,6 @@ create_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std
   auto ddosmitigator = get_cube(name);
   ddosmitigator->addBlacklistDstList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistDst = ddosmitigator->addBlacklistDstList(value);
-  for(auto &i : blacklistDst) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create blacklist-src by ID
@@ -174,9 +145,6 @@ create_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::str
   ddosmitigator->addBlacklistSrc(ip, value);
 }
 
-
-
-
 /**
 * @brief   Create blacklist-src by ID
 *
@@ -193,21 +161,6 @@ create_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std
   auto ddosmitigator = get_cube(name);
   ddosmitigator->addBlacklistSrcList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistSrc = ddosmitigator->addBlacklistSrcList(value);
-  for(auto &i : blacklistSrc) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete blacklist-dst by ID
@@ -227,9 +180,6 @@ delete_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::str
   ddosmitigator->delBlacklistDst(ip);
 }
 
-
-
-
 /**
 * @brief   Delete blacklist-dst by ID
 *
@@ -245,21 +195,6 @@ delete_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->delBlacklistDstList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistDst = ddosmitigator->delBlacklistDstList();
-  for(auto &i : blacklistDst) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete blacklist-src by ID
@@ -279,9 +214,6 @@ delete_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::str
   ddosmitigator->delBlacklistSrc(ip);
 }
 
-
-
-
 /**
 * @brief   Delete blacklist-src by ID
 *
@@ -297,21 +229,6 @@ delete_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
   auto ddosmitigator = get_cube(name);
   ddosmitigator->delBlacklistSrcList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistSrc = ddosmitigator->delBlacklistSrcList();
-  for(auto &i : blacklistSrc) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Read blacklist-dst by ID
@@ -331,9 +248,6 @@ read_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::strin
 
 }
 
-
-
-
 /**
 * @brief   Read drop-pkts by ID
 *
@@ -352,9 +266,6 @@ read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std::string &name, const 
   return blacklistDst->getDropPkts();
 
 }
-
-
-
 
 /**
 * @brief   Read blacklist-dst by ID
@@ -376,23 +287,6 @@ read_ddosmitigator_blacklist_dst_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistDst = ddosmitigator->getBlacklistDstList();
-  for(auto &i : blacklistDst) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read blacklist-src by ID
 *
@@ -410,9 +304,6 @@ read_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::strin
   return ddosmitigator->getBlacklistSrc(ip)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read drop-pkts by ID
@@ -432,9 +323,6 @@ read_ddosmitigator_blacklist_src_drop_pkts_by_id(const std::string &name, const 
   return blacklistSrc->getDropPkts();
 
 }
-
-
-
 
 /**
 * @brief   Read blacklist-src by ID
@@ -456,23 +344,6 @@ read_ddosmitigator_blacklist_src_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&ddosmitigator = get_cube(name);
-
-  auto &&blacklistSrc = ddosmitigator->getBlacklistSrcList();
-  for(auto &i : blacklistSrc) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read ddosmitigator by ID
 *
@@ -488,9 +359,6 @@ read_ddosmitigator_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read stats by ID
@@ -508,9 +376,6 @@ read_ddosmitigator_stats_by_id(const std::string &name) {
   return ddosmitigator->getStats()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read pkts by ID
@@ -530,9 +395,6 @@ read_ddosmitigator_stats_pkts_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read pps by ID
 *
@@ -550,9 +412,6 @@ read_ddosmitigator_stats_pps_by_id(const std::string &name) {
   return stats->getPps();
 
 }
-
-
-
 
 /**
 * @brief   Replace blacklist-dst by ID
@@ -573,9 +432,6 @@ replace_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::st
   ddosmitigator->replaceBlacklistDst(ip, value);
 }
 
-
-
-
 /**
 * @brief   Replace blacklist-dst by ID
 *
@@ -591,14 +447,6 @@ void
 replace_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace blacklist-src by ID
@@ -619,9 +467,6 @@ replace_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::st
   ddosmitigator->replaceBlacklistSrc(ip, value);
 }
 
-
-
-
 /**
 * @brief   Replace blacklist-src by ID
 *
@@ -637,14 +482,6 @@ void
 replace_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update blacklist-dst by ID
@@ -666,9 +503,6 @@ update_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::str
   blacklistDst->update(value);
 }
 
-
-
-
 /**
 * @brief   Update blacklist-dst by ID
 *
@@ -684,14 +518,6 @@ void
 update_ddosmitigator_blacklist_dst_list_by_id(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name, const std::vector<BlacklistDstJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update blacklist-src by ID
@@ -713,9 +539,6 @@ update_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::str
   blacklistSrc->update(value);
 }
 
-
-
-
 /**
 * @brief   Update blacklist-src by ID
 *
@@ -731,14 +554,6 @@ void
 update_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ddosmitigator by ID
@@ -758,9 +573,6 @@ update_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObjec
   ddosmitigator->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ddosmitigator by ID
 *
@@ -777,14 +589,44 @@ update_ddosmitigator_list_by_id(const std::vector<DdosmitigatorJsonObject> &valu
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_ddosmitigator_list_by_id_get_list(const std::vector<DdosmitigatorJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&ddosmitigator = get_cube(name);
+
+  auto &&blacklistDst = ddosmitigator->getBlacklistDstList();
+  for(auto &i : blacklistDst) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["ip"] = i->getIp();
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&ddosmitigator = get_cube(name);
+
+  auto &&blacklistSrc = ddosmitigator->getBlacklistSrcList();
+  for(auto &i : blacklistSrc) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["ip"] = i->getIp();
+
+    r.push_back(keys);
+  }
+  return r;
+}
 
 
 }
+
 }
 }
 }

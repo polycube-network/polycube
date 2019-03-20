@@ -38,19 +38,8 @@ public:
   FdbEntryJsonObject();
   FdbEntryJsonObject(const nlohmann::json &json);
   ~FdbEntryJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// FdbEntryJsonObject members
 
   /// <summary>
   /// Address of the filtering database entry

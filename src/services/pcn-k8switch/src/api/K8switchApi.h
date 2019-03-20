@@ -103,17 +103,11 @@ Response update_k8switch_service_list_by_id_handler(const char *name, const Key 
 Response update_k8switch_service_name_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_virtual_client_subnet_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response k8switch_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_fwd_table_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_fwd_table_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_service_backend_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_service_backend_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_service_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8switch_service_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response k8switch_fwd_table_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response k8switch_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response k8switch_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response k8switch_service_backend_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response k8switch_service_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

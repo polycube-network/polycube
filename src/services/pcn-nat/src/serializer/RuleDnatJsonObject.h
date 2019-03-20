@@ -40,19 +40,8 @@ public:
   RuleDnatJsonObject();
   RuleDnatJsonObject(const nlohmann::json &json);
   ~RuleDnatJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// RuleDnatJsonObject members
 
   /// <summary>
   /// List of Destination NAT rules

@@ -108,9 +108,6 @@ create_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &val
   lbdsr->addBackend(value);
 }
 
-
-
-
 /**
 * @brief   Create pool by ID
 *
@@ -131,9 +128,6 @@ create_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, con
   backend->addPool(id, value);
 }
 
-
-
-
 /**
 * @brief   Create pool by ID
 *
@@ -152,22 +146,6 @@ create_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<
   backend->addPoolList(value);
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-  auto &&backend = lbdsr->getBackend();
-
-  auto &&pool = backend->addPoolList(value);
-  for(auto &i : pool) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Create frontend by ID
 *
@@ -185,9 +163,6 @@ create_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &v
 
   lbdsr->addFrontend(value);
 }
-
-
-
 
 /**
 * @brief   Create ports by ID
@@ -208,9 +183,6 @@ create_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, 
   lbdsr->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -228,21 +200,6 @@ create_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJs
   lbdsr->addPortsList(value);
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbdsr_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-
-  auto &&ports = lbdsr->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Delete backend by ID
 *
@@ -259,9 +216,6 @@ delete_lbdsr_backend_by_id(const std::string &name) {
 
   lbdsr->delBackend();
 }
-
-
-
 
 /**
 * @brief   Delete pool by ID
@@ -282,9 +236,6 @@ delete_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
   backend->delPool(id);
 }
 
-
-
-
 /**
 * @brief   Delete pool by ID
 *
@@ -302,22 +253,6 @@ delete_lbdsr_backend_pool_list_by_id(const std::string &name) {
   backend->delPoolList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-  auto &&backend = lbdsr->getBackend();
-
-  auto &&pool = backend->delPoolList();
-  for(auto &i : pool) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Delete frontend by ID
 *
@@ -334,9 +269,6 @@ delete_lbdsr_frontend_by_id(const std::string &name) {
 
   lbdsr->delFrontend();
 }
-
-
-
 
 /**
 * @brief   Delete ports by ID
@@ -356,9 +288,6 @@ delete_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) 
   lbdsr->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -374,21 +303,6 @@ delete_lbdsr_ports_list_by_id(const std::string &name) {
   auto lbdsr = get_cube(name);
   lbdsr->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbdsr_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-
-  auto &&ports = lbdsr->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Read algorithm by ID
@@ -407,9 +321,6 @@ read_lbdsr_algorithm_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read backend by ID
 *
@@ -426,9 +337,6 @@ read_lbdsr_backend_by_id(const std::string &name) {
   return lbdsr->getBackend()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read pool by ID
@@ -448,9 +356,6 @@ read_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id) {
   return backend->getPool(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read pool by ID
@@ -473,24 +378,6 @@ read_lbdsr_backend_pool_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-  auto &&backend = lbdsr->getBackend();
-
-  auto &&pool = backend->getPoolList();
-  for(auto &i : pool) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read mac by ID
 *
@@ -511,9 +398,6 @@ read_lbdsr_backend_pool_mac_by_id(const std::string &name, const uint32_t &id) {
 
 }
 
-
-
-
 /**
 * @brief   Read lbdsr by ID
 *
@@ -529,9 +413,6 @@ read_lbdsr_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read frontend by ID
@@ -549,9 +430,6 @@ read_lbdsr_frontend_by_id(const std::string &name) {
   return lbdsr->getFrontend()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read mac by ID
@@ -571,9 +449,6 @@ read_lbdsr_frontend_mac_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read vip by ID
 *
@@ -592,9 +467,6 @@ read_lbdsr_frontend_vip_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read ports by ID
 *
@@ -612,9 +484,6 @@ read_lbdsr_ports_by_id(const std::string &name, const std::string &portsName) {
   return lbdsr->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -636,23 +505,6 @@ read_lbdsr_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbdsr = get_cube(name);
-
-  auto &&ports = lbdsr->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read type by ID
 *
@@ -672,9 +524,6 @@ read_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsNam
 
 }
 
-
-
-
 /**
 * @brief   Replace backend by ID
 *
@@ -692,9 +541,6 @@ replace_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &va
 
   lbdsr->replaceBackend(value);
 }
-
-
-
 
 /**
 * @brief   Replace pool by ID
@@ -716,9 +562,6 @@ replace_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, co
   backend->replacePool(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace pool by ID
 *
@@ -734,14 +577,6 @@ void
 replace_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace frontend by ID
@@ -760,9 +595,6 @@ replace_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &
 
   lbdsr->replaceFrontend(value);
 }
-
-
-
 
 /**
 * @brief   Replace ports by ID
@@ -783,9 +615,6 @@ replace_lbdsr_ports_by_id(const std::string &name, const std::string &portsName,
   lbdsr->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -801,14 +630,6 @@ void
 replace_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbdsr_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update algorithm by ID
@@ -828,9 +649,6 @@ update_lbdsr_algorithm_by_id(const std::string &name, const std::string &value) 
   lbdsr->setAlgorithm(value);
 }
 
-
-
-
 /**
 * @brief   Update backend by ID
 *
@@ -849,9 +667,6 @@ update_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &val
 
   backend->update(value);
 }
-
-
-
 
 /**
 * @brief   Update pool by ID
@@ -874,9 +689,6 @@ update_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, con
   pool->update(value);
 }
 
-
-
-
 /**
 * @brief   Update pool by ID
 *
@@ -892,14 +704,6 @@ void
 update_lbdsr_backend_pool_list_by_id(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_backend_pool_list_by_id_get_list(const std::string &name, const std::vector<BackendPoolJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update lbdsr by ID
@@ -918,9 +722,6 @@ update_lbdsr_by_id(const std::string &name, const LbdsrJsonObject &value) {
 
   lbdsr->update(value);
 }
-
-
-
 
 /**
 * @brief   Update frontend by ID
@@ -941,9 +742,6 @@ update_lbdsr_frontend_by_id(const std::string &name, const FrontendJsonObject &v
   frontend->update(value);
 }
 
-
-
-
 /**
 * @brief   Update mac by ID
 *
@@ -962,9 +760,6 @@ update_lbdsr_frontend_mac_by_id(const std::string &name, const std::string &valu
 
   frontend->setMac(value);
 }
-
-
-
 
 /**
 * @brief   Update vip by ID
@@ -985,9 +780,6 @@ update_lbdsr_frontend_vip_by_id(const std::string &name, const std::string &valu
   frontend->setVip(value);
 }
 
-
-
-
 /**
 * @brief   Update lbdsr by ID
 *
@@ -1002,14 +794,6 @@ void
 update_lbdsr_list_by_id(const std::vector<LbdsrJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_list_by_id_get_list(const std::vector<LbdsrJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -1031,9 +815,6 @@ update_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, 
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -1049,14 +830,6 @@ void
 update_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbdsr_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update type by ID
@@ -1080,8 +853,44 @@ update_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsN
 
 
 
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&lbdsr = get_cube(name);
+  auto &&backend = lbdsr->getBackend();
+
+  auto &&pool = backend->getPoolList();
+  for(auto &i : pool) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&lbdsr = get_cube(name);
+
+  auto &&ports = lbdsr->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
 
 }
+
 }
 }
 }

@@ -47,7 +47,6 @@ class SrcIpRewrite : public SrcIpRewriteInterface {
   static void create(Lbrp &parent, const SrcIpRewriteJsonObject &conf);
   static std::shared_ptr<SrcIpRewrite> getEntry(Lbrp &parent);
   static void removeEntry(Lbrp &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const SrcIpRewriteJsonObject &conf) override;
   SrcIpRewriteJsonObject toJsonObject() override;

@@ -39,7 +39,6 @@ class PortsSecondaryip : public PortsSecondaryipInterface {
                           const std::string &netmask);
   static std::vector<std::shared_ptr<PortsSecondaryip>> get(Ports &parent);
   static void remove(Ports &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsSecondaryipJsonObject &conf) override;
   PortsSecondaryipJsonObject toJsonObject() override;

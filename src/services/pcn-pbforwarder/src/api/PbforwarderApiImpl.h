@@ -51,10 +51,8 @@ namespace PbforwarderApiImpl {
   void delete_pbforwarder_rules_list_by_id(const std::string &name);
   PbforwarderJsonObject read_pbforwarder_by_id(const std::string &name);
   std::vector<PbforwarderJsonObject> read_pbforwarder_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_list_by_id_get_list();
   PortsJsonObject read_pbforwarder_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_pbforwarder_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name);
   RulesActionEnum read_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id);
   RulesJsonObject read_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id);
   std::string read_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id);
@@ -63,7 +61,6 @@ namespace PbforwarderApiImpl {
   std::string read_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id);
   RulesL4ProtoEnum read_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &id);
   std::vector<RulesJsonObject> read_pbforwarder_rules_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name);
   std::string read_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &id);
   std::string read_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id);
   std::string read_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id);
@@ -91,6 +88,12 @@ namespace PbforwarderApiImpl {
   void update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &id, const uint16_t &value);
   void update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id, const uint32_t &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

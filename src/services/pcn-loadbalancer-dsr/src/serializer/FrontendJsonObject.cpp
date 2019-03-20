@@ -94,57 +94,6 @@ void FrontendJsonObject::unsetMac() {
 }
 
 
-nlohmann::json FrontendJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json FrontendJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["vip"]["name"] = "vip";
-  val["vip"]["type"] = "leaf"; // Suppose that type is leaf
-  val["vip"]["simpletype"] = "string";
-  val["vip"]["description"] = R"POLYCUBE(IP address of the loadbalancer frontend)POLYCUBE";
-  val["vip"]["example"] = R"POLYCUBE(130.192.100.1)POLYCUBE";
-  val["mac"]["name"] = "mac";
-  val["mac"]["type"] = "leaf"; // Suppose that type is leaf
-  val["mac"]["simpletype"] = "string";
-  val["mac"]["description"] = R"POLYCUBE(MAC address of the port)POLYCUBE";
-  val["mac"]["example"] = R"POLYCUBE(aa:bb:cc:dd:ee:ff)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FrontendJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["vip"]["name"] = "vip";
-  val["vip"]["simpletype"] = "string";
-  val["vip"]["description"] = R"POLYCUBE(IP address of the loadbalancer frontend)POLYCUBE";
-  val["vip"]["example"] = R"POLYCUBE(130.192.100.1)POLYCUBE";
-  val["mac"]["name"] = "mac";
-  val["mac"]["simpletype"] = "string";
-  val["mac"]["description"] = R"POLYCUBE(MAC address of the port)POLYCUBE";
-  val["mac"]["example"] = R"POLYCUBE(aa:bb:cc:dd:ee:ff)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FrontendJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> FrontendJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

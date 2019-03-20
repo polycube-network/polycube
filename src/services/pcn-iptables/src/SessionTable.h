@@ -54,7 +54,6 @@ class SessionTable : public SessionTableInterface {
                           const uint16_t &sport, const uint16_t &dport);
   static std::vector<std::shared_ptr<SessionTable>> get(Iptables &parent);
   static void remove(Iptables &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const SessionTableJsonObject &conf) override;
   SessionTableJsonObject toJsonObject() override;

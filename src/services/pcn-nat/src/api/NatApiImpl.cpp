@@ -113,9 +113,6 @@ create_nat_natting_table_by_id(const std::string &name, const std::string &inter
   nat->addNattingTable(internalSrc, internalDst, internalSport, internalDport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Create natting-table by ID
 *
@@ -132,21 +129,6 @@ create_nat_natting_table_list_by_id(const std::string &name, const std::vector<N
   auto nat = get_cube(name);
   nat->addNattingTableList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_nat_natting_table_list_by_id_get_list(const std::string &name, const std::vector<NattingTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-
-  auto &&nattingTable = nat->addNattingTableList(value);
-  for(auto &i : nattingTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create rule by ID
@@ -165,9 +147,6 @@ create_nat_rule_by_id(const std::string &name, const RuleJsonObject &value) {
 
   nat->addRule(value);
 }
-
-
-
 
 /**
 * @brief   Create append by ID
@@ -189,9 +168,6 @@ return dnat->append(value);
 
 }
 
-
-
-
 /**
 * @brief   Create dnat by ID
 *
@@ -210,9 +186,6 @@ create_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &va
 
   rule->addDnat(value);
 }
-
-
-
 
 /**
 * @brief   Create entry by ID
@@ -235,9 +208,6 @@ create_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id, co
   dnat->addEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Create entry by ID
 *
@@ -256,23 +226,6 @@ create_nat_rule_dnat_entry_list_by_id(const std::string &name, const std::vector
   auto dnat = rule->getDnat();
   dnat->addEntryList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleDnatEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&dnat = rule->getDnat();
-
-  auto &&entry = dnat->addEntryList(value);
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create masquerade by ID
@@ -293,9 +246,6 @@ create_nat_rule_masquerade_by_id(const std::string &name, const RuleMasqueradeJs
   rule->addMasquerade(value);
 }
 
-
-
-
 /**
 * @brief   Create disable by ID
 *
@@ -315,9 +265,6 @@ return masquerade->disable();
 
 }
 
-
-
-
 /**
 * @brief   Create enable by ID
 *
@@ -336,9 +283,6 @@ create_nat_rule_masquerade_enable_by_id(const std::string &name) {
 return masquerade->enable();
 
 }
-
-
-
 
 /**
 * @brief   Create append by ID
@@ -360,9 +304,6 @@ return portForwarding->append(value);
 
 }
 
-
-
-
 /**
 * @brief   Create port-forwarding by ID
 *
@@ -381,9 +322,6 @@ create_nat_rule_port_forwarding_by_id(const std::string &name, const RulePortFor
 
   rule->addPortForwarding(value);
 }
-
-
-
 
 /**
 * @brief   Create entry by ID
@@ -406,9 +344,6 @@ create_nat_rule_port_forwarding_entry_by_id(const std::string &name, const uint3
   portForwarding->addEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Create entry by ID
 *
@@ -427,23 +362,6 @@ create_nat_rule_port_forwarding_entry_list_by_id(const std::string &name, const 
   auto portForwarding = rule->getPortForwarding();
   portForwarding->addEntryList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name, const std::vector<RulePortForwardingEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&portForwarding = rule->getPortForwarding();
-
-  auto &&entry = portForwarding->addEntryList(value);
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create append by ID
@@ -465,9 +383,6 @@ return snat->append(value);
 
 }
 
-
-
-
 /**
 * @brief   Create snat by ID
 *
@@ -486,9 +401,6 @@ create_nat_rule_snat_by_id(const std::string &name, const RuleSnatJsonObject &va
 
   rule->addSnat(value);
 }
-
-
-
 
 /**
 * @brief   Create entry by ID
@@ -511,9 +423,6 @@ create_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id, co
   snat->addEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Create entry by ID
 *
@@ -532,23 +441,6 @@ create_nat_rule_snat_entry_list_by_id(const std::string &name, const std::vector
   auto snat = rule->getSnat();
   snat->addEntryList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_nat_rule_snat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&snat = rule->getSnat();
-
-  auto &&entry = snat->addEntryList(value);
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete natting-table by ID
@@ -572,9 +464,6 @@ delete_nat_natting_table_by_id(const std::string &name, const std::string &inter
   nat->delNattingTable(internalSrc, internalDst, internalSport, internalDport, proto);
 }
 
-
-
-
 /**
 * @brief   Delete natting-table by ID
 *
@@ -590,21 +479,6 @@ delete_nat_natting_table_list_by_id(const std::string &name) {
   auto nat = get_cube(name);
   nat->delNattingTableList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_nat_natting_table_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-
-  auto &&nattingTable = nat->delNattingTableList();
-  for(auto &i : nattingTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete rule by ID
@@ -623,9 +497,6 @@ delete_nat_rule_by_id(const std::string &name) {
   nat->delRule();
 }
 
-
-
-
 /**
 * @brief   Delete dnat by ID
 *
@@ -643,9 +514,6 @@ delete_nat_rule_dnat_by_id(const std::string &name) {
 
   rule->delDnat();
 }
-
-
-
 
 /**
 * @brief   Delete entry by ID
@@ -667,9 +535,6 @@ delete_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id) {
   dnat->delEntry(id);
 }
 
-
-
-
 /**
 * @brief   Delete entry by ID
 *
@@ -687,23 +552,6 @@ delete_nat_rule_dnat_entry_list_by_id(const std::string &name) {
   auto dnat = rule->getDnat();
   dnat->delEntryList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&dnat = rule->getDnat();
-
-  auto &&entry = dnat->delEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete masquerade by ID
@@ -723,9 +571,6 @@ delete_nat_rule_masquerade_by_id(const std::string &name) {
   rule->delMasquerade();
 }
 
-
-
-
 /**
 * @brief   Delete port-forwarding by ID
 *
@@ -743,9 +588,6 @@ delete_nat_rule_port_forwarding_by_id(const std::string &name) {
 
   rule->delPortForwarding();
 }
-
-
-
 
 /**
 * @brief   Delete entry by ID
@@ -767,9 +609,6 @@ delete_nat_rule_port_forwarding_entry_by_id(const std::string &name, const uint3
   portForwarding->delEntry(id);
 }
 
-
-
-
 /**
 * @brief   Delete entry by ID
 *
@@ -788,23 +627,6 @@ delete_nat_rule_port_forwarding_entry_list_by_id(const std::string &name) {
   portForwarding->delEntryList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&portForwarding = rule->getPortForwarding();
-
-  auto &&entry = portForwarding->delEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Delete snat by ID
 *
@@ -822,9 +644,6 @@ delete_nat_rule_snat_by_id(const std::string &name) {
 
   rule->delSnat();
 }
-
-
-
 
 /**
 * @brief   Delete entry by ID
@@ -846,9 +665,6 @@ delete_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id) {
   snat->delEntry(id);
 }
 
-
-
-
 /**
 * @brief   Delete entry by ID
 *
@@ -867,23 +683,6 @@ delete_nat_rule_snat_entry_list_by_id(const std::string &name) {
   snat->delEntryList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_nat_rule_snat_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&snat = rule->getSnat();
-
-  auto &&entry = snat->delEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Read nat by ID
 *
@@ -899,9 +698,6 @@ read_nat_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read natting-table by ID
@@ -924,9 +720,6 @@ read_nat_natting_table_by_id(const std::string &name, const std::string &interna
   return nat->getNattingTable(internalSrc, internalDst, internalSport, internalDport, proto)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read external-ip by ID
@@ -951,9 +744,6 @@ read_nat_natting_table_external_ip_by_id(const std::string &name, const std::str
 
 }
 
-
-
-
 /**
 * @brief   Read external-port by ID
 *
@@ -977,9 +767,6 @@ read_nat_natting_table_external_port_by_id(const std::string &name, const std::s
 
 }
 
-
-
-
 /**
 * @brief   Read natting-table by ID
 *
@@ -999,23 +786,6 @@ read_nat_natting_table_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_natting_table_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-
-  auto &&nattingTable = nat->getNattingTableList();
-  for(auto &i : nattingTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read originating-rule by ID
@@ -1040,9 +810,6 @@ read_nat_natting_table_originating_rule_by_id(const std::string &name, const std
 
 }
 
-
-
-
 /**
 * @brief   Read rule by ID
 *
@@ -1059,9 +826,6 @@ read_nat_rule_by_id(const std::string &name) {
   return nat->getRule()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read dnat by ID
@@ -1080,9 +844,6 @@ read_nat_rule_dnat_by_id(const std::string &name) {
   return rule->getDnat()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1103,9 +864,6 @@ read_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id) {
   return dnat->getEntry(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read external-ip by ID
@@ -1128,9 +886,6 @@ read_nat_rule_dnat_entry_external_ip_by_id(const std::string &name, const uint32
 
 }
 
-
-
-
 /**
 * @brief   Read internal-ip by ID
 *
@@ -1151,9 +906,6 @@ read_nat_rule_dnat_entry_internal_ip_by_id(const std::string &name, const uint32
   return entry->getInternalIp();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1177,25 +929,6 @@ read_nat_rule_dnat_entry_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&dnat = rule->getDnat();
-
-  auto &&entry = dnat->getEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read masquerade by ID
 *
@@ -1213,9 +946,6 @@ read_nat_rule_masquerade_by_id(const std::string &name) {
   return rule->getMasquerade()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read enabled by ID
@@ -1236,9 +966,6 @@ read_nat_rule_masquerade_enabled_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read port-forwarding by ID
 *
@@ -1256,9 +983,6 @@ read_nat_rule_port_forwarding_by_id(const std::string &name) {
   return rule->getPortForwarding()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1279,9 +1003,6 @@ read_nat_rule_port_forwarding_entry_by_id(const std::string &name, const uint32_
   return portForwarding->getEntry(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read external-ip by ID
@@ -1304,9 +1025,6 @@ read_nat_rule_port_forwarding_entry_external_ip_by_id(const std::string &name, c
 
 }
 
-
-
-
 /**
 * @brief   Read external-port by ID
 *
@@ -1327,9 +1045,6 @@ read_nat_rule_port_forwarding_entry_external_port_by_id(const std::string &name,
   return entry->getExternalPort();
 
 }
-
-
-
 
 /**
 * @brief   Read internal-ip by ID
@@ -1352,9 +1067,6 @@ read_nat_rule_port_forwarding_entry_internal_ip_by_id(const std::string &name, c
 
 }
 
-
-
-
 /**
 * @brief   Read internal-port by ID
 *
@@ -1375,9 +1087,6 @@ read_nat_rule_port_forwarding_entry_internal_port_by_id(const std::string &name,
   return entry->getInternalPort();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1401,25 +1110,6 @@ read_nat_rule_port_forwarding_entry_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&portForwarding = rule->getPortForwarding();
-
-  auto &&entry = portForwarding->getEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read proto by ID
 *
@@ -1441,9 +1131,6 @@ read_nat_rule_port_forwarding_entry_proto_by_id(const std::string &name, const u
 
 }
 
-
-
-
 /**
 * @brief   Read snat by ID
 *
@@ -1461,9 +1148,6 @@ read_nat_rule_snat_by_id(const std::string &name) {
   return rule->getSnat()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1484,9 +1168,6 @@ read_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id) {
   return snat->getEntry(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read external-ip by ID
@@ -1509,9 +1190,6 @@ read_nat_rule_snat_entry_external_ip_by_id(const std::string &name, const uint32
 
 }
 
-
-
-
 /**
 * @brief   Read internal-net by ID
 *
@@ -1532,9 +1210,6 @@ read_nat_rule_snat_entry_internal_net_by_id(const std::string &name, const uint3
   return entry->getInternalNet();
 
 }
-
-
-
 
 /**
 * @brief   Read entry by ID
@@ -1557,25 +1232,6 @@ read_nat_rule_snat_entry_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_snat_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&nat = get_cube(name);
-  auto &&rule = nat->getRule();
-  auto &&snat = rule->getSnat();
-
-  auto &&entry = snat->getEntryList();
-  for(auto &i : entry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Replace natting-table by ID
@@ -1600,9 +1256,6 @@ replace_nat_natting_table_by_id(const std::string &name, const std::string &inte
   nat->replaceNattingTable(internalSrc, internalDst, internalSport, internalDport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Replace natting-table by ID
 *
@@ -1618,14 +1271,6 @@ void
 replace_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_nat_natting_table_list_by_id_get_list(const std::string &name, const std::vector<NattingTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace rule by ID
@@ -1645,9 +1290,6 @@ replace_nat_rule_by_id(const std::string &name, const RuleJsonObject &value) {
   nat->replaceRule(value);
 }
 
-
-
-
 /**
 * @brief   Replace dnat by ID
 *
@@ -1666,9 +1308,6 @@ replace_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &v
 
   rule->replaceDnat(value);
 }
-
-
-
 
 /**
 * @brief   Replace entry by ID
@@ -1691,9 +1330,6 @@ replace_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id, c
   dnat->replaceEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace entry by ID
 *
@@ -1709,14 +1345,6 @@ void
 replace_nat_rule_dnat_entry_list_by_id(const std::string &name, const std::vector<RuleDnatEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleDnatEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace masquerade by ID
@@ -1737,9 +1365,6 @@ replace_nat_rule_masquerade_by_id(const std::string &name, const RuleMasqueradeJ
   rule->replaceMasquerade(value);
 }
 
-
-
-
 /**
 * @brief   Replace port-forwarding by ID
 *
@@ -1758,9 +1383,6 @@ replace_nat_rule_port_forwarding_by_id(const std::string &name, const RulePortFo
 
   rule->replacePortForwarding(value);
 }
-
-
-
 
 /**
 * @brief   Replace entry by ID
@@ -1783,9 +1405,6 @@ replace_nat_rule_port_forwarding_entry_by_id(const std::string &name, const uint
   portForwarding->replaceEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace entry by ID
 *
@@ -1801,14 +1420,6 @@ void
 replace_nat_rule_port_forwarding_entry_list_by_id(const std::string &name, const std::vector<RulePortForwardingEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name, const std::vector<RulePortForwardingEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace snat by ID
@@ -1828,9 +1439,6 @@ replace_nat_rule_snat_by_id(const std::string &name, const RuleSnatJsonObject &v
 
   rule->replaceSnat(value);
 }
-
-
-
 
 /**
 * @brief   Replace entry by ID
@@ -1853,9 +1461,6 @@ replace_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id, c
   snat->replaceEntry(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace entry by ID
 *
@@ -1871,14 +1476,6 @@ void
 replace_nat_rule_snat_entry_list_by_id(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_nat_rule_snat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update nat by ID
@@ -1898,9 +1495,6 @@ update_nat_by_id(const std::string &name, const NatJsonObject &value) {
   nat->update(value);
 }
 
-
-
-
 /**
 * @brief   Update nat by ID
 *
@@ -1915,14 +1509,6 @@ void
 update_nat_list_by_id(const std::vector<NatJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_nat_list_by_id_get_list(const std::vector<NatJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update natting-table by ID
@@ -1948,9 +1534,6 @@ update_nat_natting_table_by_id(const std::string &name, const std::string &inter
   nattingTable->update(value);
 }
 
-
-
-
 /**
 * @brief   Update external-ip by ID
 *
@@ -1974,9 +1557,6 @@ update_nat_natting_table_external_ip_by_id(const std::string &name, const std::s
 
   nattingTable->setExternalIp(value);
 }
-
-
-
 
 /**
 * @brief   Update external-port by ID
@@ -2002,9 +1582,6 @@ update_nat_natting_table_external_port_by_id(const std::string &name, const std:
   nattingTable->setExternalPort(value);
 }
 
-
-
-
 /**
 * @brief   Update natting-table by ID
 *
@@ -2020,14 +1597,6 @@ void
 update_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_nat_natting_table_list_by_id_get_list(const std::string &name, const std::vector<NattingTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update originating-rule by ID
@@ -2053,9 +1622,6 @@ update_nat_natting_table_originating_rule_by_id(const std::string &name, const s
   nattingTable->setOriginatingRule(value);
 }
 
-
-
-
 /**
 * @brief   Update rule by ID
 *
@@ -2074,9 +1640,6 @@ update_nat_rule_by_id(const std::string &name, const RuleJsonObject &value) {
 
   rule->update(value);
 }
-
-
-
 
 /**
 * @brief   Update dnat by ID
@@ -2097,9 +1660,6 @@ update_nat_rule_dnat_by_id(const std::string &name, const RuleDnatJsonObject &va
 
   dnat->update(value);
 }
-
-
-
 
 /**
 * @brief   Update entry by ID
@@ -2123,9 +1683,6 @@ update_nat_rule_dnat_entry_by_id(const std::string &name, const uint32_t &id, co
   entry->update(value);
 }
 
-
-
-
 /**
 * @brief   Update external-ip by ID
 *
@@ -2147,9 +1704,6 @@ update_nat_rule_dnat_entry_external_ip_by_id(const std::string &name, const uint
 
   entry->setExternalIp(value);
 }
-
-
-
 
 /**
 * @brief   Update internal-ip by ID
@@ -2173,9 +1727,6 @@ update_nat_rule_dnat_entry_internal_ip_by_id(const std::string &name, const uint
   entry->setInternalIp(value);
 }
 
-
-
-
 /**
 * @brief   Update entry by ID
 *
@@ -2191,14 +1742,6 @@ void
 update_nat_rule_dnat_entry_list_by_id(const std::string &name, const std::vector<RuleDnatEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleDnatEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update masquerade by ID
@@ -2220,9 +1763,6 @@ update_nat_rule_masquerade_by_id(const std::string &name, const RuleMasqueradeJs
   masquerade->update(value);
 }
 
-
-
-
 /**
 * @brief   Update enabled by ID
 *
@@ -2243,9 +1783,6 @@ update_nat_rule_masquerade_enabled_by_id(const std::string &name, const bool &va
   masquerade->setEnabled(value);
 }
 
-
-
-
 /**
 * @brief   Update port-forwarding by ID
 *
@@ -2265,9 +1802,6 @@ update_nat_rule_port_forwarding_by_id(const std::string &name, const RulePortFor
 
   portForwarding->update(value);
 }
-
-
-
 
 /**
 * @brief   Update entry by ID
@@ -2291,9 +1825,6 @@ update_nat_rule_port_forwarding_entry_by_id(const std::string &name, const uint3
   entry->update(value);
 }
 
-
-
-
 /**
 * @brief   Update external-ip by ID
 *
@@ -2315,9 +1846,6 @@ update_nat_rule_port_forwarding_entry_external_ip_by_id(const std::string &name,
 
   entry->setExternalIp(value);
 }
-
-
-
 
 /**
 * @brief   Update external-port by ID
@@ -2341,9 +1869,6 @@ update_nat_rule_port_forwarding_entry_external_port_by_id(const std::string &nam
   entry->setExternalPort(value);
 }
 
-
-
-
 /**
 * @brief   Update internal-ip by ID
 *
@@ -2365,9 +1890,6 @@ update_nat_rule_port_forwarding_entry_internal_ip_by_id(const std::string &name,
 
   entry->setInternalIp(value);
 }
-
-
-
 
 /**
 * @brief   Update internal-port by ID
@@ -2391,9 +1913,6 @@ update_nat_rule_port_forwarding_entry_internal_port_by_id(const std::string &nam
   entry->setInternalPort(value);
 }
 
-
-
-
 /**
 * @brief   Update entry by ID
 *
@@ -2409,14 +1928,6 @@ void
 update_nat_rule_port_forwarding_entry_list_by_id(const std::string &name, const std::vector<RulePortForwardingEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name, const std::vector<RulePortForwardingEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update proto by ID
@@ -2440,9 +1951,6 @@ update_nat_rule_port_forwarding_entry_proto_by_id(const std::string &name, const
   entry->setProto(value);
 }
 
-
-
-
 /**
 * @brief   Update snat by ID
 *
@@ -2462,9 +1970,6 @@ update_nat_rule_snat_by_id(const std::string &name, const RuleSnatJsonObject &va
 
   snat->update(value);
 }
-
-
-
 
 /**
 * @brief   Update entry by ID
@@ -2488,9 +1993,6 @@ update_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id, co
   entry->update(value);
 }
 
-
-
-
 /**
 * @brief   Update external-ip by ID
 *
@@ -2512,9 +2014,6 @@ update_nat_rule_snat_entry_external_ip_by_id(const std::string &name, const uint
 
   entry->setExternalIp(value);
 }
-
-
-
 
 /**
 * @brief   Update internal-net by ID
@@ -2538,9 +2037,6 @@ update_nat_rule_snat_entry_internal_net_by_id(const std::string &name, const uin
   entry->setInternalNet(value);
 }
 
-
-
-
 /**
 * @brief   Update entry by ID
 *
@@ -2558,14 +2054,84 @@ update_nat_rule_snat_entry_list_by_id(const std::string &name, const std::vector
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_nat_rule_snat_entry_list_by_id_get_list(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_natting_table_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&nat = get_cube(name);
+
+  auto &&nattingTable = nat->getNattingTableList();
+  for(auto &i : nattingTable) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["internalSrc"] = i->getInternalSrc();
+    keys["internalDst"] = i->getInternalDst();
+    keys["internalSport"] = std::to_string(i->getInternalSport());
+    keys["internalDport"] = std::to_string(i->getInternalDport());
+    keys["proto"] = i->getProto();
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&nat = get_cube(name);
+  auto &&rule = nat->getRule();
+  auto &&dnat = rule->getDnat();
+
+  auto &&entry = dnat->getEntryList();
+  for(auto &i : entry) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&nat = get_cube(name);
+  auto &&rule = nat->getRule();
+  auto &&portForwarding = rule->getPortForwarding();
+
+  auto &&entry = portForwarding->getEntryList();
+  for(auto &i : entry) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_snat_entry_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&nat = get_cube(name);
+  auto &&rule = nat->getRule();
+  auto &&snat = rule->getSnat();
+
+  auto &&entry = snat->getEntryList();
+  for(auto &i : entry) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
 
 
 }
+
 }
 }
 }

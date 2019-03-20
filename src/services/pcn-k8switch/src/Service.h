@@ -52,7 +52,6 @@ class Service : public ServiceInterface {
   Service(K8switch &parent, const ServiceJsonObject &conf);
   virtual ~Service();
 
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceJsonObject &conf) override;
   ServiceJsonObject toJsonObject() override;

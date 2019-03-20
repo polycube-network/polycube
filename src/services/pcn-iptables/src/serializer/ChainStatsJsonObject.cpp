@@ -146,59 +146,6 @@ void ChainStatsJsonObject::unsetDescription() {
 }
 
 
-nlohmann::json ChainStatsJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "key";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE(Rule Identifier)POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pkts"]["name"] = "pkts";
-  val["pkts"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pkts"]["simpletype"] = "integer";
-  val["pkts"]["description"] = R"POLYCUBE(Number of packets matching the rule)POLYCUBE";
-  val["pkts"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["bytes"]["name"] = "bytes";
-  val["bytes"]["type"] = "leaf"; // Suppose that type is leaf
-  val["bytes"]["simpletype"] = "integer";
-  val["bytes"]["description"] = R"POLYCUBE(Number of bytes matching the rule)POLYCUBE";
-  val["bytes"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["description"]["name"] = "description";
-  val["description"]["type"] = "leaf"; // Suppose that type is leaf
-  val["description"]["simpletype"] = "string";
-  val["description"]["description"] = R"POLYCUBE(Description)POLYCUBE";
-  val["description"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainStatsJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

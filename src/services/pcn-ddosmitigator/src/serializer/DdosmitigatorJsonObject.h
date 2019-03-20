@@ -43,19 +43,8 @@ public:
   DdosmitigatorJsonObject();
   DdosmitigatorJsonObject(const nlohmann::json &json);
   ~DdosmitigatorJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// DdosmitigatorJsonObject members
 
   /// <summary>
   /// Name of the ddosmitigator service

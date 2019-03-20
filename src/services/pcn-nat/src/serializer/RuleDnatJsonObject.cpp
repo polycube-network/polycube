@@ -80,49 +80,6 @@ void RuleDnatJsonObject::unsetEntry() {
 }
 
 
-nlohmann::json RuleDnatJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RuleDnatJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "leaf"; // Suppose that type is leaf
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(List of Destination NAT rules)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RuleDnatJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(List of Destination NAT rules)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> RuleDnatJsonObject::helpActions() {
-  std::vector<std::string> val;
-  val.push_back("append");
-  return val;
-}
-
 }
 }
 }

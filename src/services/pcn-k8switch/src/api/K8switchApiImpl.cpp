@@ -109,9 +109,6 @@ create_k8switch_fwd_table_by_id(const std::string &name, const std::string &addr
   k8switch->addFwdTable(address, value);
 }
 
-
-
-
 /**
 * @brief   Create fwd-table by ID
 *
@@ -128,21 +125,6 @@ create_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<
   auto k8switch = get_cube(name);
   k8switch->addFwdTableList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&fwdTable = k8switch->addFwdTableList(value);
-  for(auto &i : fwdTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create ports by ID
@@ -163,9 +145,6 @@ create_k8switch_ports_by_id(const std::string &name, const std::string &portsNam
   k8switch->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -182,21 +161,6 @@ create_k8switch_ports_list_by_id(const std::string &name, const std::vector<Port
   auto k8switch = get_cube(name);
   k8switch->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&ports = k8switch->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create backend by ID
@@ -222,9 +186,6 @@ create_k8switch_service_backend_by_id(const std::string &name, const std::string
   service->addBackend(ip, port, value);
 }
 
-
-
-
 /**
 * @brief   Create backend by ID
 *
@@ -245,22 +206,6 @@ create_k8switch_service_backend_list_by_id(const std::string &name, const std::s
   auto service = k8switch->getService(vip, vport, proto);
   service->addBackendList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-  auto &&service = k8switch->getService(vip, vport, proto);
-
-  auto &&backend = service->addBackendList(value);
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create service by ID
@@ -283,9 +228,6 @@ create_k8switch_service_by_id(const std::string &name, const std::string &vip, c
   k8switch->addService(vip, vport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Create service by ID
 *
@@ -302,21 +244,6 @@ create_k8switch_service_list_by_id(const std::string &name, const std::vector<Se
   auto k8switch = get_cube(name);
   k8switch->addServiceList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&service = k8switch->addServiceList(value);
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete fwd-table by ID
@@ -336,9 +263,6 @@ delete_k8switch_fwd_table_by_id(const std::string &name, const std::string &addr
   k8switch->delFwdTable(address);
 }
 
-
-
-
 /**
 * @brief   Delete fwd-table by ID
 *
@@ -354,21 +278,6 @@ delete_k8switch_fwd_table_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   k8switch->delFwdTableList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&fwdTable = k8switch->delFwdTableList();
-  for(auto &i : fwdTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -388,9 +297,6 @@ delete_k8switch_ports_by_id(const std::string &name, const std::string &portsNam
   k8switch->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -406,21 +312,6 @@ delete_k8switch_ports_list_by_id(const std::string &name) {
   auto k8switch = get_cube(name);
   k8switch->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&ports = k8switch->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete backend by ID
@@ -445,9 +336,6 @@ delete_k8switch_service_backend_by_id(const std::string &name, const std::string
   service->delBackend(ip, port);
 }
 
-
-
-
 /**
 * @brief   Delete backend by ID
 *
@@ -467,22 +355,6 @@ delete_k8switch_service_backend_list_by_id(const std::string &name, const std::s
   auto service = k8switch->getService(vip, vport, proto);
   service->delBackendList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-  auto &&service = k8switch->getService(vip, vport, proto);
-
-  auto &&backend = service->delBackendList();
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete service by ID
@@ -504,9 +376,6 @@ delete_k8switch_service_by_id(const std::string &name, const std::string &vip, c
   k8switch->delService(vip, vport, proto);
 }
 
-
-
-
 /**
 * @brief   Delete service by ID
 *
@@ -523,21 +392,6 @@ delete_k8switch_service_list_by_id(const std::string &name) {
   k8switch->delServiceList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_k8switch_service_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&service = k8switch->delServiceList();
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Read k8switch by ID
 *
@@ -553,9 +407,6 @@ read_k8switch_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read client-subnet by ID
@@ -574,9 +425,6 @@ read_k8switch_client_subnet_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read cluster-ip-subnet by ID
 *
@@ -593,9 +441,6 @@ read_k8switch_cluster_ip_subnet_by_id(const std::string &name) {
   return k8switch->getClusterIpSubnet();
 
 }
-
-
-
 
 /**
 * @brief   Read fwd-table by ID
@@ -614,9 +459,6 @@ read_k8switch_fwd_table_by_id(const std::string &name, const std::string &addres
   return k8switch->getFwdTable(address)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read fwd-table by ID
@@ -638,23 +480,6 @@ read_k8switch_fwd_table_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&fwdTable = k8switch->getFwdTableList();
-  for(auto &i : fwdTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read mac by ID
 *
@@ -673,9 +498,6 @@ read_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &ad
   return fwdTable->getMac();
 
 }
-
-
-
 
 /**
 * @brief   Read port by ID
@@ -696,9 +518,6 @@ read_k8switch_fwd_table_port_by_id(const std::string &name, const std::string &a
 
 }
 
-
-
-
 /**
 * @brief   Read ports by ID
 *
@@ -716,9 +535,6 @@ read_k8switch_ports_by_id(const std::string &name, const std::string &portsName)
   return k8switch->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -740,23 +556,6 @@ read_k8switch_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&ports = k8switch->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read type by ID
 *
@@ -775,9 +574,6 @@ read_k8switch_ports_type_by_id(const std::string &name, const std::string &ports
   return ports->getType();
 
 }
-
-
-
 
 /**
 * @brief   Read backend by ID
@@ -801,9 +597,6 @@ read_k8switch_service_backend_by_id(const std::string &name, const std::string &
   return service->getBackend(ip, port)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read backend by ID
@@ -829,24 +622,6 @@ read_k8switch_service_backend_list_by_id(const std::string &name, const std::str
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-  auto &&service = k8switch->getService(vip, vport, proto);
-
-  auto &&backend = service->getBackendList();
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read name by ID
 *
@@ -870,9 +645,6 @@ read_k8switch_service_backend_name_by_id(const std::string &name, const std::str
   return backend->getName();
 
 }
-
-
-
 
 /**
 * @brief   Read weight by ID
@@ -898,9 +670,6 @@ read_k8switch_service_backend_weight_by_id(const std::string &name, const std::s
 
 }
 
-
-
-
 /**
 * @brief   Read service by ID
 *
@@ -921,9 +690,6 @@ read_k8switch_service_by_id(const std::string &name, const std::string &vip, con
 
 }
 
-
-
-
 /**
 * @brief   Read service by ID
 *
@@ -943,23 +709,6 @@ read_k8switch_service_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&k8switch = get_cube(name);
-
-  auto &&service = k8switch->getServiceList();
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read name by ID
@@ -982,9 +731,6 @@ read_k8switch_service_name_by_id(const std::string &name, const std::string &vip
 
 }
 
-
-
-
 /**
 * @brief   Read virtual-client-subnet by ID
 *
@@ -1001,9 +747,6 @@ read_k8switch_virtual_client_subnet_by_id(const std::string &name) {
   return k8switch->getVirtualClientSubnet();
 
 }
-
-
-
 
 /**
 * @brief   Replace fwd-table by ID
@@ -1024,9 +767,6 @@ replace_k8switch_fwd_table_by_id(const std::string &name, const std::string &add
   k8switch->replaceFwdTable(address, value);
 }
 
-
-
-
 /**
 * @brief   Replace fwd-table by ID
 *
@@ -1042,14 +782,6 @@ void
 replace_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace ports by ID
@@ -1070,9 +802,6 @@ replace_k8switch_ports_by_id(const std::string &name, const std::string &portsNa
   k8switch->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -1088,14 +817,6 @@ void
 replace_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace backend by ID
@@ -1121,9 +842,6 @@ replace_k8switch_service_backend_by_id(const std::string &name, const std::strin
   service->replaceBackend(ip, port, value);
 }
 
-
-
-
 /**
 * @brief   Replace backend by ID
 *
@@ -1142,14 +860,6 @@ void
 replace_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace service by ID
@@ -1172,9 +882,6 @@ replace_k8switch_service_by_id(const std::string &name, const std::string &vip, 
   k8switch->replaceService(vip, vport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Replace service by ID
 *
@@ -1190,14 +897,6 @@ void
 replace_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update k8switch by ID
@@ -1217,9 +916,6 @@ update_k8switch_by_id(const std::string &name, const K8switchJsonObject &value) 
   k8switch->update(value);
 }
 
-
-
-
 /**
 * @brief   Update client-subnet by ID
 *
@@ -1238,9 +934,6 @@ update_k8switch_client_subnet_by_id(const std::string &name, const std::string &
   k8switch->setClientSubnet(value);
 }
 
-
-
-
 /**
 * @brief   Update cluster-ip-subnet by ID
 *
@@ -1258,9 +951,6 @@ update_k8switch_cluster_ip_subnet_by_id(const std::string &name, const std::stri
 
   k8switch->setClusterIpSubnet(value);
 }
-
-
-
 
 /**
 * @brief   Update fwd-table by ID
@@ -1282,9 +972,6 @@ update_k8switch_fwd_table_by_id(const std::string &name, const std::string &addr
   fwdTable->update(value);
 }
 
-
-
-
 /**
 * @brief   Update fwd-table by ID
 *
@@ -1300,14 +987,6 @@ void
 update_k8switch_fwd_table_list_by_id(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_fwd_table_list_by_id_get_list(const std::string &name, const std::vector<FwdTableJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update mac by ID
@@ -1329,9 +1008,6 @@ update_k8switch_fwd_table_mac_by_id(const std::string &name, const std::string &
   fwdTable->setMac(value);
 }
 
-
-
-
 /**
 * @brief   Update port by ID
 *
@@ -1352,9 +1028,6 @@ update_k8switch_fwd_table_port_by_id(const std::string &name, const std::string 
   fwdTable->setPort(value);
 }
 
-
-
-
 /**
 * @brief   Update k8switch by ID
 *
@@ -1369,14 +1042,6 @@ void
 update_k8switch_list_by_id(const std::vector<K8switchJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_list_by_id_get_list(const std::vector<K8switchJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -1398,9 +1063,6 @@ update_k8switch_ports_by_id(const std::string &name, const std::string &portsNam
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -1416,14 +1078,6 @@ void
 update_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update type by ID
@@ -1444,9 +1098,6 @@ update_k8switch_ports_type_by_id(const std::string &name, const std::string &por
 
   ports->setType(value);
 }
-
-
-
 
 /**
 * @brief   Update backend by ID
@@ -1473,9 +1124,6 @@ update_k8switch_service_backend_by_id(const std::string &name, const std::string
   backend->update(value);
 }
 
-
-
-
 /**
 * @brief   Update backend by ID
 *
@@ -1494,14 +1142,6 @@ void
 update_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update name by ID
@@ -1528,9 +1168,6 @@ update_k8switch_service_backend_name_by_id(const std::string &name, const std::s
   backend->setName(value);
 }
 
-
-
-
 /**
 * @brief   Update weight by ID
 *
@@ -1556,9 +1193,6 @@ update_k8switch_service_backend_weight_by_id(const std::string &name, const std:
   backend->setWeight(value);
 }
 
-
-
-
 /**
 * @brief   Update service by ID
 *
@@ -1581,9 +1215,6 @@ update_k8switch_service_by_id(const std::string &name, const std::string &vip, c
   service->update(value);
 }
 
-
-
-
 /**
 * @brief   Update service by ID
 *
@@ -1599,14 +1230,6 @@ void
 update_k8switch_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_k8switch_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update name by ID
@@ -1630,9 +1253,6 @@ update_k8switch_service_name_by_id(const std::string &name, const std::string &v
   service->setName(value);
 }
 
-
-
-
 /**
 * @brief   Update virtual-client-subnet by ID
 *
@@ -1653,8 +1273,77 @@ update_k8switch_virtual_client_subnet_by_id(const std::string &name, const std::
 
 
 
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_fwd_table_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&k8switch = get_cube(name);
+
+  auto &&fwdTable = k8switch->getFwdTableList();
+  for(auto &i : fwdTable) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["address"] = i->getAddress();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&k8switch = get_cube(name);
+
+  auto &&ports = k8switch->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&k8switch = get_cube(name);
+  auto &&service = k8switch->getService(vip, vport, proto);
+
+  auto &&backend = service->getBackendList();
+  for(auto &i : backend) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["ip"] = i->getIp();
+    keys["port"] = std::to_string(i->getPort());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8switch_service_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&k8switch = get_cube(name);
+
+  auto &&service = k8switch->getServiceList();
+  for(auto &i : service) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["vip"] = i->getVip();
+    keys["vport"] = std::to_string(i->getVport());
+    keys["proto"] = ServiceJsonObject::ServiceProtoEnum_to_string(i->getProto());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
 
 }
+
 }
 }
 }

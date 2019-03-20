@@ -65,63 +65,6 @@ bool PortsJsonObject::nameIsSet() const {
 
 
 
-nlohmann::json PortsJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["name"]["name"] = "name";
-  val["name"]["type"] = "key";
-  val["name"]["simpletype"] = "string";
-  val["name"]["description"] = R"POLYCUBE(Port Name)POLYCUBE";
-  val["name"]["example"] = R"POLYCUBE(port1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json PortsJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["uuid"]["name"] = "uuid";
-  val["uuid"]["type"] = "leaf"; // Suppose that type is leaf
-  val["uuid"]["simpletype"] = "string";
-  val["uuid"]["description"] = R"POLYCUBE(UUID of the port)POLYCUBE";
-  val["uuid"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["status"]["name"] = "status";
-  val["status"]["type"] = "leaf"; // Suppose that type is leaf
-  val["status"]["simpletype"] = "string";
-  val["status"]["description"] = R"POLYCUBE(Status of the port (UP or DOWN))POLYCUBE";
-  val["status"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["peer"]["name"] = "peer";
-  val["peer"]["type"] = "leaf"; // Suppose that type is leaf
-  val["peer"]["simpletype"] = "string";
-  val["peer"]["description"] = R"POLYCUBE(Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2'))POLYCUBE";
-  val["peer"]["example"] = R"POLYCUBE(r0:port1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json PortsJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["peer"]["name"] = "peer";
-  val["peer"]["simpletype"] = "string";
-  val["peer"]["description"] = R"POLYCUBE(Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2'))POLYCUBE";
-  val["peer"]["example"] = R"POLYCUBE(r0:port1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json PortsJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> PortsJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

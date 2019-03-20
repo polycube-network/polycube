@@ -50,19 +50,8 @@ public:
   ChainAppendInputJsonObject();
   ChainAppendInputJsonObject(const nlohmann::json &json);
   ~ChainAppendInputJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainAppendInputJsonObject members
 
   /// <summary>
   /// Name of the interface via which the packet is received

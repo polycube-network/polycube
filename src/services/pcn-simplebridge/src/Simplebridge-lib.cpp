@@ -16,7 +16,7 @@
 #include "../datamodel/simplebridge.h" // generated from datamodel
 
 #define SERVICE_PYANG_GIT ""
-#define SERVICE_SWAGGER_CODEGEN_GIT "pr/implement_base_in_framework/83dac4e"
+#define SERVICE_SWAGGER_CODEGEN_GIT "implement_help_in_framework/be2c60c"
 
 #include <polycube/services/shared_library.h>
 

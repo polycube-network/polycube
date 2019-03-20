@@ -38,7 +38,6 @@ class BlacklistSrc : public BlacklistSrcInterface {
   static void removeEntry(Ddosmitigator &parent, const std::string &ip);
   static std::vector<std::shared_ptr<BlacklistSrc>> get(Ddosmitigator &parent);
   static void remove(Ddosmitigator &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const BlacklistSrcJsonObject &conf) override;
   BlacklistSrcJsonObject toJsonObject() override;

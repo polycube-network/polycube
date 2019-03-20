@@ -92,49 +92,6 @@ void BlacklistSrcJsonObject::unsetDropPkts() {
 }
 
 
-nlohmann::json BlacklistSrcJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ip"]["name"] = "ip";
-  val["ip"]["type"] = "key";
-  val["ip"]["simpletype"] = "string";
-  val["ip"]["description"] = R"POLYCUBE(Source IP Address)POLYCUBE";
-  val["ip"]["example"] = R"POLYCUBE(10.0.0.1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json BlacklistSrcJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["drop-pkts"]["name"] = "drop-pkts";
-  val["drop-pkts"]["type"] = "leaf"; // Suppose that type is leaf
-  val["drop-pkts"]["simpletype"] = "integer";
-  val["drop-pkts"]["description"] = R"POLYCUBE(Dropped Packets)POLYCUBE";
-  val["drop-pkts"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json BlacklistSrcJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json BlacklistSrcJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> BlacklistSrcJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

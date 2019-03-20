@@ -45,19 +45,8 @@ public:
   TransparenthelloworldJsonObject();
   TransparenthelloworldJsonObject(const nlohmann::json &json);
   ~TransparenthelloworldJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// TransparenthelloworldJsonObject members
 
   /// <summary>
   /// Name of the transparenthelloworld service

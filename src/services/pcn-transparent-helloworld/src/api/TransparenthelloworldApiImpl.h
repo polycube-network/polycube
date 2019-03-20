@@ -43,12 +43,15 @@ namespace TransparenthelloworldApiImpl {
   TransparenthelloworldEgressActionEnum read_transparenthelloworld_egress_action_by_id(const std::string &name);
   TransparenthelloworldIngressActionEnum read_transparenthelloworld_ingress_action_by_id(const std::string &name);
   std::vector<TransparenthelloworldJsonObject> read_transparenthelloworld_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_transparenthelloworld_list_by_id_get_list();
   void replace_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &value);
   void update_transparenthelloworld_by_id(const std::string &name, const TransparenthelloworldJsonObject &value);
   void update_transparenthelloworld_egress_action_by_id(const std::string &name, const TransparenthelloworldEgressActionEnum &value);
   void update_transparenthelloworld_ingress_action_by_id(const std::string &name, const TransparenthelloworldIngressActionEnum &value);
   void update_transparenthelloworld_list_by_id(const std::vector<TransparenthelloworldJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_transparenthelloworld_list_by_id_get_list();
+
 }
 }
 }

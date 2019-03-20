@@ -46,11 +46,9 @@ namespace K8sfilterApiImpl {
   void delete_k8sfilter_ports_list_by_id(const std::string &name);
   K8sfilterJsonObject read_k8sfilter_by_id(const std::string &name);
   std::vector<K8sfilterJsonObject> read_k8sfilter_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_list_by_id_get_list();
   std::string read_k8sfilter_nodeport_range_by_id(const std::string &name);
   PortsJsonObject read_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_k8sfilter_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name);
   PortsTypeEnum read_k8sfilter_ports_type_by_id(const std::string &name, const std::string &portsName);
   void replace_k8sfilter_by_id(const std::string &name, const K8sfilterJsonObject &value);
   void replace_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
@@ -60,6 +58,11 @@ namespace K8sfilterApiImpl {
   void update_k8sfilter_nodeport_range_by_id(const std::string &name, const std::string &value);
   void update_k8sfilter_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_k8sfilter_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_k8sfilter_ports_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

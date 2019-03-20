@@ -45,7 +45,6 @@ class ArpEntry : public ArpEntryInterface {
   static std::vector<std::shared_ptr<ArpEntry>> get(Router &parent);
   static void remove(Router &parent);
   std::shared_ptr<spdlog::logger> logger();
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   void update(const ArpEntryJsonObject &conf) override;
   ArpEntryJsonObject toJsonObject() override;
 

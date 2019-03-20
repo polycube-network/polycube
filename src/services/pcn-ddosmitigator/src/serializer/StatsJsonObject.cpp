@@ -94,49 +94,6 @@ void StatsJsonObject::unsetPkts() {
 }
 
 
-nlohmann::json StatsJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json StatsJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pps"]["name"] = "pps";
-  val["pps"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pps"]["simpletype"] = "integer";
-  val["pps"]["description"] = R"POLYCUBE(Dropped Packets/s)POLYCUBE";
-  val["pps"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["pkts"]["name"] = "pkts";
-  val["pkts"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pkts"]["simpletype"] = "integer";
-  val["pkts"]["description"] = R"POLYCUBE(Total Dropped Packets)POLYCUBE";
-  val["pkts"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json StatsJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json StatsJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> StatsJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

@@ -42,19 +42,8 @@ public:
   NatJsonObject();
   NatJsonObject(const nlohmann::json &json);
   ~NatJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// NatJsonObject members
 
   /// <summary>
   /// Name of the nat service

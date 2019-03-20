@@ -15,8 +15,6 @@
 
 #include "../K8switch.h"
 
-
-
 std::shared_ptr<Ports> K8switch::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

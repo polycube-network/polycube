@@ -15,8 +15,6 @@
 
 #include "../Rule.h"
 
-
-
 std::shared_ptr<RuleSnat> Rule::getSnat(){
   return RuleSnat::getEntry(*this);
 }

@@ -38,7 +38,6 @@ class Frontend : public FrontendInterface {
   static void create(Lbdsr &parent, const FrontendJsonObject &conf);
   static std::shared_ptr<Frontend> getEntry(Lbdsr &parent);
   static void removeEntry(Lbdsr &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const FrontendJsonObject &conf) override;
   FrontendJsonObject toJsonObject() override;

@@ -41,7 +41,6 @@ class BackendPool : public BackendPoolInterface {
   static void removeEntry(Backend &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<BackendPool>> get(Backend &parent);
   static void remove(Backend &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const BackendPoolJsonObject &conf) override;
   BackendPoolJsonObject toJsonObject() override;

@@ -38,19 +38,8 @@ public:
   BackendPoolJsonObject();
   BackendPoolJsonObject(const nlohmann::json &json);
   ~BackendPoolJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// BackendPoolJsonObject members
 
   /// <summary>
   /// id

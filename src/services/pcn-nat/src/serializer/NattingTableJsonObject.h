@@ -41,19 +41,8 @@ public:
   NattingTableJsonObject();
   NattingTableJsonObject(const nlohmann::json &json);
   ~NattingTableJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// NattingTableJsonObject members
 
   /// <summary>
   /// Source IP address

@@ -15,16 +15,6 @@
 
 #include "../Ports.h"
 
-
-nlohmann::fifo_map<std::string, std::string>  Ports::getKeys() {
-  nlohmann::fifo_map<std::string, std::string>  r;
-
-  r["name"] = getName();
-
-  return r;
-}
-
-
 std::shared_ptr<PortsSecondaryip> Ports::getSecondaryip(const std::string &ip, const std::string &netmask){
   return PortsSecondaryip::getEntry(*this, ip, netmask);
 }

@@ -15,8 +15,6 @@
 
 #include "../Lbdsr.h"
 
-
-
 std::shared_ptr<Ports> Lbdsr::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

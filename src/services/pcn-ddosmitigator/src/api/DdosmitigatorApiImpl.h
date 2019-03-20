@@ -53,14 +53,11 @@ namespace DdosmitigatorApiImpl {
   BlacklistDstJsonObject read_ddosmitigator_blacklist_dst_by_id(const std::string &name, const std::string &ip);
   uint64_t read_ddosmitigator_blacklist_dst_drop_pkts_by_id(const std::string &name, const std::string &ip);
   std::vector<BlacklistDstJsonObject> read_ddosmitigator_blacklist_dst_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name);
   BlacklistSrcJsonObject read_ddosmitigator_blacklist_src_by_id(const std::string &name, const std::string &ip);
   uint64_t read_ddosmitigator_blacklist_src_drop_pkts_by_id(const std::string &name, const std::string &ip);
   std::vector<BlacklistSrcJsonObject> read_ddosmitigator_blacklist_src_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name);
   DdosmitigatorJsonObject read_ddosmitigator_by_id(const std::string &name);
   std::vector<DdosmitigatorJsonObject> read_ddosmitigator_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_list_by_id_get_list();
   StatsJsonObject read_ddosmitigator_stats_by_id(const std::string &name);
   uint64_t read_ddosmitigator_stats_pkts_by_id(const std::string &name);
   uint64_t read_ddosmitigator_stats_pps_by_id(const std::string &name);
@@ -75,6 +72,12 @@ namespace DdosmitigatorApiImpl {
   void update_ddosmitigator_blacklist_src_list_by_id(const std::string &name, const std::vector<BlacklistSrcJsonObject> &value);
   void update_ddosmitigator_by_id(const std::string &name, const DdosmitigatorJsonObject &value);
   void update_ddosmitigator_list_by_id(const std::vector<DdosmitigatorJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_dst_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_blacklist_src_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_ddosmitigator_list_by_id_get_list();
+
 }
 }
 }

@@ -94,16 +94,10 @@ Response update_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *k
 Response update_lbrp_src_ip_rewrite_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response lbrp_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_service_backend_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_service_backend_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_service_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_service_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response lbrp_src_ip_rewrite_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response lbrp_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response lbrp_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_backend_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response lbrp_service_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

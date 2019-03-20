@@ -72,7 +72,6 @@ namespace IptablesApiImpl {
   ChainJsonObject read_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName);
   ActionEnum read_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &chainName);
   std::vector<ChainJsonObject> read_iptables_chain_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_list_by_id_get_list(const std::string &name);
   ActionEnum read_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   ChainRuleJsonObject read_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   ConntrackstatusEnum read_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
@@ -81,7 +80,6 @@ namespace IptablesApiImpl {
   std::string read_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::string read_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::vector<ChainRuleJsonObject> read_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName);
   std::string read_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   uint16_t read_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::string read_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
@@ -90,19 +88,15 @@ namespace IptablesApiImpl {
   uint64_t read_iptables_chain_stats_bytes_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::string read_iptables_chain_stats_description_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::vector<ChainStatsJsonObject> read_iptables_chain_stats_list_by_id(const std::string &name, const ChainNameEnum &chainName);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName);
   uint64_t read_iptables_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   IptablesConntrackEnum read_iptables_conntrack_by_id(const std::string &name);
   IptablesHorusEnum read_iptables_horus_by_id(const std::string &name);
   bool read_iptables_interactive_by_id(const std::string &name);
   std::vector<IptablesJsonObject> read_iptables_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_list_by_id_get_list();
   PortsJsonObject read_iptables_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_iptables_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name);
   SessionTableJsonObject read_iptables_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   std::vector<SessionTableJsonObject> read_iptables_session_table_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name);
   std::string read_iptables_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   void replace_iptables_by_id(const std::string &name, const IptablesJsonObject &value);
   void replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value);
@@ -133,6 +127,15 @@ namespace IptablesApiImpl {
   void update_iptables_list_by_id(const std::vector<IptablesJsonObject> &value);
   void update_iptables_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

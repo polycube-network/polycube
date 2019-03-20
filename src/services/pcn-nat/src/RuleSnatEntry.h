@@ -37,7 +37,6 @@ class RuleSnatEntry : public RuleSnatEntryInterface {
   static void removeEntry(RuleSnat &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<RuleSnatEntry>> get(RuleSnat &parent);
   static void remove(RuleSnat &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleSnatEntryJsonObject &conf) override;
   RuleSnatEntryJsonObject toJsonObject() override;

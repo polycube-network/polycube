@@ -182,16 +182,18 @@ std::string Firewall::getEgressPort() {
 void Firewall::setEgressPort(const std::string &value) {
   // This method sets the egressPort value.
   auto port = getPorts(value);
-//  if (!port->getPeer().empty() && port->getPeer() == ":host" && transparent) {
-//    logger()->info(
-//        "Switching to Host mode. The EGRESS chain will be disabled.");
-//    transparent = false;
-//  }
-//  if (!port->getPeer().empty() && port->getPeer() == ":host" && !transparent) {
-//    logger()->info(
-//        "Switching to Transparent mode. The EGRESS chain will be enabled.");
-//    transparent = true;
-//  }
+  // if (!port->getPeer().empty() && port->getPeer() == ":host" && transparent)
+  // {
+  //   logger()->info(
+  //       "Switching to Host mode. The EGRESS chain will be disabled.");
+  //   transparent = false;
+  // }
+  // if (!port->getPeer().empty() && port->getPeer() == ":host" && !transparent)
+  // {
+  //   logger()->info(
+  //       "Switching to Transparent mode. The EGRESS chain will be enabled.");
+  //   transparent = true;
+  // }
 
   egressPort = port->getName();
   reload_all();
