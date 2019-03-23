@@ -82,6 +82,7 @@ PACKAGES+=" autoconf libtool m4 automake"
 PACKAGES+=" libssl-dev" # needed for certificate based security
 PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
 PACKAGES+=" kmod" # needed for pcn-iptables, when using lsmod to unload conntrack if not needed
+PACKAGES+=" jq" # needed for polycubectl bash autocompletion
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary

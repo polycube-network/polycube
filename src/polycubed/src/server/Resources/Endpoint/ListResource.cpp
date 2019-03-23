@@ -56,8 +56,18 @@ ListResource::ListResource(const std::string &name,
   }
   auto router = core_->get_rest_server()->get_router();
   router->get(multiple_endpoint_, bind(&ListResource::get_multiple, this));
+
+  // endpoints for help
   router->options(multiple_endpoint_,
                   bind(&ListResource::options_multiple, this));
+
+  std::string endpoint(multiple_endpoint_ + "/");
+  for (int i = 0; i < key_params_.size() - 1; i++) {
+    endpoint += key_params_.at(i).Name() + "/";
+    router->options(endpoint,
+                    bind(&ListResource::options_multiple, this));
+  }
+
   if (configuration_ && !init_only_config) {
     router->post(multiple_endpoint_, bind(&ListResource::post_multiple, this));
     router->put(multiple_endpoint_, bind(&ListResource::put_multiple, this));
@@ -72,6 +82,13 @@ ListResource::~ListResource() {
   auto router = core_->get_rest_server()->get_router();
   router->removeRoute(Method::Get, multiple_endpoint_);
   router->removeRoute(Method::Options, multiple_endpoint_);
+
+  std::string endpoint(multiple_endpoint_ + "/");
+  for (int i = 0; i < key_params_.size() - 1; i++) {
+    endpoint += key_params_.at(i).Name() + "/";
+    router->removeRoute(Method::Options, endpoint);
+  }
+
   if (configuration_ && !init_only_config_) {
     router->removeRoute(Method::Post, multiple_endpoint_);
     router->removeRoute(Method::Put, multiple_endpoint_);
@@ -100,6 +117,16 @@ void ListResource::Keys(const Pistache::Rest::Request &request,
         {k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
   }
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, parsed);
+}
+
+void ListResource::GetListKeys(const Pistache::Rest::Request &request,
+                               ListKeyValues &parsed) const {
+  for (const auto &k : keys_) {
+    if (request.hasParam(':' + k.Name())) {
+      parsed.push_back(
+          {k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
+    }
+  }
 }
 
 void ListResource::CreateReplaceUpdateWhole(
@@ -236,8 +263,16 @@ void ListResource::options_multiple(const Request &request,
   ListKeyValues keys{};
 
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
-  auto helpresp = Help(Service::Cube(request), type, keys);
-  Server::ResponseGenerator::Generate({helpresp}, std::move(response));
+
+  if (!query_param.has("completion")) {
+    auto resp = Help(Service::Cube(request), type, keys);
+    Server::ResponseGenerator::Generate({resp}, std::move(response));
+  } else {
+    ListKeyValues list_keys{};
+    GetListKeys(request, list_keys);
+    auto resp = Completion(Service::Cube(request), type, keys, list_keys);
+    Server::ResponseGenerator::Generate({resp}, std::move(response));
+  }
 }
 
 Response ListResource::Help(const std::string &cube_name, HelpType type,
@@ -282,6 +317,59 @@ nlohmann::json ListResource::helpKeys() const {
   }
 
   return val;
+}
+
+Response ListResource::Completion(const std::string &cube_name, HelpType type,
+                                  const ListKeyValues &keys,
+                                  const ListKeyValues &list_keys) {
+  nlohmann::json elements_json =
+      nlohmann::json::parse(GetElementsList(cube_name, keys).message);
+
+  auto size_keys = list_keys.size();
+  std::string keyname = keys_[size_keys].Name();
+
+  nlohmann::json val = nlohmann::json::array();
+
+  if (type == HelpType::ADD) {
+    val = {"<" + keyname + ">"};
+    return {kOk, ::strdup(val.dump().c_str())};
+  }
+
+  // This is a nice library but a silly approach to convert it back.
+  std::vector<nlohmann::fifo_map<std::string, std::string>> elements = elements_json;
+
+  for (auto &item : elements) {
+    // check if element matches giving key
+    bool found = true;
+    for (auto &key : list_keys) {
+      if (item.at(key.name) != key.value) {
+        found = false;
+        break;
+      }
+    }
+
+    if (found) {
+      val += item.at(keyname);
+    }
+  }
+
+  switch (type) {
+  case HelpType::SHOW:
+    break;
+  case HelpType::DEL:
+    break;
+  case HelpType::NONE:
+    if (configuration_) {
+      val += "add";
+      val += "del";
+    }
+    val += "show";
+    break;
+  default:
+    return {kBadRequest, nullptr};
+  }
+
+  return {kOk, ::strdup(val.dump().c_str())};
 }
 
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

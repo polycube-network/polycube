@@ -54,6 +54,9 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
   Response Help(const std::string &cube_name, HelpType type,
                 const ListKeyValues &keys);
 
+  Response Completion(const std::string &cube_name, HelpType type,
+                      const ListKeyValues &keys);
+
  protected:
   /**
    * Used by ChoiceResource and CaseResource: no endpoint
@@ -70,6 +73,12 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
   nlohmann::json helpWritableLeafs(bool include_init_only = false) const;
   nlohmann::json helpComplexElements() const;
   std::vector<std::string> helpActions() const;
+
+  std::vector<std::string> completionElements() const;
+  std::vector<std::string> completionWritableLeafs(bool include_init_only = false) const;
+  std::vector<std::string> completionComplexElements() const;
+  std::vector<std::string> completionActions() const;
+  std::vector<std::string> completionActionElements(bool include_init_only = false) const;
 
  private:
   const bool has_endpoints_;

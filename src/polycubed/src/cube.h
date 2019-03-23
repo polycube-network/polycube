@@ -59,6 +59,7 @@ class Cube : public BaseCube, public CubeIface {
                                       const nlohmann::json &conf);
   void remove_port(const std::string &name);
   std::shared_ptr<PortIface> get_port(const std::string &name);
+  std::map<std::string, std::shared_ptr<PortIface>> &get_ports();
 
   void update_forwarding_table(int index, int value);
 

@@ -68,6 +68,8 @@ class RestServer {
 
   void root_handler(const Pistache::Rest::Request &request,
                     Pistache::Http::ResponseWriter response);
+  void root_help(HelpType type, Pistache::Http::ResponseWriter response);
+  void root_completion(HelpType type, Pistache::Http::ResponseWriter response);
 
   void post_servicectrl(const Pistache::Rest::Request &request,
                         Pistache::Http::ResponseWriter response);
@@ -104,6 +106,11 @@ class RestServer {
                Pistache::Http::ResponseWriter response);
   void disconnect(const Pistache::Rest::Request &request,
                   Pistache::Http::ResponseWriter response);
+
+  void connect_help(const Pistache::Rest::Request &request,
+                    Pistache::Http::ResponseWriter response);
+  void connect_completion(const std::string &p1,
+                          Pistache::Http::ResponseWriter response);
 
   void attach(const Pistache::Rest::Request &request,
               Pistache::Http::ResponseWriter response);

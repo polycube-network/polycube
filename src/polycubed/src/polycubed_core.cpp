@@ -478,6 +478,23 @@ std::string PolycubedCore::set_cube_parameter(const std::string &cube,
       "PolycubedCore::set_cube_parameter is not implemented");
 }
 
+std::vector<std::string> PolycubedCore::get_all_ports() {
+  std::vector<std::string> ports;
+  auto cubes = ServiceController::get_all_cubes();
+  for (auto &cube_ : cubes) {
+    auto cube = std::dynamic_pointer_cast<Cube>(cube_);
+    if (!cube) {
+      continue;
+    }
+
+    for (auto &it : cube->get_ports()) {
+      ports.push_back(cube->get_name() + ":" + it.first);
+    }
+  }
+
+  return std::move(ports);
+}
+
 void PolycubedCore::set_rest_server(RestServer *rest_server) {
   rest_server_ = rest_server;
 }

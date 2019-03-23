@@ -153,6 +153,10 @@ std::shared_ptr<PortIface> Cube::get_port(const std::string &name) {
   return ports_by_name_.at(name);
 }
 
+std::map<std::string, std::shared_ptr<PortIface>> &Cube::get_ports() {
+  return ports_by_name_;
+}
+
 void Cube::update_forwarding_table(int index, int value) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (forward_chain_)  // is the forward chain still active?

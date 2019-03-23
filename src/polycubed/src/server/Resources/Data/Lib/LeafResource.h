@@ -42,7 +42,8 @@ class LeafResource : public Endpoint::LeafResource {
       bool init_only_config, PolycubedCore *core,
       std::unique_ptr<Body::JsonValueField> &&value_field,
       const std::vector<Body::JsonNodeField> &node_fields, bool mandatory,
-      Types::Scalar type, std::unique_ptr<const std::string> &&default_value);
+      Types::Scalar type, std::unique_ptr<const std::string> &&default_value,
+      bool is_enum, const std::vector<std::string> &values);
 
   LeafResource(
       std::function<Response(const char *, const Key *, size_t, const char *)>
@@ -53,7 +54,8 @@ class LeafResource : public Endpoint::LeafResource {
       const Body::ParentResource *parent, PolycubedCore *core,
       std::unique_ptr<Body::JsonValueField> &&value_field,
       const std::vector<Body::JsonNodeField> &node_fields, bool mandatory,
-      Types::Scalar type, std::unique_ptr<const std::string> &&default_value);
+      Types::Scalar type, std::unique_ptr<const std::string> &&default_value,
+      bool is_enum, const std::vector<std::string> &values);
 
   const Response ReadValue(const std::string &cube_name,
                            const ListKeyValues &keys) const final;
