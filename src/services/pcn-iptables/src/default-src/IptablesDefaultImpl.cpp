@@ -15,8 +15,6 @@
 
 #include "../Iptables.h"
 
-
-
 std::shared_ptr<Ports> Iptables::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

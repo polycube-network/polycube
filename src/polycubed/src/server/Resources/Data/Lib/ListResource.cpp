@@ -42,10 +42,8 @@ ListResource::ListResource(
         read_whole_handler,
     std::function<Response(const char *, const Key *, size_t)>
         delete_whole_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help_multiple,
+    std::function<Response(const char *name, const Key *, size_t)>
+        get_elements_list,
     const std::string &name, const std::string &description,
     const std::string &cli_example, const std::string &rest_endpoint,
     const std::string &rest_endpoint_multiple,
@@ -67,18 +65,15 @@ ListResource::ListResource(
       update_whole_handler_{std::move(update_whole_handler)},
       read_whole_handler_{std::move(read_whole_handler)},
       delete_whole_handler_{std::move(delete_whole_handler)},
-      help_{std::move(help)},
-      help_multiple_{std::move(help_multiple)} {}
+      get_elements_list_{std::move(get_elements_list)} {}
 
 ListResource::ListResource(
     std::function<Response(const char *, const Key *, size_t)>
         read_entry_handler,
     std::function<Response(const char *, const Key *, size_t)>
         read_whole_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help_multiple,
+    std::function<Response(const char *name, const Key *, size_t)>
+        get_elements_list,
     const std::string &name, const std::string &description,
     const std::string &cli_example, const std::string &rest_endpoint,
     const std::string &rest_endpoint_multiple,
@@ -101,8 +96,7 @@ ListResource::ListResource(
       update_whole_handler_{},
       read_whole_handler_{std::move(read_whole_handler)},
       delete_whole_handler_{},
-      help_{std::move(help)},
-      help_multiple_{std::move(help_multiple)} {}
+      get_elements_list_{std::move(get_elements_list)} {}
 
 const Response ListResource::ReadValue(const std::string &cube_name,
                                        const ListKeyValues &keys) const {
@@ -168,17 +162,11 @@ Response ListResource::DeleteWhole(const std::string &cube_name,
                                key_params.size());
 }
 
-Response ListResource::Help(const std::string &cube_name, HelpType type,
-                            const ListKeyValues &keys) {
+Response ListResource::GetElementsList(const std::string &cube_name,
+                                       const ListKeyValues &keys) {
   const auto &key_params = KeyListArray::Generate(keys);
-  return help_(type, cube_name.data(), key_params.data(), key_params.size());
-}
-
-Response ListResource::HelpMultiple(const std::string &cube_name, HelpType type,
-                                    const ListKeyValues &keys) {
-  const auto &key_params = KeyListArray::Generate(keys);
-  return help_multiple_(type, cube_name.data(), key_params.data(),
-                        key_params.size());
+  return get_elements_list_(cube_name.data(), key_params.data(),
+                            key_params.size());
 }
 
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

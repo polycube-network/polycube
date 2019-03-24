@@ -109,9 +109,6 @@ create_router_arp_entry_by_id(const std::string &name, const std::string &addres
   router->addArpEntry(address, value);
 }
 
-
-
-
 /**
 * @brief   Create arp-entry by ID
 *
@@ -128,21 +125,6 @@ create_router_arp_entry_list_by_id(const std::string &name, const std::vector<Ar
   auto router = get_cube(name);
   router->addArpEntryList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_router_arp_entry_list_by_id_get_list(const std::string &name, const std::vector<ArpEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&arpEntry = router->addArpEntryList(value);
-  for(auto &i : arpEntry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create ports by ID
@@ -163,9 +145,6 @@ create_router_ports_by_id(const std::string &name, const std::string &portsName,
   router->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -182,21 +161,6 @@ create_router_ports_list_by_id(const std::string &name, const std::vector<PortsJ
   auto router = get_cube(name);
   router->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_router_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&ports = router->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create secondaryip by ID
@@ -220,9 +184,6 @@ create_router_ports_secondaryip_by_id(const std::string &name, const std::string
   ports->addSecondaryip(ip, netmask, value);
 }
 
-
-
-
 /**
 * @brief   Create secondaryip by ID
 *
@@ -241,22 +202,6 @@ create_router_ports_secondaryip_list_by_id(const std::string &name, const std::s
   auto ports = router->getPorts(portsName);
   ports->addSecondaryipList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-  auto &&ports = router->getPorts(portsName);
-
-  auto &&secondaryip = ports->addSecondaryipList(value);
-  for(auto &i : secondaryip) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create route by ID
@@ -279,9 +224,6 @@ create_router_route_by_id(const std::string &name, const std::string &network, c
   router->addRoute(network, netmask, nexthop, value);
 }
 
-
-
-
 /**
 * @brief   Create route by ID
 *
@@ -298,21 +240,6 @@ create_router_route_list_by_id(const std::string &name, const std::vector<RouteJ
   auto router = get_cube(name);
   router->addRouteList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_router_route_list_by_id_get_list(const std::string &name, const std::vector<RouteJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&route = router->addRouteList(value);
-  for(auto &i : route) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete arp-entry by ID
@@ -332,9 +259,6 @@ delete_router_arp_entry_by_id(const std::string &name, const std::string &addres
   router->delArpEntry(address);
 }
 
-
-
-
 /**
 * @brief   Delete arp-entry by ID
 *
@@ -350,21 +274,6 @@ delete_router_arp_entry_list_by_id(const std::string &name) {
   auto router = get_cube(name);
   router->delArpEntryList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_router_arp_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&arpEntry = router->delArpEntryList();
-  for(auto &i : arpEntry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -384,9 +293,6 @@ delete_router_ports_by_id(const std::string &name, const std::string &portsName)
   router->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -402,21 +308,6 @@ delete_router_ports_list_by_id(const std::string &name) {
   auto router = get_cube(name);
   router->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_router_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&ports = router->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete secondaryip by ID
@@ -439,9 +330,6 @@ delete_router_ports_secondaryip_by_id(const std::string &name, const std::string
   ports->delSecondaryip(ip, netmask);
 }
 
-
-
-
 /**
 * @brief   Delete secondaryip by ID
 *
@@ -459,22 +347,6 @@ delete_router_ports_secondaryip_list_by_id(const std::string &name, const std::s
   auto ports = router->getPorts(portsName);
   ports->delSecondaryipList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-  auto &&ports = router->getPorts(portsName);
-
-  auto &&secondaryip = ports->delSecondaryipList();
-  for(auto &i : secondaryip) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete route by ID
@@ -496,9 +368,6 @@ delete_router_route_by_id(const std::string &name, const std::string &network, c
   router->delRoute(network, netmask, nexthop);
 }
 
-
-
-
 /**
 * @brief   Delete route by ID
 *
@@ -514,21 +383,6 @@ delete_router_route_list_by_id(const std::string &name) {
   auto router = get_cube(name);
   router->delRouteList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_router_route_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&route = router->delRouteList();
-  for(auto &i : route) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Read arp-entry by ID
@@ -548,9 +402,6 @@ read_router_arp_entry_by_id(const std::string &name, const std::string &address)
 
 }
 
-
-
-
 /**
 * @brief   Read interface by ID
 *
@@ -569,9 +420,6 @@ read_router_arp_entry_interface_by_id(const std::string &name, const std::string
   return arpEntry->getInterface();
 
 }
-
-
-
 
 /**
 * @brief   Read arp-entry by ID
@@ -593,23 +441,6 @@ read_router_arp_entry_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_arp_entry_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&arpEntry = router->getArpEntryList();
-  for(auto &i : arpEntry) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read mac by ID
 *
@@ -629,9 +460,6 @@ read_router_arp_entry_mac_by_id(const std::string &name, const std::string &addr
 
 }
 
-
-
-
 /**
 * @brief   Read router by ID
 *
@@ -647,9 +475,6 @@ read_router_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -669,9 +494,6 @@ read_router_ports_by_id(const std::string &name, const std::string &portsName) {
 
 }
 
-
-
-
 /**
 * @brief   Read ip by ID
 *
@@ -690,9 +512,6 @@ read_router_ports_ip_by_id(const std::string &name, const std::string &portsName
   return ports->getIp();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -714,23 +533,6 @@ read_router_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&ports = router->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read mac by ID
 *
@@ -750,9 +552,6 @@ read_router_ports_mac_by_id(const std::string &name, const std::string &portsNam
 
 }
 
-
-
-
 /**
 * @brief   Read netmask by ID
 *
@@ -771,9 +570,6 @@ read_router_ports_netmask_by_id(const std::string &name, const std::string &port
   return ports->getNetmask();
 
 }
-
-
-
 
 /**
 * @brief   Read secondaryip by ID
@@ -795,9 +591,6 @@ read_router_ports_secondaryip_by_id(const std::string &name, const std::string &
   return ports->getSecondaryip(ip, netmask)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read secondaryip by ID
@@ -821,24 +614,6 @@ read_router_ports_secondaryip_list_by_id(const std::string &name, const std::str
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-  auto &&ports = router->getPorts(portsName);
-
-  auto &&secondaryip = ports->getSecondaryipList();
-  for(auto &i : secondaryip) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read route by ID
 *
@@ -858,9 +633,6 @@ read_router_route_by_id(const std::string &name, const std::string &network, con
   return router->getRoute(network, netmask, nexthop)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read interface by ID
@@ -883,9 +655,6 @@ read_router_route_interface_by_id(const std::string &name, const std::string &ne
 
 }
 
-
-
-
 /**
 * @brief   Read route by ID
 *
@@ -905,23 +674,6 @@ read_router_route_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&router = get_cube(name);
-
-  auto &&route = router->getRouteList();
-  for(auto &i : route) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read pathcost by ID
@@ -944,9 +696,6 @@ read_router_route_pathcost_by_id(const std::string &name, const std::string &net
 
 }
 
-
-
-
 /**
 * @brief   Replace arp-entry by ID
 *
@@ -966,9 +715,6 @@ replace_router_arp_entry_by_id(const std::string &name, const std::string &addre
   router->replaceArpEntry(address, value);
 }
 
-
-
-
 /**
 * @brief   Replace arp-entry by ID
 *
@@ -984,14 +730,6 @@ void
 replace_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_router_arp_entry_list_by_id_get_list(const std::string &name, const std::vector<ArpEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace ports by ID
@@ -1012,9 +750,6 @@ replace_router_ports_by_id(const std::string &name, const std::string &portsName
   router->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -1030,14 +765,6 @@ void
 replace_router_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_router_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace secondaryip by ID
@@ -1061,9 +788,6 @@ replace_router_ports_secondaryip_by_id(const std::string &name, const std::strin
   ports->replaceSecondaryip(ip, netmask, value);
 }
 
-
-
-
 /**
 * @brief   Replace secondaryip by ID
 *
@@ -1080,14 +804,6 @@ void
 replace_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace route by ID
@@ -1110,9 +826,6 @@ replace_router_route_by_id(const std::string &name, const std::string &network, 
   router->replaceRoute(network, netmask, nexthop, value);
 }
 
-
-
-
 /**
 * @brief   Replace route by ID
 *
@@ -1128,14 +841,6 @@ void
 replace_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_router_route_list_by_id_get_list(const std::string &name, const std::vector<RouteJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update arp-entry by ID
@@ -1157,9 +862,6 @@ update_router_arp_entry_by_id(const std::string &name, const std::string &addres
   arpEntry->update(value);
 }
 
-
-
-
 /**
 * @brief   Update interface by ID
 *
@@ -1180,9 +882,6 @@ update_router_arp_entry_interface_by_id(const std::string &name, const std::stri
   arpEntry->setInterface(value);
 }
 
-
-
-
 /**
 * @brief   Update arp-entry by ID
 *
@@ -1198,14 +897,6 @@ void
 update_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_router_arp_entry_list_by_id_get_list(const std::string &name, const std::vector<ArpEntryJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update mac by ID
@@ -1227,9 +918,6 @@ update_router_arp_entry_mac_by_id(const std::string &name, const std::string &ad
   arpEntry->setMac(value);
 }
 
-
-
-
 /**
 * @brief   Update router by ID
 *
@@ -1248,9 +936,6 @@ update_router_by_id(const std::string &name, const RouterJsonObject &value) {
   router->update(value);
 }
 
-
-
-
 /**
 * @brief   Update router by ID
 *
@@ -1265,14 +950,6 @@ void
 update_router_list_by_id(const std::vector<RouterJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_router_list_by_id_get_list(const std::vector<RouterJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -1294,9 +971,6 @@ update_router_ports_by_id(const std::string &name, const std::string &portsName,
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ip by ID
 *
@@ -1317,9 +991,6 @@ update_router_ports_ip_by_id(const std::string &name, const std::string &portsNa
   ports->setIp(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -1335,14 +1006,6 @@ void
 update_router_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_router_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update mac by ID
@@ -1364,9 +1027,6 @@ update_router_ports_mac_by_id(const std::string &name, const std::string &portsN
   ports->setMac(value);
 }
 
-
-
-
 /**
 * @brief   Update netmask by ID
 *
@@ -1386,9 +1046,6 @@ update_router_ports_netmask_by_id(const std::string &name, const std::string &po
 
   ports->setNetmask(value);
 }
-
-
-
 
 /**
 * @brief   Update secondaryip by ID
@@ -1413,9 +1070,6 @@ update_router_ports_secondaryip_by_id(const std::string &name, const std::string
   secondaryip->update(value);
 }
 
-
-
-
 /**
 * @brief   Update secondaryip by ID
 *
@@ -1432,14 +1086,6 @@ void
 update_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName, const std::vector<PortsSecondaryipJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update route by ID
@@ -1463,9 +1109,6 @@ update_router_route_by_id(const std::string &name, const std::string &network, c
   route->update(value);
 }
 
-
-
-
 /**
 * @brief   Update route by ID
 *
@@ -1481,14 +1124,6 @@ void
 update_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_router_route_list_by_id_get_list(const std::string &name, const std::vector<RouteJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update pathcost by ID
@@ -1514,8 +1149,77 @@ update_router_route_pathcost_by_id(const std::string &name, const std::string &n
 
 
 
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_arp_entry_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&router = get_cube(name);
+
+  auto &&arpEntry = router->getArpEntryList();
+  for(auto &i : arpEntry) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["address"] = i->getAddress();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&router = get_cube(name);
+
+  auto &&ports = router->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&router = get_cube(name);
+  auto &&ports = router->getPorts(portsName);
+
+  auto &&secondaryip = ports->getSecondaryipList();
+  for(auto &i : secondaryip) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["ip"] = i->getIp();
+    keys["netmask"] = i->getNetmask();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&router = get_cube(name);
+
+  auto &&route = router->getRouteList();
+  for(auto &i : route) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["network"] = i->getNetwork();
+    keys["netmask"] = i->getNetmask();
+    keys["nexthop"] = i->getNexthop();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
 
 }
+
 }
 }
 }

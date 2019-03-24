@@ -67,13 +67,9 @@ Response update_simpleforwarder_list_by_id_handler(const char *name, const Key *
 Response update_simpleforwarder_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simpleforwarder_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response simpleforwarder_actions_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simpleforwarder_actions_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simpleforwarder_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simpleforwarder_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simpleforwarder_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simpleforwarder_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response simpleforwarder_actions_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response simpleforwarder_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response simpleforwarder_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

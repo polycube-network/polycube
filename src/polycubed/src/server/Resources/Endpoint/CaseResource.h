@@ -29,8 +29,5 @@ class CaseResource : public ParentResource, public Body::CaseResource {
                const Body::ParentResource *const parent, PolycubedCore *core);
 
   ~CaseResource() override = default;
-
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

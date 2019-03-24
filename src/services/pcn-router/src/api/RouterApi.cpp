@@ -1688,234 +1688,34 @@ Response update_router_route_pathcost_by_id_handler(
 }
 
 
-Response router_arp_entry_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_address;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "address")) {
-      unique_address = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ArpEntryJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ArpEntryJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ArpEntryJsonObject::helpComplexElements();
-    val["actions"] = ArpEntryJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response router_arp_entry_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ArpEntryJsonObject::helpKeys();
-    val["elements"] = read_router_arp_entry_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = ArpEntryJsonObject::helpKeys();
-    val["optional-params"] = ArpEntryJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ArpEntryJsonObject::helpKeys();
-    val["elements"] = read_router_arp_entry_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ArpEntryJsonObject::helpKeys();
-    val["elements"] = read_router_arp_entry_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_router_arp_entry_list_by_id_get_list(unique_name);
 
-Response router_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = RouterJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = RouterJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = RouterJsonObject::helpComplexElements();
-    val["actions"] = RouterJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response router_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = RouterJsonObject::helpKeys();
-    val["elements"] = read_router_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = RouterJsonObject::helpKeys();
-    val["optional-params"] = RouterJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = RouterJsonObject::helpKeys();
-    val["elements"] = read_router_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = RouterJsonObject::helpKeys();
-    val["elements"] = read_router_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_router_list_by_id_get_list();
 
-Response router_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response router_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_router_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_router_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_router_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_router_ports_list_by_id_get_list(unique_name);
 
-Response router_ports_secondaryip_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_netmask;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "netmask")) {
-      unique_netmask = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsSecondaryipJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsSecondaryipJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsSecondaryipJsonObject::helpComplexElements();
-    val["actions"] = PortsSecondaryipJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response router_ports_secondaryip_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
   std::string unique_portsName;
@@ -1926,106 +1726,17 @@ Response router_ports_secondaryip_list_by_id_help(
     }
   }
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsSecondaryipJsonObject::helpKeys();
-    val["elements"] = read_router_ports_secondaryip_list_by_id_get_list(unique_name, unique_portsName);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsSecondaryipJsonObject::helpKeys();
-    val["optional-params"] = PortsSecondaryipJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsSecondaryipJsonObject::helpKeys();
-    val["elements"] = read_router_ports_secondaryip_list_by_id_get_list(unique_name, unique_portsName);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsSecondaryipJsonObject::helpKeys();
-    val["elements"] = read_router_ports_secondaryip_list_by_id_get_list(unique_name, unique_portsName);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_router_ports_secondaryip_list_by_id_get_list(unique_name, unique_portsName);
 
-Response router_route_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_network;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "network")) {
-      unique_network = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_netmask;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "netmask")) {
-      unique_netmask = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_nexthop;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "nexthop")) {
-      unique_nexthop = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = RouteJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = RouteJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = RouteJsonObject::helpComplexElements();
-    val["actions"] = RouteJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response router_route_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = RouteJsonObject::helpKeys();
-    val["elements"] = read_router_route_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = RouteJsonObject::helpKeys();
-    val["optional-params"] = RouteJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = RouteJsonObject::helpKeys();
-    val["elements"] = read_router_route_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = RouteJsonObject::helpKeys();
-    val["elements"] = read_router_route_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_router_route_list_by_id_get_list(unique_name);
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

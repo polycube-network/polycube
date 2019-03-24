@@ -35,7 +35,8 @@ class Simpleforwarder : public polycube::service::Cube<Ports>,
   friend class Ports;
 
  public:
-  Simpleforwarder(const std::string name, const SimpleforwarderJsonObject &conf);
+  Simpleforwarder(const std::string name,
+                  const SimpleforwarderJsonObject &conf);
   virtual ~Simpleforwarder();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();

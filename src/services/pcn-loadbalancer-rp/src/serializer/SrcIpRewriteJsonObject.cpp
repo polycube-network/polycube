@@ -94,57 +94,6 @@ void SrcIpRewriteJsonObject::unsetNewIpRange() {
 }
 
 
-nlohmann::json SrcIpRewriteJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json SrcIpRewriteJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ip-range"]["name"] = "ip-range";
-  val["ip-range"]["type"] = "leaf"; // Suppose that type is leaf
-  val["ip-range"]["simpletype"] = "string";
-  val["ip-range"]["description"] = R"POLYCUBE(Range of IP addresses of the clients that must be replaced)POLYCUBE";
-  val["ip-range"]["example"] = R"POLYCUBE(10.2.0.0/24)POLYCUBE";
-  val["new_ip_range"]["name"] = "new_ip_range";
-  val["new_ip_range"]["type"] = "leaf"; // Suppose that type is leaf
-  val["new_ip_range"]["simpletype"] = "string";
-  val["new_ip_range"]["description"] = R"POLYCUBE(Range of IP addresses of the that must be used to replace client addresses)POLYCUBE";
-  val["new_ip_range"]["example"] = R"POLYCUBE(10.3.0.0/24)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SrcIpRewriteJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ip-range"]["name"] = "ip-range";
-  val["ip-range"]["simpletype"] = "string";
-  val["ip-range"]["description"] = R"POLYCUBE(Range of IP addresses of the clients that must be replaced)POLYCUBE";
-  val["ip-range"]["example"] = R"POLYCUBE(10.2.0.0/24)POLYCUBE";
-  val["new_ip_range"]["name"] = "new_ip_range";
-  val["new_ip_range"]["simpletype"] = "string";
-  val["new_ip_range"]["description"] = R"POLYCUBE(Range of IP addresses of the that must be used to replace client addresses)POLYCUBE";
-  val["new_ip_range"]["example"] = R"POLYCUBE(10.3.0.0/24)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SrcIpRewriteJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> SrcIpRewriteJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

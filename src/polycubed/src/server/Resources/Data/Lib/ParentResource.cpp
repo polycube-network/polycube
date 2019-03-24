@@ -34,8 +34,6 @@ ParentResource::ParentResource(
         update_handler,
     std::function<Response(const char *, const Key *, size_t)> read_handler,
     std::function<Response(const char *, const Key *, size_t)> delete_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
     const std::string &name, const std::string &description,
     const std::string &cli_example, const std::string &rest_endpoint,
     const Body::ParentResource *parent, PolycubedCore *core,
@@ -50,14 +48,11 @@ ParentResource::ParentResource(
       replace_handler_{std::move(replace_handler)},
       update_handler_{std::move(update_handler)},
       read_handler_{std::move(read_handler)},
-      delete_handler_{std::move(delete_handler)},
-      help_{std::move(help)} {}
+      delete_handler_{std::move(delete_handler)} {}
 
 ParentResource::ParentResource(
     std::function<Response(const char *, const Key *, size_t, const char *)>
         create_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
     const std::string &name, const std::string &description,
     const std::string &cli_example, const std::string &rest_endpoint,
     const Body::ParentResource *parent, PolycubedCore *core,
@@ -71,13 +66,10 @@ ParentResource::ParentResource(
       replace_handler_{},
       update_handler_{},
       read_handler_{},
-      delete_handler_{},
-      help_{std::move(help)} {}
+      delete_handler_{} {}
 
 ParentResource::ParentResource(
     std::function<Response(const char *, const Key *, size_t)> read_handler,
-    std::function<Response(HelpType, const char *name, const Key *, size_t)>
-        help,
     const std::string &name, const std::string &description,
     const std::string &cli_example, const std::string &rest_endpoint,
     const Body::ParentResource *parent, bool configuration,
@@ -94,8 +86,7 @@ ParentResource::ParentResource(
       replace_handler_{},
       update_handler_{},
       read_handler_{std::move(read_handler)},
-      delete_handler_{},
-      help_{std::move(help)} {}
+      delete_handler_{} {}
 
 const Response ParentResource::ReadValue(const std::string &cube_name,
                                          const ListKeyValues &keys) const {
@@ -126,11 +117,5 @@ Response ParentResource::DeleteValue(const std::string &cube_name,
   const auto &key_params = KeyListArray::Generate(keys);
   return delete_handler_(cube_name.data(), key_params.data(),
                          key_params.size());
-}
-
-Response ParentResource::Help(const std::string &cube_name, HelpType type,
-                              const ListKeyValues &keys) {
-  const auto &key_params = KeyListArray::Generate(keys);
-  return help_(type, cube_name.data(), key_params.data(), key_params.size());
 }
 }  // namespace polycube::polycubed::Rest::Resources::Data::Lib

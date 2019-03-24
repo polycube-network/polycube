@@ -115,62 +115,6 @@ bool RuleDnatEntryJsonObject::internalIpIsSet() const {
 
 
 
-nlohmann::json RuleDnatEntryJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "key";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE(Rule identifier)POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatEntryJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["external-ip"]["name"] = "external-ip";
-  val["external-ip"]["type"] = "leaf"; // Suppose that type is leaf
-  val["external-ip"]["simpletype"] = "string";
-  val["external-ip"]["description"] = R"POLYCUBE(External destination IP address)POLYCUBE";
-  val["external-ip"]["example"] = R"POLYCUBE(8.8.8.8)POLYCUBE";
-  val["internal-ip"]["name"] = "internal-ip";
-  val["internal-ip"]["type"] = "leaf"; // Suppose that type is leaf
-  val["internal-ip"]["simpletype"] = "string";
-  val["internal-ip"]["description"] = R"POLYCUBE(Internal destination IP address)POLYCUBE";
-  val["internal-ip"]["example"] = R"POLYCUBE(10.0.0.1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatEntryJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["external-ip"]["name"] = "external-ip";
-  val["external-ip"]["simpletype"] = "string";
-  val["external-ip"]["description"] = R"POLYCUBE(External destination IP address)POLYCUBE";
-  val["external-ip"]["example"] = R"POLYCUBE(8.8.8.8)POLYCUBE";
-  val["internal-ip"]["name"] = "internal-ip";
-  val["internal-ip"]["simpletype"] = "string";
-  val["internal-ip"]["description"] = R"POLYCUBE(Internal destination IP address)POLYCUBE";
-  val["internal-ip"]["example"] = R"POLYCUBE(10.0.0.1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatEntryJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RuleDnatEntryJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

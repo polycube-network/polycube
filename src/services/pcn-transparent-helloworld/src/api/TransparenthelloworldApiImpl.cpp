@@ -90,17 +90,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_transparenthellow
   return r;
 }
 
-//std::vector<nlohmann::fifo_map<std::string, std::string>> read_transparenthelloworld_ports_list_by_id_get_list(const std::string &name) {
-//  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-//  auto m = get_cube(name);
-//  for(auto &i : m->getPortsList()){
-//    nlohmann::fifo_map<std::string, std::string> m;
-//    m["name"] = i->getName();
-//    r.push_back(std::move(m));
-//  }
-//  return r;
-//}
-
 /**
 * @brief   Read transparenthelloworld by ID
 *
@@ -116,9 +105,6 @@ read_transparenthelloworld_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read egress-action by ID
@@ -137,9 +123,6 @@ read_transparenthelloworld_egress_action_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read ingress-action by ID
 *
@@ -156,9 +139,6 @@ read_transparenthelloworld_ingress_action_by_id(const std::string &name) {
   return transparenthelloworld->getIngressAction();
 
 }
-
-
-
 
 /**
 * @brief   Update transparenthelloworld by ID
@@ -178,9 +158,6 @@ update_transparenthelloworld_by_id(const std::string &name, const Transparenthel
   transparenthelloworld->update(value);
 }
 
-
-
-
 /**
 * @brief   Update egress-action by ID
 *
@@ -198,9 +175,6 @@ update_transparenthelloworld_egress_action_by_id(const std::string &name, const 
 
   transparenthelloworld->setEgressAction(value);
 }
-
-
-
 
 /**
 * @brief   Update ingress-action by ID
@@ -220,9 +194,6 @@ update_transparenthelloworld_ingress_action_by_id(const std::string &name, const
   transparenthelloworld->setIngressAction(value);
 }
 
-
-
-
 /**
 * @brief   Update transparenthelloworld by ID
 *
@@ -239,14 +210,14 @@ update_transparenthelloworld_list_by_id(const std::vector<TransparenthelloworldJ
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_transparenthelloworld_list_by_id_get_list(const std::vector<TransparenthelloworldJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
+
+/*
+ * help related
+ */
 
 
 }
+
 }
 }
 }

@@ -77,15 +77,9 @@ Response update_simplebridge_list_by_id_handler(const char *name, const Key *key
 Response update_simplebridge_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_simplebridge_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response simplebridge_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_fdb_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_fdb_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_fdb_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response simplebridge_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
-Response simplebridge_fdb_flush_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response simplebridge_fdb_entry_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response simplebridge_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response simplebridge_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

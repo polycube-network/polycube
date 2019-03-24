@@ -169,68 +169,6 @@ void RouteJsonObject::unsetPathcost() {
 }
 
 
-nlohmann::json RouteJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["network"]["name"] = "network";
-  val["network"]["type"] = "key";
-  val["network"]["simpletype"] = "string";
-  val["network"]["description"] = R"POLYCUBE(Destination network IP)POLYCUBE";
-  val["network"]["example"] = R"POLYCUBE(123.13.34.0)POLYCUBE";
-  val["netmask"]["name"] = "netmask";
-  val["netmask"]["type"] = "key";
-  val["netmask"]["simpletype"] = "string";
-  val["netmask"]["description"] = R"POLYCUBE(Destination network netmask)POLYCUBE";
-  val["netmask"]["example"] = R"POLYCUBE(255.255.255.0)POLYCUBE";
-  val["nexthop"]["name"] = "nexthop";
-  val["nexthop"]["type"] = "key";
-  val["nexthop"]["simpletype"] = "string";
-  val["nexthop"]["description"] = R"POLYCUBE(Next hop; if destination is local will be shown 'local' instead of the ip address)POLYCUBE";
-  val["nexthop"]["example"] = R"POLYCUBE(123.14.23.3)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RouteJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["interface"]["name"] = "interface";
-  val["interface"]["type"] = "leaf"; // Suppose that type is leaf
-  val["interface"]["simpletype"] = "string";
-  val["interface"]["description"] = R"POLYCUBE(Outgoing interface)POLYCUBE";
-  val["interface"]["example"] = R"POLYCUBE(port2)POLYCUBE";
-  val["pathcost"]["name"] = "pathcost";
-  val["pathcost"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pathcost"]["simpletype"] = "integer";
-  val["pathcost"]["description"] = R"POLYCUBE(Cost of this route)POLYCUBE";
-  val["pathcost"]["example"] = R"POLYCUBE(10)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RouteJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pathcost"]["name"] = "pathcost";
-  val["pathcost"]["simpletype"] = "integer";
-  val["pathcost"]["description"] = R"POLYCUBE(Cost of this route)POLYCUBE";
-  val["pathcost"]["example"] = R"POLYCUBE(10)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RouteJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RouteJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

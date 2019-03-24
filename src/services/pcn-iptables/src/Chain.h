@@ -46,7 +46,6 @@ class Chain : public ChainInterface {
   static void removeEntry(Iptables &parent, const ChainNameEnum &name);
   static std::vector<std::shared_ptr<Chain>> get(Iptables &parent);
   static void remove(Iptables &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
   ChainJsonObject toJsonObject() override;

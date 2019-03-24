@@ -50,19 +50,8 @@ public:
   ChainJsonObject();
   ChainJsonObject(const nlohmann::json &json);
   ~ChainJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainJsonObject members
 
   /// <summary>
   /// Chain in which the rule will be inserted. Default: FORWARD.

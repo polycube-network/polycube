@@ -43,19 +43,8 @@ public:
   LbrpJsonObject();
   LbrpJsonObject(const nlohmann::json &json);
   ~LbrpJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// LbrpJsonObject members
 
   /// <summary>
   /// Name of the lbrp service

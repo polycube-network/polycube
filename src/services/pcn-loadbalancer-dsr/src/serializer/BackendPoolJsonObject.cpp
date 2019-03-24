@@ -90,49 +90,6 @@ bool BackendPoolJsonObject::macIsSet() const {
 
 
 
-nlohmann::json BackendPoolJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "key";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE(id)POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json BackendPoolJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["mac"]["name"] = "mac";
-  val["mac"]["type"] = "leaf"; // Suppose that type is leaf
-  val["mac"]["simpletype"] = "string";
-  val["mac"]["description"] = R"POLYCUBE(MAC address of the backend server of the pool)POLYCUBE";
-  val["mac"]["example"] = R"POLYCUBE(aa:bb:cc:dd:ee:ff)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json BackendPoolJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json BackendPoolJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> BackendPoolJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

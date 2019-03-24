@@ -15,8 +15,6 @@
 
 #include "../Backend.h"
 
-
-
 std::shared_ptr<BackendPool> Backend::getPool(const uint32_t &id){
   return BackendPool::getEntry(*this, id);
 }

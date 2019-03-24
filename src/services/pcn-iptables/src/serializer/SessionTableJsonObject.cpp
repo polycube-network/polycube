@@ -192,69 +192,6 @@ void SessionTableJsonObject::unsetState() {
 }
 
 
-nlohmann::json SessionTableJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["src"]["name"] = "src";
-  val["src"]["type"] = "key";
-  val["src"]["simpletype"] = "string";
-  val["src"]["description"] = R"POLYCUBE(Source IP)POLYCUBE";
-  val["src"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dst"]["name"] = "dst";
-  val["dst"]["type"] = "key";
-  val["dst"]["simpletype"] = "string";
-  val["dst"]["description"] = R"POLYCUBE(Destination IP)POLYCUBE";
-  val["dst"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["l4proto"]["name"] = "l4proto";
-  val["l4proto"]["type"] = "key";
-  val["l4proto"]["simpletype"] = "string";
-  val["l4proto"]["description"] = R"POLYCUBE(Level 4 Protocol.)POLYCUBE";
-  val["l4proto"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["sport"]["name"] = "sport";
-  val["sport"]["type"] = "key";
-  val["sport"]["simpletype"] = "integer";
-  val["sport"]["description"] = R"POLYCUBE(Source Port)POLYCUBE";
-  val["sport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dport"]["name"] = "dport";
-  val["dport"]["type"] = "key";
-  val["dport"]["simpletype"] = "integer";
-  val["dport"]["description"] = R"POLYCUBE(Destination)POLYCUBE";
-  val["dport"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["state"]["name"] = "state";
-  val["state"]["type"] = "leaf"; // Suppose that type is leaf
-  val["state"]["simpletype"] = "string";
-  val["state"]["description"] = R"POLYCUBE(Connection state.)POLYCUBE";
-  val["state"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> SessionTableJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

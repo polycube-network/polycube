@@ -15,8 +15,6 @@
 
 #include "../K8sfilter.h"
 
-
-
 std::shared_ptr<Ports> K8sfilter::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

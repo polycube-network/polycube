@@ -1801,181 +1801,25 @@ Response update_lbrp_src_ip_rewrite_new_ip_range_by_id_handler(
 }
 
 
-Response lbrp_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = LbrpJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = LbrpJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = LbrpJsonObject::helpComplexElements();
-    val["actions"] = LbrpJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response lbrp_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = LbrpJsonObject::helpKeys();
-    val["elements"] = read_lbrp_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = LbrpJsonObject::helpKeys();
-    val["optional-params"] = LbrpJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = LbrpJsonObject::helpKeys();
-    val["elements"] = read_lbrp_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = LbrpJsonObject::helpKeys();
-    val["elements"] = read_lbrp_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_lbrp_list_by_id_get_list();
 
-Response lbrp_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response lbrp_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_lbrp_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_lbrp_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_lbrp_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_lbrp_ports_list_by_id_get_list(unique_name);
 
-Response lbrp_service_backend_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_vip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "vip")) {
-      unique_vip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  uint16_t unique_vport;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "vport")) {
-      unique_vport = keys[i].value.uint16;
-      break;
-    }
-  }
-
-  std::string unique_proto;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "proto")) {
-      unique_proto = std::string { keys[i].value.string };
-      break;
-    }
-  }
-  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
-
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ServiceBackendJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ServiceBackendJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ServiceBackendJsonObject::helpComplexElements();
-    val["actions"] = ServiceBackendJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response lbrp_service_backend_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
   std::string unique_vip;
@@ -2003,131 +1847,17 @@ Response lbrp_service_backend_list_by_id_help(
   }
   auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
-  break;
-  case HelpType::ADD:
-    val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["optional-params"] = ServiceBackendJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ServiceBackendJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_lbrp_service_backend_list_by_id_get_list(unique_name, unique_vip, unique_vport, unique_proto_);
 
-Response lbrp_service_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_vip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "vip")) {
-      unique_vip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  uint16_t unique_vport;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "vport")) {
-      unique_vport = keys[i].value.uint16;
-      break;
-    }
-  }
-
-  std::string unique_proto;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "proto")) {
-      unique_proto = std::string { keys[i].value.string };
-      break;
-    }
-  }
-  auto unique_proto_ = ServiceJsonObject::string_to_ServiceProtoEnum(unique_proto);
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ServiceJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ServiceJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ServiceJsonObject::helpComplexElements();
-    val["actions"] = ServiceJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response lbrp_service_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = ServiceJsonObject::helpKeys();
-    val["optional-params"] = ServiceJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ServiceJsonObject::helpKeys();
-    val["elements"] = read_lbrp_service_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_lbrp_service_list_by_id_get_list(unique_name);
 
-Response lbrp_src_ip_rewrite_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SrcIpRewriteJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = SrcIpRewriteJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = SrcIpRewriteJsonObject::helpComplexElements();
-    val["actions"] = SrcIpRewriteJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

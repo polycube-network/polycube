@@ -38,19 +38,8 @@ public:
   RuleSnatAppendOutputJsonObject();
   RuleSnatAppendOutputJsonObject(const nlohmann::json &json);
   ~RuleSnatAppendOutputJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// RuleSnatAppendOutputJsonObject members
 
   /// <summary>
   ///

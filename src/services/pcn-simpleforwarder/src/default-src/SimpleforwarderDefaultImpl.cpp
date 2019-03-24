@@ -15,8 +15,6 @@
 
 #include "../Simpleforwarder.h"
 
-
-
 std::shared_ptr<Ports> Simpleforwarder::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

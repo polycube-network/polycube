@@ -45,9 +45,6 @@ class LeafListResource : public LeafResource, public Body::LeafListResource {
   virtual std::shared_ptr<LeafResource> &Entry(
       const std::string &value) const = 0;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
-
  private:
   void get_entry(const Request &request, ResponseWriter response);
 };

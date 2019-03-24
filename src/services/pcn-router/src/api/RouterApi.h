@@ -98,17 +98,11 @@ Response update_router_route_by_id_handler(const char *name, const Key *keys, si
 Response update_router_route_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_router_route_pathcost_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response router_arp_entry_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_arp_entry_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_ports_secondaryip_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_ports_secondaryip_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_route_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response router_route_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response router_arp_entry_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response router_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response router_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response router_ports_secondaryip_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response router_route_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

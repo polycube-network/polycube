@@ -109,9 +109,6 @@ create_lbrp_ports_by_id(const std::string &name, const std::string &portsName, c
   lbrp->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -128,21 +125,6 @@ create_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJso
   auto lbrp = get_cube(name);
   lbrp->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbrp_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&ports = lbrp->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create backend by ID
@@ -167,9 +149,6 @@ create_lbrp_service_backend_by_id(const std::string &name, const std::string &vi
   service->addBackend(ip, value);
 }
 
-
-
-
 /**
 * @brief   Create backend by ID
 *
@@ -190,22 +169,6 @@ create_lbrp_service_backend_list_by_id(const std::string &name, const std::strin
   auto service = lbrp->getService(vip, vport, proto);
   service->addBackendList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-  auto &&service = lbrp->getService(vip, vport, proto);
-
-  auto &&backend = service->addBackendList(value);
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create service by ID
@@ -228,9 +191,6 @@ create_lbrp_service_by_id(const std::string &name, const std::string &vip, const
   lbrp->addService(vip, vport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Create service by ID
 *
@@ -247,21 +207,6 @@ create_lbrp_service_list_by_id(const std::string &name, const std::vector<Servic
   auto lbrp = get_cube(name);
   lbrp->addServiceList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&service = lbrp->addServiceList(value);
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create src-ip-rewrite by ID
@@ -281,9 +226,6 @@ create_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJson
   lbrp->addSrcIpRewrite(value);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -302,9 +244,6 @@ delete_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
   lbrp->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -320,21 +259,6 @@ delete_lbrp_ports_list_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   lbrp->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbrp_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&ports = lbrp->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete backend by ID
@@ -358,9 +282,6 @@ delete_lbrp_service_backend_by_id(const std::string &name, const std::string &vi
   service->delBackend(ip);
 }
 
-
-
-
 /**
 * @brief   Delete backend by ID
 *
@@ -380,22 +301,6 @@ delete_lbrp_service_backend_list_by_id(const std::string &name, const std::strin
   auto service = lbrp->getService(vip, vport, proto);
   service->delBackendList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-  auto &&service = lbrp->getService(vip, vport, proto);
-
-  auto &&backend = service->delBackendList();
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete service by ID
@@ -417,9 +322,6 @@ delete_lbrp_service_by_id(const std::string &name, const std::string &vip, const
   lbrp->delService(vip, vport, proto);
 }
 
-
-
-
 /**
 * @brief   Delete service by ID
 *
@@ -435,21 +337,6 @@ delete_lbrp_service_list_by_id(const std::string &name) {
   auto lbrp = get_cube(name);
   lbrp->delServiceList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_lbrp_service_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&service = lbrp->delServiceList();
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete src-ip-rewrite by ID
@@ -468,9 +355,6 @@ delete_lbrp_src_ip_rewrite_by_id(const std::string &name) {
   lbrp->delSrcIpRewrite();
 }
 
-
-
-
 /**
 * @brief   Read lbrp by ID
 *
@@ -486,9 +370,6 @@ read_lbrp_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -507,9 +388,6 @@ read_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
   return lbrp->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -531,23 +409,6 @@ read_lbrp_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&ports = lbrp->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read type by ID
 *
@@ -566,9 +427,6 @@ read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName
   return ports->getType();
 
 }
-
-
-
 
 /**
 * @brief   Read backend by ID
@@ -591,9 +449,6 @@ read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip,
   return service->getBackend(ip)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read backend by ID
@@ -619,24 +474,6 @@ read_lbrp_service_backend_list_by_id(const std::string &name, const std::string 
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-  auto &&service = lbrp->getService(vip, vport, proto);
-
-  auto &&backend = service->getBackendList();
-  for(auto &i : backend) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read name by ID
 *
@@ -659,9 +496,6 @@ read_lbrp_service_backend_name_by_id(const std::string &name, const std::string 
   return backend->getName();
 
 }
-
-
-
 
 /**
 * @brief   Read port by ID
@@ -686,9 +520,6 @@ read_lbrp_service_backend_port_by_id(const std::string &name, const std::string 
 
 }
 
-
-
-
 /**
 * @brief   Read weight by ID
 *
@@ -712,9 +543,6 @@ read_lbrp_service_backend_weight_by_id(const std::string &name, const std::strin
 
 }
 
-
-
-
 /**
 * @brief   Read service by ID
 *
@@ -735,9 +563,6 @@ read_lbrp_service_by_id(const std::string &name, const std::string &vip, const u
 
 }
 
-
-
-
 /**
 * @brief   Read service by ID
 *
@@ -757,23 +582,6 @@ read_lbrp_service_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&lbrp = get_cube(name);
-
-  auto &&service = lbrp->getServiceList();
-  for(auto &i : service) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read name by ID
@@ -796,9 +604,6 @@ read_lbrp_service_name_by_id(const std::string &name, const std::string &vip, co
 
 }
 
-
-
-
 /**
 * @brief   Read src-ip-rewrite by ID
 *
@@ -815,9 +620,6 @@ read_lbrp_src_ip_rewrite_by_id(const std::string &name) {
   return lbrp->getSrcIpRewrite()->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ip-range by ID
@@ -837,9 +639,6 @@ read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read new_ip_range by ID
 *
@@ -857,9 +656,6 @@ read_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name) {
   return srcIpRewrite->getNewIpRange();
 
 }
-
-
-
 
 /**
 * @brief   Replace ports by ID
@@ -880,9 +676,6 @@ replace_lbrp_ports_by_id(const std::string &name, const std::string &portsName, 
   lbrp->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -898,14 +691,6 @@ void
 replace_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbrp_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace backend by ID
@@ -930,9 +715,6 @@ replace_lbrp_service_backend_by_id(const std::string &name, const std::string &v
   service->replaceBackend(ip, value);
 }
 
-
-
-
 /**
 * @brief   Replace backend by ID
 *
@@ -951,14 +733,6 @@ void
 replace_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace service by ID
@@ -981,9 +755,6 @@ replace_lbrp_service_by_id(const std::string &name, const std::string &vip, cons
   lbrp->replaceService(vip, vport, proto, value);
 }
 
-
-
-
 /**
 * @brief   Replace service by ID
 *
@@ -999,14 +770,6 @@ void
 replace_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace src-ip-rewrite by ID
@@ -1026,9 +789,6 @@ replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJso
   lbrp->replaceSrcIpRewrite(value);
 }
 
-
-
-
 /**
 * @brief   Update lbrp by ID
 *
@@ -1047,9 +807,6 @@ update_lbrp_by_id(const std::string &name, const LbrpJsonObject &value) {
   lbrp->update(value);
 }
 
-
-
-
 /**
 * @brief   Update lbrp by ID
 *
@@ -1064,14 +821,6 @@ void
 update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_list_by_id_get_list(const std::vector<LbrpJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -1093,9 +842,6 @@ update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, c
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -1111,14 +857,6 @@ void
 update_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update type by ID
@@ -1139,9 +877,6 @@ update_lbrp_ports_type_by_id(const std::string &name, const std::string &portsNa
 
   ports->setType(value);
 }
-
-
-
 
 /**
 * @brief   Update backend by ID
@@ -1167,9 +902,6 @@ update_lbrp_service_backend_by_id(const std::string &name, const std::string &vi
   backend->update(value);
 }
 
-
-
-
 /**
 * @brief   Update backend by ID
 *
@@ -1188,14 +920,6 @@ void
 update_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update name by ID
@@ -1221,9 +945,6 @@ update_lbrp_service_backend_name_by_id(const std::string &name, const std::strin
   backend->setName(value);
 }
 
-
-
-
 /**
 * @brief   Update port by ID
 *
@@ -1247,9 +968,6 @@ update_lbrp_service_backend_port_by_id(const std::string &name, const std::strin
 
   backend->setPort(value);
 }
-
-
-
 
 /**
 * @brief   Update weight by ID
@@ -1275,9 +993,6 @@ update_lbrp_service_backend_weight_by_id(const std::string &name, const std::str
   backend->setWeight(value);
 }
 
-
-
-
 /**
 * @brief   Update service by ID
 *
@@ -1300,9 +1015,6 @@ update_lbrp_service_by_id(const std::string &name, const std::string &vip, const
   service->update(value);
 }
 
-
-
-
 /**
 * @brief   Update service by ID
 *
@@ -1318,14 +1030,6 @@ void
 update_lbrp_service_list_by_id(const std::string &name, const std::vector<ServiceJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_lbrp_service_list_by_id_get_list(const std::string &name, const std::vector<ServiceJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update name by ID
@@ -1349,9 +1053,6 @@ update_lbrp_service_name_by_id(const std::string &name, const std::string &vip, 
   service->setName(value);
 }
 
-
-
-
 /**
 * @brief   Update src-ip-rewrite by ID
 *
@@ -1371,9 +1072,6 @@ update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJson
   srcIpRewrite->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ip-range by ID
 *
@@ -1392,9 +1090,6 @@ update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::st
 
   srcIpRewrite->setIpRange(value);
 }
-
-
-
 
 /**
 * @brief   Update new_ip_range by ID
@@ -1417,8 +1112,61 @@ update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std
 
 
 
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&lbrp = get_cube(name);
+
+  auto &&ports = lbrp->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&lbrp = get_cube(name);
+  auto &&service = lbrp->getService(vip, vport, proto);
+
+  auto &&backend = service->getBackendList();
+  for(auto &i : backend) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["ip"] = i->getIp();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&lbrp = get_cube(name);
+
+  auto &&service = lbrp->getServiceList();
+  for(auto &i : service) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["vip"] = i->getVip();
+    keys["vport"] = std::to_string(i->getVport());
+    keys["proto"] = ServiceJsonObject::ServiceProtoEnum_to_string(i->getProto());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
 
 }
+
 }
 }
 }

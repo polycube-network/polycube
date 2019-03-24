@@ -426,118 +426,20 @@ Response update_helloworld_ports_list_by_id_handler(
 }
 
 
-Response helloworld_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = HelloworldJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = HelloworldJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = HelloworldJsonObject::helpComplexElements();
-    val["actions"] = HelloworldJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response helloworld_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = HelloworldJsonObject::helpKeys();
-    val["elements"] = read_helloworld_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = HelloworldJsonObject::helpKeys();
-    val["optional-params"] = HelloworldJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = HelloworldJsonObject::helpKeys();
-    val["elements"] = read_helloworld_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = HelloworldJsonObject::helpKeys();
-    val["elements"] = read_helloworld_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_helloworld_list_by_id_get_list();
 
-Response helloworld_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response helloworld_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_helloworld_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_helloworld_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_helloworld_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_helloworld_ports_list_by_id_get_list(unique_name);
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

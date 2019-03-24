@@ -57,6 +57,8 @@ class LeafResource : public Resource {
   void SetDefaultIfMissing(nlohmann::json &body,
                            bool initialization) const override;
 
+  nlohmann::json ToHelpJson() const override;
+
  protected:
   const std::unique_ptr<JsonValueField> value_field_;
   const bool mandatory_;

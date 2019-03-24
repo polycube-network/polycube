@@ -59,20 +59,16 @@ namespace LbrpApiImpl {
   void delete_lbrp_src_ip_rewrite_by_id(const std::string &name);
   LbrpJsonObject read_lbrp_by_id(const std::string &name);
   std::vector<LbrpJsonObject> read_lbrp_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_list_by_id_get_list();
   PortsJsonObject read_lbrp_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_lbrp_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name);
   PortsTypeEnum read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName);
   ServiceBackendJsonObject read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip);
   std::vector<ServiceBackendJsonObject> read_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   std::string read_lbrp_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip);
   uint16_t read_lbrp_service_backend_port_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip);
   uint16_t read_lbrp_service_backend_weight_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip);
   ServiceJsonObject read_lbrp_service_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   std::vector<ServiceJsonObject> read_lbrp_service_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name);
   std::string read_lbrp_service_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
   SrcIpRewriteJsonObject read_lbrp_src_ip_rewrite_by_id(const std::string &name);
   std::string read_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name);
@@ -101,6 +97,13 @@ namespace LbrpApiImpl {
   void update_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value);
   void update_lbrp_src_ip_rewrite_ip_range_by_id(const std::string &name, const std::string &value);
   void update_lbrp_src_ip_rewrite_new_ip_range_by_id(const std::string &name, const std::string &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_ports_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_backend_list_by_id_get_list(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbrp_service_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

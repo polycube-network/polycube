@@ -69,14 +69,9 @@ Response update_ddosmitigator_blacklist_src_list_by_id_handler(const char *name,
 Response update_ddosmitigator_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_ddosmitigator_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response ddosmitigator_blacklist_dst_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_blacklist_dst_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_blacklist_src_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_blacklist_src_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response ddosmitigator_stats_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response ddosmitigator_blacklist_dst_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response ddosmitigator_blacklist_src_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response ddosmitigator_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

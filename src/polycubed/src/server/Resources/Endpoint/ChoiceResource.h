@@ -38,9 +38,6 @@ class ChoiceResource : public ParentResource, public Body::ChoiceResource {
 
   void AddChild(std::shared_ptr<Body::Resource> &&child) final;
 
-  Response Help(const std::string &cube_name, HelpType type,
-                const ListKeyValues &keys) final;
-
   using Body::ChoiceResource::IsMandatory;
   using Body::ChoiceResource::SetDefaultIfMissing;
 

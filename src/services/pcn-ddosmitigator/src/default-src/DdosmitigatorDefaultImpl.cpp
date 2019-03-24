@@ -15,8 +15,6 @@
 
 #include "../Ddosmitigator.h"
 
-
-
 std::shared_ptr<Stats> Ddosmitigator::getStats(){
   return Stats::getEntry(*this);
 }

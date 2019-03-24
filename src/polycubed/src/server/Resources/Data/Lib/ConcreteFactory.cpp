@@ -136,25 +136,18 @@ std::unique_ptr<Endpoint::ListResource> ConcreteFactory::RestList(
   auto read_name = GenerateHandlerName(tree_names, Operation::kRead);
   auto read_entry_handler =
       LoadHandler<Response(const char *, const Key *, size_t)>(read_name);
-
   auto help_name = GenerateHelpName(tree_names);
-  auto help =
-      LoadHandler<Response(HelpType, const char *name, const Key *, size_t)>(
-          help_name);
-
   help_name.replace(help_name.rfind(sname), length, replace);
-  auto help_multiple =
-      LoadHandler<Response(HelpType, const char *name, const Key *, size_t)>(
-          help_name);
-
+  auto get_elements_list =
+      LoadHandler<Response(const char *name, const Key *, size_t)>(help_name);
   read_name.replace(read_name.rfind(sname), length, replace);
   auto read_whole_handler =
       LoadHandler<Response(const char *, const Key *, size_t)>(read_name);
   if (!configuration || init_only_config) {
     return std::make_unique<ListResource>(
         std::move(read_entry_handler), std::move(read_whole_handler),
-        std::move(help), std::move(help_multiple), name, description,
-        cli_example, rest_endpoint, std::move(rest_endpoint_whole_list), parent,
+        std::move(get_elements_list), name, description, cli_example,
+        rest_endpoint, std::move(rest_endpoint_whole_list), parent,
         configuration, init_only_config, core_, std::move(keys), node_fields);
   }
 
@@ -200,7 +193,7 @@ std::unique_ptr<Endpoint::ListResource> ConcreteFactory::RestList(
       std::move(delete_entry_handler), std::move(create_whole_handler),
       std::move(replace_whole_handler), std::move(update_whole_handler),
       std::move(read_whole_handler), std::move(delete_whole_handler),
-      std::move(help), std::move(help_multiple), name, description, cli_example,
+      std::move(get_elements_list), name, description, cli_example,
       rest_endpoint, std::move(rest_endpoint_whole_list), parent, core_,
       std::move(keys), node_fields);
 }
@@ -211,27 +204,22 @@ std::unique_ptr<Endpoint::ParentResource> ConcreteFactory::RestGeneric(
     const std::string &rest_endpoint, const Body::ParentResource *parent,
     const std::vector<Body::JsonNodeField> &node_fields, bool configuration,
     bool init_only_config, bool container_presence, bool rpc_action) const {
-  auto help_name = GenerateHelpName(tree_names);
-  auto help =
-      LoadHandler<Response(HelpType, const char *name, const Key *, size_t)>(
-          help_name);
-
   if (rpc_action) {
     auto create_handler =
         LoadHandler<Response(const char *, const Key *, size_t, const char *)>(
             GenerateHandlerName(tree_names, Operation::kCreate));
     return std::make_unique<ParentResource>(
-        std::move(create_handler), std::move(help), name, description,
-        cli_example, rest_endpoint, parent, core_, node_fields);
+        std::move(create_handler), name, description, cli_example,
+        rest_endpoint, parent, core_, node_fields);
   }
 
   auto read_handler = LoadHandler<Response(const char *, const Key *, size_t)>(
       GenerateHandlerName(tree_names, Operation::kRead));
   if (!configuration || init_only_config) {
     return std::make_unique<ParentResource>(
-        std::move(read_handler), std::move(help), name, description,
-        cli_example, rest_endpoint, parent, configuration, init_only_config,
-        core_, node_fields, container_presence);
+        std::move(read_handler), name, description, cli_example, rest_endpoint,
+        parent, configuration, init_only_config, core_, node_fields,
+        container_presence);
   }
 
   auto create_handler =
@@ -250,9 +238,8 @@ std::unique_ptr<Endpoint::ParentResource> ConcreteFactory::RestGeneric(
   return std::make_unique<ParentResource>(
       std::move(create_handler), std::move(replace_handler),
       std::move(update_handler), std::move(read_handler),
-      std::move(delete_handler), std::move(help), name, description,
-      cli_example, rest_endpoint, parent, core_, node_fields,
-      container_presence);
+      std::move(delete_handler), name, description, cli_example, rest_endpoint,
+      parent, core_, node_fields, container_presence);
 }
 
 std::unique_ptr<Endpoint::Service> ConcreteFactory::RestService(
@@ -292,21 +279,14 @@ std::unique_ptr<Endpoint::Service> ConcreteFactory::RestService(
   auto init_handler =
       LoadHandler<void(service::CubeFactory *, const char *)>("init");
 
-  auto help_name = GenerateHelpName(tree_names);
-  auto help =
-      LoadHandler<Response(HelpType, const char *name, const Key *, size_t)>(
-          help_name);
-
   std::string service_help_name{name + "_list_by_id_help"};
-  auto service_help =
-      LoadHandler<Response(HelpType, const char *name, const Key *, size_t)>(
-          service_help_name);
+  auto service_help = LoadHandler<Response()>(service_help_name);
 
   return std::make_unique<Service>(
       handle_, std::move(create_handler), std::move(update_handler),
       std::move(read_handler), std::move(replace_handler),
       std::move(delete_handler), std::move(read_list_handler),
-      std::move(update_list_handler), std::move(init_handler), std::move(help),
+      std::move(update_list_handler), std::move(init_handler),
       std::move(service_help), name, description, cli_example,
       std::move(base_endpoint), std::move(version), core_);
 }

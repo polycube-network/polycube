@@ -115,62 +115,6 @@ bool FwdTableJsonObject::portIsSet() const {
 
 
 
-nlohmann::json FwdTableJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["address"]["name"] = "address";
-  val["address"]["type"] = "key";
-  val["address"]["simpletype"] = "string";
-  val["address"]["description"] = R"POLYCUBE(Destination IP address)POLYCUBE";
-  val["address"]["example"] = R"POLYCUBE(123.13.34.0)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FwdTableJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["mac"]["name"] = "mac";
-  val["mac"]["type"] = "leaf"; // Suppose that type is leaf
-  val["mac"]["simpletype"] = "string";
-  val["mac"]["description"] = R"POLYCUBE(Destination MAC address)POLYCUBE";
-  val["mac"]["example"] = R"POLYCUBE(C5:13:2D:36:27:9B)POLYCUBE";
-  val["port"]["name"] = "port";
-  val["port"]["type"] = "leaf"; // Suppose that type is leaf
-  val["port"]["simpletype"] = "string";
-  val["port"]["description"] = R"POLYCUBE(Port where this entry is present)POLYCUBE";
-  val["port"]["example"] = R"POLYCUBE(port1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FwdTableJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["mac"]["name"] = "mac";
-  val["mac"]["simpletype"] = "string";
-  val["mac"]["description"] = R"POLYCUBE(Destination MAC address)POLYCUBE";
-  val["mac"]["example"] = R"POLYCUBE(C5:13:2D:36:27:9B)POLYCUBE";
-  val["port"]["name"] = "port";
-  val["port"]["simpletype"] = "string";
-  val["port"]["description"] = R"POLYCUBE(Port where this entry is present)POLYCUBE";
-  val["port"]["example"] = R"POLYCUBE(port1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FwdTableJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> FwdTableJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

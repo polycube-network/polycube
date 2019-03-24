@@ -109,9 +109,6 @@ create_pbforwarder_ports_by_id(const std::string &name, const std::string &ports
   pbforwarder->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -128,21 +125,6 @@ create_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<P
   auto pbforwarder = get_cube(name);
   pbforwarder->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_pbforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&ports = pbforwarder->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create rules by ID
@@ -163,9 +145,6 @@ create_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, cons
   pbforwarder->addRules(id, value);
 }
 
-
-
-
 /**
 * @brief   Create rules by ID
 *
@@ -182,21 +161,6 @@ create_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<R
   auto pbforwarder = get_cube(name);
   pbforwarder->addRulesList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&rules = pbforwarder->addRulesList(value);
-  for(auto &i : rules) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -216,9 +180,6 @@ delete_pbforwarder_ports_by_id(const std::string &name, const std::string &ports
   pbforwarder->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -234,21 +195,6 @@ delete_pbforwarder_ports_list_by_id(const std::string &name) {
   auto pbforwarder = get_cube(name);
   pbforwarder->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_pbforwarder_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&ports = pbforwarder->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete rules by ID
@@ -268,9 +214,6 @@ delete_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
   pbforwarder->delRules(id);
 }
 
-
-
-
 /**
 * @brief   Delete rules by ID
 *
@@ -287,21 +230,6 @@ delete_pbforwarder_rules_list_by_id(const std::string &name) {
   pbforwarder->delRulesList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&rules = pbforwarder->delRulesList();
-  for(auto &i : rules) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Read pbforwarder by ID
 *
@@ -317,9 +245,6 @@ read_pbforwarder_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -338,9 +263,6 @@ read_pbforwarder_ports_by_id(const std::string &name, const std::string &portsNa
   return pbforwarder->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -362,23 +284,6 @@ read_pbforwarder_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&ports = pbforwarder->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read action by ID
 *
@@ -398,9 +303,6 @@ read_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &id)
 
 }
 
-
-
-
 /**
 * @brief   Read rules by ID
 *
@@ -418,9 +320,6 @@ read_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id) {
   return pbforwarder->getRules(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read dst_ip by ID
@@ -441,9 +340,6 @@ read_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &id)
 
 }
 
-
-
-
 /**
 * @brief   Read dst_mac by ID
 *
@@ -462,9 +358,6 @@ read_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &id
   return rules->getDstMac();
 
 }
-
-
-
 
 /**
 * @brief   Read dst_port by ID
@@ -485,9 +378,6 @@ read_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t &i
 
 }
 
-
-
-
 /**
 * @brief   Read in_port by ID
 *
@@ -507,9 +397,6 @@ read_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &id
 
 }
 
-
-
-
 /**
 * @brief   Read l4_proto by ID
 *
@@ -528,9 +415,6 @@ read_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t &i
   return rules->getL4Proto();
 
 }
-
-
-
 
 /**
 * @brief   Read rules by ID
@@ -552,23 +436,6 @@ read_pbforwarder_rules_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&pbforwarder = get_cube(name);
-
-  auto &&rules = pbforwarder->getRulesList();
-  for(auto &i : rules) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read out_port by ID
 *
@@ -587,9 +454,6 @@ read_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t &i
   return rules->getOutPort();
 
 }
-
-
-
 
 /**
 * @brief   Read src_ip by ID
@@ -610,9 +474,6 @@ read_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &id)
 
 }
 
-
-
-
 /**
 * @brief   Read src_mac by ID
 *
@@ -631,9 +492,6 @@ read_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &id
   return rules->getSrcMac();
 
 }
-
-
-
 
 /**
 * @brief   Read src_port by ID
@@ -654,9 +512,6 @@ read_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t &i
 
 }
 
-
-
-
 /**
 * @brief   Read vlan by ID
 *
@@ -675,9 +530,6 @@ read_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id) {
   return rules->getVlan();
 
 }
-
-
-
 
 /**
 * @brief   Replace ports by ID
@@ -698,9 +550,6 @@ replace_pbforwarder_ports_by_id(const std::string &name, const std::string &port
   pbforwarder->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -716,14 +565,6 @@ void
 replace_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_pbforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace rules by ID
@@ -744,9 +585,6 @@ replace_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, con
   pbforwarder->replaceRules(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace rules by ID
 *
@@ -762,14 +600,6 @@ void
 replace_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update pbforwarder by ID
@@ -789,9 +619,6 @@ update_pbforwarder_by_id(const std::string &name, const PbforwarderJsonObject &v
   pbforwarder->update(value);
 }
 
-
-
-
 /**
 * @brief   Update pbforwarder by ID
 *
@@ -806,14 +633,6 @@ void
 update_pbforwarder_list_by_id(const std::vector<PbforwarderJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_list_by_id_get_list(const std::vector<PbforwarderJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -835,9 +654,6 @@ update_pbforwarder_ports_by_id(const std::string &name, const std::string &ports
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -853,14 +669,6 @@ void
 update_pbforwarder_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update action by ID
@@ -882,9 +690,6 @@ update_pbforwarder_rules_action_by_id(const std::string &name, const uint32_t &i
   rules->setAction(value);
 }
 
-
-
-
 /**
 * @brief   Update rules by ID
 *
@@ -904,9 +709,6 @@ update_pbforwarder_rules_by_id(const std::string &name, const uint32_t &id, cons
 
   rules->update(value);
 }
-
-
-
 
 /**
 * @brief   Update dst_ip by ID
@@ -928,9 +730,6 @@ update_pbforwarder_rules_dst_ip_by_id(const std::string &name, const uint32_t &i
   rules->setDstIp(value);
 }
 
-
-
-
 /**
 * @brief   Update dst_mac by ID
 *
@@ -950,9 +749,6 @@ update_pbforwarder_rules_dst_mac_by_id(const std::string &name, const uint32_t &
 
   rules->setDstMac(value);
 }
-
-
-
 
 /**
 * @brief   Update dst_port by ID
@@ -974,9 +770,6 @@ update_pbforwarder_rules_dst_port_by_id(const std::string &name, const uint32_t 
   rules->setDstPort(value);
 }
 
-
-
-
 /**
 * @brief   Update in_port by ID
 *
@@ -996,9 +789,6 @@ update_pbforwarder_rules_in_port_by_id(const std::string &name, const uint32_t &
 
   rules->setInPort(value);
 }
-
-
-
 
 /**
 * @brief   Update l4_proto by ID
@@ -1020,9 +810,6 @@ update_pbforwarder_rules_l4_proto_by_id(const std::string &name, const uint32_t 
   rules->setL4Proto(value);
 }
 
-
-
-
 /**
 * @brief   Update rules by ID
 *
@@ -1038,14 +825,6 @@ void
 update_pbforwarder_rules_list_by_id(const std::string &name, const std::vector<RulesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_pbforwarder_rules_list_by_id_get_list(const std::string &name, const std::vector<RulesJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update out_port by ID
@@ -1067,9 +846,6 @@ update_pbforwarder_rules_out_port_by_id(const std::string &name, const uint32_t 
   rules->setOutPort(value);
 }
 
-
-
-
 /**
 * @brief   Update src_ip by ID
 *
@@ -1089,9 +865,6 @@ update_pbforwarder_rules_src_ip_by_id(const std::string &name, const uint32_t &i
 
   rules->setSrcIp(value);
 }
-
-
-
 
 /**
 * @brief   Update src_mac by ID
@@ -1113,9 +886,6 @@ update_pbforwarder_rules_src_mac_by_id(const std::string &name, const uint32_t &
   rules->setSrcMac(value);
 }
 
-
-
-
 /**
 * @brief   Update src_port by ID
 *
@@ -1135,9 +905,6 @@ update_pbforwarder_rules_src_port_by_id(const std::string &name, const uint32_t 
 
   rules->setSrcPort(value);
 }
-
-
-
 
 /**
 * @brief   Update vlan by ID
@@ -1161,8 +928,43 @@ update_pbforwarder_rules_vlan_by_id(const std::string &name, const uint32_t &id,
 
 
 
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&pbforwarder = get_cube(name);
+
+  auto &&ports = pbforwarder->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_pbforwarder_rules_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&pbforwarder = get_cube(name);
+
+  auto &&rules = pbforwarder->getRulesList();
+  for(auto &i : rules) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
 
 }
+
 }
 }
 }

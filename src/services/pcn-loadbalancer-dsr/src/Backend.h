@@ -42,7 +42,6 @@ class Backend : public BackendInterface {
   static void create(Lbdsr &parent, const BackendJsonObject &conf);
   static std::shared_ptr<Backend> getEntry(Lbdsr &parent);
   static void removeEntry(Lbdsr &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const BackendJsonObject &conf) override;
   BackendJsonObject toJsonObject() override;

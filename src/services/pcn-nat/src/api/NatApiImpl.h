@@ -89,12 +89,10 @@ namespace NatApiImpl {
   void delete_nat_rule_snat_entry_list_by_id(const std::string &name);
   NatJsonObject read_nat_by_id(const std::string &name);
   std::vector<NatJsonObject> read_nat_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_list_by_id_get_list();
   NattingTableJsonObject read_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
   std::string read_nat_natting_table_external_ip_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
   uint16_t read_nat_natting_table_external_port_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
   std::vector<NattingTableJsonObject> read_nat_natting_table_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_natting_table_list_by_id_get_list(const std::string &name);
   NattingTableOriginatingRuleEnum read_nat_natting_table_originating_rule_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
   RuleJsonObject read_nat_rule_by_id(const std::string &name);
   RuleDnatJsonObject read_nat_rule_dnat_by_id(const std::string &name);
@@ -102,7 +100,6 @@ namespace NatApiImpl {
   std::string read_nat_rule_dnat_entry_external_ip_by_id(const std::string &name, const uint32_t &id);
   std::string read_nat_rule_dnat_entry_internal_ip_by_id(const std::string &name, const uint32_t &id);
   std::vector<RuleDnatEntryJsonObject> read_nat_rule_dnat_entry_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name);
   RuleMasqueradeJsonObject read_nat_rule_masquerade_by_id(const std::string &name);
   bool read_nat_rule_masquerade_enabled_by_id(const std::string &name);
   RulePortForwardingJsonObject read_nat_rule_port_forwarding_by_id(const std::string &name);
@@ -112,14 +109,12 @@ namespace NatApiImpl {
   std::string read_nat_rule_port_forwarding_entry_internal_ip_by_id(const std::string &name, const uint32_t &id);
   uint16_t read_nat_rule_port_forwarding_entry_internal_port_by_id(const std::string &name, const uint32_t &id);
   std::vector<RulePortForwardingEntryJsonObject> read_nat_rule_port_forwarding_entry_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name);
   std::string read_nat_rule_port_forwarding_entry_proto_by_id(const std::string &name, const uint32_t &id);
   RuleSnatJsonObject read_nat_rule_snat_by_id(const std::string &name);
   RuleSnatEntryJsonObject read_nat_rule_snat_entry_by_id(const std::string &name, const uint32_t &id);
   std::string read_nat_rule_snat_entry_external_ip_by_id(const std::string &name, const uint32_t &id);
   std::string read_nat_rule_snat_entry_internal_net_by_id(const std::string &name, const uint32_t &id);
   std::vector<RuleSnatEntryJsonObject> read_nat_rule_snat_entry_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_snat_entry_list_by_id_get_list(const std::string &name);
   void replace_nat_by_id(const std::string &name, const NatJsonObject &value);
   void replace_nat_natting_table_by_id(const std::string &name, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableJsonObject &value);
   void replace_nat_natting_table_list_by_id(const std::string &name, const std::vector<NattingTableJsonObject> &value);
@@ -162,6 +157,14 @@ namespace NatApiImpl {
   void update_nat_rule_snat_entry_external_ip_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_nat_rule_snat_entry_internal_net_by_id(const std::string &name, const uint32_t &id, const std::string &value);
   void update_nat_rule_snat_entry_list_by_id(const std::string &name, const std::vector<RuleSnatEntryJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_natting_table_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_dnat_entry_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_port_forwarding_entry_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_nat_rule_snat_entry_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

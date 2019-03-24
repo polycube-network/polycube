@@ -15,8 +15,6 @@
 
 #include "../Router.h"
 
-
-
 std::shared_ptr<Ports> Router::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

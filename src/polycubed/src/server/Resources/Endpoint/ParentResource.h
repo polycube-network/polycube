@@ -51,6 +51,8 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
 
   virtual Response DeleteValue(const std::string &cube_name,
                                const ListKeyValues &keys) = 0;
+  Response Help(const std::string &cube_name, HelpType type,
+                const ListKeyValues &keys);
 
  protected:
   /**
@@ -61,9 +63,18 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
                  const Body::ParentResource *const parent, PolycubedCore *core,
                  const std::vector<Body::JsonNodeField> &node_fields);
 
+  /*
+   * Help related methods
+   */
+  nlohmann::json helpElements(bool mark_as_keys = false) const;
+  nlohmann::json helpWritableLeafs(bool include_init_only = false) const;
+  nlohmann::json helpComplexElements() const;
+  std::vector<std::string> helpActions() const;
+
  private:
   const bool has_endpoints_;
   const bool rpc_action_;
+
   void get(const Request &request, ResponseWriter response);
 
   virtual void post(const Request &request, ResponseWriter response);
@@ -74,6 +85,6 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
 
   virtual void del(const Request &request, ResponseWriter response);
 
-  virtual void options(const Request &request, ResponseWriter response);
+  void options(const Request &request, ResponseWriter response);
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

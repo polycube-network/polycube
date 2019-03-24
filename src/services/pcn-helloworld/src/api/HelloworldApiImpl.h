@@ -47,10 +47,8 @@ namespace HelloworldApiImpl {
   HelloworldActionEnum read_helloworld_action_by_id(const std::string &name);
   HelloworldJsonObject read_helloworld_by_id(const std::string &name);
   std::vector<HelloworldJsonObject> read_helloworld_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_list_by_id_get_list();
   PortsJsonObject read_helloworld_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_helloworld_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_ports_list_by_id_get_list(const std::string &name);
   void replace_helloworld_by_id(const std::string &name, const HelloworldJsonObject &value);
   void replace_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void replace_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
@@ -59,6 +57,11 @@ namespace HelloworldApiImpl {
   void update_helloworld_list_by_id(const std::vector<HelloworldJsonObject> &value);
   void update_helloworld_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_ports_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

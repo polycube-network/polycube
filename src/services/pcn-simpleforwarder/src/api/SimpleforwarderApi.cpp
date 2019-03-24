@@ -729,180 +729,29 @@ Response update_simpleforwarder_ports_list_by_id_handler(
 }
 
 
-Response simpleforwarder_actions_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_inport;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "inport")) {
-      unique_inport = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ActionsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ActionsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ActionsJsonObject::helpComplexElements();
-    val["actions"] = ActionsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response simpleforwarder_actions_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = ActionsJsonObject::helpKeys();
-    val["optional-params"] = ActionsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ActionsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_simpleforwarder_actions_list_by_id_get_list(unique_name);
 
-Response simpleforwarder_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SimpleforwarderJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = SimpleforwarderJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = SimpleforwarderJsonObject::helpComplexElements();
-    val["actions"] = SimpleforwarderJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response simpleforwarder_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SimpleforwarderJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = SimpleforwarderJsonObject::helpKeys();
-    val["optional-params"] = SimpleforwarderJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = SimpleforwarderJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = SimpleforwarderJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_simpleforwarder_list_by_id_get_list();
 
-Response simpleforwarder_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response simpleforwarder_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_simpleforwarder_ports_list_by_id_get_list(unique_name);
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

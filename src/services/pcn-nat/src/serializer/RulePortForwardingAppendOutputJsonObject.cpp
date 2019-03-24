@@ -67,48 +67,6 @@ void RulePortForwardingAppendOutputJsonObject::unsetId() {
 }
 
 
-nlohmann::json RulePortForwardingAppendOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingAppendOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "leaf"; // Suppose that type is leaf
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingAppendOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingAppendOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RulePortForwardingAppendOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

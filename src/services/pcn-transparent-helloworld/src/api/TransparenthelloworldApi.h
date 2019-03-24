@@ -45,9 +45,7 @@ Response update_transparenthelloworld_egress_action_by_id_handler(const char *na
 Response update_transparenthelloworld_ingress_action_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_transparenthelloworld_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response transparenthelloworld_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response transparenthelloworld_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response transparenthelloworld_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

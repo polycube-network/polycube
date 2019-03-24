@@ -36,7 +36,6 @@ class RuleDnatEntry : public RuleDnatEntryInterface {
   static void removeEntry(RuleDnat &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<RuleDnatEntry>> get(RuleDnat &parent);
   static void remove(RuleDnat &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleDnatEntryJsonObject &conf) override;
   RuleDnatEntryJsonObject toJsonObject() override;

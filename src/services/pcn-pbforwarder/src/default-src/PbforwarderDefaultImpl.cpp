@@ -15,8 +15,6 @@
 
 #include "../Pbforwarder.h"
 
-
-
 std::shared_ptr<Ports> Pbforwarder::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

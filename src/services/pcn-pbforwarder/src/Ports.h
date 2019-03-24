@@ -43,7 +43,6 @@ class Ports : public polycube::service::Port, public PortsInterface {
   static void removeEntry(Pbforwarder &parent, const std::string &name);
   static std::vector<std::shared_ptr<Ports>> get(Pbforwarder &parent);
   static void remove(Pbforwarder &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsJsonObject &conf) override;
   PortsJsonObject toJsonObject() override;

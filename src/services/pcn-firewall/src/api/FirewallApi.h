@@ -121,22 +121,12 @@ Response update_firewall_list_by_id_handler(const char *name, const Key *keys, s
 Response update_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response firewall_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_rule_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_rule_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_stats_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_stats_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_session_table_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_session_table_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
-Response firewall_chain_append_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_apply_rules_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response firewall_chain_reset_counters_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
+Response firewall_chain_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response firewall_chain_rule_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response firewall_chain_stats_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response firewall_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response firewall_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response firewall_session_table_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

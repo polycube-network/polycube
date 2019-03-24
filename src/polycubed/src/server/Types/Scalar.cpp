@@ -45,4 +45,24 @@ Scalar ScalarFromYang(LY_DATA_TYPE type) {
     return Scalar::Unsigned;
   }
 }
+
+std::string ScalarToString(Scalar value) {
+  switch (value) {
+  case Scalar::Integer:
+    return "integer";
+  case Scalar::Unsigned:
+    return "unsigned";
+  case Scalar::Decimal:
+    return "decimal";
+  case Scalar::String:
+    return "string";
+  case Scalar::Boolean:
+    return "boolean";
+  case Scalar::Empty:
+    return "empty";
+  default:
+    return "unknown";
+  }
+}
+
 }  // namespace polycube::polycubed::Rest::Types

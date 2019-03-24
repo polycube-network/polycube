@@ -65,48 +65,6 @@ bool FdbFlushOutputJsonObject::flushedIsSet() const {
 
 
 
-nlohmann::json FdbFlushOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json FdbFlushOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["flushed"]["name"] = "flushed";
-  val["flushed"]["type"] = "leaf"; // Suppose that type is leaf
-  val["flushed"]["simpletype"] = "boolean";
-  val["flushed"]["description"] = R"POLYCUBE(Returns true if the Filtering database has been flushed. False otherwise)POLYCUBE";
-  val["flushed"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbFlushOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["flushed"]["name"] = "flushed";
-  val["flushed"]["simpletype"] = "boolean";
-  val["flushed"]["description"] = R"POLYCUBE(Returns true if the Filtering database has been flushed. False otherwise)POLYCUBE";
-  val["flushed"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbFlushOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> FdbFlushOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

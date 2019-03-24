@@ -52,6 +52,8 @@ class ParentResource : public Resource {
 
   std::shared_ptr<Resource> Child(const std::string &child_name) const;
 
+  nlohmann::json ToHelpJson() const override;
+
  protected:
   std::vector<std::shared_ptr<Resource>> children_;
 

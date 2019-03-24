@@ -40,19 +40,8 @@ public:
   FdbJsonObject();
   FdbJsonObject(const nlohmann::json &json);
   ~FdbJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// FdbJsonObject members
 
   /// <summary>
   /// Aging time of the filtering database (in seconds)

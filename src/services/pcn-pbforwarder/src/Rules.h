@@ -58,7 +58,6 @@ class Rules : public RulesInterface {
   static void removeEntry(Pbforwarder &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<Rules>> get(Pbforwarder &parent);
   static void remove(Pbforwarder &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulesJsonObject &conf) override;
   RulesJsonObject toJsonObject() override;

@@ -15,20 +15,6 @@
 
 #include "../Service.h"
 
-
-nlohmann::fifo_map<std::string, std::string>  Service::getKeys() {
-  nlohmann::fifo_map<std::string, std::string>  r;
-
-  r["vip"] = getVip();
-
-  r["vport"] = getVport();
-
-  r["proto"] = ServiceJsonObject::ServiceProtoEnum_to_string(getProto());
-
-  return r;
-}
-
-
 std::shared_ptr<ServiceBackend> Service::getBackend(const std::string &ip){
   return ServiceBackend::getEntry(*this, ip);
 }

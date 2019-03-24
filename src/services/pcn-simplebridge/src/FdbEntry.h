@@ -44,7 +44,6 @@ class FdbEntry : public FdbEntryInterface {
   static void removeEntry(Fdb &parent, const std::string &address);
   static std::vector<std::shared_ptr<FdbEntry>> get(Fdb &parent);
   static void remove(Fdb &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const FdbEntryJsonObject &conf) override;
   FdbEntryJsonObject toJsonObject() override;

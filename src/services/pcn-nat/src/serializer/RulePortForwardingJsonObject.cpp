@@ -80,49 +80,6 @@ void RulePortForwardingJsonObject::unsetEntry() {
 }
 
 
-nlohmann::json RulePortForwardingJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "leaf"; // Suppose that type is leaf
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(List of port forwarding rules)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RulePortForwardingJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(List of port forwarding rules)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> RulePortForwardingJsonObject::helpActions() {
-  std::vector<std::string> val;
-  val.push_back("append");
-  return val;
-}
-
 }
 }
 }

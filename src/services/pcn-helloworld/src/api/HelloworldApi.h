@@ -54,11 +54,8 @@ Response update_helloworld_list_by_id_handler(const char *name, const Key *keys,
 Response update_helloworld_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_helloworld_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response helloworld_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response helloworld_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response helloworld_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response helloworld_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response helloworld_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response helloworld_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

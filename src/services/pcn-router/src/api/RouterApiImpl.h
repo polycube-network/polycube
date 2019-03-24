@@ -62,24 +62,19 @@ namespace RouterApiImpl {
   ArpEntryJsonObject read_router_arp_entry_by_id(const std::string &name, const std::string &address);
   std::string read_router_arp_entry_interface_by_id(const std::string &name, const std::string &address);
   std::vector<ArpEntryJsonObject> read_router_arp_entry_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_arp_entry_list_by_id_get_list(const std::string &name);
   std::string read_router_arp_entry_mac_by_id(const std::string &name, const std::string &address);
   RouterJsonObject read_router_by_id(const std::string &name);
   std::vector<RouterJsonObject> read_router_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_list_by_id_get_list();
   PortsJsonObject read_router_ports_by_id(const std::string &name, const std::string &portsName);
   std::string read_router_ports_ip_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_router_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_list_by_id_get_list(const std::string &name);
   std::string read_router_ports_mac_by_id(const std::string &name, const std::string &portsName);
   std::string read_router_ports_netmask_by_id(const std::string &name, const std::string &portsName);
   PortsSecondaryipJsonObject read_router_ports_secondaryip_by_id(const std::string &name, const std::string &portsName, const std::string &ip, const std::string &netmask);
   std::vector<PortsSecondaryipJsonObject> read_router_ports_secondaryip_list_by_id(const std::string &name, const std::string &portsName);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName);
   RouteJsonObject read_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
   std::string read_router_route_interface_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
   std::vector<RouteJsonObject> read_router_route_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name);
   uint32_t read_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop);
   void replace_router_arp_entry_by_id(const std::string &name, const std::string &address, const ArpEntryJsonObject &value);
   void replace_router_arp_entry_list_by_id(const std::string &name, const std::vector<ArpEntryJsonObject> &value);
@@ -106,6 +101,14 @@ namespace RouterApiImpl {
   void update_router_route_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const RouteJsonObject &value);
   void update_router_route_list_by_id(const std::string &name, const std::vector<RouteJsonObject> &value);
   void update_router_route_pathcost_by_id(const std::string &name, const std::string &network, const std::string &netmask, const std::string &nexthop, const uint32_t &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_arp_entry_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_ports_secondaryip_list_by_id_get_list(const std::string &name, const std::string &portsName);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_router_route_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

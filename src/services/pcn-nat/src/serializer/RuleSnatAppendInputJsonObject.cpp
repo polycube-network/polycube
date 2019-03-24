@@ -90,57 +90,6 @@ bool RuleSnatAppendInputJsonObject::externalIpIsSet() const {
 
 
 
-nlohmann::json RuleSnatAppendInputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RuleSnatAppendInputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["internal-net"]["name"] = "internal-net";
-  val["internal-net"]["type"] = "leaf"; // Suppose that type is leaf
-  val["internal-net"]["simpletype"] = "string";
-  val["internal-net"]["description"] = R"POLYCUBE(Internal IP address (or subnet))POLYCUBE";
-  val["internal-net"]["example"] = R"POLYCUBE(10.0.0.0/24 or 10.0.0.1/32)POLYCUBE";
-  val["external-ip"]["name"] = "external-ip";
-  val["external-ip"]["type"] = "leaf"; // Suppose that type is leaf
-  val["external-ip"]["simpletype"] = "string";
-  val["external-ip"]["description"] = R"POLYCUBE(Natted source IP address)POLYCUBE";
-  val["external-ip"]["example"] = R"POLYCUBE(8.8.8.8)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleSnatAppendInputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["internal-net"]["name"] = "internal-net";
-  val["internal-net"]["simpletype"] = "string";
-  val["internal-net"]["description"] = R"POLYCUBE(Internal IP address (or subnet))POLYCUBE";
-  val["internal-net"]["example"] = R"POLYCUBE(10.0.0.0/24 or 10.0.0.1/32)POLYCUBE";
-  val["external-ip"]["name"] = "external-ip";
-  val["external-ip"]["simpletype"] = "string";
-  val["external-ip"]["description"] = R"POLYCUBE(Natted source IP address)POLYCUBE";
-  val["external-ip"]["example"] = R"POLYCUBE(8.8.8.8)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleSnatAppendInputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RuleSnatAppendInputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

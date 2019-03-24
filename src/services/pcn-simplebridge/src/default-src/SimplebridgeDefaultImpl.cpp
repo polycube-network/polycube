@@ -15,8 +15,6 @@
 
 #include "../Simplebridge.h"
 
-
-
 std::shared_ptr<Ports> Simplebridge::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

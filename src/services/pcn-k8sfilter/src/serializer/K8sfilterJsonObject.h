@@ -41,19 +41,8 @@ public:
   K8sfilterJsonObject();
   K8sfilterJsonObject(const nlohmann::json &json);
   ~K8sfilterJsonObject() final = default;
-
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
   nlohmann::json toJson() const final;
 
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// K8sfilterJsonObject members
 
   /// <summary>
   /// Name of the k8sfilter service

@@ -15,8 +15,6 @@
 
 #include "../Firewall.h"
 
-
-
 std::shared_ptr<Ports> Firewall::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

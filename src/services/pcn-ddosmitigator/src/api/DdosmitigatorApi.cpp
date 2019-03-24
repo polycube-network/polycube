@@ -729,204 +729,29 @@ Response update_ddosmitigator_list_by_id_handler(
 }
 
 
-Response ddosmitigator_blacklist_dst_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = BlacklistDstJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = BlacklistDstJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = BlacklistDstJsonObject::helpComplexElements();
-    val["actions"] = BlacklistDstJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response ddosmitigator_blacklist_dst_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["optional-params"] = BlacklistDstJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = BlacklistDstJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_ddosmitigator_blacklist_dst_list_by_id_get_list(unique_name);
 
-Response ddosmitigator_blacklist_src_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = BlacklistSrcJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = BlacklistSrcJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = BlacklistSrcJsonObject::helpComplexElements();
-    val["actions"] = BlacklistSrcJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response ddosmitigator_blacklist_src_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["optional-params"] = BlacklistSrcJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = BlacklistSrcJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_ddosmitigator_blacklist_src_list_by_id_get_list(unique_name);
 
-Response ddosmitigator_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = DdosmitigatorJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = DdosmitigatorJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = DdosmitigatorJsonObject::helpComplexElements();
-    val["actions"] = DdosmitigatorJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response ddosmitigator_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = DdosmitigatorJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = DdosmitigatorJsonObject::helpKeys();
-    val["optional-params"] = DdosmitigatorJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = DdosmitigatorJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = DdosmitigatorJsonObject::helpKeys();
-    val["elements"] = read_ddosmitigator_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_ddosmitigator_list_by_id_get_list();
 
-Response ddosmitigator_stats_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = StatsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = StatsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = StatsJsonObject::helpComplexElements();
-    val["actions"] = StatsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

@@ -90,49 +90,6 @@ bool PortsSecondaryipJsonObject::netmaskIsSet() const {
 
 
 
-nlohmann::json PortsSecondaryipJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ip"]["name"] = "ip";
-  val["ip"]["type"] = "key";
-  val["ip"]["simpletype"] = "string";
-  val["ip"]["description"] = R"POLYCUBE(Seconadary IP address of the port)POLYCUBE";
-  val["ip"]["example"] = R"POLYCUBE(207.46.131.1)POLYCUBE";
-  val["netmask"]["name"] = "netmask";
-  val["netmask"]["type"] = "key";
-  val["netmask"]["simpletype"] = "string";
-  val["netmask"]["description"] = R"POLYCUBE(Secondary netmask of the port)POLYCUBE";
-  val["netmask"]["example"] = R"POLYCUBE(255.255.255.0)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json PortsSecondaryipJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json PortsSecondaryipJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json PortsSecondaryipJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> PortsSecondaryipJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

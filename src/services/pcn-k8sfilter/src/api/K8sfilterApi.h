@@ -55,11 +55,8 @@ Response update_k8sfilter_nodeport_range_by_id_handler(const char *name, const K
 Response update_k8sfilter_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8sfilter_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
-Response k8sfilter_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8sfilter_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8sfilter_ports_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-Response k8sfilter_ports_list_by_id_help(HelpType type, const char *name, const Key *keys, size_t num_keys);
-
+Response k8sfilter_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
+Response k8sfilter_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 
 #ifdef __cplusplus

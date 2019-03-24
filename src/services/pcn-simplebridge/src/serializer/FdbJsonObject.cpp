@@ -107,58 +107,6 @@ void FdbJsonObject::unsetEntry() {
 }
 
 
-nlohmann::json FdbJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["aging-time"]["name"] = "aging-time";
-  val["aging-time"]["type"] = "leaf"; // Suppose that type is leaf
-  val["aging-time"]["simpletype"] = "integer";
-  val["aging-time"]["description"] = R"POLYCUBE(Aging time of the filtering database (in seconds))POLYCUBE";
-  val["aging-time"]["example"] = R"POLYCUBE(300)POLYCUBE";
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "leaf"; // Suppose that type is leaf
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(Entry associated with the filtering database)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["aging-time"]["name"] = "aging-time";
-  val["aging-time"]["simpletype"] = "integer";
-  val["aging-time"]["description"] = R"POLYCUBE(Aging time of the filtering database (in seconds))POLYCUBE";
-  val["aging-time"]["example"] = R"POLYCUBE(300)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(Entry associated with the filtering database)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> FdbJsonObject::helpActions() {
-  std::vector<std::string> val;
-  val.push_back("flush");
-  return val;
-}
-
 }
 }
 }

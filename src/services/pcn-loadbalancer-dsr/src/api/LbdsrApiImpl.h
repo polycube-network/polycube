@@ -59,17 +59,14 @@ namespace LbdsrApiImpl {
   BackendJsonObject read_lbdsr_backend_by_id(const std::string &name);
   BackendPoolJsonObject read_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id);
   std::vector<BackendPoolJsonObject> read_lbdsr_backend_pool_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name);
   std::string read_lbdsr_backend_pool_mac_by_id(const std::string &name, const uint32_t &id);
   LbdsrJsonObject read_lbdsr_by_id(const std::string &name);
   FrontendJsonObject read_lbdsr_frontend_by_id(const std::string &name);
   std::string read_lbdsr_frontend_mac_by_id(const std::string &name);
   std::string read_lbdsr_frontend_vip_by_id(const std::string &name);
   std::vector<LbdsrJsonObject> read_lbdsr_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_list_by_id_get_list();
   PortsJsonObject read_lbdsr_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_lbdsr_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_ports_list_by_id_get_list(const std::string &name);
   PortsTypeEnum read_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName);
   void replace_lbdsr_backend_by_id(const std::string &name, const BackendJsonObject &value);
   void replace_lbdsr_backend_pool_by_id(const std::string &name, const uint32_t &id, const BackendPoolJsonObject &value);
@@ -90,6 +87,12 @@ namespace LbdsrApiImpl {
   void update_lbdsr_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_lbdsr_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_lbdsr_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_backend_pool_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_lbdsr_ports_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

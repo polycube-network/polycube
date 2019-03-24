@@ -224,56 +224,11 @@ Response update_transparenthelloworld_list_by_id_handler(
 }
 
 
-Response transparenthelloworld_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = TransparenthelloworldJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = TransparenthelloworldJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = TransparenthelloworldJsonObject::helpComplexElements();
-    val["actions"] = TransparenthelloworldJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response transparenthelloworld_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = TransparenthelloworldJsonObject::helpKeys();
-    val["elements"] = read_transparenthelloworld_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = TransparenthelloworldJsonObject::helpKeys();
-    val["optional-params"] = TransparenthelloworldJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = TransparenthelloworldJsonObject::helpKeys();
-    val["elements"] = read_transparenthelloworld_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = TransparenthelloworldJsonObject::helpKeys();
-    val["elements"] = read_transparenthelloworld_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_transparenthelloworld_list_by_id_get_list();
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 

@@ -15,8 +15,6 @@
 
 #include "../RuleDnat.h"
 
-
-
 std::shared_ptr<RuleDnatEntry> RuleDnat::getEntry(const uint32_t &id){
   return RuleDnatEntry::getEntry(*this, id);
 }

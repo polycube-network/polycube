@@ -36,7 +36,6 @@ class ServiceBackend : public ServiceBackendInterface {
   static void removeEntry(Service &parent, const std::string &ip);
   static std::vector<std::shared_ptr<ServiceBackend>> get(Service &parent);
   static void remove(Service &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceBackendJsonObject &conf) override;
   ServiceBackendJsonObject toJsonObject() override;

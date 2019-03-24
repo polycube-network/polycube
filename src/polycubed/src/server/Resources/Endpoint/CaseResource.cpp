@@ -32,9 +32,4 @@ CaseResource::CaseResource(const std::string &name,
       ParentResource(name, description, cli_example, parent, core,
                      std::vector<Body::JsonNodeField>{}),
       Body::CaseResource(name, description, cli_example, parent, core) {}
-
-Response CaseResource::Help(const std::string &cube_name, HelpType type,
-                            const ListKeyValues &keys) {
-  return {kOperationNotSupported, nullptr};
-}
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

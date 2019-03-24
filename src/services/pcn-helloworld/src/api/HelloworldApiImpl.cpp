@@ -90,7 +90,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_list_b
   return r;
 }
 
-
 /**
 * @brief   Create ports by ID
 *
@@ -110,9 +109,6 @@ create_helloworld_ports_by_id(const std::string &name, const std::string &portsN
   helloworld->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -129,21 +125,6 @@ create_helloworld_ports_list_by_id(const std::string &name, const std::vector<Po
   auto helloworld = get_cube(name);
   helloworld->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_helloworld_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&helloworld = get_cube(name);
-
-  auto &&ports = helloworld->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -163,9 +144,6 @@ delete_helloworld_ports_by_id(const std::string &name, const std::string &portsN
   helloworld->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -181,21 +159,6 @@ delete_helloworld_ports_list_by_id(const std::string &name) {
   auto helloworld = get_cube(name);
   helloworld->delPortsList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_helloworld_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&helloworld = get_cube(name);
-
-  auto &&ports = helloworld->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Read action by ID
@@ -214,9 +177,6 @@ read_helloworld_action_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read helloworld by ID
 *
@@ -232,9 +192,6 @@ read_helloworld_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -253,9 +210,6 @@ read_helloworld_ports_by_id(const std::string &name, const std::string &portsNam
   return helloworld->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -277,23 +231,6 @@ read_helloworld_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&helloworld = get_cube(name);
-
-  auto &&ports = helloworld->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Replace ports by ID
 *
@@ -313,9 +250,6 @@ replace_helloworld_ports_by_id(const std::string &name, const std::string &ports
   helloworld->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -331,14 +265,6 @@ void
 replace_helloworld_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_helloworld_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update action by ID
@@ -358,9 +284,6 @@ update_helloworld_action_by_id(const std::string &name, const HelloworldActionEn
   helloworld->setAction(value);
 }
 
-
-
-
 /**
 * @brief   Update helloworld by ID
 *
@@ -379,9 +302,6 @@ update_helloworld_by_id(const std::string &name, const HelloworldJsonObject &val
   helloworld->update(value);
 }
 
-
-
-
 /**
 * @brief   Update helloworld by ID
 *
@@ -396,14 +316,6 @@ void
 update_helloworld_list_by_id(const std::vector<HelloworldJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_helloworld_list_by_id_get_list(const std::vector<HelloworldJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -425,9 +337,6 @@ update_helloworld_ports_by_id(const std::string &name, const std::string &portsN
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -445,14 +354,29 @@ update_helloworld_ports_list_by_id(const std::string &name, const std::vector<Po
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_helloworld_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_helloworld_ports_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&helloworld = get_cube(name);
+
+  auto &&ports = helloworld->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
 
 
 }
+
 }
 }
 }

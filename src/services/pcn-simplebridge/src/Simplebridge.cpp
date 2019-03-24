@@ -27,8 +27,7 @@ using namespace Tins;
 
 Simplebridge::Simplebridge(const std::string name,
                            const SimplebridgeJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}),
-      quit_thread_(false) {
+    : Cube(conf.getBase(), {generate_code()}, {}), quit_thread_(false) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simplebridge] [%n] [%l] %v");
   logger()->info("Creating Simplebridge instance");
 

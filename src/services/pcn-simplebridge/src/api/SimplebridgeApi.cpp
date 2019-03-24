@@ -869,215 +869,32 @@ Response update_simplebridge_ports_list_by_id_handler(
 }
 
 
-Response simplebridge_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SimplebridgeJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = SimplebridgeJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = SimplebridgeJsonObject::helpComplexElements();
-    val["actions"] = SimplebridgeJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response simplebridge_fdb_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = FdbJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = FdbJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = FdbJsonObject::helpComplexElements();
-    val["actions"] = FdbJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response simplebridge_fdb_entry_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_address;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "address")) {
-      unique_address = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = FdbEntryJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = FdbEntryJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = FdbEntryJsonObject::helpComplexElements();
-    val["actions"] = FdbEntryJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response simplebridge_fdb_entry_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = FdbEntryJsonObject::helpKeys();
-    val["optional-params"] = FdbEntryJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = FdbEntryJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_simplebridge_fdb_entry_list_by_id_get_list(unique_name);
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response simplebridge_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SimplebridgeJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = SimplebridgeJsonObject::helpKeys();
-    val["optional-params"] = SimplebridgeJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = SimplebridgeJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = SimplebridgeJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_simplebridge_list_by_id_get_list();
 
-Response simplebridge_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response simplebridge_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_simplebridge_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-
-Response simplebridge_fdb_flush_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
+  nlohmann::json val = read_simplebridge_ports_list_by_id_get_list(unique_name);
 
   return { kOk, ::strdup(val.dump().c_str()) };
 }
+
 #ifdef __cplusplus
 }
 #endif

@@ -15,8 +15,6 @@
 
 #include "../Lbrp.h"
 
-
-
 std::shared_ptr<Ports> Lbrp::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);
 }

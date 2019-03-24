@@ -49,5 +49,7 @@ class ListResource : public virtual ParentResource {
                            bool initialization) const final;
 
   const std::vector<ListKey> keys_;
+
+  nlohmann::json ToHelpJson() const override;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Body

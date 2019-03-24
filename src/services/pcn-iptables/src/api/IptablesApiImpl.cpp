@@ -110,9 +110,6 @@ return chain->append(value);
 
 }
 
-
-
-
 /**
 * @brief   Create apply-rules by ID
 *
@@ -132,9 +129,6 @@ return chain->applyRules();
 
 }
 
-
-
-
 /**
 * @brief   Create chain by ID
 *
@@ -153,9 +147,6 @@ create_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainN
 
   iptables->addChain(chainName, value);
 }
-
-
-
 
 /**
 * @brief   Create delete by ID
@@ -177,9 +168,6 @@ create_iptables_chain_delete_by_id(const std::string &name, const ChainNameEnum 
   chain->deletes(value);
 }
 
-
-
-
 /**
 * @brief   Create insert by ID
 *
@@ -200,9 +188,6 @@ return chain->insert(value);
 
 }
 
-
-
-
 /**
 * @brief   Create chain by ID
 *
@@ -219,21 +204,6 @@ create_iptables_chain_list_by_id(const std::string &name, const std::vector<Chai
   auto iptables = get_cube(name);
   iptables->addChainList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&chain = iptables->addChainList(value);
-  for(auto &i : chain) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create reset-counters by ID
@@ -253,9 +223,6 @@ create_iptables_chain_reset_counters_by_id(const std::string &name, const ChainN
 return chain->resetCounters();
 
 }
-
-
-
 
 /**
 * @brief   Create rule by ID
@@ -278,9 +245,6 @@ create_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &c
   chain->addRule(id, value);
 }
 
-
-
-
 /**
 * @brief   Create rule by ID
 *
@@ -299,22 +263,6 @@ create_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEn
   auto chain = iptables->getChain(chainName);
   chain->addRuleList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-  auto &&chain = iptables->getChain(chainName);
-
-  auto &&rule = chain->addRuleList(value);
-  for(auto &i : rule) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Create ports by ID
@@ -335,9 +283,6 @@ create_iptables_ports_by_id(const std::string &name, const std::string &portsNam
   iptables->addPorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Create ports by ID
 *
@@ -354,21 +299,6 @@ create_iptables_ports_list_by_id(const std::string &name, const std::vector<Port
   auto iptables = get_cube(name);
   iptables->addPortsList(value);
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> create_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&ports = iptables->addPortsList(value);
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete chain by ID
@@ -388,9 +318,6 @@ delete_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainN
   iptables->delChain(chainName);
 }
 
-
-
-
 /**
 * @brief   Delete chain by ID
 *
@@ -406,21 +333,6 @@ delete_iptables_chain_list_by_id(const std::string &name) {
   auto iptables = get_cube(name);
   iptables->delChainList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_chain_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&chain = iptables->delChainList();
-  for(auto &i : chain) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete rule by ID
@@ -442,9 +354,6 @@ delete_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &c
   chain->delRule(id);
 }
 
-
-
-
 /**
 * @brief   Delete rule by ID
 *
@@ -462,22 +371,6 @@ delete_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEn
   auto chain = iptables->getChain(chainName);
   chain->delRuleList();
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-  auto &&chain = iptables->getChain(chainName);
-
-  auto &&rule = chain->delRuleList();
-  for(auto &i : rule) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
 
 /**
 * @brief   Delete ports by ID
@@ -497,9 +390,6 @@ delete_iptables_ports_by_id(const std::string &name, const std::string &portsNam
   iptables->delPorts(portsName);
 }
 
-
-
-
 /**
 * @brief   Delete ports by ID
 *
@@ -516,21 +406,6 @@ delete_iptables_ports_list_by_id(const std::string &name) {
   iptables->delPortsList();
 }
 
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> delete_iptables_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&ports = iptables->delPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-
 /**
 * @brief   Read iptables by ID
 *
@@ -546,9 +421,6 @@ read_iptables_by_id(const std::string &name) {
   return get_cube(name)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read chain by ID
@@ -567,9 +439,6 @@ read_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainNam
   return iptables->getChain(chainName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read default by ID
@@ -590,9 +459,6 @@ read_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum &
 
 }
 
-
-
-
 /**
 * @brief   Read chain by ID
 *
@@ -612,23 +478,6 @@ read_iptables_chain_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&chain = iptables->getChainList();
-  for(auto &i : chain) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read action by ID
@@ -651,9 +500,6 @@ read_iptables_chain_rule_action_by_id(const std::string &name, const ChainNameEn
 
 }
 
-
-
-
 /**
 * @brief   Read rule by ID
 *
@@ -673,9 +519,6 @@ read_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &cha
   return chain->getRule(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read conntrack by ID
@@ -698,9 +541,6 @@ read_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainNam
 
 }
 
-
-
-
 /**
 * @brief   Read dport by ID
 *
@@ -721,9 +561,6 @@ read_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameEnu
   return rule->getDport();
 
 }
-
-
-
 
 /**
 * @brief   Read dst by ID
@@ -746,9 +583,6 @@ read_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnum 
 
 }
 
-
-
-
 /**
 * @brief   Read in-iface by ID
 *
@@ -770,9 +604,6 @@ read_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainName
 
 }
 
-
-
-
 /**
 * @brief   Read l4proto by ID
 *
@@ -793,9 +624,6 @@ read_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNameE
   return rule->getL4proto();
 
 }
-
-
-
 
 /**
 * @brief   Read rule by ID
@@ -819,24 +647,6 @@ read_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-  auto &&chain = iptables->getChain(chainName);
-
-  auto &&rule = chain->getRuleList();
-  for(auto &i : rule) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read out-iface by ID
 *
@@ -857,9 +667,6 @@ read_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainNam
   return rule->getOutIface();
 
 }
-
-
-
 
 /**
 * @brief   Read sport by ID
@@ -882,9 +689,6 @@ read_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameEnu
 
 }
 
-
-
-
 /**
 * @brief   Read src by ID
 *
@@ -905,9 +709,6 @@ read_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnum 
   return rule->getSrc();
 
 }
-
-
-
 
 /**
 * @brief   Read tcpflags by ID
@@ -930,9 +731,6 @@ read_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainName
 
 }
 
-
-
-
 /**
 * @brief   Read stats by ID
 *
@@ -952,9 +750,6 @@ read_iptables_chain_stats_by_id(const std::string &name, const ChainNameEnum &ch
   return chain->getStats(id)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read bytes by ID
@@ -977,9 +772,6 @@ read_iptables_chain_stats_bytes_by_id(const std::string &name, const ChainNameEn
 
 }
 
-
-
-
 /**
 * @brief   Read description by ID
 *
@@ -1000,9 +792,6 @@ read_iptables_chain_stats_description_by_id(const std::string &name, const Chain
   return stats->getDescription();
 
 }
-
-
-
 
 /**
 * @brief   Read stats by ID
@@ -1026,24 +815,6 @@ read_iptables_chain_stats_list_by_id(const std::string &name, const ChainNameEnu
   return m;
 }
 
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-  auto &&chain = iptables->getChain(chainName);
-
-  auto &&stats = chain->getStatsList();
-  for(auto &i : stats) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
-
 /**
 * @brief   Read pkts by ID
 *
@@ -1065,9 +836,6 @@ read_iptables_chain_stats_pkts_by_id(const std::string &name, const ChainNameEnu
 
 }
 
-
-
-
 /**
 * @brief   Read conntrack by ID
 *
@@ -1084,9 +852,6 @@ read_iptables_conntrack_by_id(const std::string &name) {
   return iptables->getConntrack();
 
 }
-
-
-
 
 /**
 * @brief   Read horus by ID
@@ -1105,9 +870,6 @@ read_iptables_horus_by_id(const std::string &name) {
 
 }
 
-
-
-
 /**
 * @brief   Read interactive by ID
 *
@@ -1124,9 +886,6 @@ read_iptables_interactive_by_id(const std::string &name) {
   return iptables->getInteractive();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -1145,9 +904,6 @@ read_iptables_ports_by_id(const std::string &name, const std::string &portsName)
   return iptables->getPorts(portsName)->toJsonObject();
 
 }
-
-
-
 
 /**
 * @brief   Read ports by ID
@@ -1168,23 +924,6 @@ read_iptables_ports_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&ports = iptables->getPortsList();
-  for(auto &i : ports) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read session-table by ID
@@ -1208,9 +947,6 @@ read_iptables_session_table_by_id(const std::string &name, const std::string &sr
 
 }
 
-
-
-
 /**
 * @brief   Read session-table by ID
 *
@@ -1230,23 +966,6 @@ read_iptables_session_table_list_by_id(const std::string &name) {
     m.push_back(i->toJsonObject());
   return m;
 }
-
-#define IMPLEMENT_POLYCUBE_GET_LIST
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&iptables = get_cube(name);
-
-  auto &&sessionTable = iptables->getSessionTableList();
-  for(auto &i : sessionTable) {
-    r.push_back(i->getKeys());
-  }
-  return r;
-}
-#endif
-
-#undef IMPLEMENT_POLYCUBE_GET_LIST
 
 /**
 * @brief   Read state by ID
@@ -1271,9 +990,6 @@ read_iptables_session_table_state_by_id(const std::string &name, const std::stri
 
 }
 
-
-
-
 /**
 * @brief   Replace chain by ID
 *
@@ -1293,9 +1009,6 @@ replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chain
   iptables->replaceChain(chainName, value);
 }
 
-
-
-
 /**
 * @brief   Replace chain by ID
 *
@@ -1311,14 +1024,6 @@ void
 replace_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace rule by ID
@@ -1341,9 +1046,6 @@ replace_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &
   chain->replaceRule(id, value);
 }
 
-
-
-
 /**
 * @brief   Replace rule by ID
 *
@@ -1360,14 +1062,6 @@ void
 replace_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Replace ports by ID
@@ -1388,9 +1082,6 @@ replace_iptables_ports_by_id(const std::string &name, const std::string &portsNa
   iptables->replacePorts(portsName, value);
 }
 
-
-
-
 /**
 * @brief   Replace ports by ID
 *
@@ -1406,14 +1097,6 @@ void
 replace_iptables_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> replace_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update iptables by ID
@@ -1432,9 +1115,6 @@ update_iptables_by_id(const std::string &name, const IptablesJsonObject &value) 
 
   iptables->update(value);
 }
-
-
-
 
 /**
 * @brief   Update chain by ID
@@ -1456,9 +1136,6 @@ update_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainN
   chain->update(value);
 }
 
-
-
-
 /**
 * @brief   Update default by ID
 *
@@ -1479,9 +1156,6 @@ update_iptables_chain_default_by_id(const std::string &name, const ChainNameEnum
   chain->setDefault(value);
 }
 
-
-
-
 /**
 * @brief   Update chain by ID
 *
@@ -1497,14 +1171,6 @@ void
 update_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_chain_list_by_id_get_list(const std::string &name, const std::vector<ChainJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update action by ID
@@ -1528,9 +1194,6 @@ update_iptables_chain_rule_action_by_id(const std::string &name, const ChainName
   rule->setAction(value);
 }
 
-
-
-
 /**
 * @brief   Update rule by ID
 *
@@ -1552,9 +1215,6 @@ update_iptables_chain_rule_by_id(const std::string &name, const ChainNameEnum &c
 
   rule->update(value);
 }
-
-
-
 
 /**
 * @brief   Update conntrack by ID
@@ -1578,9 +1238,6 @@ update_iptables_chain_rule_conntrack_by_id(const std::string &name, const ChainN
   rule->setConntrack(value);
 }
 
-
-
-
 /**
 * @brief   Update dport by ID
 *
@@ -1602,9 +1259,6 @@ update_iptables_chain_rule_dport_by_id(const std::string &name, const ChainNameE
 
   rule->setDport(value);
 }
-
-
-
 
 /**
 * @brief   Update dst by ID
@@ -1628,9 +1282,6 @@ update_iptables_chain_rule_dst_by_id(const std::string &name, const ChainNameEnu
   rule->setDst(value);
 }
 
-
-
-
 /**
 * @brief   Update in-iface by ID
 *
@@ -1652,9 +1303,6 @@ update_iptables_chain_rule_in_iface_by_id(const std::string &name, const ChainNa
 
   rule->setInIface(value);
 }
-
-
-
 
 /**
 * @brief   Update l4proto by ID
@@ -1678,9 +1326,6 @@ update_iptables_chain_rule_l4proto_by_id(const std::string &name, const ChainNam
   rule->setL4proto(value);
 }
 
-
-
-
 /**
 * @brief   Update rule by ID
 *
@@ -1697,14 +1342,6 @@ void
 update_iptables_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update out-iface by ID
@@ -1728,9 +1365,6 @@ update_iptables_chain_rule_out_iface_by_id(const std::string &name, const ChainN
   rule->setOutIface(value);
 }
 
-
-
-
 /**
 * @brief   Update sport by ID
 *
@@ -1752,9 +1386,6 @@ update_iptables_chain_rule_sport_by_id(const std::string &name, const ChainNameE
 
   rule->setSport(value);
 }
-
-
-
 
 /**
 * @brief   Update src by ID
@@ -1778,9 +1409,6 @@ update_iptables_chain_rule_src_by_id(const std::string &name, const ChainNameEnu
   rule->setSrc(value);
 }
 
-
-
-
 /**
 * @brief   Update tcpflags by ID
 *
@@ -1803,9 +1431,6 @@ update_iptables_chain_rule_tcpflags_by_id(const std::string &name, const ChainNa
   rule->setTcpflags(value);
 }
 
-
-
-
 /**
 * @brief   Update conntrack by ID
 *
@@ -1823,9 +1448,6 @@ update_iptables_conntrack_by_id(const std::string &name, const IptablesConntrack
 
   iptables->setConntrack(value);
 }
-
-
-
 
 /**
 * @brief   Update horus by ID
@@ -1845,9 +1467,6 @@ update_iptables_horus_by_id(const std::string &name, const IptablesHorusEnum &va
   iptables->setHorus(value);
 }
 
-
-
-
 /**
 * @brief   Update interactive by ID
 *
@@ -1866,9 +1485,6 @@ update_iptables_interactive_by_id(const std::string &name, const bool &value) {
   iptables->setInteractive(value);
 }
 
-
-
-
 /**
 * @brief   Update iptables by ID
 *
@@ -1883,14 +1499,6 @@ void
 update_iptables_list_by_id(const std::vector<IptablesJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_list_by_id_get_list(const std::vector<IptablesJsonObject> &value) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-}
-#endif
-
 
 /**
 * @brief   Update ports by ID
@@ -1912,9 +1520,6 @@ update_iptables_ports_by_id(const std::string &name, const std::string &portsNam
   ports->update(value);
 }
 
-
-
-
 /**
 * @brief   Update ports by ID
 *
@@ -1932,14 +1537,95 @@ update_iptables_ports_list_by_id(const std::string &name, const std::vector<Port
 }
 
 
-#ifdef IMPLEMENT_POLYCUBE_GET_LIST
-std::vector<nlohmann::fifo_map<std::string, std::string>> update_iptables_ports_list_by_id_get_list(const std::string &name, const std::vector<PortsJsonObject> &value) {
+
+/*
+ * help related
+ */
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_list_by_id_get_list(const std::string &name) {
   std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&chain = iptables->getChainList();
+  for(auto &i : chain) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = ChainJsonObject::ChainNameEnum_to_string(i->getName());
+
+    r.push_back(keys);
+  }
+  return r;
 }
-#endif
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_rule_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+  auto &&chain = iptables->getChain(chainName);
+
+  auto &&rule = chain->getRuleList();
+  for(auto &i : rule) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_chain_stats_list_by_id_get_list(const std::string &name, const ChainNameEnum &chainName) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+  auto &&chain = iptables->getChain(chainName);
+
+  auto &&stats = chain->getStatsList();
+  for(auto &i : stats) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["id"] = std::to_string(i->getId());
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_ports_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&ports = iptables->getPortsList();
+  for(auto &i : ports) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["name"] = i->getName();
+
+    r.push_back(keys);
+  }
+  return r;
+}
+
+std::vector<nlohmann::fifo_map<std::string, std::string>> read_iptables_session_table_list_by_id_get_list(const std::string &name) {
+  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
+  auto &&iptables = get_cube(name);
+
+  auto &&sessionTable = iptables->getSessionTableList();
+  for(auto &i : sessionTable) {
+    nlohmann::fifo_map<std::string, std::string> keys;
+
+    keys["src"] = i->getSrc();
+    keys["dst"] = i->getDst();
+    keys["l4proto"] = i->getL4proto();
+    keys["sport"] = std::to_string(i->getSport());
+    keys["dport"] = std::to_string(i->getDport());
+
+    r.push_back(keys);
+  }
+  return r;
+}
 
 
 }
+
 }
 }
 }

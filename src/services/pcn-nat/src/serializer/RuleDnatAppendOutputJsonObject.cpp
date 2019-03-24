@@ -67,48 +67,6 @@ void RuleDnatAppendOutputJsonObject::unsetId() {
 }
 
 
-nlohmann::json RuleDnatAppendOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json RuleDnatAppendOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "leaf"; // Suppose that type is leaf
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatAppendOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json RuleDnatAppendOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> RuleDnatAppendOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

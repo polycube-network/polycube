@@ -60,13 +60,10 @@ namespace SimplebridgeApiImpl {
   uint32_t read_simplebridge_fdb_entry_age_by_id(const std::string &name, const std::string &address);
   FdbEntryJsonObject read_simplebridge_fdb_entry_by_id(const std::string &name, const std::string &address);
   std::vector<FdbEntryJsonObject> read_simplebridge_fdb_entry_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_fdb_entry_list_by_id_get_list(const std::string &name);
   std::string read_simplebridge_fdb_entry_port_by_id(const std::string &name, const std::string &address);
   std::vector<SimplebridgeJsonObject> read_simplebridge_list_by_id();
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_list_by_id_get_list();
   PortsJsonObject read_simplebridge_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_simplebridge_ports_list_by_id(const std::string &name);
-  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_ports_list_by_id_get_list(const std::string &name);
   std::string read_simplebridge_ports_mac_by_id(const std::string &name, const std::string &portsName);
   void replace_simplebridge_by_id(const std::string &name, const SimplebridgeJsonObject &value);
   void replace_simplebridge_fdb_by_id(const std::string &name, const FdbJsonObject &value);
@@ -83,6 +80,12 @@ namespace SimplebridgeApiImpl {
   void update_simplebridge_list_by_id(const std::vector<SimplebridgeJsonObject> &value);
   void update_simplebridge_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_simplebridge_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
+
+  /* help related */
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_fdb_entry_list_by_id_get_list(const std::string &name);
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_list_by_id_get_list();
+  std::vector<nlohmann::fifo_map<std::string, std::string>> read_simplebridge_ports_list_by_id_get_list(const std::string &name);
+
 }
 }
 }

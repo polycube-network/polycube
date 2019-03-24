@@ -2241,137 +2241,17 @@ Response update_iptables_ports_list_by_id_handler(
 }
 
 
-Response iptables_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = IptablesJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = IptablesJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = IptablesJsonObject::helpComplexElements();
-    val["actions"] = IptablesJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response iptables_chain_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_chainName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "chain_name")) {
-      unique_chainName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ChainJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ChainJsonObject::helpComplexElements();
-    val["actions"] = ChainJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
 Response iptables_chain_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = ChainJsonObject::helpKeys();
-    val["optional-params"] = ChainJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ChainJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_iptables_chain_list_by_id_get_list(unique_name);
 
-Response iptables_chain_rule_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_chainName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "chain_name")) {
-      unique_chainName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
-
-  uint32_t unique_id;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "id")) {
-      unique_id = keys[i].value.uint32;
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainRuleJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ChainRuleJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ChainRuleJsonObject::helpComplexElements();
-    val["actions"] = ChainRuleJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response iptables_chain_rule_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
   std::string unique_chainName;
@@ -2383,75 +2263,13 @@ Response iptables_chain_rule_list_by_id_help(
   }
   auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  case HelpType::ADD:
-    val["params"] = ChainRuleJsonObject::helpKeys();
-    val["optional-params"] = ChainRuleJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ChainRuleJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_iptables_chain_rule_list_by_id_get_list(unique_name, unique_chainName_);
 
-Response iptables_chain_stats_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_chainName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "chain_name")) {
-      unique_chainName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-  auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
-
-  uint32_t unique_id;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "id")) {
-      unique_id = keys[i].value.uint32;
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainStatsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = ChainStatsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = ChainStatsJsonObject::helpComplexElements();
-    val["actions"] = ChainStatsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response iptables_chain_stats_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
   std::string unique_chainName;
@@ -2463,259 +2281,37 @@ Response iptables_chain_stats_list_by_id_help(
   }
   auto unique_chainName_ = ChainJsonObject::string_to_ChainNameEnum(unique_chainName);
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  case HelpType::ADD:
-    val["params"] = ChainStatsJsonObject::helpKeys();
-    val["optional-params"] = ChainStatsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = ChainStatsJsonObject::helpKeys();
-    val["elements"] = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
+  nlohmann::json val = read_iptables_chain_stats_list_by_id_get_list(unique_name, unique_chainName_);
+
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response iptables_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
 
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = IptablesJsonObject::helpKeys();
-    val["elements"] = read_iptables_list_by_id_get_list();
-  break;
-  case HelpType::ADD:
-    val["params"] = IptablesJsonObject::helpKeys();
-    val["optional-params"] = IptablesJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = IptablesJsonObject::helpKeys();
-    val["elements"] = read_iptables_list_by_id_get_list();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = IptablesJsonObject::helpKeys();
-    val["elements"] = read_iptables_list_by_id_get_list();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_iptables_list_by_id_get_list();
 
-Response iptables_ports_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = PortsJsonObject::helpComplexElements();
-    val["actions"] = PortsJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response iptables_ports_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["optional-params"] = PortsJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = PortsJsonObject::helpKeys();
-    val["elements"] = read_iptables_ports_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
+  nlohmann::json val = read_iptables_ports_list_by_id_get_list(unique_name);
 
-Response iptables_session_table_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_src;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "src")) {
-      unique_src = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_dst;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "dst")) {
-      unique_dst = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  std::string unique_l4proto;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "l4proto")) {
-      unique_l4proto = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-  uint16_t unique_sport;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "sport")) {
-      unique_sport = keys[i].value.uint16;
-      break;
-    }
-  }
-
-  uint16_t unique_dport;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "dport")) {
-      unique_dport = keys[i].value.uint16;
-      break;
-    }
-  }
-
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SessionTableJsonObject::helpElements();
-  break;
-  case HelpType::SET:
-    val["params"] = SessionTableJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"set", "show"};
-    val["params"] = SessionTableJsonObject::helpComplexElements();
-    val["actions"] = SessionTableJsonObject::helpActions();
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
 Response iptables_session_table_list_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
+  const char *name, const Key *keys, size_t num_keys) {
   // Getting the path params
   std::string unique_name { name };
-  nlohmann::json val = nlohmann::json::object();
-  switch (type) {
-  case HelpType::SHOW:
-    val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::ADD:
-    val["params"] = SessionTableJsonObject::helpKeys();
-    val["optional-params"] = SessionTableJsonObject::helpWritableLeafs();
-  break;
-  case HelpType::DEL:
-    val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
-  break;
-  case HelpType::NONE:
-    val["commands"] = {"add", "del", "show"};
-    val["params"] = SessionTableJsonObject::helpKeys();
-    val["elements"] = read_iptables_session_table_list_by_id_get_list(unique_name);
-  break;
-  default:
-    return { kBadRequest, nullptr };
-  }
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-
-Response iptables_chain_append_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
-  val["in"] = ChainAppendInputJsonObject::helpElements();
+  nlohmann::json val = read_iptables_session_table_list_by_id_get_list(unique_name);
 
   return { kOk, ::strdup(val.dump().c_str()) };
 }
 
-Response iptables_chain_apply_rules_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
-
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response iptables_chain_delete_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
-  val["in"] = ChainDeleteInputJsonObject::helpElements();
-
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response iptables_chain_insert_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
-  val["in"] = ChainInsertInputJsonObject::helpElements();
-
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
-
-Response iptables_chain_reset_counters_by_id_help(
-  HelpType type, const char *name,
-  const Key *keys, size_t num_keys) {
-  nlohmann::json val = nlohmann::json::object();
-
-  return { kOk, ::strdup(val.dump().c_str()) };
-}
 #ifdef __cplusplus
 }
 #endif

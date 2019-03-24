@@ -15,8 +15,6 @@
 
 #include "../Fdb.h"
 
-
-
 std::shared_ptr<FdbEntry> Fdb::getEntry(const std::string &address){
   return FdbEntry::getEntry(*this, address);
 }

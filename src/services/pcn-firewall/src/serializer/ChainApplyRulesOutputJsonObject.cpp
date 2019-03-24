@@ -67,48 +67,6 @@ void ChainApplyRulesOutputJsonObject::unsetResult() {
 }
 
 
-nlohmann::json ChainApplyRulesOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainApplyRulesOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["type"] = "leaf"; // Suppose that type is leaf
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainApplyRulesOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainApplyRulesOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainApplyRulesOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
-  return val;
-}
-
 }
 }
 }

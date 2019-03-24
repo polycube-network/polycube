@@ -141,6 +141,9 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 
 		children, _ = jsonParsed.S("optional-params").ChildrenMap()
 		if len(children.Keys()) > 0 {
+			if countLines == 0 {
+				countLines++
+			}
 			Output = append(Output, []string{""})
 			Output = append(Output, []string{"Other parameters:"})
 		}

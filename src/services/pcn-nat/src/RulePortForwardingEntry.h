@@ -39,7 +39,6 @@ class RulePortForwardingEntry : public RulePortForwardingEntryInterface {
   static std::vector<std::shared_ptr<RulePortForwardingEntry>> get(
       RulePortForwarding &parent);
   static void remove(RulePortForwarding &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulePortForwardingEntryJsonObject &conf) override;
   RulePortForwardingEntryJsonObject toJsonObject() override;
