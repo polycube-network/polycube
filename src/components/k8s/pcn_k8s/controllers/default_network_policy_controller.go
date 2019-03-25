@@ -23,26 +23,17 @@ import (
 )
 
 type DefaultNetworkPolicyController struct {
-	nodeName string
-
-	clientset *kubernetes.Clientset
-
-	queue workqueue.RateLimitingInterface
-
+	nodeName                       string
+	clientset                      *kubernetes.Clientset
+	queue                          workqueue.RateLimitingInterface
 	defaultNetworkPoliciesInformer cache.SharedIndexInformer
-
-	startedOn time.Time
-
-	dispatchers EventDispatchersContainer
-
-	stopCh chan struct{}
-
-	maxRetries int
-
-	logBy string
-
-	deployedPolicies map[string]*networking_v1.NetworkPolicy
-	lock             sync.Mutex
+	startedOn                      time.Time
+	dispatchers                    EventDispatchersContainer
+	stopCh                         chan struct{}
+	maxRetries                     int
+	logBy                          string
+	deployedPolicies               map[string]*networking_v1.NetworkPolicy
+	lock                           sync.Mutex
 }
 
 func NewDefaultNetworkPolicyController(nodeName string, clientset *kubernetes.Clientset) *DefaultNetworkPolicyController {

@@ -27,22 +27,22 @@ type PodController interface {
 	Stop()
 	Subscribe(pcn_types.EventType, func(*core_v1.Pod)) (func(), error)
 
-	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]pcn_types.Pod, error)
+	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
 
 type PcnPodController struct {
 	nodeName     string
 	nsController NamespaceController
-	//clientset *kubernetes.Clientset
-	queue       workqueue.RateLimitingInterface
-	informer    cache.SharedIndexInformer
-	startedOn   time.Time
-	dispatchers EventDispatchersContainer
-	stopCh      chan struct{}
-	maxRetries  int
-	logBy       string
-	pods        map[string]*pcn_types.Pod
-	lock        sync.Mutex
+	clientset    *kubernetes.Clientset
+	queue        workqueue.RateLimitingInterface
+	informer     cache.SharedIndexInformer
+	startedOn    time.Time
+	dispatchers  EventDispatchersContainer
+	stopCh       chan struct{}
+	maxRetries   int
+	logBy        string
+	pods         map[string]*pcn_types.Pod
+	lock         sync.Mutex
 }
 
 func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsController NamespaceController) PodController {
@@ -164,14 +164,14 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 	return &PcnPodController{
 		nodeName:     nodeName,
 		nsController: nsController,
-		//clientset: clientset,
-		queue:       queue,
-		informer:    informer,
-		dispatchers: dispatchers,
-		logBy:       logBy,
-		maxRetries:  maxRetries,
-		stopCh:      make(chan struct{}),
-		pods:        map[string]*pcn_types.Pod{},
+		clientset:    clientset,
+		queue:        queue,
+		informer:     informer,
+		dispatchers:  dispatchers,
+		logBy:        logBy,
+		maxRetries:   maxRetries,
+		stopCh:       make(chan struct{}),
+		pods:         map[string]*pcn_types.Pod{},
 	}
 }
 
@@ -301,7 +301,7 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 		pod, ok := p.pods[splitted[1]]
 		if ok {
 			p.dispatchers.delete.Dispatch(&pod.Pod)
-			p.removePod(&pod.Pod)
+			p.removePod(pod.Pod)
 		}
 	}
 
@@ -318,13 +318,13 @@ func (p *PcnPodController) addNewPod(pod *core_v1.Pod) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	//	Add it in the main map
-	p.pods[pod.Name] = &pcn_types.Pod{
-		Pod:  *pod,
+	podContainer := &pcn_types.Pod{
+		Pod:  pod,
 		Veth: "",
 	}
 
-	//log.Debugln("---Pod", p.pods[pod.Name], "has been added, there are now", len(p.pods), "elements")
+	//	Add it in the main map
+	p.pods[pod.Name] = podContainer
 }
 
 func (p *PcnPodController) removePod(pod *core_v1.Pod) {
@@ -335,6 +335,16 @@ func (p *PcnPodController) removePod(pod *core_v1.Pod) {
 	if exists {
 		delete(p.pods, pod.Name)
 	}
+}
+
+func (p *PcnPodController) implodeLabels(labels map[string]string) string {
+	implodedLabels := ""
+
+	for k, v := range labels {
+		implodedLabels += k + "=" + v + ","
+	}
+
+	return strings.Trim(implodedLabels, ",")
 }
 
 func (p *PcnPodController) Stop() {
@@ -418,7 +428,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, consumer func(*c
 
 }
 
-func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_types.ObjectQuery) ([]pcn_types.Pod, error) {
+func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_types.ObjectQuery) ([]core_v1.Pod, error) {
 
 	//	The namespaces the pods must be found on
 	ns := []string{}
@@ -426,11 +436,11 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 	//	First get the namespace
 	found, err := p.nsController.GetNamespaces(queryNs)
 	if err != nil {
-		return []pcn_types.Pod{}, err
+		return []core_v1.Pod{}, err
 	}
 	if len(found) < 1 {
 		//	If no namespace is found, it is useless to go on searching for pods
-		return []pcn_types.Pod{}, nil
+		return []core_v1.Pod{}, nil
 	}
 	for _, n := range found {
 		ns = append(ns, n.Name)
@@ -439,7 +449,7 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 	//	Query by name
 	if strings.ToLower(queryPod.By) == "name" {
 		//	If we query by name, we don't need the namespace...
-		list := []pcn_types.Pod{}
+		list := []core_v1.Pod{}
 		if len(queryPod.Name) < 0 {
 			return list, errors.New("Pod name not provided")
 		}
@@ -450,11 +460,11 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 		if queryPod.Name == "*" {
 			for _, pod := range p.pods {
 				if len(ns) < 1 {
-					list = append(list, *pod)
+					list = append(list, *pod.Pod)
 				}
 				for _, namespace := range ns {
 					if pod.Pod.Namespace == namespace {
-						list = append(list, *pod)
+						list = append(list, *pod.Pod)
 					}
 				}
 
@@ -464,70 +474,43 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 
 		//	Get the pod with that name
 		if pod, exists := p.pods[queryPod.Name]; exists {
-			return []pcn_types.Pod{*pod}, nil
+			return []core_v1.Pod{*pod.Pod}, nil
 		}
 
-		return []pcn_types.Pod{}, nil
+		return []core_v1.Pod{}, nil
 	}
 
 	//	Query by labels
 	if strings.ToLower(queryPod.By) == "labels" {
 
 		if queryPod.Labels == nil {
-			return []pcn_types.Pod{}, errors.New("Pod labels is nil")
+			return []core_v1.Pod{}, errors.New("Pod labels is nil")
 		}
 
 		if len(queryPod.Labels) < 1 {
-			return []pcn_types.Pod{}, errors.New("No pod labels provided")
+			return []core_v1.Pod{}, errors.New("No pod labels provided")
 		}
 
-		list := []pcn_types.Pod{}
-		p.lock.Lock()
-		defer p.lock.Unlock()
+		list := []core_v1.Pod{}
+		labels := p.implodeLabels(queryPod.Labels)
 
-		//	Loop through all my pods to find them
-		for _, currentPod := range p.pods {
-			remainingLabels := len(queryPod.Labels)
-			for keyNeeded, valNeeded := range queryPod.Labels {
-				if valFound, ok := currentPod.Pod.Labels[keyNeeded]; ok {
-					if valFound == valNeeded {
+		if len(ns) < 1 {
+			ns = append(ns, meta_v1.NamespaceAll)
+		}
 
-						//	Now check the namespace
-						if len(ns) < 1 {
-							remainingLabels--
-						}
+		for _, namespace := range ns {
 
-						for _, namespace := range ns {
-							if currentPod.Pod.Namespace == namespace {
-								remainingLabels--
-							}
-						}
-
-						if remainingLabels == 0 {
-							list = append(list, *currentPod)
-							break
-						}
-					}
-				}
+			if currentList, err := p.clientset.CoreV1().Pods(namespace).List(meta_v1.ListOptions{
+				LabelSelector: labels,
+			}); err != nil {
+				log.Error("Error while trying to get pods with labels", labels, "on namespace", namespace)
+			} else {
+				list = append(list, currentList.Items...)
 			}
-
-			/*if currentPod.hashedLabels == hashedLabels {
-				log.Debugf("labels match")
-				//	Labels match, let's see if this pod is in the namespace we want.
-				//	This means if we have to find them on any namespace or on a particular one
-				if len(ns) < 0 {
-					list = append(list, *currentPod.pod)
-				}
-				for _, namespace := range ns {
-					if currentPod.pod.Pod.Namespace == namespace {
-						list = append(list, *currentPod.pod)
-					}
-				}
-			}*/
 		}
 
 		return list, nil
 	}
 
-	return []pcn_types.Pod{}, errors.New("Unrecognized pod query")
+	return []core_v1.Pod{}, errors.New("Unrecognized pod query")
 }

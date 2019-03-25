@@ -94,8 +94,8 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 	for _, pods := range podsAffected {
 		for _, pod := range pods {
 
-			if pod.Pod.Spec.NodeName == manager.node {
-				fw := manager.firewallManager.Get(pod.Pod)
+			if pod.Spec.NodeName == manager.node {
+				fw := manager.firewallManager.Get(pod)
 
 				if fw != nil {
 					fw.CeasePolicy(policy.Name)

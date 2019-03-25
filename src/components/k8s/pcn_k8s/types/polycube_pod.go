@@ -5,6 +5,6 @@ import (
 )
 
 type Pod struct {
-	Pod  core_v1.Pod
+	Pod  *core_v1.Pod
 	Veth string
 }

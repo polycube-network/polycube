@@ -31,8 +31,8 @@ type NamespaceController interface {
 }
 
 type PcnNamespaceController struct {
-	nodeName string
-	//clientset *kubernetes.Clientset
+	nodeName    string
+	clientset   *kubernetes.Clientset
 	queue       workqueue.RateLimitingInterface
 	informer    cache.SharedIndexInformer
 	startedOn   time.Time
@@ -161,8 +161,8 @@ func NewNsController(nodeName string, clientset *kubernetes.Clientset) Namespace
 
 	//	Everything set up, return the controller
 	return &PcnNamespaceController{
-		nodeName: nodeName,
-		//clientset: clientset,
+		nodeName:    nodeName,
+		clientset:   clientset,
 		queue:       queue,
 		informer:    informer,
 		dispatchers: dispatchers,
@@ -409,6 +409,16 @@ func (n *PcnNamespaceController) Subscribe(event pcn_types.EventType, consumer f
 	}
 }
 
+func (n *PcnNamespaceController) implodeLabels(labels map[string]string) string {
+	implodedLabels := ""
+
+	for k, v := range labels {
+		implodedLabels += k + "=" + v + ","
+	}
+
+	return strings.Trim(implodedLabels, ",")
+}
+
 func (n *PcnNamespaceController) GetNamespaces(query pcn_types.ObjectQuery) ([]core_v1.Namespace, error) {
 
 	//	Query by name
@@ -443,38 +453,23 @@ func (n *PcnNamespaceController) GetNamespaces(query pcn_types.ObjectQuery) ([]c
 	//	By labels
 	if strings.ToLower(query.By) == "labels" {
 
-		list := []core_v1.Namespace{}
 		if query.Labels == nil {
-			return list, errors.New("Namespace labels is nil")
+			return []core_v1.Namespace{}, errors.New("Namespace labels is nil")
 		}
 
 		//	If you provide an empty map, I assume you want all namespaces with no labels
+		//	To Do: how to do this? check later
 
-		n.lock.Lock()
-		defer n.lock.Unlock()
+		lister, err := n.clientset.CoreV1().Namespaces().List(meta_v1.ListOptions{
+			LabelSelector: n.implodeLabels(query.Labels),
+		})
 
-		for _, ns := range n.namespaces {
-			remainingLabels := len(query.Labels)
-			for keyNeeded, valNeeded := range query.Labels {
-				if valFound, ok := ns.Labels[keyNeeded]; ok {
-					if valFound == valNeeded {
-						remainingLabels--
-
-						if remainingLabels == 0 {
-							list = append(list, *ns)
-							break
-						}
-					}
-				}
-			}
-
-			/*if ns.hashedLabels == hashedLabels {
-				//	Found it!
-				list = append(list, *ns.ns)
-			}*/
+		if err != nil {
+			log.Errorln("Error occurred while getting namespaces:", err)
+			return []core_v1.Namespace{}, errors.New("Error occurred while getting namespaces")
 		}
 
-		return list, nil
+		return lister.Items, nil
 	}
 
 	//	Unrecognized query
