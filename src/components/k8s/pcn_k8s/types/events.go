@@ -4,7 +4,7 @@ type Event struct {
 	Key       string
 	Type      EventType
 	Namespace string
-	Labels    map[string]string
+	Labels    map[string]string `json:"-"`
 }
 
 type EventType int

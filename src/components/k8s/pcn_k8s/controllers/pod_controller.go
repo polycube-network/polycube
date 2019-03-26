@@ -103,7 +103,6 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.New,
 				Namespace: strings.Split(key, "/")[0],
-				Labels:    map[string]string{},
 			}
 
 			//	Add this event to the queue
@@ -124,7 +123,6 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.Update,
 				Namespace: strings.Split(key, "/")[0],
-				Labels:    map[string]string{},
 			}
 			//	Add this event to the queue
 			if err == nil {
@@ -144,7 +142,6 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.Delete,
 				Namespace: strings.Split(key, "/")[0],
-				Labels:    map[string]string{},
 			}
 			//	Add this event to the queue
 			if err == nil {
