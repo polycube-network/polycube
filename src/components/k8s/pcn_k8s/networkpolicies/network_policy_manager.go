@@ -82,17 +82,16 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 			"role": "api",
 		},
 	}, func(pod *core_v1.Pod) {
-		log.Debugln("###app=bookstore,role=api has been notified!")
+		log.Debugln("###app=bookstore,role=api has been notified!", pod.Status.Phase)
 	})
 
-	podController.Subscribe(pcn_types.Delete, pcn_types.SubscriptionSelector{
+	podController.Subscribe(pcn_types.Update, pcn_types.SubscriptionSelector{
 		Namespace: "default",
 		Labels: map[string]string{
-			"app":  "bookstore",
-			"role": "api",
+			"app": "bookstore",
 		},
 	}, func(pod *core_v1.Pod) {
-		log.Debugln("###app=bookstore has been notified!")
+		log.Debugln("###app=bookstore has been notified!", pod.Status.Phase)
 	})
 
 	return &manager
