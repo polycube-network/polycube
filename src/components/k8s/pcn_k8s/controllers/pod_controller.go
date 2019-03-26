@@ -103,6 +103,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.New,
 				Namespace: strings.Split(key, "/")[0],
+				Labels:    map[string]string{},
 			}
 
 			//	Add this event to the queue
@@ -123,6 +124,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.Update,
 				Namespace: strings.Split(key, "/")[0],
+				Labels:    map[string]string{},
 			}
 			//	Add this event to the queue
 			if err == nil {
@@ -142,6 +144,7 @@ func NewPodController(nodeName string, clientset *kubernetes.Clientset, nsContro
 				Key:       key,
 				Type:      pcn_types.Delete,
 				Namespace: strings.Split(key, "/")[0],
+				Labels:    map[string]string{},
 			}
 			//	Add this event to the queue
 			if err == nil {
@@ -383,7 +386,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.Event, consumer func(*core_
 
 		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
 		//	It should be very rare to see pods with more than 5 labels...
-		if len(event.Labels) > 0 {
+		if event.Labels != nil && len(event.Labels) > 0 {
 			labelsFound := 0
 			labelsToFind := len(event.Labels)
 
