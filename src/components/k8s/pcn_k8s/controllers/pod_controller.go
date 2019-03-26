@@ -25,7 +25,7 @@ import (
 type PodController interface {
 	Run()
 	Stop()
-	Subscribe(pcn_types.Event, func(*core_v1.Pod)) (func(), error)
+	Subscribe(pcn_types.EventType, pcn_types.SubscriptionSelector, func(*core_v1.Pod)) (func(), error)
 
 	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
@@ -368,7 +368,7 @@ func (p *PcnPodController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (p *PcnPodController) Subscribe(event pcn_types.Event, consumer func(*core_v1.Pod)) (func(), error) {
+func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.SubscriptionSelector, consumer func(*core_v1.Pod)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
@@ -377,17 +377,17 @@ func (p *PcnPodController) Subscribe(event pcn_types.Event, consumer func(*core_
 		pod := item.(*core_v1.Pod)
 
 		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
-		if len(event.Namespace) > 0 && pod.Namespace != event.Namespace {
+		if len(spec.Namespace) > 0 && pod.Namespace != spec.Namespace {
 			return
 		}
 
 		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
 		//	It should be very rare to see pods with more than 5 labels...
-		if event.Labels != nil && len(event.Labels) > 0 {
+		if spec.Labels != nil && len(spec.Labels) > 0 {
 			labelsFound := 0
-			labelsToFind := len(event.Labels)
+			labelsToFind := len(spec.Labels)
 
-			for neededKey, neededValue := range event.Labels {
+			for neededKey, neededValue := range spec.Labels {
 				if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
 					labelsFound++
 					if labelsFound == labelsToFind {
@@ -412,7 +412,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.Event, consumer func(*core_
 	})
 
 	//	What event are you subscribing to?
-	switch event.Type {
+	switch event {
 
 	//-------------------------------------
 	//	New event

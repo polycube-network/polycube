@@ -4,7 +4,6 @@ type Event struct {
 	Key       string
 	Type      EventType
 	Namespace string
-	Labels    map[string]string `json:"-"`
 }
 
 type EventType int
@@ -14,3 +13,8 @@ const (
 	Update
 	Delete
 )
+
+type SubscriptionSelector struct {
+	Namespace string
+	Labels    map[string]string
+}
