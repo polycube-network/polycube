@@ -71,8 +71,30 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//-------------------------------------
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Update, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Delete, manager.manageDeletedPod)
+	podController.Subscribe(pcn_types.Event{Type: pcn_types.Update}, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Event{Type: pcn_types.Delete}, manager.manageDeletedPod)
+
+	//	Just for test
+	podController.Subscribe(pcn_types.Event{
+		Type:      pcn_types.Update,
+		Namespace: "default",
+		Labels: map[string]string{
+			"app":  "bookstore",
+			"role": "api",
+		},
+	}, func(pod *core_v1.Pod) {
+		log.Debugln("###app=bookstore,role=api has been notified!")
+	})
+
+	podController.Subscribe(pcn_types.Event{
+		Type:      pcn_types.Update,
+		Namespace: "default",
+		Labels: map[string]string{
+			"app": "bookstore",
+		},
+	}, func(pod *core_v1.Pod) {
+		log.Debugln("###app=bookstore has been notified!")
+	})
 
 	return &manager
 }

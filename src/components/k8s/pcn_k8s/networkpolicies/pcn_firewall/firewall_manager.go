@@ -42,7 +42,7 @@ func StartFirewallManager(basePath, nodeName string, podController pcn_controlle
 	fwManager.fwAPI = srK8firewall.FirewallApi
 
 	//	Subscribe to events
-	podController.Subscribe(pcn_types.Update, fwManager.manageFirewallForPod)
+	podController.Subscribe(pcn_types.Event{Type: pcn_types.Update}, fwManager.manageFirewallForPod)
 
 	return fwManager
 }

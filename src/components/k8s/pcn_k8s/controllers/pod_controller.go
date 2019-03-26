@@ -25,7 +25,7 @@ import (
 type PodController interface {
 	Run()
 	Stop()
-	Subscribe(pcn_types.EventType, func(*core_v1.Pod)) (func(), error)
+	Subscribe(pcn_types.Event, func(*core_v1.Pod)) (func(), error)
 
 	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
@@ -368,13 +368,42 @@ func (p *PcnPodController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (p *PcnPodController) Subscribe(event pcn_types.EventType, consumer func(*core_v1.Pod)) (func(), error) {
+func (p *PcnPodController) Subscribe(event pcn_types.Event, consumer func(*core_v1.Pod)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
 
 		//	First, cast the item to a pod, so that the consumer will receive exactly what it wants...
 		pod := item.(*core_v1.Pod)
+
+		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
+		if len(event.Namespace) > 0 && pod.Namespace != event.Namespace {
+			return
+		}
+
+		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
+		//	It should be very rare to see pods with more than 5 labels...
+		if len(event.Labels) > 0 {
+			labelsFound := 0
+			labelsToFind := len(event.Labels)
+
+			for neededKey, neededValue := range event.Labels {
+				if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
+					labelsFound++
+					if labelsFound == labelsToFind {
+						break
+					}
+				} else {
+					//	I didn't find this key or the value wasn't the one I wanted: it's pointless to go on checking the other labels.
+					break
+				}
+			}
+
+			//	Did we find all labels we needed?
+			if labelsFound != labelsToFind {
+				return
+			}
+		}
 
 		//	Then, execute the consumer in a separate thread.
 		//	NOTE: this step can also be done in the event dispatcher, but I want it to make them oblivious of the type they're handling.
@@ -383,7 +412,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, consumer func(*c
 	})
 
 	//	What event are you subscribing to?
-	switch event {
+	switch event.Type {
 
 	//-------------------------------------
 	//	New event
