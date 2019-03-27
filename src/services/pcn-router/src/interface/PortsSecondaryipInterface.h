@@ -34,11 +34,11 @@ public:
   /// <summary>
   /// Seconadary IP address of the port
   /// </summary>
-  virtual std::string getIp() = 0;
+  virtual std::string getIp() const = 0;
 
   /// <summary>
   /// Secondary netmask of the port
   /// </summary>
-  virtual std::string getNetmask() = 0;
+  virtual std::string getNetmask() const = 0;
 };
 

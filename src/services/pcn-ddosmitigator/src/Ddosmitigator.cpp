@@ -17,6 +17,10 @@
 #include "Ddosmitigator.h"
 #include "Ddosmitigator_dp.h"
 
+#include "polycube/services/utils.h"
+
+using namespace polycube::service;
+
 Ddosmitigator::Ddosmitigator(const std::string name,
                              const DdosmitigatorJsonObject &conf)
     : TransparentCube(conf.getBase(), {generate_code()}, {}) {
@@ -135,5 +139,199 @@ void Ddosmitigator::setDstMatch(bool value) {
   if (value != dst_match_) {
     dst_match_ = value;
     is_code_changed_ = true;
+  }
+}
+
+std::shared_ptr<Stats> Ddosmitigator::getStats() {
+  logger()->debug("Stats getEntry");
+
+  StatsJsonObject sjo;
+  return std::shared_ptr<Stats>(new Stats(*this, sjo));
+}
+
+void Ddosmitigator::addStats(const StatsJsonObject &value) {}
+
+void Ddosmitigator::replaceStats(const StatsJsonObject &conf) {
+  throw std::runtime_error(
+      "[Stats]: Method replaceStats not supported. Read Only");
+}
+
+void Ddosmitigator::delStats() {
+  throw std::runtime_error(
+      "[Stats]: Method removeEntry not supported. Read Only");
+}
+
+std::shared_ptr<BlacklistSrc> Ddosmitigator::getBlacklistSrc(
+    const std::string &ip) {
+  logger()->debug("BlacklistSrc getEntry");
+
+  return std::shared_ptr<BlacklistSrc>(&blacklistsrc_.at(ip),
+                                       [](BlacklistSrc *) {});
+}
+
+std::vector<std::shared_ptr<BlacklistSrc>>
+Ddosmitigator::getBlacklistSrcList() {
+  logger()->debug("BlacklistSrc get vector");
+
+  std::vector<std::shared_ptr<BlacklistSrc>> blacklistsrc;
+
+  for (auto &it : blacklistsrc_) {
+    blacklistsrc.push_back(getBlacklistSrc(it.first));
+  }
+
+  return blacklistsrc;
+}
+
+void Ddosmitigator::addBlacklistSrc(const std::string &ip,
+                                    const BlacklistSrcJsonObject &conf) {
+  logger()->debug("BlacklistSrc create");
+
+  try {
+    logger()->debug("blacklist size {0} ", blacklistsrc_.size());
+    // TODO check if src ip rules are already present
+    // and reinject datapath with srcblacklist ps
+
+    if (blacklistsrc_.size() >= 0) {
+      setSrcMatch(true);
+      reloadCode();
+    }
+
+    auto srcblacklist =
+        get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
+    srcblacklist.set(utils::ip_string_to_be_uint(ip), 0);
+  } catch (...) {
+    throw std::runtime_error("unable to add element to map");
+  }
+
+  BlacklistSrcJsonObject configuration;
+  configuration.setIp(ip);
+
+  blacklistsrc_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
+                        std::forward_as_tuple(*this, configuration));
+}
+
+void Ddosmitigator::addBlacklistSrcList(
+    const std::vector<BlacklistSrcJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string ip_ = i.getIp();
+    addBlacklistSrc(ip_, i);
+  }
+}
+
+void Ddosmitigator::replaceBlacklistSrc(const std::string &ip,
+                                        const BlacklistSrcJsonObject &conf) {
+  delBlacklistSrc(ip);
+  std::string ip_ = conf.getIp();
+  addBlacklistSrc(ip_, conf);
+}
+
+void Ddosmitigator::delBlacklistSrc(const std::string &ip) {
+  logger()->debug("BlacklistSrc removeEntry");
+
+  // ebpf map remove is performed in destructor
+  blacklistsrc_.erase(ip);
+
+  if (blacklistsrc_.size() == 0) {
+    setSrcMatch(false);
+    reloadCode();
+  }
+}
+
+void Ddosmitigator::delBlacklistSrcList() {
+  logger()->debug("BlacklistSrc remove");
+
+  // ebpf maps remove performed in destructor
+  blacklistsrc_.clear();
+
+  if (blacklistsrc_.size() == 0) {
+    setSrcMatch(false);
+    reloadCode();
+  }
+}
+
+std::shared_ptr<BlacklistDst> Ddosmitigator::getBlacklistDst(
+    const std::string &ip) {
+  logger()->debug("BlacklistDst getEntry");
+
+  return std::shared_ptr<BlacklistDst>(&blacklistdst_.at(ip),
+                                       [](BlacklistDst *) {});
+}
+
+std::vector<std::shared_ptr<BlacklistDst>>
+Ddosmitigator::getBlacklistDstList() {
+  logger()->debug("BlacklistDst get vector");
+
+  std::vector<std::shared_ptr<BlacklistDst>> blacklistdst;
+
+  for (auto &it : blacklistdst_) {
+    blacklistdst.push_back(getBlacklistDst(it.first));
+  }
+
+  return blacklistdst;
+}
+
+void Ddosmitigator::addBlacklistDst(const std::string &ip,
+                                    const BlacklistDstJsonObject &conf) {
+  logger()->debug("BlacklistDst create");
+
+  try {
+    // TODO check if dst ip rules are already present
+    // and reinject datapath with dstblacklist ps
+
+    if (blacklistdst_.size() >= 0) {
+      setDstMatch(true);
+      reloadCode();
+    }
+
+    auto dstblacklist =
+        get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
+    dstblacklist.set(utils::ip_string_to_be_uint(ip), 0);
+  } catch (...) {
+    throw std::runtime_error("unable to add element to map");
+  }
+
+  BlacklistDstJsonObject configuration;
+  configuration.setIp(ip);
+
+  blacklistdst_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
+                        std::forward_as_tuple(*this, configuration));
+}
+
+void Ddosmitigator::addBlacklistDstList(
+    const std::vector<BlacklistDstJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string ip_ = i.getIp();
+    delBlacklistDst(ip_);
+  }
+}
+
+void Ddosmitigator::replaceBlacklistDst(const std::string &ip,
+                                        const BlacklistDstJsonObject &conf) {
+  delBlacklistDst(ip);
+  std::string ip_ = conf.getIp();
+  addBlacklistDst(ip_, conf);
+}
+
+void Ddosmitigator::delBlacklistDst(const std::string &ip) {
+  logger()->debug("BlacklistDst removeEntry");
+
+  // ebpf map remove is performed in destructor
+  blacklistdst_.erase(ip);
+
+  if (blacklistdst_.size() == 0) {
+    setDstMatch(false);
+    reloadCode();
+  }
+}
+
+void Ddosmitigator::delBlacklistDstList() {
+  logger()->debug("BlacklistDst remove");
+
+  // ebpf maps remove performed in destructor
+  blacklistdst_.clear();
+
+  if (blacklistdst_.size() == 0) {
+    setDstMatch(false);
+    reloadCode();
   }
 }

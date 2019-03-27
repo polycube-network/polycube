@@ -19,7 +19,7 @@
 #include "Iptables.h"
 
 ChainRule::ChainRule(Chain &parent, const ChainRuleJsonObject &conf)
-    : parent_(parent) {
+    : parent_(parent), id(conf.getId()) {
   logger()->trace("Creating ChainRule instance");
   update(conf);
 }
@@ -194,107 +194,6 @@ bool ChainRule::equal(ChainRule &cmp) {
   return true;
 }
 
-void ChainRule::create(Chain &parent, const uint32_t &id,
-                       const ChainRuleJsonObject &conf) {
-  // This method creates the actual ChainRule object given thee key param.
-
-  // Create new ChainRule Object
-  auto newRule = new ChainRule(parent, conf);
-
-  ChainStats::get(parent);
-
-  if (newRule == nullptr) {
-    // Totally useless, but it is needed to avoid the compiler making wrong
-    // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
-
-  } else if (parent.rules_.size() <= id && newRule != nullptr) {
-    parent.rules_.resize(id + 1);
-  }
-  if (parent.rules_[id]) {
-    parent.logger()->info("Rule {0} overwritten!", id);
-  }
-
-  parent.rules_[id].reset(newRule);
-  parent.rules_[id]->id = id;
-
-  if (parent.parent_.interactive_) {
-    parent.updateChain();
-  }
-}
-
-// Now, rule is inserted, new rules are moved.
-// when rule are moved, update counters
-void ChainRule::insert(Chain &parent, const uint32_t &id,
-                       const ChainRuleJsonObject &conf) {
-  auto newRule = new ChainRule(parent, conf);
-
-  ChainStatsJsonObject confStats;
-  auto newStats = new ChainStats(parent, confStats);
-
-  ChainStats::get(parent);
-
-  if (newRule == nullptr) {
-    // Totally useless, but it is needed to avoid the compiler making wrong
-    // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
-
-  } else if (parent.rules_.size() >= id && newRule != nullptr) {
-    parent.rules_.resize(parent.rules_.size() + 1);
-    parent.counters_.resize(parent.counters_.size() + 1);
-  }
-
-  // 0, 1, 2, 3
-  // insert @2
-  // 0, 1, 2*, 2->3, 3->4
-
-  // for rules before id
-  // nothing
-
-  // for rules starting from id to rules size-1
-  // move ahead i -> i+i
-  // btw, better to start from the end of the array
-  // for rules starting from size-1 to id
-  // move ahead i -> i+i
-
-  int i = 0;
-  int id_int = (int)id;
-
-  // ids are 0,1,2
-  // size=3
-  // id = 1 (insert)
-
-  // new size = 4
-
-  // from 1 to 2
-  // move 2->3
-  // move 1->2,
-  // replace 1
-
-  for (i = parent.rules_.size() - 2; i >= id_int; i--) {
-    parent.rules_[i + 1] = parent.rules_[i];
-    parent.counters_[i + 1] = parent.counters_[i];
-    if (parent.rules_[i + 1] != nullptr) {
-      parent.rules_[i + 1]->id = i + 1;
-    }
-    if (parent.counters_[i + 1] != nullptr) {
-      parent.counters_[i + 1]->counter.setId(i + 1);
-    }
-  }
-
-  parent.rules_[id].reset(newRule);
-  parent.rules_[id]->id = id;
-
-  parent.counters_[id].reset(newStats);
-  parent.counters_[id]->counter.setPkts(0);
-  parent.counters_[id]->counter.setBytes(0);
-  parent.counters_[id]->counter.setId(id);
-
-  if (parent.parent_.interactive_) {
-    parent.updateChain();
-  }
-}
-
 void ChainRule::applyAcceptEstablishedOptimization(Chain &chain) {
   if (acceptEstablishedOptimizationFound(chain))
     chain.parent_.enableAcceptEstablished(chain);
@@ -327,84 +226,6 @@ bool ChainRule::acceptEstablishedOptimizationFound(Chain &chain) {
 // Using removeEntry method is not resizing the rule set, it is just replacing
 // the current rule with no-rule
 // the result is
-
-void ChainRule::deletes(Chain &parent, const ChainRuleJsonObject &conf) {
-  // Find Matching rule number
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    if (parent.rules_[i] != nullptr) {
-      ChainRule c(parent, conf);
-      // TODO improve
-      if (parent.rules_[i]->equal(c)) {
-        removeEntry(parent, i);
-        return;
-      }
-    }
-  }
-}
-
-std::shared_ptr<ChainRule> ChainRule::getEntry(Chain &parent,
-                                               const uint32_t &id) {
-  // This method retrieves the pointer to ChainRule object specified by its
-  // keys.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-  return parent.rules_[id];
-}
-
-void ChainRule::removeEntry(Chain &parent, const uint32_t &id) {
-  // This method removes the single ChainRule object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // ChainRule.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-
-  // Forcing counters update
-  ChainStats::get(parent);
-
-  for (uint32_t i = id; i < parent.rules_.size() - 1; ++i) {
-    parent.rules_[i] = parent.rules_[i + 1];
-    parent.rules_[i]->id = i;
-  }
-
-  parent.rules_.resize(parent.rules_.size() - 1);
-
-  for (uint32_t i = id; i < parent.counters_.size() - 1; ++i) {
-    parent.counters_[i] = parent.counters_[i + 1];
-    parent.counters_[i]->counter.setId(i);
-  }
-  parent.counters_.resize(parent.counters_.size() - 1);
-
-  if (parent.parent_.interactive_) {
-    parent.applyRules();
-  }
-}
-
-std::vector<std::shared_ptr<ChainRule>> ChainRule::get(Chain &parent) {
-  // This methods get the pointers to all the ChainRule objects in Chain.
-  std::vector<std::shared_ptr<ChainRule>> rules;
-  for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
-    if (*it) {
-      rules.push_back(*it);
-    }
-  }
-
-  return rules;
-}
-
-// called when FLUSH chain
-void ChainRule::remove(Chain &parent) {
-  // This method removes all ChainRule objects in Chain.
-  // Remember to call here the remove static method for all-sub-objects of
-  // ChainRule.
-  parent.rules_.clear();
-  parent.counters_.clear();
-
-  if (parent.parent_.interactive_) {
-    parent.applyRules();
-  }
-}
 
 std::string ChainRule::getSrc() {
   // This method retrieves the src value.

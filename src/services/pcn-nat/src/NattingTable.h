@@ -48,24 +48,6 @@ class NattingTable : public NattingTableInterface {
                const uint16_t newPort, const uint8_t originatingRule);
   virtual ~NattingTable();
 
-  static void create(Nat &parent, const std::string &internalSrc,
-                     const std::string &internalDst,
-                     const uint16_t &internalSport,
-                     const uint16_t &internalDport, const std::string &proto,
-                     const NattingTableJsonObject &conf);
-  static std::shared_ptr<NattingTable> getEntry(Nat &parent,
-                                                const std::string &internalSrc,
-                                                const std::string &internalDst,
-                                                const uint16_t &internalSport,
-                                                const uint16_t &internalDport,
-                                                const std::string &proto);
-  static void removeEntry(Nat &parent, const std::string &internalSrc,
-                          const std::string &internalDst,
-                          const uint16_t &internalSport,
-                          const uint16_t &internalDport,
-                          const std::string &proto);
-  static std::vector<std::shared_ptr<NattingTable>> get(Nat &parent);
-  static void remove(Nat &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const NattingTableJsonObject &conf) override;
   NattingTableJsonObject toJsonObject() override;

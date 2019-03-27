@@ -29,7 +29,10 @@ RulePortForwarding::RulePortForwarding(Rule &parent,
   update(conf);
 }
 
-RulePortForwarding::~RulePortForwarding() {}
+RulePortForwarding::~RulePortForwarding() {
+  delEntryList();
+  logger()->info("Removed all PortForwarding rules");
+}
 
 void RulePortForwarding::update(const RulePortForwardingJsonObject &conf) {
   // This method updates all the object/parameter in RulePortForwarding object
@@ -52,43 +55,6 @@ RulePortForwardingJsonObject RulePortForwarding::toJsonObject() {
   return conf;
 }
 
-void RulePortForwarding::create(Rule &parent,
-                                const RulePortForwardingJsonObject &conf) {
-  // This method creates the actual RulePortForwarding object given thee key
-  // param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RulePortForwarding.
-  parent.portforwarding_ = std::make_shared<RulePortForwarding>(parent, conf);
-}
-
-std::shared_ptr<RulePortForwarding> RulePortForwarding::getEntry(Rule &parent) {
-  // This method retrieves the pointer to RulePortForwarding object specified by
-  // its keys.
-  return parent.portforwarding_;
-}
-
-void RulePortForwarding::removeEntry(Rule &parent) {
-  // This method removes the single RulePortForwarding object specified by its
-  // keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RulePortForwarding.
-
-  if (parent.portforwarding_->rules_.size() == 0) {
-    // No rules to delete
-    parent.logger()->info("No PortForwarding rules to remove");
-    return;
-  }
-
-  for (int i = 0; i < parent.portforwarding_->rules_.size(); i++) {
-    auto rule = parent.portforwarding_->rules_[i];
-    rule->removeFromDatapath();
-  }
-
-  parent.portforwarding_->rules_.clear();
-
-  parent.logger()->info("Removed all PortForwarding rules");
-}
-
 RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(
     RulePortForwardingAppendInputJsonObject input) {
   RulePortForwardingEntryJsonObject conf;
@@ -99,7 +65,7 @@ RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(
   conf.setProto(input.getProto());
   uint32_t id = rules_.size();
   conf.setId(id);
-  RulePortForwardingEntry::create(*this, id, conf);
+  addEntry(id, conf);
 
   RulePortForwardingAppendOutputJsonObject output;
   output.setId(id);
@@ -108,4 +74,87 @@ RulePortForwardingAppendOutputJsonObject RulePortForwarding::append(
 
 std::shared_ptr<spdlog::logger> RulePortForwarding::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<RulePortForwardingEntry> RulePortForwarding::getEntry(
+    const uint32_t &id) {
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      return it;
+    }
+  }
+  throw std::runtime_error("There is no rule " + id);
+}
+
+std::vector<std::shared_ptr<RulePortForwardingEntry>>
+RulePortForwarding::getEntryList() {
+  return rules_;
+}
+
+void RulePortForwarding::addEntry(
+    const uint32_t &id, const RulePortForwardingEntryJsonObject &conf) {
+  auto newRule = std::make_shared<RulePortForwardingEntry>(*this, conf);
+  if (newRule == nullptr) {
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
+    throw std::runtime_error("I won't be thrown");
+  }
+
+  // Check for duplicates
+  // TODO: check for id?
+  for (auto &it : rules_) {
+    if (it->getExternalIp() == newRule->getExternalIp() &&
+        it->getExternalPort() == newRule->getExternalPort() &&
+        it->getProto() == newRule->getProto()) {
+      throw std::runtime_error("Cannot insert duplicate mapping");
+    }
+  }
+
+  rules_.push_back(newRule);
+
+  // Inject rule in the datapath table
+  newRule->injectToDatapath();
+}
+
+void RulePortForwarding::addEntryList(
+    const std::vector<RulePortForwardingEntryJsonObject> &conf) {
+  for (auto &i : conf) {
+    uint32_t id_ = i.getId();
+    addEntry(id_, i);
+  }
+}
+
+void RulePortForwarding::replaceEntry(
+    const uint32_t &id, const RulePortForwardingEntryJsonObject &conf) {
+  delEntry(id);
+  uint32_t id_ = conf.getId();
+  addEntry(id_, conf);
+}
+
+void RulePortForwarding::delEntry(const uint32_t &id) {
+  if (rules_.size() < id) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      // Remove rule from data path
+      it->removeFromDatapath();
+      break;
+    }
+  }
+  for (uint32_t i = id; i < rules_.size() - 1; ++i) {
+    rules_[i] = rules_[i + 1];
+    rules_[i]->id = i;
+  }
+  rules_.resize(rules_.size() - 1);
+  logger()->info("Removed PortForwarding entry {0}", id);
+}
+
+void RulePortForwarding::delEntryList() {
+  for (int i = 0; i < rules_.size(); i++) {
+    rules_[i]->removeFromDatapath();
+    rules_[i] = nullptr;
+  }
+
+  rules_.clear();
 }

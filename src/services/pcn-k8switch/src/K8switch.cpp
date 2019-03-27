@@ -412,3 +412,162 @@ void K8switch::delService(const std::string &vip, const uint16_t &vport,
 void K8switch::delServiceList() {
   service_map_.clear();
 }
+
+std::shared_ptr<Ports> K8switch::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> K8switch::getPortsList() {
+  return get_ports();
+}
+
+void K8switch::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  bool reload = false;
+
+  try {
+    switch (conf.getType()) {
+    case PortsTypeEnum::NODEPORT:
+      if (getNodePortPort() != nullptr) {
+        logger()->warn("There is already a NODEPORT port");
+        throw std::runtime_error("There is already a NODEPORT port");
+      }
+      reload = true;
+      break;
+    }
+  } catch (std::runtime_error &e) {
+    logger()->warn("Error when adding the port {0}", name);
+    logger()->warn("Error message: {0}", e.what());
+    throw;
+  }
+
+  add_port<PortsJsonObject>(name, conf);
+
+  if (reload) {
+    logger()->info("Nodeport added, reloading code");
+    reloadConfig();
+  }
+
+  logger()->info("New port created with name {0}", name);
+}
+
+void K8switch::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void K8switch::replacePorts(const std::string &name,
+                            const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void K8switch::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void K8switch::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<FwdTable> K8switch::getFwdTable(const std::string &address) {
+  uint32_t ip_key =
+      FwdTable::get_index(address);  // takes last part of the IP address
+
+  try {
+    auto fwd_table = get_array_table<pod>("fwd_table");
+    auto entry = fwd_table.get(ip_key);
+
+    std::string mac = utils::be_uint_to_ip_string(entry.mac);
+    std::string port(get_port(entry.port)->name());
+    return std::make_shared<FwdTable>(FwdTable(*this, address, mac, port));
+  } catch (std::exception &e) {
+    logger()->error("Unable to find FWD table entry for address {0}. {1}",
+                    address, e.what());
+    throw std::runtime_error("FWD table entry not found");
+  }
+}
+
+std::vector<std::shared_ptr<FwdTable>> K8switch::getFwdTableList() {
+  logger()->debug("Getting the FWD table");
+
+  std::vector<std::shared_ptr<FwdTable>> fwd_table_entries;
+
+  // The FWD table is read from the data path
+  try {
+    auto fwd_table = get_array_table<pod>("fwd_table");
+    auto entries = fwd_table.get_all();
+
+    for (auto &entry : entries) {
+      auto key = entry.first;
+      auto value = entry.second;
+
+      // TODO: key is only the index, it should be converted back to the full IP
+      // address
+      std::string ip = utils::be_uint_to_ip_string(key);
+      std::string mac = utils::be_uint_to_mac_string(value.mac);
+      std::string port(get_port(value.port)->name());
+
+      fwd_table_entries.push_back(
+          std::make_shared<FwdTable>(FwdTable(*this, ip, mac, port)));
+    }
+  } catch (std::exception &e) {
+    logger()->error("Error while trying to get the FWD table");
+    throw std::runtime_error("Unable to get the FWD table list");
+  }
+
+  return fwd_table_entries;
+}
+
+void K8switch::addFwdTable(const std::string &address,
+                           const FwdTableJsonObject &conf) {
+  logger()->debug("Creating fwd entry ip: {0} - mac: {1} - port: {2}", address,
+                  conf.getMac(), conf.getPort());
+
+  uint32_t ip_key =
+      FwdTable::get_index(address);  // takes last part of the IP address
+  auto port = get_port(conf.getPort());
+
+  pod p{
+      .mac = utils::mac_string_to_be_uint(conf.getMac()),
+      .port = uint16_t(port->index()),
+  };
+
+  auto fwd_table = get_array_table<pod>("fwd_table");
+  fwd_table.set(ip_key, p);
+}
+
+void K8switch::addFwdTableList(const std::vector<FwdTableJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string address_ = i.getAddress();
+    addFwdTable(address_, i);
+  }
+}
+
+void K8switch::replaceFwdTable(const std::string &address,
+                               const FwdTableJsonObject &conf) {
+  delFwdTable(address);
+  std::string address_ = conf.getAddress();
+  addFwdTable(address_, conf);
+}
+
+void K8switch::delFwdTable(const std::string &address) {
+  logger()->debug("Remove the FWD table entry for address {0}", address);
+
+  uint32_t ip_key =
+      FwdTable::get_index(address);  // takes last part of the IP address
+
+  // fwd_table is implemented as an array, deleting means writing 0s
+  auto fwd_table = get_array_table<pod>("fwd_table");
+  pod p{0};
+  fwd_table.set(ip_key, p);
+}
+
+void K8switch::delFwdTableList() {
+  throw std::runtime_error("FwdTable::remove non supported");
+}

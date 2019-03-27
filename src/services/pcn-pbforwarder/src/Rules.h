@@ -51,13 +51,6 @@ class Rules : public RulesInterface {
   Rules(Pbforwarder &parent, const RulesJsonObject &conf);
   virtual ~Rules();
 
-  static void create(Pbforwarder &parent, const uint32_t &id,
-                     const RulesJsonObject &conf);
-  static std::shared_ptr<Rules> getEntry(Pbforwarder &parent,
-                                         const uint32_t &id);
-  static void removeEntry(Pbforwarder &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<Rules>> get(Pbforwarder &parent);
-  static void remove(Pbforwarder &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulesJsonObject &conf) override;
   RulesJsonObject toJsonObject() override;

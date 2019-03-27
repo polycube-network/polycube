@@ -31,7 +31,7 @@ Nat::Nat(const std::string name, const NatJsonObject &conf)
   logger()->info("Creating Nat instance");
 
   addRule(conf.getRule());
-  addNattingTableList(conf.getNattingTable());
+  //addNattingTableList(conf.getNattingTable());
 }
 
 Nat::~Nat() {}
@@ -137,4 +137,114 @@ uint8_t Nat::proto_from_string_to_int(const std::string &proto) {
     return IPPROTO_UDP;
   }
   return -1;
+}
+
+std::shared_ptr<Rule> Nat::getRule() {
+  return rule_;
+}
+
+void Nat::addRule(const RuleJsonObject &value) {
+  rule_ = std::make_shared<Rule>(*this, value);
+}
+
+void Nat::replaceRule(const RuleJsonObject &conf) {
+  delRule();
+  addRule(conf);
+}
+
+void Nat::delRule() {
+  rule_ = nullptr;
+}
+
+std::shared_ptr<NattingTable> Nat::getNattingTable(
+    const std::string &internalSrc, const std::string &internalDst,
+    const uint16_t &internalSport, const uint16_t &internalDport,
+    const std::string &proto) {
+  try {
+    auto table = get_hash_table<st_k, st_v>("egress_session_table");
+    st_k map_key{
+        .src_ip = utils::ip_string_to_be_uint(internalSrc),
+        .dst_ip = utils::ip_string_to_be_uint(internalDst),
+        .src_port = htons(internalSport),
+        .dst_port = htons(internalDport),
+        .proto = std::stol(proto),
+    };
+
+    st_v value = table.get(map_key);
+
+    std::string newIp = utils::be_uint_to_ip_string(value.new_ip);
+    uint16_t newPort = value.new_port;
+    uint8_t originatingRule = value.originating_rule_type;
+    ;
+    auto entry = std::make_shared<NattingTable>(
+        *this, internalSrc, internalDst, internalSport, internalDport,
+        proto_from_string_to_int(proto), newIp, newPort, originatingRule);
+    return entry;
+  } catch (std::exception &e) {
+    throw std::runtime_error("Natting table entry not found");
+  }
+}
+
+std::vector<std::shared_ptr<NattingTable>> Nat::getNattingTableList() {
+  std::vector<std::shared_ptr<NattingTable>> entries;
+  try {
+    auto table = get_hash_table<st_k, st_v>("egress_session_table");
+    auto map_entries = table.get_all();
+    for (auto &pair : map_entries) {
+      auto key = pair.first;
+      auto value = pair.second;
+
+      auto entry = std::make_shared<NattingTable>(
+          *this, utils::be_uint_to_ip_string(key.src_ip),
+          utils::be_uint_to_ip_string(key.dst_ip), ntohs(key.src_port),
+          ntohs(key.dst_port), key.proto,
+          utils::be_uint_to_ip_string(value.new_ip), ntohs(value.new_port),
+          value.originating_rule_type);
+
+      entries.push_back(entry);
+    }
+  } catch (std::exception &e) {
+    throw std::runtime_error("Unable to get the natting table");
+  }
+  return entries;
+}
+
+void Nat::addNattingTable(const std::string &internalSrc,
+                          const std::string &internalDst,
+                          const uint16_t &internalSport,
+                          const uint16_t &internalDport,
+                          const std::string &proto,
+                          const NattingTableJsonObject &conf) {
+  throw std::runtime_error("Cannot manually create natting table entries");
+}
+
+void Nat::addNattingTableList(const std::vector<NattingTableJsonObject> &conf) {
+  throw std::runtime_error("Cannot manually create natting table entries");
+}
+
+void Nat::replaceNattingTable(const std::string &internalSrc,
+                              const std::string &internalDst,
+                              const uint16_t &internalSport,
+                              const uint16_t &internalDport,
+                              const std::string &proto,
+                              const NattingTableJsonObject &conf) {
+  throw std::runtime_error("Cannot manually create natting table entries");
+}
+
+void Nat::delNattingTable(const std::string &internalSrc,
+                          const std::string &internalDst,
+                          const uint16_t &internalSport,
+                          const uint16_t &internalDport,
+                          const std::string &proto) {
+  throw std::runtime_error(
+      "Cannot manually remove single natting table entries");
+}
+
+void Nat::delNattingTableList() {
+  auto egress_table = get_hash_table<st_k, st_v>("egress_session_table");
+  egress_table.remove_all();
+  auto ingress_table = get_hash_table<st_k, st_v>("ingress_session_table");
+  ingress_table.remove_all();
+
+  logger()->info("Flushed natting tables");
 }

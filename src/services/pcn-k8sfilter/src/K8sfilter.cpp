@@ -131,3 +131,42 @@ void K8sfilter::reloadConfig() {
 
   logger()->trace("New lbrp code loaded");
 }
+
+std::shared_ptr<Ports> K8sfilter::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> K8sfilter::getPortsList() {
+  return get_ports();
+}
+
+void K8sfilter::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+  logger()->info("Reloading code because of the new port");
+  reloadConfig();
+}
+
+void K8sfilter::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void K8sfilter::replacePorts(const std::string &name,
+                             const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void K8sfilter::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void K8sfilter::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    remove_port(it->name());
+  }
+}

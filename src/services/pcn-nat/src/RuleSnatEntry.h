@@ -26,17 +26,12 @@ class RuleSnat;
 using namespace io::swagger::server::model;
 
 class RuleSnatEntry : public RuleSnatEntryInterface {
+  friend class RuleSnat;
+
  public:
   RuleSnatEntry(RuleSnat &parent, const RuleSnatEntryJsonObject &conf);
   virtual ~RuleSnatEntry();
 
-  static void create(RuleSnat &parent, const uint32_t &id,
-                     const RuleSnatEntryJsonObject &conf);
-  static std::shared_ptr<RuleSnatEntry> getEntry(RuleSnat &parent,
-                                                 const uint32_t &id);
-  static void removeEntry(RuleSnat &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<RuleSnatEntry>> get(RuleSnat &parent);
-  static void remove(RuleSnat &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleSnatEntryJsonObject &conf) override;
   RuleSnatEntryJsonObject toJsonObject() override;

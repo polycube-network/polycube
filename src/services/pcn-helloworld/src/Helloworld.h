@@ -27,7 +27,6 @@
 #include "Ports.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Helloworld : public polycube::service::Cube<Ports>,
                    public HelloworldInterface {

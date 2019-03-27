@@ -163,3 +163,239 @@ std::shared_ptr<Ports> Lbrp::getBackendPort() {
   }
   return nullptr;
 }
+
+std::shared_ptr<Ports> Lbrp::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Lbrp::getPortsList() {
+  return get_ports();
+}
+
+void Lbrp::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  if (get_ports().size() == 2) {
+    logger()->warn("Reached maximum number of ports");
+    throw std::runtime_error("Reached maximum number of ports");
+  }
+
+  try {
+    switch (conf.getType()) {
+    case PortsTypeEnum::FRONTEND:
+      if (getFrontendPort() != nullptr) {
+        logger()->warn("There is already a FRONTEND port");
+        throw std::runtime_error("There is already a FRONTEND port");
+      }
+      break;
+    case PortsTypeEnum::BACKEND:
+      if (getBackendPort() != nullptr) {
+        logger()->warn("There is already a BACKEND port");
+        throw std::runtime_error("There is already a BACKEND port");
+      }
+      break;
+    }
+  } catch (std::runtime_error &e) {
+    logger()->warn("Error when adding the port {0}", name);
+    logger()->warn("Error message: {0}", e.what());
+    throw;
+  }
+
+  add_port<PortsJsonObject>(name, conf);
+
+  if (get_ports().size() == 2) {
+    logger()->info("Reloading code because of the new port");
+    reloadCodeWithNewPorts();
+  }
+
+  logger()->info("New port created with name {0}", name);
+}
+
+void Lbrp::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Lbrp::replacePorts(const std::string &name, const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Lbrp::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void Lbrp::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<SrcIpRewrite> Lbrp::getSrcIpRewrite() {
+  return src_ip_rewrite_;
+}
+
+void Lbrp::addSrcIpRewrite(const SrcIpRewriteJsonObject &value) {
+  logger()->debug(
+      "[SrcIpRewrite] Received request to create SrcIpRewrite range {0} , new "
+      "ip range {1} ",
+      value.getIpRange(), value.getNewIpRange());
+
+  src_ip_rewrite_ = std::make_shared<SrcIpRewrite>(*this, value);
+  src_ip_rewrite_->update(value);
+}
+
+void Lbrp::replaceSrcIpRewrite(const SrcIpRewriteJsonObject &conf) {
+  delSrcIpRewrite();
+  addSrcIpRewrite(conf);
+}
+
+void Lbrp::delSrcIpRewrite() {
+  // what the hell means to remove entry in this case?
+}
+
+std::shared_ptr<Service> Lbrp::getService(const std::string &vip,
+                                          const uint16_t &vport,
+                                          const ServiceProtoEnum &proto) {
+  // This method retrieves the pointer to Service object specified by its keys.
+  logger()->debug("[Service] Received request to read a service entry");
+  logger()->debug("[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}",
+                  vip, vport,
+                  ServiceJsonObject::ServiceProtoEnum_to_string(proto));
+
+  uint16_t vp = vport;
+  if (Service::convertProtoToNumber(proto) == 1)
+    vp = vport;
+
+  Service::ServiceKey key =
+      Service::ServiceKey(vip, vp, Service::convertProtoToNumber(proto));
+
+  if (service_map_.count(key) == 0) {
+    logger()->error("[Service] There are no entries associated with that key");
+    throw std::runtime_error("There are no entries associated with that key");
+  }
+
+  return std::shared_ptr<Service>(&service_map_.at(key), [](Service *) {});
+}
+
+std::vector<std::shared_ptr<Service>> Lbrp::getServiceList() {
+  std::vector<std::shared_ptr<Service>> services_vect;
+
+  for (auto &it : service_map_) {
+    Service::ServiceKey key = it.first;
+    services_vect.push_back(
+        getService(std::get<0>(key), std::get<1>(key),
+                   Service::convertNumberToProto(std::get<2>(key))));
+  }
+
+  return services_vect;
+}
+
+void Lbrp::addService(const std::string &vip, const uint16_t &vport,
+                      const ServiceProtoEnum &proto,
+                      const ServiceJsonObject &conf) {
+  logger()->debug("[Service] Received request to create new service entry");
+  logger()->debug("[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}",
+                  vip, vport,
+                  ServiceJsonObject::ServiceProtoEnum_to_string(proto));
+
+  if (proto == ServiceProtoEnum::ALL) {
+    // Let's create 3 different services for TCP, UDP and ICMP
+    // Let's start from TCP
+    ServiceJsonObject new_conf(conf);
+    new_conf.setProto(ServiceProtoEnum::TCP);
+    addService(vip, vport, ServiceProtoEnum::TCP, new_conf);
+
+    // Now is the UDP turn
+    new_conf.setProto(ServiceProtoEnum::UDP);
+    addService(vip, vport, ServiceProtoEnum::UDP, new_conf);
+
+    // Finally, is ICMP turn. For ICMP we use a "special" port since this field
+    // is useless
+    new_conf.setProto(ServiceProtoEnum::ICMP);
+    new_conf.setVport(Service::ICMP_EBPF_PORT);
+    addService(vip, Service::ICMP_EBPF_PORT, ServiceProtoEnum::ICMP, new_conf);
+
+    // We completed all task, let's directly return since we do not have to
+    // execute the code below
+    return;
+  } else if (proto == ServiceProtoEnum::ICMP &&
+             conf.getVport() != Service::ICMP_EBPF_PORT) {
+    throw std::runtime_error(
+        "ICMP Service requires 0 as virtual port. Since this parameter is "
+        "useless for ICMP services");
+  }
+}
+
+void Lbrp::addServiceList(const std::vector<ServiceJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string vip_ = i.getVip();
+    uint16_t vport_ = i.getVport();
+    ServiceProtoEnum proto_ = i.getProto();
+    addService(vip_, vport_, proto_, i);
+  }
+}
+
+void Lbrp::replaceService(const std::string &vip, const uint16_t &vport,
+                          const ServiceProtoEnum &proto,
+                          const ServiceJsonObject &conf) {
+  delService(vip, vport, proto);
+  std::string vip_ = conf.getVip();
+  uint16_t vport_ = conf.getVport();
+  ServiceProtoEnum proto_ = conf.getProto();
+  addService(vip_, vport_, proto_, conf);
+}
+
+void Lbrp::delService(const std::string &vip, const uint16_t &vport,
+                      const ServiceProtoEnum &proto) {
+  if (proto == ServiceProtoEnum::ALL) {
+    // Let's create 3 different services for TCP, UDP and ICMP
+    // Let's start from TCP
+    delService(vip, vport, ServiceProtoEnum::TCP);
+
+    // Now is the UDP turn
+    delService(vip, vport, ServiceProtoEnum::UDP);
+
+    // Finally, is ICMP turn. For ICMP we use a "special" port since this field
+    // is useless
+    delService(vip, Service::ICMP_EBPF_PORT, ServiceProtoEnum::ICMP);
+
+    // We completed all task, let's directly return since we do not have to
+    // execute the code below
+    return;
+  } else if (proto == ServiceProtoEnum::ICMP &&
+             vport != Service::ICMP_EBPF_PORT) {
+    throw std::runtime_error(
+        "ICMP Service requires 0 as virtual port. Since this parameter is "
+        "useless for ICMP services");
+  }
+
+  logger()->debug("[Service] Received request to delete a service entry");
+  logger()->debug("[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}",
+                  vip, vport,
+                  ServiceJsonObject::ServiceProtoEnum_to_string(proto));
+
+  Service::ServiceKey key =
+      Service::ServiceKey(vip, vport, Service::convertProtoToNumber(proto));
+
+  if (service_map_.count(key) == 0) {
+    logger()->error("[Service] There are no entries associated with that key");
+    throw std::runtime_error("There are no entries associated with that key");
+  }
+
+  auto service = getService(vip, vport, proto);
+
+  service->removeServiceFromKernelMap();
+  service_map_.erase(key);
+}
+
+void Lbrp::delServiceList() {
+  for (auto it = service_map_.begin(); it != service_map_.end();) {
+    auto tmp = it;
+    it++;
+    delService(tmp->second.getVip(), tmp->second.getVport(),
+               tmp->second.getProto());
+  }
+}

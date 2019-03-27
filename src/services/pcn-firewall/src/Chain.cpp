@@ -69,58 +69,6 @@ ChainJsonObject Chain::toJsonObject() {
   return conf;
 }
 
-void Chain::create(Firewall &parent, const ChainNameEnum &name,
-                   const ChainJsonObject &conf) {
-  // This method creates the actual Chain object given thee key param.
-  ChainJsonObject namedChain = conf;
-  namedChain.setName(name);
-  if (parent.chains_.count(name) != 0) {
-    throw std::runtime_error("There is already a chain " +
-                             ChainJsonObject::ChainNameEnum_to_string(name));
-  }
-
-  parent.chains_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
-                         std::forward_as_tuple(parent, namedChain));
-}
-
-std::shared_ptr<Chain> Chain::getEntry(Firewall &parent,
-                                       const ChainNameEnum &name) {
-  // This method retrieves the pointer to Chain object specified by its keys.
-  if (parent.chains_.count(name) == 0) {
-    throw std::runtime_error("There is no chain " +
-                             ChainJsonObject::ChainNameEnum_to_string(name));
-  }
-  if (!parent.transparent && name == ChainNameEnum::EGRESS) {
-    throw std::runtime_error(
-        "Cannot configure rules on EGRESS chain when the firewall is "
-        "configured with unidirectional ports");
-  }
-  return std::shared_ptr<Chain>(&parent.chains_.at(name), [](Chain *) {});
-}
-
-void Chain::removeEntry(Firewall &parent, const ChainNameEnum &name) {
-  // This method removes the single Chain object specified by its keys.
-  // parent.chains_.erase(name);
-  throw std::runtime_error("Method not supported.");
-}
-
-std::vector<std::shared_ptr<Chain>> Chain::get(Firewall &parent) {
-  // This methods get the pointers to all the Chain objects in Firewall.
-  std::vector<std::shared_ptr<Chain>> chains;
-
-  for (auto &it : parent.chains_) {
-    chains.push_back(Chain::getEntry(parent, it.first));
-  }
-
-  return chains;
-}
-
-void Chain::remove(Firewall &parent) {
-  // This method removes all Chain objects in Firewall.
-  // parent.chains_.clear();
-  throw std::runtime_error("Method not supported.");
-}
-
 ActionEnum Chain::getDefault() {
   // This method retrieves the default value.
   return this->defaultAction;
@@ -187,8 +135,9 @@ ChainAppendOutputJsonObject Chain::append(ChainAppendInputJsonObject input) {
   }
 
   uint32_t id = rules_.size();
+  conf.setId(id);
   ChainAppendOutputJsonObject result;
-  ChainRule::create(*this, id, conf);
+  addRule(id, conf);
   result.setId(id);
   return result;
 }
@@ -254,8 +203,17 @@ uint32_t Chain::getNrRules() {
   return rules_.size();
 }
 
+/*
+ * returns only valid elements in the rules_ vector
+ */
 std::vector<std::shared_ptr<ChainRule>> Chain::getRealRuleList() {
-  return ChainRule::get(*this);
+  std::vector<std::shared_ptr<ChainRule>> rules;
+  for (auto &rule : rules_) {
+    if (rule) {
+      rules.push_back(rule);
+    }
+  }
+  return rules;
 }
 
 void Chain::updateChain() {
@@ -542,4 +500,162 @@ void Chain::updateChain() {
                  parent_.get_name(),
                  ChainJsonObject::ChainNameEnum_to_string(name),
                  elapsed_seconds.count());
+}
+
+std::shared_ptr<ChainStats> Chain::getStats(const uint32_t &id) {
+  if (rules_.size() < id || !rules_[id]) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+
+  auto &counters = counters_;
+
+  if (counters.size() <= id || !counters[id]) {
+    // Counter not initialized yet
+    ChainStatsJsonObject conf;
+    uint64_t pkts, bytes;
+    conf.setId(id);
+    ChainStats::fetchCounters(*this, id, pkts, bytes);
+    conf.setPkts(pkts);
+    conf.setBytes(bytes);
+    if (counters.size() <= id) {
+      counters.resize(id + 1);
+    }
+    counters[id].reset(new ChainStats(*this, conf));
+  } else {
+    // Counter already existed, update it
+    uint64_t pkts, bytes;
+    ChainStats::fetchCounters(*this, id, pkts, bytes);
+    counters[id]->counter.setPkts(counters[id]->getPkts() + pkts);
+    counters[id]->counter.setBytes(counters[id]->getBytes() + bytes);
+  }
+
+  return counters[id];
+}
+
+std::vector<std::shared_ptr<ChainStats>> Chain::getStatsList() {
+  std::vector<std::shared_ptr<ChainStats>> vect;
+
+  for (std::shared_ptr<ChainRule> cr : rules_) {
+    if (cr) {
+      vect.push_back(getStats(cr->getId()));
+    }
+  }
+
+  vect.push_back(ChainStats::getDefaultActionCounters(*this));
+
+  return vect;
+}
+
+void Chain::addStats(const uint32_t &id, const ChainStatsJsonObject &conf) {
+  throw std::runtime_error("[ChainStats]: Method create not allowed.");
+}
+
+void Chain::addStatsList(const std::vector<ChainStatsJsonObject> &conf) {
+  throw std::runtime_error("[ChainStats]: Method create not allowed.");
+}
+
+void Chain::replaceStats(const uint32_t &id, const ChainStatsJsonObject &conf) {
+  throw std::runtime_error("[ChainStats]: Method replace not allowed.");
+}
+
+void Chain::delStats(const uint32_t &id) {
+  throw std::runtime_error("[ChainStats]: Method removeEntry not allowed");
+}
+
+void Chain::delStatsList() {
+  throw std::runtime_error("[ChainStats]: Method removeEntry not allowed");
+}
+
+std::shared_ptr<ChainRule> Chain::getRule(const uint32_t &id) {
+  if (rules_.size() < id || !rules_[id]) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+  return rules_[id];
+}
+
+std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
+  auto rules(getRealRuleList());
+
+  // Adding a "stub" default rule
+  ChainRuleJsonObject defaultRule;
+  defaultRule.setAction(getDefault());
+  defaultRule.setDescription("Default Policy");
+  defaultRule.setId(0);
+
+  rules.push_back(
+      std::shared_ptr<ChainRule>(new ChainRule(*this, defaultRule)));
+
+  return rules;
+}
+
+void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
+  auto newRule = std::make_shared<ChainRule>(*this, conf);
+
+  // Forcing counters update
+  getStatsList();
+
+  if (newRule == nullptr) {
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
+    throw new std::runtime_error("I won't be thrown");
+
+  } else if (rules_.size() <= id && newRule != nullptr) {
+    rules_.resize(id + 1);
+  }
+  if (rules_[id]) {
+    logger()->info("Rule {0} overwritten!", id);
+  }
+
+  rules_[id] = newRule;
+
+  if (parent_.interactive_) {
+    updateChain();
+  }
+}
+
+void Chain::addRuleList(const std::vector<ChainRuleJsonObject> &conf) {
+  for (auto &i : conf) {
+    uint32_t id_ = i.getId();
+    addRule(id_, i);
+  }
+}
+
+void Chain::replaceRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
+  delRule(id);
+  uint32_t id_ = conf.getId();
+  addRule(id_, conf);
+}
+
+void Chain::delRule(const uint32_t &id) {
+  if (rules_.size() < id || !rules_[id]) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+
+  // Forcing counters update
+  getStatsList();
+
+  for (uint32_t i = id; i < rules_.size() - 1; ++i) {
+    rules_[i] = rules_[i + 1];
+    rules_[i]->id = i;
+  }
+
+  rules_.resize(rules_.size() - 1);
+
+  for (uint32_t i = id; i < counters_.size() - 1; ++i) {
+    counters_[i] = counters_[i + 1];
+    counters_[i]->counter.setId(i);
+  }
+  rules_.resize(counters_.size() - 1);
+
+  if (parent_.interactive_) {
+    applyRules();
+  }
+}
+
+void Chain::delRuleList() {
+  rules_.clear();
+  counters_.clear();
+  if (parent_.interactive_) {
+    applyRules();
+  }
 }

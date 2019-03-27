@@ -42,18 +42,6 @@ class SessionTable : public SessionTableInterface {
   SessionTable(Iptables &parent, const SessionTableJsonObject &conf);
   virtual ~SessionTable();
 
-  static void create(Iptables &parent, const std::string &src,
-                     const std::string &dst, const std::string &l4proto,
-                     const uint16_t &sport, const uint16_t &dport,
-                     const SessionTableJsonObject &conf);
-  static std::shared_ptr<SessionTable> getEntry(
-      Iptables &parent, const std::string &src, const std::string &dst,
-      const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
-  static void removeEntry(Iptables &parent, const std::string &src,
-                          const std::string &dst, const std::string &l4proto,
-                          const uint16_t &sport, const uint16_t &dport);
-  static std::vector<std::shared_ptr<SessionTable>> get(Iptables &parent);
-  static void remove(Iptables &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const SessionTableJsonObject &conf) override;
   SessionTableJsonObject toJsonObject() override;

@@ -39,9 +39,6 @@ class Rule : public RuleInterface {
   Rule(Nat &parent, const RuleJsonObject &conf);
   virtual ~Rule();
 
-  static void create(Nat &parent, const RuleJsonObject &conf);
-  static std::shared_ptr<Rule> getEntry(Nat &parent);
-  static void removeEntry(Nat &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleJsonObject &conf) override;
   RuleJsonObject toJsonObject() override;

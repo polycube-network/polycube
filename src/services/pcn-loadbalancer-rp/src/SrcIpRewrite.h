@@ -44,9 +44,6 @@ class SrcIpRewrite : public SrcIpRewriteInterface {
   SrcIpRewrite(Lbrp &parent, const SrcIpRewriteJsonObject &conf);
   virtual ~SrcIpRewrite();
 
-  static void create(Lbrp &parent, const SrcIpRewriteJsonObject &conf);
-  static std::shared_ptr<SrcIpRewrite> getEntry(Lbrp &parent);
-  static void removeEntry(Lbrp &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const SrcIpRewriteJsonObject &conf) override;
   SrcIpRewriteJsonObject toJsonObject() override;

@@ -49,65 +49,6 @@ PortsJsonObject Ports::toJsonObject() {
   return conf;
 }
 
-void Ports::create(K8switch &parent, const std::string &name,
-                   const PortsJsonObject &conf) {
-  bool reload = false;
-
-  try {
-    switch (conf.getType()) {
-    case PortsTypeEnum::NODEPORT:
-      if (parent.getNodePortPort() != nullptr) {
-        parent.logger()->warn("There is already a NODEPORT port");
-        throw std::runtime_error("There is already a NODEPORT port");
-      }
-      reload = true;
-      break;
-    }
-  } catch (std::runtime_error &e) {
-    parent.logger()->warn("Error when adding the port {0}", name);
-    parent.logger()->warn("Error message: {0}", e.what());
-    throw;
-  }
-
-  parent.add_port<PortsJsonObject>(name, conf);
-
-  if (reload) {
-    parent.logger()->info("Nodeport added, reloading code");
-    parent.reloadConfig();
-  }
-
-  parent.logger()->info("New port created with name {0}", name);
-}
-
-std::shared_ptr<Ports> Ports::getEntry(K8switch &parent,
-                                       const std::string &name) {
-  // This method retrieves the pointer to Ports object specified by its keys.
-  // logger()->info("Called getEntry with name: {0}", name);
-  return parent.get_port(name);
-}
-
-void Ports::removeEntry(K8switch &parent, const std::string &name) {
-  // This method removes the single Ports object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-  parent.remove_port(name);
-}
-
-std::vector<std::shared_ptr<Ports>> Ports::get(K8switch &parent) {
-  // This methods get the pointers to all the Ports objects in K8switch.
-  return parent.get_ports();
-}
-
-void Ports::remove(K8switch &parent) {
-  // This method removes all Ports objects in K8switch.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-  auto ports = parent.get_ports();
-  for (auto it : ports) {
-    removeEntry(parent, it->name());
-  }
-}
-
 PortsTypeEnum Ports::getType() {
   // This method retrieves the type value.
   return port_type_;

@@ -44,26 +44,6 @@ StatsJsonObject Stats::toJsonObject() {
   return conf;
 }
 
-void Stats::create(Ddosmitigator &parent, const StatsJsonObject &conf) {
-  // throw std::runtime_error("[Stats]: Method create not supported");
-}
-
-std::shared_ptr<Stats> Stats::getEntry(Ddosmitigator &parent) {
-  // This method retrieves the pointer to Stats object specified by its keys.
-  parent.logger()->debug("Stats getEntry");
-
-  StatsJsonObject sjo;
-  return std::shared_ptr<Stats>(new Stats(parent, sjo));
-}
-
-void Stats::removeEntry(Ddosmitigator &parent) {
-  // This method removes the single Stats object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Stats.
-  throw std::runtime_error(
-      "[Stats]: Method removeEntry not supported. Read Only");
-}
-
 uint64_t Stats::getPps() {
   // This method retrieves the pps value.
   int begin = getPkts();

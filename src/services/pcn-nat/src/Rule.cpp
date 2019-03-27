@@ -21,9 +21,18 @@
 
 Rule::Rule(Nat &parent, const RuleJsonObject &conf) : parent_(parent) {
   update(conf);
+  snat_ = std::make_shared<RuleSnat>(*this);
+  dnat_ = std::make_shared<RuleDnat>(*this);
+  portforwarding_ = std::make_shared<RulePortForwarding>(*this);
+  masquerade_ = std::make_shared<RuleMasquerade>(*this);
 }
 
-Rule::~Rule() {}
+Rule::~Rule() {
+  delSnat();
+  delDnat();
+  delPortForwarding();
+  delMasquerade();
+}
 
 void Rule::update(const RuleJsonObject &conf) {
   // This method updates all the object/parameter in Rule object specified in
@@ -56,37 +65,79 @@ RuleJsonObject Rule::toJsonObject() {
   return conf;
 }
 
-void Rule::create(Nat &parent, const RuleJsonObject &conf) {
-  // This method creates the actual Rule object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of Rule.
-  parent.rule_ = std::make_shared<Rule>(parent, conf);
-  parent.rule_->snat_ = std::make_shared<RuleSnat>(*parent.rule_.get());
-  parent.rule_->dnat_ = std::make_shared<RuleDnat>(*parent.rule_.get());
-  parent.rule_->portforwarding_ =
-      std::make_shared<RulePortForwarding>(*parent.rule_.get());
-  parent.rule_->masquerade_ =
-      std::make_shared<RuleMasquerade>(*parent.rule_.get());
-}
-
-std::shared_ptr<Rule> Rule::getEntry(Nat &parent) {
-  // This method retrieves the pointer to Rule object specified by its keys.
-  return parent.rule_;
-}
-
-void Rule::removeEntry(Nat &parent) {
-  // This method removes the single Rule object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of Rule.
-  parent.rule_->delSnat();
-  parent.rule_->delDnat();
-  parent.rule_->delPortForwarding();
-  parent.rule_->delMasquerade();
-}
-
 std::shared_ptr<spdlog::logger> Rule::logger() {
   return parent_.logger();
 }
 
 Nat &Rule::getParent() {
   return parent_;
+}
+
+std::shared_ptr<RuleSnat> Rule::getSnat() {
+  return snat_;
+}
+
+void Rule::addSnat(const RuleSnatJsonObject &value) {
+  snat_ = std::make_shared<RuleSnat>(*this, value);
+}
+
+void Rule::replaceSnat(const RuleSnatJsonObject &conf) {
+  delSnat();
+  addSnat(conf);
+}
+
+void Rule::delSnat() {
+  snat_ = nullptr;
+}
+
+std::shared_ptr<RuleMasquerade> Rule::getMasquerade() {
+  return masquerade_;
+}
+
+void Rule::addMasquerade(const RuleMasqueradeJsonObject &value) {
+  masquerade_ = std::make_shared<RuleMasquerade>(*this, value);
+}
+
+void Rule::replaceMasquerade(const RuleMasqueradeJsonObject &conf) {
+  delMasquerade();
+  addMasquerade(conf);
+}
+
+void Rule::delMasquerade() {
+  // Treat deletion as disabling
+  masquerade_->disable();
+}
+
+std::shared_ptr<RuleDnat> Rule::getDnat() {
+  return dnat_;
+}
+
+void Rule::addDnat(const RuleDnatJsonObject &value) {
+  dnat_ = std::make_shared<RuleDnat>(*this, value);
+}
+
+void Rule::replaceDnat(const RuleDnatJsonObject &conf) {
+  delDnat();
+  addDnat(conf);
+}
+
+void Rule::delDnat() {
+  dnat_ = nullptr;
+}
+
+std::shared_ptr<RulePortForwarding> Rule::getPortForwarding() {
+  return portforwarding_;
+}
+
+void Rule::addPortForwarding(const RulePortForwardingJsonObject &value) {
+  portforwarding_ = std::make_shared<RulePortForwarding>(*this, value);
+}
+
+void Rule::replacePortForwarding(const RulePortForwardingJsonObject &conf) {
+  delPortForwarding();
+  addPortForwarding(conf);
+}
+
+void Rule::delPortForwarding() {
+  portforwarding_ = nullptr;
 }

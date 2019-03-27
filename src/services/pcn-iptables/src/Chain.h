@@ -39,13 +39,6 @@ class Chain : public ChainInterface {
   Chain(Iptables &parent, const ChainJsonObject &conf);
   virtual ~Chain();
 
-  static void create(Iptables &parent, const ChainNameEnum &name,
-                     const ChainJsonObject &conf);
-  static std::shared_ptr<Chain> getEntry(Iptables &parent,
-                                         const ChainNameEnum &name);
-  static void removeEntry(Iptables &parent, const ChainNameEnum &name);
-  static std::vector<std::shared_ptr<Chain>> get(Iptables &parent);
-  static void remove(Iptables &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
   ChainJsonObject toJsonObject() override;

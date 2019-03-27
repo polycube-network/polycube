@@ -26,7 +26,10 @@ RuleSnat::RuleSnat(Rule &parent, const RuleSnatJsonObject &conf)
   update(conf);
 }
 
-RuleSnat::~RuleSnat() {}
+RuleSnat::~RuleSnat() {
+  delEntryList();
+  logger()->info("Removed all SNAT rules");
+}
 
 void RuleSnat::update(const RuleSnatJsonObject &conf) {
   // This method updates all the object/parameter in RuleSnat object specified
@@ -49,39 +52,6 @@ RuleSnatJsonObject RuleSnat::toJsonObject() {
   return conf;
 }
 
-void RuleSnat::create(Rule &parent, const RuleSnatJsonObject &conf) {
-  // This method creates the actual RuleSnat object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RuleSnat.
-  parent.snat_ = std::make_shared<RuleSnat>(parent, conf);
-}
-
-std::shared_ptr<RuleSnat> RuleSnat::getEntry(Rule &parent) {
-  // This method retrieves the pointer to RuleSnat object specified by its keys.
-  return parent.snat_;
-}
-
-void RuleSnat::removeEntry(Rule &parent) {
-  // This method removes the single RuleSnat object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RuleSnat.
-
-  if (parent.snat_->rules_.size() == 0) {
-    // No rules to delete
-    parent.logger()->info("No SNAT rules to remove");
-    return;
-  }
-
-  for (int i = 0; i < parent.snat_->rules_.size(); i++) {
-    auto rule = parent.snat_->rules_[i];
-    rule->removeFromDatapath();
-  }
-
-  parent.snat_->rules_.clear();
-
-  parent.logger()->info("Removed all SNAT rules");
-}
-
 RuleSnatAppendOutputJsonObject RuleSnat::append(
     RuleSnatAppendInputJsonObject input) {
   RuleSnatEntryJsonObject conf;
@@ -89,7 +59,7 @@ RuleSnatAppendOutputJsonObject RuleSnat::append(
   conf.setInternalNet(input.getInternalNet());
   uint32_t id = rules_.size();
   conf.setId(id);
-  RuleSnatEntry::create(*this, id, conf);
+  addEntry(id, conf);
 
   RuleSnatAppendOutputJsonObject output;
   output.setId(id);
@@ -98,4 +68,81 @@ RuleSnatAppendOutputJsonObject RuleSnat::append(
 
 std::shared_ptr<spdlog::logger> RuleSnat::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<RuleSnatEntry> RuleSnat::getEntry(const uint32_t &id) {
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      return it;
+    }
+  }
+  throw std::runtime_error("There is no rule " + id);
+}
+
+std::vector<std::shared_ptr<RuleSnatEntry>> RuleSnat::getEntryList() {
+  return rules_;
+}
+
+void RuleSnat::addEntry(const uint32_t &id,
+                        const RuleSnatEntryJsonObject &conf) {
+  auto newRule = std::make_shared<RuleSnatEntry>(*this, conf);
+  if (newRule == nullptr) {
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
+    throw std::runtime_error("I won't be thrown");
+  }
+
+  // Check for duplicates
+  for (auto &it : rules_) {
+    if (it->getInternalNet() == newRule->getInternalNet()) {
+      throw std::runtime_error("Cannot insert duplicate mapping");
+    }
+  }
+
+  rules_.push_back(newRule);
+
+  // Inject rule in the datapath table
+  newRule->injectToDatapath();
+}
+
+void RuleSnat::addEntryList(const std::vector<RuleSnatEntryJsonObject> &conf) {
+  for (auto &i : conf) {
+    uint32_t id_ = i.getId();
+    addEntry(id_, i);
+  }
+}
+
+void RuleSnat::replaceEntry(const uint32_t &id,
+                            const RuleSnatEntryJsonObject &conf) {
+  delEntry(id);
+  uint32_t id_ = conf.getId();
+  addEntry(id_, conf);
+}
+
+void RuleSnat::delEntry(const uint32_t &id) {
+  if (rules_.size() < id) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      // Remove rule from data path
+      it->removeFromDatapath();
+      break;
+    }
+  }
+  for (uint32_t i = id; i < rules_.size() - 1; ++i) {
+    rules_[i] = rules_[i + 1];
+    rules_[i]->id = i;
+  }
+  rules_.resize(rules_.size() - 1);
+  logger()->info("Removed SNAT entry {0}", id);
+}
+
+void RuleSnat::delEntryList() {
+  for (int i = 0; i < rules_.size(); i++) {
+    rules_[i]->removeFromDatapath();
+    rules_[i] = nullptr;
+  }
+
+  rules_.clear();
 }

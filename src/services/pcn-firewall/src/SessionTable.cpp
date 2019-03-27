@@ -49,60 +49,6 @@ SessionTableJsonObject SessionTable::toJsonObject() {
   return conf;
 }
 
-void SessionTable::create(Firewall &parent, const std::string &src,
-                          const std::string &dst, const std::string &l4proto,
-                          const uint16_t &sport, const uint16_t &dport,
-                          const SessionTableJsonObject &conf) {
-  throw std::runtime_error("[SessionTable]: Method create not allowed");
-}
-
-std::shared_ptr<SessionTable> SessionTable::getEntry(
-    Firewall &parent, const std::string &src, const std::string &dst,
-    const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
-  // This method retrieves the pointer to SessionTable object specified by its
-  // keys.
-  throw std::runtime_error("[SessionTable]: Method getEntry not allowed");
-}
-
-void SessionTable::removeEntry(Firewall &parent, const std::string &src,
-                               const std::string &dst,
-                               const std::string &l4proto,
-                               const uint16_t &sport, const uint16_t &dport) {
-  throw std::runtime_error("[SessionTable]: Method removeEntry not allowed");
-}
-
-std::vector<std::shared_ptr<SessionTable>> SessionTable::get(Firewall &parent) {
-  std::vector<std::pair<ct_k, ct_v>> connections =
-      dynamic_cast<Firewall::ConntrackLabel *>(
-          parent.programs[std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                                         ChainNameEnum::INVALID)])
-          ->getMap();
-
-  std::vector<std::shared_ptr<SessionTable>> sessionTable;
-  SessionTableJsonObject conf;
-
-  for (auto &connection : connections) {
-    auto key = connection.first;
-    auto value = connection.second;
-
-    conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
-    conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
-    conf.setL4proto(ChainRule::protocol_from_int_to_string(key.l4proto));
-    conf.setSport(ntohs(key.srcPort));
-    conf.setDport(ntohs(key.dstPort));
-    conf.setState(state_from_number_to_string(value.state));
-    conf.setEta(from_ttl_to_eta(value.ttl, value.state, key.l4proto));
-
-    sessionTable.push_back(
-        std::shared_ptr<SessionTable>(new SessionTable(parent, conf)));
-  }
-  return sessionTable;
-}
-
-void SessionTable::remove(Firewall &parent) {
-  throw std::runtime_error("[SessionTable]: Method remove not allowed");
-}
-
 uint32_t SessionTable::getEta() {
   return fields.getEta();
 }

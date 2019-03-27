@@ -29,13 +29,6 @@ class ServiceBackend : public ServiceBackendInterface {
   ServiceBackend(Service &parent, const ServiceBackendJsonObject &conf);
   virtual ~ServiceBackend();
 
-  static void create(Service &parent, const std::string &ip,
-                     const ServiceBackendJsonObject &conf);
-  static std::shared_ptr<ServiceBackend> getEntry(Service &parent,
-                                                  const std::string &ip);
-  static void removeEntry(Service &parent, const std::string &ip);
-  static std::vector<std::shared_ptr<ServiceBackend>> get(Service &parent);
-  static void remove(Service &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceBackendJsonObject &conf) override;
   ServiceBackendJsonObject toJsonObject() override;

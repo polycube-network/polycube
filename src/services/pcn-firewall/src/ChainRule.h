@@ -28,17 +28,12 @@ using namespace io::swagger::server::model;
 
 class ChainRule : public ChainRuleInterface {
   friend class ChainStats;
+  friend class Chain;
 
  public:
   ChainRule(Chain &parent, const ChainRuleJsonObject &conf);
   virtual ~ChainRule();
 
-  static void create(Chain &parent, const uint32_t &id,
-                     const ChainRuleJsonObject &conf);
-  static std::shared_ptr<ChainRule> getEntry(Chain &parent, const uint32_t &id);
-  static void removeEntry(Chain &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<ChainRule>> get(Chain &parent);
-  static void remove(Chain &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainRuleJsonObject &conf) override;
   ChainRuleJsonObject toJsonObject() override;

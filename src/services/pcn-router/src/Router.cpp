@@ -719,3 +719,248 @@ void Router::generate_arp_reply(Port &port, PacketInMetadata &md,
   }
   mu.unlock();
 }
+
+std::shared_ptr<Ports> Router::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Router::getPortsList() {
+  return get_ports();
+}
+
+void Router::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+}
+
+void Router::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Router::replacePorts(const std::string &name,
+                          const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Router::delPorts(const std::string &name) {
+  logger()->info("Remove port {0}", name);
+
+  auto port = get_port(name);
+
+  // remove the secondary addresses of the port (and the related routes in the
+  // routing table)
+  port->delSecondaryipList();
+
+  remove_local_route(port->getIp(), port->getNetmask(), name);
+
+  auto router_port = get_hash_table<uint16_t, r_port>("router_port");
+
+  // remove the port from the datapath
+  uint16_t index = port->index();
+  router_port.remove(index);
+  logger()->debug("Removed from 'router_port' - key: {0}",
+                  from_int_to_hex(index));
+
+  remove_port(name);
+
+  logger()->info("Port {0} was removed", name);
+}
+
+void Router::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<Route> Router::getRoute(const std::string &network,
+                                        const std::string &netmask,
+                                        const std::string &nexthop) {
+  std::tuple<string, string, string> key(network, netmask, nexthop);
+
+  return std::shared_ptr<Route>(&routes_.at(key), [](Route *) {});
+}
+
+std::vector<std::shared_ptr<Route>> Router::getRouteList() {
+  std::vector<std::shared_ptr<Route>> routes_vect;
+  for (auto &it : routes_) {
+    routes_vect.push_back(getRoute(it.second.getNetwork(),
+                                   it.second.getNetmask(),
+                                   it.second.getNexthop()));
+    logger()->debug("\t'route [network: {0} - netmask: {1} - nexthop: {2}]",
+                    it.second.getNetwork(), it.second.getNetmask(),
+                    it.second.getNexthop());
+  }
+
+  return routes_vect;
+}
+
+void Router::addRoute(const std::string &network, const std::string &netmask,
+                      const std::string &nexthop, const RouteJsonObject &conf) {
+  logger()->debug(
+      "Trying to add route [network: {0} - netmask: {1} - nexthop: {2}]",
+      network, netmask, nexthop);
+
+  std::tuple<string, string, string> key(network, netmask, nexthop);
+
+  if (routes_.count(key) != 0)
+    throw std::runtime_error("Route already exists");
+
+  routes_.emplace(std::piecewise_construct, std::forward_as_tuple(key),
+                  std::forward_as_tuple(*this, conf));
+}
+
+void Router::addRouteList(const std::vector<RouteJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string network_ = i.getNetwork();
+    std::string netmask_ = i.getNetmask();
+    std::string nexthop_ = i.getNexthop();
+    addRoute(network_, netmask_, nexthop_, i);
+  }
+}
+
+void Router::replaceRoute(const std::string &network,
+                          const std::string &netmask,
+                          const std::string &nexthop,
+                          const RouteJsonObject &conf) {
+  delRoute(network, netmask, nexthop);
+  std::string network_ = conf.getNetwork();
+  std::string netmask_ = conf.getNetmask();
+  std::string nexthop_ = conf.getNexthop();
+  addRoute(network_, netmask_, nexthop_, conf);
+}
+
+void Router::delRoute(const std::string &network, const std::string &netmask,
+                      const std::string &nexthop) {
+  logger()->debug(
+      "Trying to remove route [network: {0} - netmask: {1} - nexthop: {2}]",
+      network, netmask, nexthop);
+
+  // FIXME: is this good? cannot users delete "local" routes.
+  // It is possible in linux
+  if (nexthop == "local")  // FIXME: use constants for these two values
+    throw std::runtime_error("Users can not delete a local route");
+
+  remove_route(network, netmask, nexthop);
+}
+
+void Router::delRouteList() {
+  logger()->debug("Removing all the entries in the routing table");
+  remove_all_routes();
+}
+
+std::shared_ptr<ArpEntry> Router::getArpEntry(const std::string &address) {
+  uint32_t ip_key = utils::ip_string_to_be_uint(address);
+
+  try {
+    auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
+
+    arp_entry entry = arp_table.get(ip_key);
+    std::string mac = utils::be_uint_to_mac_string(entry.mac);
+    auto port = get_port(entry.port);
+
+    return std::make_shared<ArpEntry>(
+        ArpEntry(*this, mac, address, port->name()));
+  } catch (std::exception &e) {
+    logger()->error("Unable to find ARP table entry for address {0}. {1}",
+                    address, e.what());
+    throw std::runtime_error("ARP table entry not found");
+  }
+}
+
+std::vector<std::shared_ptr<ArpEntry>> Router::getArpEntryList() {
+  std::vector<std::shared_ptr<ArpEntry>> arp_table_entries;
+
+  // The ARP table is read from the data path
+  try {
+    auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
+    auto arp_entries = arp_table.get_all();
+
+    for (auto &entry : arp_entries) {
+      auto key = entry.first;
+      auto value = entry.second;
+
+      std::string ip = utils::be_uint_to_ip_string(key);
+      std::string mac = utils::be_uint_to_mac_string(value.mac);
+
+      auto port = get_port(value.port);
+
+      logger()->debug("Returning entry [ip: {0} - mac: {1} - interface: {2}]",
+                      ip, mac, port->name());
+
+      arp_table_entries.push_back(
+          std::make_shared<ArpEntry>(ArpEntry(*this, mac, ip, port->name())));
+    }
+  } catch (std::exception &e) {
+    logger()->error("Error while trying to get the ARP table");
+    throw std::runtime_error("Unable to get the ARP table list");
+  }
+
+  return arp_table_entries;
+}
+
+void Router::addArpEntry(const std::string &address,
+                         const ArpEntryJsonObject &conf) {
+  logger()->debug("Creating ARP entry [ip: {0} - mac: {1} - interface: {2}",
+                  address, conf.getMac(), conf.getInterface());
+
+  uint64_t mac = utils::mac_string_to_be_uint(conf.getMac());
+  uint32_t index = get_port(conf.getInterface())->index();
+
+  // FIXME: Check if entry already exists?
+  auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
+  arp_table.set(utils::ip_string_to_be_uint(address),
+                arp_entry{.mac = mac, .port = index});
+}
+
+void Router::addArpEntryList(const std::vector<ArpEntryJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string address_ = i.getAddress();
+    addArpEntry(address_, i);
+  }
+}
+
+void Router::replaceArpEntry(const std::string &address,
+                             const ArpEntryJsonObject &conf) {
+  delArpEntry(address);
+  std::string address_ = conf.getAddress();
+  addArpEntry(address_, conf);
+}
+
+void Router::delArpEntry(const std::string &address) {
+  std::shared_ptr<ArpEntry> entry;
+
+  try {
+    entry = getArpEntry(address);
+  } catch (std::exception &e) {
+    logger()->error("Unable to remove the ARP table entry for address {0}. {1}",
+                    address, e.what());
+    throw std::runtime_error("ARP table entry not found");
+  }
+
+  uint32_t key = utils::ip_string_to_be_uint(address);
+
+  auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
+
+  try {
+    arp_table.remove(key);
+  } catch (...) {
+    throw std::runtime_error("ARP table entry not found");
+  }
+}
+
+void Router::delArpEntryList() {
+  try {
+    auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
+    arp_table.remove_all();
+  } catch (std::exception &e) {
+    logger()->error("Error while removing all entries from the ARP table. {0}",
+                    e.what());
+    throw std::runtime_error(
+        "Error while removing all entries from the ARP table");
+  }
+}

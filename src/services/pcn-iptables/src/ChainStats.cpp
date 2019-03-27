@@ -43,55 +43,6 @@ ChainStatsJsonObject ChainStats::toJsonObject() {
   return conf;
 }
 
-void ChainStats::create(Chain &parent, const uint32_t &id,
-                        const ChainStatsJsonObject &conf) {
-  // This method creates the actual ChainStats object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of ChainStats.
-
-  throw std::runtime_error("[ChainStats]: Method create not supported");
-}
-
-std::shared_ptr<ChainStats> ChainStats::getEntry(Chain &parent,
-                                                 const uint32_t &id) {
-  // This method retrieves the pointer to ChainStats object specified by its
-  // keys.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-
-  auto &counters = parent.counters_;
-
-  if (counters.size() <= id || !counters[id]) {
-    // Counter not initialized yet
-    ChainStatsJsonObject conf;
-    uint64_t pkts, bytes;
-    conf.setId(id);
-    fetchCounters(parent, id, pkts, bytes);
-    conf.setPkts(pkts);
-    conf.setBytes(bytes);
-    if (counters.size() <= id) {
-      counters.resize(id + 1);
-    }
-    counters[id].reset(new ChainStats(parent, conf));
-  } else {
-    // Counter already existed, update it
-    uint64_t pkts, bytes;
-    fetchCounters(parent, id, pkts, bytes);
-    counters[id]->counter.setPkts(counters[id]->getPkts() + pkts);
-    counters[id]->counter.setBytes(counters[id]->getBytes() + bytes);
-  }
-
-  return counters[id];
-}
-
-void ChainStats::removeEntry(Chain &parent, const uint32_t &id) {
-  // This method removes the single ChainStats object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // ChainStats.
-  throw std::runtime_error("[ChainStats]: Method removeEntry not supported");
-}
-
 void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
                                uint64_t &pkts, uint64_t &bytes) {
   std::map<std::pair<uint8_t, ChainNameEnum>,
@@ -209,31 +160,6 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
   csj.setBytes(chainSelectorProgram->getDefaultBytesCount(parent.name));
 
   return std::make_shared<ChainStats>(parent, csj);
-}
-
-std::vector<std::shared_ptr<ChainStats>> ChainStats::get(Chain &parent) {
-  // This methods get the pointers to all the ChainStats objects in Chain.
-  std::vector<std::shared_ptr<ChainStats>> vect;
-  ChainStatsJsonObject csj;
-
-  for (std::shared_ptr<ChainRule> cr : parent.rules_) {
-    if (cr) {
-      csj.setId(cr->id);
-      // vect.push_back(std::make_shared<ChainStats>(parent, csj));
-      vect.push_back(getEntry(parent, cr->id));
-    }
-  }
-
-  vect.push_back(getDefaultActionCounters(parent));
-
-  return vect;
-}
-
-void ChainStats::remove(Chain &parent) {
-  // This method removes all ChainStats objects in Chain.
-  // Remember to call here the remove static method for all-sub-objects of
-  // ChainStats.
-  throw std::runtime_error("[ChainStats]: Method remove not implemented");
 }
 
 uint64_t ChainStats::getPkts() {

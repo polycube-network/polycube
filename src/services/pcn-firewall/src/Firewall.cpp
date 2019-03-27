@@ -323,3 +323,174 @@ bool Firewall::isContrackActive() {
   return (conntrackMode == ConntrackModes::AUTOMATIC ||
           conntrackMode == ConntrackModes::MANUAL);
 }
+
+std::shared_ptr<Ports> Firewall::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Firewall::getPortsList() {
+  return get_ports();
+}
+
+void Firewall::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+  auto ports = get_ports();
+
+  if (ports.size() == 1) {
+    // First port inserted. By default this is the ingress port.
+    setIngressPort(name);
+  } else if (ports.size() == 2) {
+    // Second port inserted. By default this is the egress port.
+    setEgressPort(name);
+  }
+}
+
+void Firewall::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Firewall::replacePorts(const std::string &name,
+                            const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Firewall::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void Firewall::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<SessionTable> Firewall::getSessionTable(
+    const std::string &src, const std::string &dst, const std::string &l4proto,
+    const uint16_t &sport, const uint16_t &dport) {
+  throw std::runtime_error("[SessionTable]: Method getEntry not allowed");
+}
+
+std::vector<std::shared_ptr<SessionTable>> Firewall::getSessionTableList() {
+  std::vector<std::pair<ct_k, ct_v>> connections =
+      dynamic_cast<Firewall::ConntrackLabel *>(
+          programs[std::make_pair(ModulesConstants::CONNTRACKLABEL,
+                                  ChainNameEnum::INVALID)])
+          ->getMap();
+
+  std::vector<std::shared_ptr<SessionTable>> sessionTable;
+  SessionTableJsonObject conf;
+
+  for (auto &connection : connections) {
+    auto key = connection.first;
+    auto value = connection.second;
+
+    conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
+    conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
+    conf.setL4proto(ChainRule::protocol_from_int_to_string(key.l4proto));
+    conf.setSport(ntohs(key.srcPort));
+    conf.setDport(ntohs(key.dstPort));
+    conf.setState(SessionTable::state_from_number_to_string(value.state));
+    conf.setEta(
+        SessionTable::from_ttl_to_eta(value.ttl, value.state, key.l4proto));
+
+    sessionTable.push_back(
+        std::shared_ptr<SessionTable>(new SessionTable(*this, conf)));
+  }
+  return sessionTable;
+}
+
+void Firewall::addSessionTable(const std::string &src, const std::string &dst,
+                               const std::string &l4proto,
+                               const uint16_t &sport, const uint16_t &dport,
+                               const SessionTableJsonObject &conf) {
+  throw std::runtime_error("[SessionTable]: Method create not allowed");
+}
+
+void Firewall::addSessionTableList(
+    const std::vector<SessionTableJsonObject> &conf) {
+  throw std::runtime_error("[SessionTable]: Method create not allowed");
+}
+
+void Firewall::replaceSessionTable(const std::string &src,
+                                   const std::string &dst,
+                                   const std::string &l4proto,
+                                   const uint16_t &sport, const uint16_t &dport,
+                                   const SessionTableJsonObject &conf) {
+  throw std::runtime_error("[SessionTable]: Method replace not allowed");
+}
+
+void Firewall::delSessionTable(const std::string &src, const std::string &dst,
+                               const std::string &l4proto,
+                               const uint16_t &sport, const uint16_t &dport) {
+  throw std::runtime_error("[SessionTable]: Method remove not allowed");
+}
+
+void Firewall::delSessionTableList() {
+  throw std::runtime_error("[SessionTable]: Method remove not allowed");
+}
+
+std::shared_ptr<Chain> Firewall::getChain(const ChainNameEnum &name) {
+  // This method retrieves the pointer to Chain object specified by its keys.
+  if (chains_.count(name) == 0) {
+    throw std::runtime_error("There is no chain " +
+                             ChainJsonObject::ChainNameEnum_to_string(name));
+  }
+  if (!transparent && name == ChainNameEnum::EGRESS) {
+    throw std::runtime_error(
+        "Cannot configure rules on EGRESS chain when the firewall is "
+        "configured with unidirectional ports");
+  }
+  return std::shared_ptr<Chain>(&chains_.at(name), [](Chain *) {});
+}
+
+std::vector<std::shared_ptr<Chain>> Firewall::getChainList() {
+  std::vector<std::shared_ptr<Chain>> chains;
+
+  for (auto &it : chains_) {
+    chains.push_back(getChain(it.first));
+  }
+
+  return chains;
+}
+
+void Firewall::addChain(const ChainNameEnum &name,
+                        const ChainJsonObject &conf) {
+  // This method creates the actual Chain object given thee key param.
+  ChainJsonObject namedChain = conf;
+  namedChain.setName(name);
+  if (chains_.count(name) != 0) {
+    throw std::runtime_error("There is already a chain " +
+                             ChainJsonObject::ChainNameEnum_to_string(name));
+  }
+
+  chains_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                  std::forward_as_tuple(*this, namedChain));
+}
+
+void Firewall::addChainList(const std::vector<ChainJsonObject> &conf) {
+  for (auto &i : conf) {
+    ChainNameEnum name_ = i.getName();
+    addChain(name_, i);
+  }
+}
+
+void Firewall::replaceChain(const ChainNameEnum &name,
+                            const ChainJsonObject &conf) {
+  delChain(name);
+  ChainNameEnum name_ = conf.getName();
+  addChain(name_, conf);
+}
+
+void Firewall::delChain(const ChainNameEnum &name) {
+  throw std::runtime_error("Method not supported.");
+}
+
+void Firewall::delChainList() {
+  throw std::runtime_error("Method not supported.");
+}

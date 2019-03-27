@@ -166,3 +166,75 @@ void Simplebridge::reloadCodeWithAgingtime(uint32_t aging_time) {
 
   logger()->trace("New bridge code reloaded");
 }
+
+std::shared_ptr<Ports> Simplebridge::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Simplebridge::getPortsList() {
+  return get_ports();
+}
+
+void Simplebridge::addPorts(const std::string &name,
+                            const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+
+  logger()->info("New port created with name {0}", name);
+}
+
+void Simplebridge::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Simplebridge::replacePorts(const std::string &name,
+                                const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Simplebridge::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void Simplebridge::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<Fdb> Simplebridge::getFdb() {
+  if (fdb_ != nullptr) {
+    return fdb_;
+  } else {
+    return std::make_shared<Fdb>(*this);
+  }
+}
+
+void Simplebridge::addFdb(const FdbJsonObject &value) {
+  fdb_ = std::make_shared<Fdb>(*this, value);
+}
+
+void Simplebridge::replaceFdb(const FdbJsonObject &conf) {
+  delFdb();
+  addFdb(conf);
+}
+
+void Simplebridge::delFdb() {
+  if (fdb_ != nullptr) {
+    fdb_->delEntryList();
+
+    // I don't want to delete the Filtering database. This is very strange
+    // I'll only reset the agingTime, if needed
+    fdb_->setAgingTime(300);
+    // parent.fdb_.reset();
+    // parent.fdb_ = nullptr;
+  } else {
+    // This should never happen
+    throw std::runtime_error("There is not filtering database in the bridge");
+  }
+}

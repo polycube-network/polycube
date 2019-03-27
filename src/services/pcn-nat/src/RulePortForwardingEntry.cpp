@@ -23,7 +23,7 @@ using namespace polycube::service;
 
 RulePortForwardingEntry::RulePortForwardingEntry(
     RulePortForwarding &parent, const RulePortForwardingEntryJsonObject &conf)
-    : parent_(parent) {
+    : parent_(parent), id(conf.getId()) {
   update(conf);
   logger()->info(
       "Creating RulePortForwardingEntry instance: {0}:{1} -> {2}:{3}",
@@ -66,96 +66,6 @@ RulePortForwardingEntryJsonObject RulePortForwardingEntry::toJsonObject() {
   conf.setInternalIp(getInternalIp());
   conf.setInternalPort(getInternalPort());
   return conf;
-}
-
-void RulePortForwardingEntry::create(
-    RulePortForwarding &parent, const uint32_t &id,
-    const RulePortForwardingEntryJsonObject &conf) {
-  // This method creates the actual RulePortForwardingEntry object given thee
-  // key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RulePortForwardingEntry.
-
-  auto newRule = new RulePortForwardingEntry(parent, conf);
-  if (newRule == nullptr) {
-    // Totally useless, but it is needed to avoid the compiler making wrong
-    // assumptions and reordering
-    throw std::runtime_error("I won't be thrown");
-  }
-
-  // Check for duplicates
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    auto rule = parent.rules_[i];
-    if (rule->getExternalIp() == newRule->getExternalIp() &&
-        rule->getExternalPort() == newRule->getExternalPort() &&
-        rule->getProto() == newRule->getProto()) {
-      throw std::runtime_error("Cannot insert duplicate mapping");
-    }
-  }
-
-  parent.rules_.resize(parent.rules_.size() + 1);
-  parent.rules_[parent.rules_.size() - 1].reset(newRule);
-  parent.rules_[parent.rules_.size() - 1]->id = id;
-
-  // Inject rule in the datapath table
-  newRule->injectToDatapath();
-}
-
-std::shared_ptr<RulePortForwardingEntry> RulePortForwardingEntry::getEntry(
-    RulePortForwarding &parent, const uint32_t &id) {
-  // This method retrieves the pointer to RulePortForwardingEntry object
-  // specified by its keys.
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    if (parent.rules_[i]->id == id) {
-      return parent.rules_[i];
-    }
-  }
-  throw std::runtime_error("There is no rule " + id);
-}
-
-void RulePortForwardingEntry::removeEntry(RulePortForwarding &parent,
-                                          const uint32_t &id) {
-  // This method removes the single RulePortForwardingEntry object specified by
-  // its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RulePortForwardingEntry.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    if (parent.rules_[i]->id == id) {
-      // Remove rule from data path
-      parent.rules_[i]->removeFromDatapath();
-      break;
-    }
-  }
-  for (uint32_t i = id; i < parent.rules_.size() - 1; ++i) {
-    parent.rules_[i] = parent.rules_[i + 1];
-    parent.rules_[i]->id = i;
-  }
-  parent.rules_.resize(parent.rules_.size() - 1);
-  parent.logger()->info("Removed PortForwarding entry {0}", id);
-}
-
-std::vector<std::shared_ptr<RulePortForwardingEntry>>
-RulePortForwardingEntry::get(RulePortForwarding &parent) {
-  // This methods get the pointers to all the RulePortForwardingEntry objects in
-  // RulePortForwarding.
-  std::vector<std::shared_ptr<RulePortForwardingEntry>> rules;
-  for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
-    if (*it) {
-      rules.push_back(*it);
-    }
-  }
-  return rules;
-}
-
-void RulePortForwardingEntry::remove(RulePortForwarding &parent) {
-  // This method removes all RulePortForwardingEntry objects in
-  // RulePortForwarding.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RulePortForwardingEntry.
-  RulePortForwarding::removeEntry(parent.parent_);
 }
 
 uint32_t RulePortForwardingEntry::getId() {

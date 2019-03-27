@@ -64,18 +64,6 @@ class Route : public RouteInterface {
         const uint32_t pathcost);
   virtual ~Route();
 
-  static void create(Router &parent, const std::string &network,
-                     const std::string &netmask, const std::string &netxhop,
-                     const RouteJsonObject &conf);
-  static std::shared_ptr<Route> getEntry(Router &parent,
-                                         const std::string &network,
-                                         const std::string &netmask,
-                                         const std::string &nexthop);
-  static void removeEntry(Router &parent, const std::string &network,
-                          const std::string &netmask,
-                          const std::string &nexthop);
-  static std::vector<std::shared_ptr<Route>> get(Router &parent);
-  static void remove(Router &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RouteJsonObject &conf) override;
   RouteJsonObject toJsonObject() override;

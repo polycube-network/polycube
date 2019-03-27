@@ -37,13 +37,6 @@ class FdbEntry : public FdbEntryInterface {
            uint32_t out_port);
   virtual ~FdbEntry();
 
-  static void create(Fdb &parent, const std::string &address,
-                     const FdbEntryJsonObject &conf);
-  static std::shared_ptr<FdbEntry> getEntry(Fdb &parent,
-                                            const std::string &address);
-  static void removeEntry(Fdb &parent, const std::string &address);
-  static std::vector<std::shared_ptr<FdbEntry>> get(Fdb &parent);
-  static void remove(Fdb &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const FdbEntryJsonObject &conf) override;
   FdbEntryJsonObject toJsonObject() override;
@@ -64,9 +57,6 @@ class FdbEntry : public FdbEntryInterface {
   /// </summary>
   std::string getAddress() override;
 
- private:
-  Fdb &parent_;
-
   /*
    * tries to construct a FdbEntry from map data, it checks the age of the
    * entry as well as if the port is still valid
@@ -74,6 +64,9 @@ class FdbEntry : public FdbEntryInterface {
   static std::shared_ptr<FdbEntry> constructFromMap(Fdb &parent,
                                                     const std::string &key,
                                                     const fwd_entry &value);
+
+ private:
+  Fdb &parent_;
 
   std::string address_;
   std::string port_name_;

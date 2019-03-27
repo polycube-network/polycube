@@ -37,13 +37,6 @@ class ArpEntry : public ArpEntryInterface {
            const std::string &interface);
   virtual ~ArpEntry();
 
-  static void create(Router &parent, const std::string &address,
-                     const ArpEntryJsonObject &conf);
-  static std::shared_ptr<ArpEntry> getEntry(Router &parent,
-                                            const std::string &address);
-  static void removeEntry(Router &parent, const std::string &address);
-  static std::vector<std::shared_ptr<ArpEntry>> get(Router &parent);
-  static void remove(Router &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ArpEntryJsonObject &conf) override;
   ArpEntryJsonObject toJsonObject() override;
