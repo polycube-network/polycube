@@ -16,7 +16,7 @@ const (
 
 var ProductionPods = []pcn_types.Pod{
 	pcn_types.Pod{
-		Pod: core_v1.Pod{
+		Pod: &core_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Namespace: ProductionNamespace,
 				UID:       "PRODUCTION-POD-UID-1",
@@ -31,7 +31,7 @@ var ProductionPods = []pcn_types.Pod{
 
 var BetaPods = []pcn_types.Pod{
 	pcn_types.Pod{
-		Pod: core_v1.Pod{
+		Pod: &core_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Namespace: BetaNamespace,
 				UID:       "BETA-POD-UID-1",
@@ -51,7 +51,7 @@ var AppPodSelector = meta_v1.LabelSelector{
 	},
 }
 
-var GlobalQuery1 = pcn_types.PodQuery{
+/*var GlobalQuery1 = pcn_types.PodQuery{
 	Pod: pcn_types.PodQueryObject{
 		By:     "labels",
 		Labels: AppPodSelector.MatchLabels,
@@ -60,11 +60,11 @@ var GlobalQuery1 = pcn_types.PodQuery{
 		By:   "name",
 		Name: ProductionNamespace,
 	},
-}
+}*/
 
 var GlobalPodsFound1 = []pcn_types.Pod{
 	pcn_types.Pod{
-		Pod: core_v1.Pod{
+		Pod: &core_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Namespace: ProductionNamespace,
 			},
@@ -75,7 +75,7 @@ var GlobalPodsFound1 = []pcn_types.Pod{
 		Veth: "veth123",
 	},
 	pcn_types.Pod{
-		Pod: core_v1.Pod{
+		Pod: &core_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Namespace: ProductionNamespace,
 			},
@@ -94,10 +94,10 @@ type MockPodController struct {
 
 func (m *MockPodController) Run()  {}
 func (m *MockPodController) Stop() {}
-func (m *MockPodController) Subscribe(event pcn_types.EventType, consumer func(*core_v1.Pod)) (func(), error) {
+func (m *MockPodController) Subscribe(pcn_types.EventType, pcn_types.SubscriptionSelector, func(*core_v1.Pod)) (func(), error) {
 	return func() {}, nil
 }
-func (m *MockPodController) GetPods(query pcn_types.PodQuery) ([]pcn_types.Pod, error) {
-	args := m.Called(query)
-	return args.Get(0).([]pcn_types.Pod), args.Error(1)
+func (m *MockPodController) GetPods(pod pcn_types.ObjectQuery, ns pcn_types.ObjectQuery) ([]core_v1.Pod, error) {
+	args := m.Called(pod, ns)
+	return args.Get(0).([]core_v1.Pod), args.Error(1)
 }

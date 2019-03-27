@@ -15,6 +15,7 @@ import (
 
 type PcnFirewall interface {
 	EnforcePolicy(string, string, []k8sfirewall.ChainRule, []k8sfirewall.ChainRule) (error, error)
+	DefinePolicyActions(string, []pcn_types.FirewallAction, []pcn_types.FirewallAction)
 	CeasePolicy(string)
 	//	UPDATE: it's better to always inject with a policy instead of doing it anonymously.
 	//	That's why it is now unexported
@@ -40,6 +41,7 @@ type DeployedFirewall struct {
 	podIP  string
 
 	policyTypes          map[string]string
+	policyActions        map[string]policyActions
 	ingressPoliciesCount int
 	egressPoliciesCount  int
 	//	For caching.
@@ -55,6 +57,11 @@ type rulesContainer struct {
 	//	sync.Mutex
 	//	iLock sync.Mutex
 	//	eLock sync.Mutex
+}
+
+type policyActions struct {
+	ingress []pcn_types.FirewallAction
+	egress  []pcn_types.FirewallAction
 }
 
 func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall {
@@ -102,6 +109,7 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	deployedFw.ingressPoliciesCount = 0
 	deployedFw.egressPoliciesCount = 0
 	deployedFw.policyTypes = map[string]string{}
+	deployedFw.policyActions = map[string]policyActions{}
 
 	//-------------------------------------
 	//	Get the firewall
@@ -259,6 +267,24 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 	return iError, eError
 }
 
+func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egress []pcn_types.FirewallAction) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	d.policyActions[policyName] = policyActions{
+		ingress: ingress,
+		egress:  egress,
+	}
+
+	log.Println("##firewall", d.firewall.Name, "has the following actions:")
+	for _, i := range d.policyActions[policyName].ingress {
+		log.Printf("##%+v\n", i)
+	}
+	for _, e := range d.policyActions[policyName].egress {
+		log.Printf("##%+v\n", e)
+	}
+}
+
 func (d *DeployedFirewall) CeasePolicy(policyName string) {
 	var l = log.WithFields(log.Fields{
 		"by":     d.firewall.Name,
@@ -372,6 +398,8 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		delete(d.ingressRules, policyName)
 		delete(d.egressRules, policyName)
 
+		delete(d.policyTypes, policyName)
+
 	} else {
 		//	Some rules were not deleted. We can't delete the entry: we need to change it with the still active rules.
 		d.ingressRules[policyName] = failedRules.ingress
@@ -392,6 +420,8 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 		d.decreaseCount("ingress")
 		d.decreaseCount("egress")
 	}
+
+	delete(d.policyActions, policyName)
 }
 
 func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.ChainRule) ([]k8sfirewall.ChainRule, error) {

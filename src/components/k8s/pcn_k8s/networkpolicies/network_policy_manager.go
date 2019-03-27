@@ -98,9 +98,94 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 }
 
 func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.NetworkPolicy) {
+	var l = log.WithFields(log.Fields{
+		"by":     "Network-Policy-Manager",
+		"method": "DeployDefaultPolicy(" + policy.Name + ")",
+	})
 
-	//	TODO: this probably needs rewrite.
-	manager.defaultPolicyParser.Parse(policy, true)
+	//-------------------------------------
+	//	The basics
+	//-------------------------------------
+	nsPods, err := manager.defaultPolicyParser.GetPodsAffected(policy)
+	if err != nil {
+		l.Errorln("Error while trying to get pods affected by policy.", err)
+		return
+	}
+
+	//	No pods found?
+	if len(nsPods) < 1 {
+		l.Infoln("No pods found for policy.", err)
+		return
+	}
+
+	//	Get the spec, with the ingress & egress rules
+	spec := policy.Spec
+	ingress, egress, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&spec)
+	if ingress == nil && egress == nil {
+		l.Errorln("Policy doesn't have a spec: I don't know what to do!")
+		return
+	}
+
+	//-------------------------------------
+	//	Parse, Deploy & Set Actions
+	//-------------------------------------
+	for ns, pods := range nsPods {
+
+		var parsed pcn_types.ParsedRules
+		var ingressActions []pcn_types.FirewallAction
+		var egressActions []pcn_types.FirewallAction
+
+		var podsWaitGroup sync.WaitGroup
+		podsWaitGroup.Add(2)
+
+		//	Parse...
+		go func() {
+			defer podsWaitGroup.Done()
+			parsed = manager.defaultPolicyParser.ParseRules(ingress, egress, ns)
+		}()
+
+		go func() {
+			defer podsWaitGroup.Done()
+			ingressActions, egressActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, ns)
+		}()
+
+		podsWaitGroup.Wait()
+
+		//	Reusing the waitgroup...
+		podsWaitGroup.Add(len(pods))
+		for _, pod := range pods {
+
+			//	Deploy...
+			go func(currentPod core_v1.Pod) {
+				defer podsWaitGroup.Done()
+
+				//	Running in this node? If not, getting the firewall is useless (it's not here.)
+				//	TODO: https://godoc.org/k8s.io/api/core/v1#PodStatus, NodeName is correct?
+				if currentPod.Spec.NodeName != manager.node {
+					return
+				}
+
+				//	Deploy...
+				//	Create the firewall (or get it if already exists)
+				fw := manager.firewallManager.GetOrCreate(currentPod)
+				if fw == nil {
+					l.Errorln("Could not create firewall fw-", currentPod.Status.PodIP, ". Will stop here.")
+					return
+				}
+
+				//-------------------------------------
+				//	Inject the rules and the actions
+				//-------------------------------------
+
+				fw.EnforcePolicy(policy.Name, policyType, parsed.Ingress, parsed.Egress)
+				fw.DefinePolicyActions(policy.Name, ingressActions, egressActions)
+
+			}(pod)
+
+		}
+
+		podsWaitGroup.Wait()
+	}
 }
 
 func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.NetworkPolicy) {
