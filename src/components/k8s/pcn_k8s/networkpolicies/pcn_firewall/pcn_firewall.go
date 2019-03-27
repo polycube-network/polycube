@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 
+	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
+
 	//	TODO-ON-MERGE: change these to the polycube path
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
@@ -31,6 +33,8 @@ type DeployedFirewall struct {
 	firewall *k8sfirewall.Firewall
 	rules    map[string]*rulesContainer
 
+	podController pcn_controllers.PodController
+
 	ingressRules map[string][]k8sfirewall.ChainRule
 	egressRules  map[string][]k8sfirewall.ChainRule
 
@@ -41,7 +45,7 @@ type DeployedFirewall struct {
 	podIP  string
 
 	policyTypes          map[string]string
-	policyActions        map[string]policyActions
+	policyActions        map[string]*policyActions
 	ingressPoliciesCount int
 	egressPoliciesCount  int
 	//	For caching.
@@ -60,11 +64,16 @@ type rulesContainer struct {
 }
 
 type policyActions struct {
-	ingress []pcn_types.FirewallAction
-	egress  []pcn_types.FirewallAction
+	ingress []actionWithSubscriber
+	egress  []actionWithSubscriber
 }
 
-func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall {
+type actionWithSubscriber struct {
+	pcn_types.FirewallAction
+	subscription func()
+}
+
+func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI, podController pcn_controllers.PodController) *DeployedFirewall {
 
 	//	This method is unexported by design: *only* the firewall manager is supposed to get new firewalls.
 
@@ -109,7 +118,9 @@ func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI) *DeployedFirewall
 	deployedFw.ingressPoliciesCount = 0
 	deployedFw.egressPoliciesCount = 0
 	deployedFw.policyTypes = map[string]string{}
-	deployedFw.policyActions = map[string]policyActions{}
+	deployedFw.policyActions = map[string]*policyActions{}
+
+	deployedFw.podController = podController
 
 	//-------------------------------------
 	//	Get the firewall
@@ -271,18 +282,30 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	d.policyActions[policyName] = policyActions{
-		ingress: ingress,
-		egress:  egress,
+	d.policyActions[policyName] = &policyActions{
+		ingress: []actionWithSubscriber{},
+		egress:  []actionWithSubscriber{},
 	}
 
-	log.Println("##firewall", d.firewall.Name, "has the following actions:")
-	for _, i := range d.policyActions[policyName].ingress {
-		log.Printf("##%+v\n", i)
+	for _, i := range ingress {
+
+		subscription, err := d.podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{
+			Labels: i.PodLabels,
+		}, pcn_types.ObjectQuery{
+			Name:   i.NamespaceName,
+			Labels: i.NamespaceLabels,
+		}, func(pod *core_v1.Pod) {
+			log.Println("###firewall", d.firewall.Name, "reacted to ", pod.Name, pod.Status.Phase)
+		})
+
+		if err == nil {
+			d.policyActions[policyName].ingress = append(d.policyActions[policyName].ingress, actionWithSubscriber{
+				//FirewallAction: i,
+				subscription: subscription,
+			})
+		}
 	}
-	for _, e := range d.policyActions[policyName].egress {
-		log.Printf("##%+v\n", e)
-	}
+
 }
 
 func (d *DeployedFirewall) CeasePolicy(policyName string) {
@@ -711,6 +734,13 @@ func (d *DeployedFirewall) Destroy() error {
 	if response, err := d.fwAPI.DeleteFirewallByID(nil, d.firewall.Name); err != nil {
 		l.Errorln("Failed to destroy firewall,", d.firewall.Name, ":", err, response)
 		return err
+	}
+
+	for _, action := range d.policyActions {
+		for _, a := range action.ingress {
+			//	unsubscribe
+			a.subscription()
+		}
 	}
 
 	return nil

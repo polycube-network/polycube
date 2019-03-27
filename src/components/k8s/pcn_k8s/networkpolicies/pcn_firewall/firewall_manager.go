@@ -42,7 +42,7 @@ func StartFirewallManager(basePath, nodeName string, podController pcn_controlle
 	fwManager.fwAPI = srK8firewall.FirewallApi
 
 	//	Subscribe to events
-	podController.Subscribe(pcn_types.Update, pcn_types.SubscriptionSelector{}, fwManager.manageFirewallForPod)
+	podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, fwManager.manageFirewallForPod)
 
 	return fwManager
 }
@@ -99,7 +99,7 @@ func (f *FirewallManager) manageFirewallForPod(pod *core_v1.Pod) {
 	}
 
 	//	Ok add this.
-	fw := newFirewall(*pod, f.fwAPI)
+	fw := newFirewall(*pod, f.fwAPI, f.podController)
 	if fw == nil {
 		l.Errorln("Could not get the firewall for pod", pod.Name)
 		return
@@ -123,7 +123,7 @@ func (f *FirewallManager) GetOrCreate(pod core_v1.Pod) PcnFirewall {
 	}
 
 	//	Create it
-	fw := newFirewall(pod, f.fwAPI)
+	fw := newFirewall(pod, f.fwAPI, f.podController)
 	if fw == nil {
 		return nil
 	}

@@ -13,8 +13,3 @@ const (
 	Update
 	Delete
 )
-
-type SubscriptionSelector struct {
-	Namespace string
-	Labels    map[string]string
-}

@@ -71,28 +71,8 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//-------------------------------------
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Update, pcn_types.SubscriptionSelector{}, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Delete, pcn_types.SubscriptionSelector{}, manager.manageDeletedPod)
-
-	//	Just for test
-	podController.Subscribe(pcn_types.Update, pcn_types.SubscriptionSelector{
-		Namespace: "default",
-		Labels: map[string]string{
-			"app":  "bookstore",
-			"role": "api",
-		},
-	}, func(pod *core_v1.Pod) {
-		log.Debugln("###app=bookstore,role=api has been notified!", pod.Status.Phase)
-	})
-
-	podController.Subscribe(pcn_types.Update, pcn_types.SubscriptionSelector{
-		Namespace: "default",
-		Labels: map[string]string{
-			"app": "bookstore",
-		},
-	}, func(pod *core_v1.Pod) {
-		log.Debugln("###app=bookstore has been notified!", pod.Status.Phase)
-	})
+	podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Delete, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, manager.manageDeletedPod)
 
 	return &manager
 }
@@ -106,6 +86,7 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 	//-------------------------------------
 	//	The basics
 	//-------------------------------------
+
 	nsPods, err := manager.defaultPolicyParser.GetPodsAffected(policy)
 	if err != nil {
 		l.Errorln("Error while trying to get pods affected by policy.", err)
@@ -321,7 +302,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	go func(policiesList []networking_v1.NetworkPolicy) {
 		defer policyWait.Done()
 
-		for _, currentPolicy := range policiesList {
+		/*for _, currentPolicy := range policiesList {
 			doesIt := manager.defaultPolicyParser.DoesPolicyTargetPod(&currentPolicy, pod)
 
 			if len(doesIt.Ingress) > 0 || len(doesIt.Egress) > 0 {
@@ -334,7 +315,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 					}
 				}
 			}
-		}
+		}*/
 
 	}(k8sPolicies)
 

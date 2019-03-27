@@ -25,7 +25,7 @@ import (
 type PodController interface {
 	Run()
 	Stop()
-	Subscribe(pcn_types.EventType, pcn_types.SubscriptionSelector, func(*core_v1.Pod)) (func(), error)
+	Subscribe(pcn_types.EventType, pcn_types.ObjectQuery, pcn_types.ObjectQuery, func(*core_v1.Pod)) (func(), error)
 
 	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
@@ -369,7 +369,7 @@ func (p *PcnPodController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.SubscriptionSelector, consumer func(*core_v1.Pod)) (func(), error) {
+func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_types.ObjectQuery, namespace pcn_types.ObjectQuery, consumer func(*core_v1.Pod)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
@@ -378,17 +378,17 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.S
 		pod := item.(*core_v1.Pod)
 
 		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
-		if len(spec.Namespace) > 0 && pod.Namespace != spec.Namespace {
+		if len(namespace.Name) > 0 && pod.Namespace != namespace.Name {
 			return
 		}
 
 		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
 		//	It should be very rare to see pods with more than 5 labels...
-		if spec.Labels != nil && len(spec.Labels) > 0 {
+		if podspec.Labels != nil && len(podspec.Labels) > 0 {
 			labelsFound := 0
-			labelsToFind := len(spec.Labels)
+			labelsToFind := len(podspec.Labels)
 
-			for neededKey, neededValue := range spec.Labels {
+			for neededKey, neededValue := range podspec.Labels {
 				if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
 					labelsFound++
 					if labelsFound == labelsToFind {
@@ -423,6 +423,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.S
 		id := p.dispatchers.new.Add(consumerFunc)
 
 		return func() {
+			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.new.Remove(id)
 		}, nil
 
@@ -434,6 +435,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.S
 		id := p.dispatchers.update.Add(consumerFunc)
 
 		return func() {
+			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.update.Remove(id)
 		}, nil
 
@@ -445,6 +447,7 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, spec pcn_types.S
 		id := p.dispatchers.delete.Add(consumerFunc)
 
 		return func() {
+			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.delete.Remove(id)
 		}, nil
 
