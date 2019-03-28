@@ -101,7 +101,8 @@ func printServicesAddHelp() {
 	var output = [][]string{}
 	output = append(output, []string{"Params:", "", ""})
 	output = append(output, []string{"name=value", "string", "Name of the service"})
-	output = append(output, []string{"servicecontroller=value", "string", "Name of the library (e.g. libpcn-bridge.so)"})
+	output = append(output, []string{"uri=value", "string", "Path of the service (e.g. libpcn-bridge.so)"})
+	output = append(output, []string{"type=value", "string", "Service type. lib or grpc"})
 
 	config := columnize.DefaultConfig()
 	config.NoTrim = true
@@ -111,7 +112,7 @@ func printServicesAddHelp() {
 	Buffer += fmt.Sprintln(result)
 	Buffer += fmt.Sprintf("\n")
 	Buffer += fmt.Sprintf("Example:\n")
-	Buffer += fmt.Sprintf(" services add name=bridge servicecontroller=libpcn-bridge.so\n\n")
+	Buffer += fmt.Sprintf(" services add name=bridge uri=libpcn-bridge.so type=lib\n\n")
 }
 
 func printServicesDelHelp() {
