@@ -93,6 +93,7 @@ class BaseCube {
 
  protected:
   int get_table_fd(const std::string &table_name, int index, ProgramType type);
+  void set_control_plane_log_level(LogLevel level);
 
   std::shared_ptr<BaseCubeIface> cube_;  // pointer to the cube in polycubed
   log_msg_cb handle_log_msg;
