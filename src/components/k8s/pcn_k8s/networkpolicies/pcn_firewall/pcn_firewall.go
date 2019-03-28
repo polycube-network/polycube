@@ -64,13 +64,8 @@ type rulesContainer struct {
 }
 
 type policyActions struct {
-	ingress []actionWithSubscriber
-	egress  []actionWithSubscriber
-}
-
-type actionWithSubscriber struct {
-	pcn_types.FirewallAction
-	subscription func()
+	ingress []func()
+	egress  []func()
 }
 
 func newFirewall(pod core_v1.Pod, API k8sfirewall.FirewallAPI, podController pcn_controllers.PodController) *DeployedFirewall {
@@ -282,11 +277,9 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	d.policyActions[policyName] = &policyActions{
-		ingress: []actionWithSubscriber{},
-		egress:  []actionWithSubscriber{},
-	}
+	d.policyActions[policyName] = &policyActions{}
 
+	//	Ingress Actions
 	for _, i := range ingress {
 
 		subscription, err := d.podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{
@@ -299,10 +292,24 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 		})
 
 		if err == nil {
-			d.policyActions[policyName].ingress = append(d.policyActions[policyName].ingress, actionWithSubscriber{
-				//FirewallAction: i,
-				subscription: subscription,
-			})
+			d.policyActions[policyName].ingress = append(d.policyActions[policyName].ingress, subscription)
+		}
+	}
+
+	//	Egress Actions
+	for _, e := range egress {
+
+		subscription, err := d.podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{
+			Labels: e.PodLabels,
+		}, pcn_types.ObjectQuery{
+			Name:   e.NamespaceName,
+			Labels: e.NamespaceLabels,
+		}, func(pod *core_v1.Pod) {
+			log.Println("###firewall", d.firewall.Name, "reacted to ", pod.Name, pod.Status.Phase)
+		})
+
+		if err == nil {
+			d.policyActions[policyName].egress = append(d.policyActions[policyName].egress, subscription)
 		}
 	}
 
@@ -737,9 +744,9 @@ func (d *DeployedFirewall) Destroy() error {
 	}
 
 	for _, action := range d.policyActions {
-		for _, a := range action.ingress {
+		for _, unsubscribe := range action.ingress {
 			//	unsubscribe
-			a.subscription()
+			unsubscribe()
 		}
 	}
 

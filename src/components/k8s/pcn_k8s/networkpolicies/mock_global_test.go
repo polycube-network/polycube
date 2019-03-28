@@ -94,7 +94,7 @@ type MockPodController struct {
 
 func (m *MockPodController) Run()  {}
 func (m *MockPodController) Stop() {}
-func (m *MockPodController) Subscribe(pcn_types.EventType, pcn_types.SubscriptionSelector, func(*core_v1.Pod)) (func(), error) {
+func (m *MockPodController) Subscribe(pcn_types.EventType, pcn_types.ObjectQuery, pcn_types.ObjectQuery, func(*core_v1.Pod)) (func(), error) {
 	return func() {}, nil
 }
 func (m *MockPodController) GetPods(pod pcn_types.ObjectQuery, ns pcn_types.ObjectQuery) ([]core_v1.Pod, error) {

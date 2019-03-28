@@ -2,6 +2,7 @@ package networkpolicies
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
@@ -29,6 +30,7 @@ type PcnDefaultPolicyParser interface {
 	DoesPolicyAffectPod(*networking_v1.NetworkPolicy, *core_v1.Pod) bool
 	DoesPolicyTargetPod(*networking_v1.NetworkPolicy, *core_v1.Pod) pcn_types.ParsedRules
 	GetClusterActions([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string) ([]pcn_types.FirewallAction, []pcn_types.FirewallAction)
+	GetConnectionTemplate(string, string, string, string, []pcn_types.ProtoPort) pcn_types.ParsedRules
 }
 
 type DefaultPolicyParser struct {
@@ -36,6 +38,7 @@ type DefaultPolicyParser struct {
 	podController      pcn_controllers.PodController
 	supportedProtocols string
 	node               string
+	log                *log.Logger
 }
 
 func newDefaultPolicyParser(podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager, nodeName string) *DefaultPolicyParser {
@@ -44,6 +47,7 @@ func newDefaultPolicyParser(podController pcn_controllers.PodController, firewal
 		podController:      podController,
 		supportedProtocols: "TCP,UDP",
 		node:               nodeName,
+		log:                log.New(),
 	}
 }
 
@@ -245,17 +249,13 @@ func (d *DefaultPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIn
 	//-------------------------------------
 	//	Init
 	//-------------------------------------
-
-	/*var l = log.WithFields(log.Fields{
-		"by":     DPS,
-		"method": "ParseIngress()",
-	})*/
+	l := log.NewEntry(d.log)
+	l.WithFields(log.Fields{"by": DPS, "method": "ParseIngress"})
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
 	}
-
-	//l.Debugln("Going to parse the ingress rules")
+	direction := "ingress"
 
 	//-------------------------------------
 	//	Preliminary checks
@@ -263,14 +263,12 @@ func (d *DefaultPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIn
 
 	//	Rules is nil?
 	if rules == nil {
-		//l.Debugln("rules is nil. Stopping now.")
-
 		return parsed
 	}
 
 	//	No rules?
 	if len(rules) < 1 {
-		//l.Debugln("rules is empty: nothing is accepted")
+		//	Rules is empty: nothing is accepted
 
 		parsed.Ingress = append(parsed.Ingress, k8sfirewall.ChainRule{
 			Action: pcn_types.ActionDrop,
@@ -281,7 +279,6 @@ func (d *DefaultPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIn
 	//-------------------------------------
 	//	Actual parsing
 	//-------------------------------------
-
 	for _, rule := range rules {
 
 		//	The ports and rules generated in this iteration.
@@ -315,44 +312,34 @@ func (d *DefaultPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIn
 		//-------------------------------------
 
 		//	From is {} ?
-		if rule.From == nil {
-			//l.Debugln("From is nil: ALL resources are allowed")
-
-			generatedIngressRules = append(generatedIngressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackNew,
-			})
-			generatedIngressRules = append(generatedIngressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-			generatedEgressRules = append(generatedEgressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
+		if rule.From == nil && proceed {
+			//	From is nil: ALL resources are allowed
+			result := d.GetConnectionTemplate(direction, "", "", pcn_types.ActionForward, []pcn_types.ProtoPort{})
+			generatedIngressRules = append(generatedIngressRules, result.Ingress...)
+			generatedEgressRules = append(generatedEgressRules, result.Egress...)
 		}
 
 		for i := 0; rule.From != nil && i < len(rule.From) && proceed; i++ {
 			from := rule.From[i]
 
-			//	IPBlock?
+			//-------------------------------------
+			//	IPBlock
+			//-------------------------------------
 			if from.IPBlock != nil {
-				ipblock := d.ParseIPBlock(from.IPBlock, "ingress")
+				ipblock := d.ParseIPBlock(from.IPBlock, direction)
 				generatedIngressRules = append(generatedIngressRules, ipblock.Ingress...)
 				generatedEgressRules = append(generatedEgressRules, ipblock.Egress...)
 			}
 
-			//	PodSelector Or NamespaceSelector?
+			//-------------------------------------
+			//	PodSelector And/Or NamespaceSelector
+			//-------------------------------------
 			if from.PodSelector != nil || from.NamespaceSelector != nil {
-				rulesGot, err := d.ParseSelectors(from.PodSelector, from.NamespaceSelector, namespace, "ingress")
+				rulesGot, err := d.ParseSelectors(from.PodSelector, from.NamespaceSelector, namespace, direction)
 
 				if err == nil {
-					if len(rulesGot.Ingress) > 0 {
-						generatedIngressRules = append(generatedIngressRules, rulesGot.Ingress...)
-					}
-					if len(rulesGot.Egress) > 0 {
-						generatedEgressRules = append(generatedEgressRules, rulesGot.Egress...)
-					}
+					generatedIngressRules = append(generatedIngressRules, rulesGot.Ingress...)
+					generatedEgressRules = append(generatedEgressRules, rulesGot.Egress...)
 				}
 			}
 		}
@@ -376,17 +363,13 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 	//-------------------------------------
 	//	Init
 	//-------------------------------------
-
-	/*var l = log.WithFields(log.Fields{
-		"by":     DPS,
-		"method": "ParseEgress()",
-	})*/
+	l := log.NewEntry(d.log)
+	l.WithFields(log.Fields{"by": DPS, "method": "ParseEgress"})
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
 	}
-
-	//l.Debugln("Network Policy Manager is going to parse the egress rules")
+	direction := "egress"
 
 	//-------------------------------------
 	//	Preliminary checks
@@ -394,15 +377,12 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 
 	//	Rules is nil?
 	if rules == nil {
-		//l.Debugln("rules is nil: stopping now.")
-
 		return parsed
 	}
 
 	//	No rules?
 	if len(rules) < 1 {
-		//l.Debugln("rules is empty: nothing is accepted")
-
+		//	Rules is empty: nothing is accepted
 		parsed.Egress = append(parsed.Egress, k8sfirewall.ChainRule{
 			Action: pcn_types.ActionDrop,
 		})
@@ -446,20 +426,10 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 		//-------------------------------------
 
 		//	To is {} ?
-		if rule.To == nil {
-			//l.Debugln("To is nil: ALL resources are allowed")
-			generatedEgressRules = append(generatedEgressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackNew,
-			})
-			generatedEgressRules = append(generatedEgressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-			generatedIngressRules = append(generatedIngressRules, k8sfirewall.ChainRule{
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
+		if rule.To == nil && proceed {
+			result := d.GetConnectionTemplate(direction, "", "", pcn_types.ActionForward, []pcn_types.ProtoPort{})
+			generatedIngressRules = append(generatedIngressRules, result.Ingress...)
+			generatedEgressRules = append(generatedEgressRules, result.Egress...)
 		}
 
 		for i := 0; rule.To != nil && i < len(rule.To) && proceed; i++ {
@@ -467,14 +437,14 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 
 			//	IPBlock?
 			if to.IPBlock != nil {
-				ipblock := d.ParseIPBlock(to.IPBlock, "egress")
+				ipblock := d.ParseIPBlock(to.IPBlock, direction)
 				generatedIngressRules = append(generatedIngressRules, ipblock.Ingress...)
 				generatedEgressRules = append(generatedEgressRules, ipblock.Egress...)
 			}
 
 			//	PodSelector Or NamespaceSelector?
 			if to.PodSelector != nil || to.NamespaceSelector != nil {
-				rulesGot, err := d.ParseSelectors(to.PodSelector, to.NamespaceSelector, namespace, "egress")
+				rulesGot, err := d.ParseSelectors(to.PodSelector, to.NamespaceSelector, namespace, direction)
 
 				if err == nil {
 					if len(rulesGot.Ingress) > 0 {
@@ -483,6 +453,8 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 					if len(rulesGot.Egress) > 0 {
 						generatedEgressRules = append(generatedEgressRules, rulesGot.Egress...)
 					}
+				} else {
+					l.Errorln("Error while parsing selectors:", err)
 				}
 			}
 		}
@@ -501,6 +473,14 @@ func (d *DefaultPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgr
 
 func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgressRules []k8sfirewall.ChainRule, generatedPorts []pcn_types.ProtoPort) pcn_types.ParsedRules {
 
+	//	Don't make me go through this if there is no ports
+	if len(generatedPorts) < 1 {
+		return pcn_types.ParsedRules{
+			Ingress: generatedIngressRules,
+			Egress:  generatedEgressRules,
+		}
+	}
+
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
@@ -513,7 +493,7 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 		defer waitForChains.Done()
 		//	Finally, for each parsed rule, apply the ports that have been found
 		//	But only if you have at least one port
-		for i := 0; i < len(generatedIngressRules) && len(generatedPorts) > 0; i++ {
+		for i := 0; i < len(generatedIngressRules); i++ {
 			rule := generatedIngressRules[i]
 			for _, generatedPort := range generatedPorts {
 				edited := rule
@@ -522,15 +502,11 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 				parsed.Ingress = append(parsed.Ingress, edited)
 			}
 		}
-		//	No ports in this? Then just append the rules with ports 0
-		if len(generatedPorts) < 1 {
-			parsed.Ingress = append(parsed.Ingress, generatedIngressRules...)
-		}
 	}()
 
 	go func() {
 		defer waitForChains.Done()
-		for i := 0; i < len(generatedEgressRules) && len(generatedPorts) > 0; i++ {
+		for i := 0; i < len(generatedEgressRules); i++ {
 			rule := generatedEgressRules[i]
 			for _, generatedPort := range generatedPorts {
 				edited := rule
@@ -539,10 +515,6 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 				parsed.Egress = append(parsed.Egress, edited)
 			}
 		}
-		//	No ports in this? Then just append the rules with ports 0
-		if len(generatedPorts) < 1 {
-			parsed.Egress = append(parsed.Egress, generatedEgressRules...)
-		}
 	}()
 	waitForChains.Wait()
 
@@ -550,6 +522,7 @@ func (d *DefaultPolicyParser) insertPorts(generatedIngressRules, generatedEgress
 }
 
 func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.NetworkPolicySpec) ([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string) {
+
 	var ingress []networking_v1.NetworkPolicyIngressRule
 	var egress []networking_v1.NetworkPolicyEgressRule
 
@@ -559,7 +532,7 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 
 	//	What if spec is not even there?
 	if policySpec == nil {
-		return nil, nil, policyType
+		return nil, nil, "ingress"
 	}
 
 	//	Documentation is not very specific about the possibility of PolicyTypes being [], so I made this dumb piece of code just in case
@@ -573,19 +546,21 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 		} else {
 			policyTypes := policySpec.PolicyTypes
 
-			//	https://godoc.org/k8s.io/api/networking/v1#NetworkPolicySpec =\
 			for _, val := range policyTypes {
-				switch val {
-				case "Ingress":
+				//	Can't use if-else because user may disable validation and insert
+				//	trash values
+				if val == networking_v1.PolicyTypeIngress {
 					ingress = policySpec.Ingress
 					policyType = "ingress"
-				case "Egress":
+				}
+				if val == networking_v1.PolicyTypeEgress {
 					egress = policySpec.Egress
 					policyType = "egress"
-				case "Ingress,Egress":
-					ingress = policySpec.Ingress
-					egress = policySpec.Egress
 				}
+			}
+
+			if ingress != nil && egress != nil {
+				policyType = "*"
 			}
 		}
 	}
@@ -595,66 +570,30 @@ func (d *DefaultPolicyParser) ParsePolicyTypes(policySpec *networking_v1.Network
 
 func (d *DefaultPolicyParser) ParseIPBlock(block *networking_v1.IPBlock, k8sDirection string) pcn_types.ParsedRules {
 
-	/*var l = log.WithFields(log.Fields{
-		"by":     DPS,
-		"method": "ParseIPBlock()",
-	})*/
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
 	}
 
-	//	Add the default one
-	if len(block.CIDR) > 0 {
-
-		if k8sDirection == "ingress" {
-			//	Ingress:
-			parsed.Ingress = append(parsed.Ingress, k8sfirewall.ChainRule{
-				Src:       block.CIDR,
-				Conntrack: pcn_types.ConnTrackNew,
-				//	Dst: ME
-				Action: pcn_types.ActionForward,
-			})
-			parsed.Ingress = append(parsed.Ingress, k8sfirewall.ChainRule{
-				Src:       block.CIDR,
-				Conntrack: pcn_types.ConnTrackEstablished,
-				//	Dst: ME
-				Action: pcn_types.ActionForward,
-			})
-
-			//	Egress
-			parsed.Egress = append(parsed.Egress, k8sfirewall.ChainRule{
-				//Src: ME,
-				Dst:       block.CIDR,
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-		}
-
-		if k8sDirection == "egress" {
-			//	Egress:
-			parsed.Egress = append(parsed.Egress, k8sfirewall.ChainRule{
-				Dst:       block.CIDR,
-				Conntrack: pcn_types.ConnTrackNew,
-				//	Dst: ME
-				Action: pcn_types.ActionForward,
-			})
-			parsed.Egress = append(parsed.Egress, k8sfirewall.ChainRule{
-				Dst:       block.CIDR,
-				Conntrack: pcn_types.ConnTrackEstablished,
-				//	Dst: ME
-				Action: pcn_types.ActionForward,
-			})
-
-			//	Ingress
-			parsed.Ingress = append(parsed.Ingress, k8sfirewall.ChainRule{
-				//Src: ME,
-				Src:       block.CIDR,
-				Action:    pcn_types.ActionForward,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-		}
+	//	Actually, these two cannot happen with kubernetes
+	if block == nil {
+		return parsed
 	}
+
+	if len(block.CIDR) < 1 {
+		return parsed
+	}
+
+	//	Add the default one
+	cidrRules := pcn_types.ParsedRules{}
+	if k8sDirection == "ingress" {
+		cidrRules = d.GetConnectionTemplate(k8sDirection, block.CIDR, "", pcn_types.ActionForward, []pcn_types.ProtoPort{})
+	} else {
+		cidrRules = d.GetConnectionTemplate(k8sDirection, "", block.CIDR, pcn_types.ActionForward, []pcn_types.ProtoPort{})
+	}
+
+	parsed.Ingress = append(parsed.Ingress, cidrRules.Ingress...)
+	parsed.Egress = append(parsed.Egress, cidrRules.Egress...)
 
 	//	Loop through all exceptions
 	for _, exception := range block.Except {
@@ -734,84 +673,127 @@ func (d *DefaultPolicyParser) parseProtocolAndPort(pp networking_v1.NetworkPolic
 }
 
 func (d *DefaultPolicyParser) ParseSelectors(podSelector, namespaceSelector *meta_v1.LabelSelector, namespace, direction string) (pcn_types.ParsedRules, error) {
-	/*var l = log.WithFields(log.Fields{
-		"by":     DPS,
-		"method": "ParseSelectors()",
-	})*/
+
+	//	init
 	rules := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
 	}
-	action := pcn_types.ActionForward
 
-	podsFound, err := d.getPodsFromSelectors(podSelector, namespaceSelector, namespace)
-
+	//	First build the query
+	podQuery, nsQuery, err := d.buildPodQueries(podSelector, namespaceSelector, namespace)
 	if err != nil {
 		return rules, err
 	}
 
-	// No need to check for len of podsFound.
+	//	Now get the pods
+	podsFound, err := d.podController.GetPods(podQuery, nsQuery)
+	if err != nil {
+		return rules, fmt.Errorf("Error while trying to get pods %s", err.Error())
+	}
+
+	//	Now build the pods
 	for _, pod := range podsFound {
-
+		parsed := pcn_types.ParsedRules{}
 		if direction == "ingress" {
-			//	Ingress
-			rules.Ingress = append(rules.Ingress, k8sfirewall.ChainRule{
-				Src:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackNew,
-			})
-			rules.Ingress = append(rules.Ingress, k8sfirewall.ChainRule{
-				Src:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-			//	Egress
-			rules.Egress = append(rules.Egress, k8sfirewall.ChainRule{
-				Dst:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
+			parsed = d.GetConnectionTemplate(direction, pod.Status.PodIP, "", pcn_types.ActionForward, []pcn_types.ProtoPort{})
+		} else {
+			parsed = d.GetConnectionTemplate(direction, "", pod.Status.PodIP, pcn_types.ActionForward, []pcn_types.ProtoPort{})
 		}
 
-		if direction == "egress" {
-			//	Egress
-			rules.Egress = append(rules.Egress, k8sfirewall.ChainRule{
-				Dst:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackNew,
-			})
-			rules.Egress = append(rules.Egress, k8sfirewall.ChainRule{
-				Dst:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-			//	Ingress
-			rules.Ingress = append(rules.Ingress, k8sfirewall.ChainRule{
-				Src:       pod.Status.PodIP,
-				Action:    action,
-				Conntrack: pcn_types.ConnTrackEstablished,
-			})
-		}
-
+		parsed.Ingress = append(parsed.Ingress, parsed.Ingress...)
+		parsed.Egress = append(parsed.Egress, parsed.Egress...)
 	}
 
 	return rules, nil
 }
 
-func (d *DefaultPolicyParser) getPodsFromSelectors(podSelector, namespaceSelector *meta_v1.LabelSelector, namespace string) ([]core_v1.Pod, error) {
-	var l = log.WithFields(log.Fields{
-		"by":     DPS,
-		"method": "getPodsFromSelectors()",
-	})
-	podsFound := []core_v1.Pod{}
+func (d *DefaultPolicyParser) buildPodQueries(podSelector, namespaceSelector *meta_v1.LabelSelector, namespace string) (pcn_types.ObjectQuery, pcn_types.ObjectQuery, error) {
 
+	//	Init
 	queryPod := pcn_types.ObjectQuery{}
 	queryNs := pcn_types.ObjectQuery{}
 
-	//l.Debugln("Parsing selectors...")
+	//	If podSelector is nil: select everything and then block
+	//	If podSelector is empty (len = 0): select everything and then forward
+	//	NOTE: blocking everything is not the same as setting a default rule to block anything!
+	//	Because that way we would also be preventing external connections from accessing our pods.
+	//	Instead, we need to block all pods individually, so we can't solve it by just creating a default rule:
+	//	we cannot know if user will deploy a policy to allow ipblocks in advance.
 
-	//	If podSelector is nil we must not select anything (meaning we have to block everything)
-	//	If podSelector is empty (len = 0) we must select everything
+	//	Build the query
+	if podSelector != nil {
+
+		//	This is not supported yet...
+		if podSelector.MatchExpressions != nil {
+			return queryPod, queryNs, errors.New("MatchExpressions on pod selector is not supported yet")
+		}
+
+		//	Empty labels means "select everything"
+		//	Nil labels means do not select anything. Which, for us, means deny access to those pods (see below)
+		if len(podSelector.MatchLabels) < 1 {
+			queryPod = pcn_types.ObjectQuery{
+				By:   "name",
+				Name: "*",
+			}
+		} else {
+			queryPod = pcn_types.ObjectQuery{
+				By:     "labels",
+				Labels: podSelector.MatchLabels,
+			}
+		}
+	} else {
+		queryPod = pcn_types.ObjectQuery{
+			By:   "name",
+			Name: "*",
+		}
+	}
+
+	//	Namespace selector
+	if namespaceSelector != nil {
+
+		//	Match expressions?
+		if namespaceSelector.MatchExpressions != nil {
+			//	This is not supported yet...
+			return queryPod, queryNs, errors.New("MatchExpressions on namespace selector is not supported yet")
+		}
+
+		if len(namespaceSelector.MatchLabels) > 0 {
+			//	Parse the match labels (like for the pod)
+			queryNs = pcn_types.ObjectQuery{
+				By:     "labels",
+				Labels: namespaceSelector.MatchLabels,
+			}
+		} else {
+			//	No labels: as per documentation, this means ALL namespaces
+			queryNs = pcn_types.ObjectQuery{
+				By:   "name",
+				Name: "*",
+			}
+		}
+	} else {
+		//	If namespace selector is nil, we're going to use the one we found on the policy
+		queryNs = pcn_types.ObjectQuery{
+			By:   "name",
+			Name: namespace,
+		}
+	}
+
+	return queryPod, queryNs, nil
+}
+
+//	TO-BE-REMOVED
+func (d *DefaultPolicyParser) getPodsFromSelectors(podSelector, namespaceSelector *meta_v1.LabelSelector, namespace string) ([]core_v1.Pod, error) {
+
+	//	Init
+	l := log.NewEntry(d.log)
+	l.WithFields(log.Fields{"by": DPS, "method": "getPodsFromSelectors()"})
+	podsFound := []core_v1.Pod{}
+	queryPod := pcn_types.ObjectQuery{}
+	queryNs := pcn_types.ObjectQuery{}
+
+	//	If podSelector is nil: select everything and then block
+	//	If podSelector is empty (len = 0): select everything and then forward
 	//	NOTE: blocking everything is not the same as setting a default rule to block anything!
 	//	Because that way we would also be preventing external connections from accessing our pods.
 	//	Instead, we need to block all pods individually, so we can't solve it by just creating a default rule:
@@ -827,7 +809,7 @@ func (d *DefaultPolicyParser) getPodsFromSelectors(podSelector, namespaceSelecto
 
 		//	Empty labels means "select everything"
 		//	Nil labels means do not select anything. Which, for us, means deny access to those pods (see below)
-		if len(podSelector.MatchLabels) < 1 || podSelector.MatchLabels == nil {
+		if len(podSelector.MatchLabels) < 1 {
 			queryPod = pcn_types.ObjectQuery{
 				By:   "name",
 				Name: "*",
@@ -886,6 +868,7 @@ func (d *DefaultPolicyParser) getPodsFromSelectors(podSelector, namespaceSelecto
 	return podsFound, nil
 }
 
+//	TO-BE-REMOVED
 func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolicy) (map[string][]core_v1.Pod, error) {
 	/*var l = log.WithFields(log.Fields{
 		"by":     DPS,
@@ -936,6 +919,7 @@ func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolic
 	return namespacesGroup, nil
 }
 
+//	TO-BE-REMOVED
 func (d *DefaultPolicyParser) DoesPolicyAffectPod(policy *networking_v1.NetworkPolicy, pod *core_v1.Pod) bool {
 
 	//	First, get pods affected by the policy.
@@ -966,6 +950,7 @@ func (d *DefaultPolicyParser) DoesPolicyAffectPod(policy *networking_v1.NetworkP
 	return false
 }
 
+//	TO-BE-REMOVED
 func (d *DefaultPolicyParser) DoesPolicyTargetPod(policy *networking_v1.NetworkPolicy, pod *core_v1.Pod) pcn_types.ParsedRules {
 
 	//	Get the spec, with the ingress & egress rules
@@ -1094,6 +1079,55 @@ func (d *DefaultPolicyParser) DoesPolicyTargetPod(policy *networking_v1.NetworkP
 		Ingress: ingressRules,
 		Egress:  egressRules,
 	}
+}
+
+func (d *DefaultPolicyParser) GetConnectionTemplate(direction, src, dst, action string, ports []pcn_types.ProtoPort) pcn_types.ParsedRules {
+
+	twoRules := make([]k8sfirewall.ChainRule, 2)
+	oneRule := make([]k8sfirewall.ChainRule, 1)
+
+	twoRules[0] = k8sfirewall.ChainRule{
+		Src:       src,
+		Dst:       dst,
+		Action:    action,
+		Conntrack: pcn_types.ConnTrackNew,
+	}
+	twoRules[1] = k8sfirewall.ChainRule{
+		Src:       src,
+		Dst:       dst,
+		Action:    action,
+		Conntrack: pcn_types.ConnTrackEstablished,
+	}
+	oneRule[0] = k8sfirewall.ChainRule{
+		Src:       dst,
+		Dst:       src,
+		Action:    action,
+		Conntrack: pcn_types.ConnTrackEstablished,
+	}
+
+	if direction == "ingress" {
+
+		if len(ports) > 0 {
+			withPorts := d.insertPorts(twoRules, oneRule, ports)
+			twoRules, oneRule = withPorts.Ingress, withPorts.Egress
+		}
+
+		return pcn_types.ParsedRules{
+			Ingress: twoRules,
+			Egress:  oneRule,
+		}
+	}
+
+	if len(ports) > 0 {
+		withPorts := d.insertPorts(oneRule, twoRules, ports)
+		oneRule, twoRules = withPorts.Ingress, withPorts.Egress
+	}
+
+	return pcn_types.ParsedRules{
+		Ingress: oneRule,
+		Egress:  twoRules,
+	}
+
 }
 
 func (d *DefaultPolicyParser) GetClusterActions(ingress []networking_v1.NetworkPolicyIngressRule, egress []networking_v1.NetworkPolicyEgressRule, currentNamespace string) ([]pcn_types.FirewallAction, []pcn_types.FirewallAction) {
