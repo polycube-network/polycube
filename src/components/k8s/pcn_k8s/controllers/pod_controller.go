@@ -25,8 +25,7 @@ import (
 type PodController interface {
 	Run()
 	Stop()
-	Subscribe(pcn_types.EventType, pcn_types.ObjectQuery, pcn_types.ObjectQuery, func(*core_v1.Pod)) (func(), error)
-
+	Subscribe(pcn_types.EventType, pcn_types.ObjectQuery, pcn_types.ObjectQuery, core_v1.PodPhase, func(*core_v1.Pod)) (func(), error)
 	GetPods(pcn_types.ObjectQuery, pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
 
@@ -369,7 +368,7 @@ func (p *PcnPodController) Stop() {
 
 /*Subscribe executes the function consumer when the event event is triggered. It returns an error if the event type does not exist.
 It returns a function to call when you want to stop tracking that event.*/
-func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_types.ObjectQuery, namespace pcn_types.ObjectQuery, consumer func(*core_v1.Pod)) (func(), error) {
+func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_types.ObjectQuery, namespace pcn_types.ObjectQuery, phase core_v1.PodPhase, consumer func(*core_v1.Pod)) (func(), error) {
 
 	//	Prepare the function to be executed
 	consumerFunc := (func(item interface{}) {
@@ -377,14 +376,55 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 		//	First, cast the item to a pod, so that the consumer will receive exactly what it wants...
 		pod := item.(*core_v1.Pod)
 
-		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
-		if len(namespace.Name) > 0 && pod.Namespace != namespace.Name {
+		//	This is actually useless but who knows....
+		if pod == nil {
 			return
+		}
+
+		//	Check the phase
+		if phase != pcn_types.PodAnyPhase {
+
+			//	Pod is terminating?
+			if pod.ObjectMeta.DeletionTimestamp != nil && phase != pcn_types.PodTerminating {
+				//	If the pod is terminating and I am not interested in that, then stop.
+				return
+			}
+
+			if pod.Status.Phase != phase {
+				return
+			}
+
+		}
+
+		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
+		if len(namespace.Name) > 0 {
+			if pod.Namespace != namespace.Name {
+				return
+			}
+		} else {
+			//	Check the labels of the namespace
+			if len(namespace.Labels) > 0 {
+				nsList, err := p.nsController.GetNamespaces(namespace)
+				if err != nil {
+					return
+				}
+
+				found := false
+				for _, n := range nsList {
+					if n.Name == pod.Namespace {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return
+				}
+			}
 		}
 
 		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
 		//	It should be very rare to see pods with more than 5 labels...
-		if podspec.Labels != nil && len(podspec.Labels) > 0 {
+		if len(podspec.Labels) > 0 {
 			labelsFound := 0
 			labelsToFind := len(podspec.Labels)
 
@@ -423,7 +463,6 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 		id := p.dispatchers.new.Add(consumerFunc)
 
 		return func() {
-			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.new.Remove(id)
 		}, nil
 
@@ -435,7 +474,6 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 		id := p.dispatchers.update.Add(consumerFunc)
 
 		return func() {
-			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.update.Remove(id)
 		}, nil
 
@@ -447,7 +485,6 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 		id := p.dispatchers.delete.Add(consumerFunc)
 
 		return func() {
-			log.Println("###PODCONTROLLER UNSUBSCRIBING!")
 			p.dispatchers.delete.Remove(id)
 		}, nil
 

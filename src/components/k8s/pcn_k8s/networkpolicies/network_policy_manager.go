@@ -28,6 +28,7 @@ type NetworkPolicyManager struct {
 	node                string
 	lock                sync.Mutex
 	checkPodsLock       sync.Mutex
+	log                 *log.Logger
 }
 
 type checkedPod struct {
@@ -49,6 +50,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 		deployedPolicies: map[string][]k8s_types.UID{},
 		checkedPods:      map[k8s_types.UID]*checkedPod{},
 		node:             nodeName,
+		log:              log.New(),
 	}
 
 	//-------------------------------------
@@ -71,17 +73,15 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 	//-------------------------------------
 
 	//podController.Subscribe(pcn_types.New, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Delete, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, manager.manageDeletedPod)
+	podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, pcn_types.PodRunning, manager.checkNewPod)
+	podController.Subscribe(pcn_types.Delete, pcn_types.ObjectQuery{}, pcn_types.ObjectQuery{}, pcn_types.PodAnyPhase, manager.manageDeletedPod)
 
 	return &manager
 }
 
 func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.NetworkPolicy) {
-	var l = log.WithFields(log.Fields{
-		"by":     "Network-Policy-Manager",
-		"method": "DeployDefaultPolicy(" + policy.Name + ")",
-	})
+	l := log.NewEntry(manager.log)
+	l.WithFields(log.Fields{"by": "Network-Policy-Manager", "method": "DeployDefaultPolicy(" + policy.Name + ")"})
 
 	//-------------------------------------
 	//	The basics
@@ -102,10 +102,6 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 	//	Get the spec, with the ingress & egress rules
 	spec := policy.Spec
 	ingress, egress, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&spec)
-	if ingress == nil && egress == nil {
-		l.Errorln("Policy doesn't have a spec: I don't know what to do!")
-		return
-	}
 
 	//-------------------------------------
 	//	Parse, Deploy & Set Actions
@@ -113,8 +109,7 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 	for ns, pods := range nsPods {
 
 		var parsed pcn_types.ParsedRules
-		var ingressActions []pcn_types.FirewallAction
-		var egressActions []pcn_types.FirewallAction
+		fwActions := pcn_types.FirewallActions{}
 
 		var podsWaitGroup sync.WaitGroup
 		podsWaitGroup.Add(2)
@@ -127,7 +122,7 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 
 		go func() {
 			defer podsWaitGroup.Done()
-			ingressActions, egressActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, ns)
+			fwActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, ns)
 		}()
 
 		podsWaitGroup.Wait()
@@ -158,11 +153,9 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 				//	Inject the rules and the actions
 				//-------------------------------------
 
-				fw.EnforcePolicy(policy.Name, policyType, parsed.Ingress, parsed.Egress)
-				fw.DefinePolicyActions(policy.Name, ingressActions, egressActions)
+				fw.EnforcePolicy(policy.Name, policyType, parsed.Ingress, parsed.Egress, fwActions)
 
 			}(pod)
-
 		}
 
 		podsWaitGroup.Wait()
@@ -207,28 +200,10 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	//	Basic Checks
 	//-------------------------------------
 
-	//	This is actually useless but who knows....
-	if pod == nil {
-		l.Errorln("Called with a nil pod! Will stop here.")
-		return
-	}
-
 	//	Is this pod from the kube-system?
 	//	TODO: does checking pods inside kube-system make sense actually?
 	if pod.Namespace == "kube-system" {
 		l.Infoln("Pod", pod.Name, "belongs to the kube-system namespaces: no point in checking for policies. Will stop here.")
-		return
-	}
-
-	//	A hack way to detect if the pod is terminating: APIs do not have a way to do that :(
-	if pod.ObjectMeta.DeletionTimestamp != nil {
-		//l.Debugln("Pod", pod.Name, "is terminating. Will not do anything else.")
-		return
-	}
-
-	//	Is it running? (if not, it wouldn't have a valid ip yet)
-	if pod.Status.Phase != core_v1.PodRunning {
-		//l.Debugln("Pod", pod.Name, "is in", pod.Status.Phase, "so I'm not going to check it.")
 		return
 	}
 
@@ -254,6 +229,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 
 	var policyWait sync.WaitGroup
 	policyWait.Add(2)
+	//policyWait.Add(2)
 	k8sPolicies, _ := manager.dnpc.GetPolicies(pcn_types.ObjectQuery{By: "name", Name: "*"})
 
 	//	The most recently deployed policies should have precedence, but the firewall doesn't support insertion in head yet.
@@ -290,7 +266,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 					ingress, egress, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&k8sPolicy.Spec)
 					parsed := manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
 
-					fw.EnforcePolicy(k8sPolicy.Name, policyType, parsed.Ingress, parsed.Egress)
+					fw.EnforcePolicy(k8sPolicy.Name, policyType, parsed.Ingress, parsed.Egress, pcn_types.FirewallActions{})
 				}
 			}
 		}

@@ -1,7 +1,6 @@
 package networkpolicies
 
 import (
-	"fmt"
 	"testing"
 
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
@@ -1059,7 +1058,7 @@ func TestRulesforPod(t *testing.T) {
 
 }
 
-func TestGetActionsWithNamespace(t *testing.T) {
+func TestGetClusterActions(t *testing.T) {
 	tcp := core_v1.ProtocolTCP
 	udp := core_v1.ProtocolUDP
 	port1 := &intstr.IntOrString{
@@ -1160,36 +1159,30 @@ func TestGetActionsWithNamespace(t *testing.T) {
 		pcn_types.FirewallAction{
 			PodLabels:     policy.Spec.Ingress[0].From[0].PodSelector.MatchLabels,
 			NamespaceName: policy.Namespace,
-			Ports:         manager.ParsePorts(policy.Spec.Ingress[0].Ports),
-			Action:        pcn_types.Forward,
 		},
 		pcn_types.FirewallAction{
 			PodLabels:     policy.Spec.Ingress[1].From[0].PodSelector.MatchLabels,
 			NamespaceName: policy.Namespace,
-			Action:        pcn_types.Forward,
 		},
 		pcn_types.FirewallAction{
 			NamespaceLabels: policy.Spec.Ingress[1].From[1].NamespaceSelector.MatchLabels,
-			Action:          pcn_types.Forward,
 		},
 		pcn_types.FirewallAction{
 			PodLabels:       policy.Spec.Ingress[2].From[0].PodSelector.MatchLabels,
 			NamespaceLabels: policy.Spec.Ingress[2].From[0].NamespaceSelector.MatchLabels,
-			Action:          pcn_types.Forward,
 		},
 	}
 
 	ingress, egress, _ := manager.ParsePolicyTypes(&policy.Spec)
-	ingressActions, egressActions := manager.GetClusterActions(ingress, egress, policy.Namespace)
-	//	Sometimes the tests fail because maps are not the same order, so I'm doing it like this...
-	fmt.Println("--Ingress")
-	for i := 0; i < len(ingressActions); i++ {
-		fmt.Printf("%+v\n", expectedIngress[i])
-		fmt.Printf("%+v\n", ingressActions[i])
-		fmt.Println()
-	}
+	actions := manager.GetClusterActions(ingress, egress, policy.Namespace)
 
-	assert.Empty(t, egressActions)
+	//	No need to test for the rules as they are tested in GetTemplate
+	for i := 0; i < len(actions.Ingress); i++ {
+		assert.Equal(t, actions.Ingress[i].NamespaceName, expectedIngress[i].NamespaceName)
+		assert.Equal(t, actions.Ingress[i].NamespaceLabels, expectedIngress[i].NamespaceLabels)
+		assert.Equal(t, actions.Ingress[i].PodLabels, expectedIngress[i].PodLabels)
+	}
+	assert.Empty(t, actions.Egress)
 
 	//	With egress as well
 
@@ -1236,21 +1229,14 @@ func TestGetActionsWithNamespace(t *testing.T) {
 		pcn_types.FirewallAction{
 			PodLabels:       policy.Spec.Egress[0].To[0].PodSelector.MatchLabels,
 			NamespaceLabels: policy.Spec.Egress[0].To[0].NamespaceSelector.MatchLabels,
-			Ports:           manager.ParsePorts(policy.Spec.Egress[0].Ports),
-			Action:          pcn_types.Forward,
 		},
 	}
 	ingress, egress, _ = manager.ParsePolicyTypes(&policy.Spec)
-	ingressActions, egressActions = manager.GetClusterActions(ingress, egress, policy.Namespace)
+	actions = manager.GetClusterActions(ingress, egress, policy.Namespace)
 
-	fmt.Println("--Egress")
-	for i := 0; i < len(egressActions); i++ {
-		fmt.Printf("%+v\n", expectedEgress[i])
-		fmt.Printf("%+v\n", egressActions[i])
-		fmt.Println()
+	for i := 0; i < len(actions.Egress); i++ {
+		assert.Equal(t, actions.Egress[i].NamespaceName, expectedEgress[i].NamespaceName)
+		assert.Equal(t, actions.Egress[i].NamespaceLabels, expectedEgress[i].NamespaceLabels)
+		assert.Equal(t, actions.Egress[i].PodLabels, expectedEgress[i].PodLabels)
 	}
-
-	//	These fail sometimes because maps are not the same order but it is actually ok
-	/*assert.ElementsMatch(t, expectedEgress, egressActions)
-	assert.ElementsMatch(t, expectedIngress, ingressActions)*/
 }

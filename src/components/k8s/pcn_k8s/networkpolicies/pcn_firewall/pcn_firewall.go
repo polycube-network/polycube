@@ -4,9 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
-
 	//	TODO-ON-MERGE: change these to the polycube path
+	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 
@@ -16,12 +15,8 @@ import (
 )
 
 type PcnFirewall interface {
-	EnforcePolicy(string, string, []k8sfirewall.ChainRule, []k8sfirewall.ChainRule) (error, error)
-	DefinePolicyActions(string, []pcn_types.FirewallAction, []pcn_types.FirewallAction)
+	EnforcePolicy(string, string, []k8sfirewall.ChainRule, []k8sfirewall.ChainRule, pcn_types.FirewallActions) (error, error)
 	CeasePolicy(string)
-	//	UPDATE: it's better to always inject with a policy instead of doing it anonymously.
-	//	That's why it is now unexported
-	//InjectRules(string, []k8sfirewall.ChainRule) ([]k8sfirewall.ChainRule, error)
 	ForPod() k8s_types.UID
 	RemoveRules(string, []k8sfirewall.ChainRule) []k8sfirewall.ChainRule
 	RemoveIPReferences(string)
@@ -57,10 +52,6 @@ type DeployedFirewall struct {
 type rulesContainer struct {
 	ingress []k8sfirewall.ChainRule
 	egress  []k8sfirewall.ChainRule
-	//	UPDATE: think I don't actually need these
-	//	sync.Mutex
-	//	iLock sync.Mutex
-	//	eLock sync.Mutex
 }
 
 type policyActions struct {
@@ -150,7 +141,7 @@ func (d *DeployedFirewall) ForPod() k8s_types.UID {
 	return d.podUID
 }
 
-func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress, egress []k8sfirewall.ChainRule) (error, error) {
+func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress, egress []k8sfirewall.ChainRule, actions pcn_types.FirewallActions) (error, error) {
 
 	//-------------------------------------
 	//	Init
@@ -255,40 +246,51 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 	}
 
 	//-------------------------------------
-	//	Update the default actions
+	//	Update Reactions & default action
 	//-------------------------------------
 
 	//	So we just enforced a new policy. The final step is to change actions (if needed: that's what increaseCount does)
-	d.policyTypes[policyName] = policyType
-	switch policyType {
-	case "ingress":
-		d.increaseCount("ingress")
-	case "egress":
-		d.increaseCount("egress")
-	case "*":
-		d.increaseCount("ingress")
-		d.increaseCount("egress")
+	//	But only if we did not do that already!
+	if _, exists := d.policyTypes[policyName]; !exists {
+
+		//	---	Update default actions
+		d.policyTypes[policyName] = policyType
+		switch policyType {
+		case "ingress":
+			d.increaseCount("ingress")
+		case "egress":
+			d.increaseCount("egress")
+		case "*":
+			d.increaseCount("ingress")
+			d.increaseCount("egress")
+		}
+
+		//	---	React to pod events
+		if len(actions.Ingress) > 0 || len(actions.Egress) > 0 {
+			d.definePolicyActions(policyName, actions.Ingress, actions.Egress)
+		}
 	}
 
 	return iError, eError
 }
 
-func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egress []pcn_types.FirewallAction) {
-	d.lock.Lock()
-	defer d.lock.Unlock()
+func (d *DeployedFirewall) definePolicyActions(policyName string, ingress, egress []pcn_types.FirewallAction) {
 
 	d.policyActions[policyName] = &policyActions{}
 
-	//	Ingress Actions
+	//-------------------------------------
+	//	Ingress
+	//-------------------------------------
 	for _, i := range ingress {
 
+		//	Subscribe to the pod controller for this specific object
 		subscription, err := d.podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{
 			Labels: i.PodLabels,
 		}, pcn_types.ObjectQuery{
 			Name:   i.NamespaceName,
 			Labels: i.NamespaceLabels,
-		}, func(pod *core_v1.Pod) {
-			log.Println("###firewall", d.firewall.Name, "reacted to ", pod.Name, pod.Status.Phase)
+		}, pcn_types.PodRunning, func(pod *core_v1.Pod) {
+			d.reactToPod(pod, policyName, i.Actions)
 		})
 
 		if err == nil {
@@ -296,7 +298,9 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 		}
 	}
 
-	//	Egress Actions
+	//-------------------------------------
+	//	Egress
+	//-------------------------------------
 	for _, e := range egress {
 
 		subscription, err := d.podController.Subscribe(pcn_types.Update, pcn_types.ObjectQuery{
@@ -304,8 +308,8 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 		}, pcn_types.ObjectQuery{
 			Name:   e.NamespaceName,
 			Labels: e.NamespaceLabels,
-		}, func(pod *core_v1.Pod) {
-			log.Println("###firewall", d.firewall.Name, "reacted to ", pod.Name, pod.Status.Phase)
+		}, pcn_types.PodRunning, func(pod *core_v1.Pod) {
+			d.reactToPod(pod, policyName, e.Actions)
 		})
 
 		if err == nil {
@@ -313,6 +317,26 @@ func (d *DeployedFirewall) DefinePolicyActions(policyName string, ingress, egres
 		}
 	}
 
+}
+
+func (d *DeployedFirewall) reactToPod(pod *core_v1.Pod, policyName string, action pcn_types.ParsedRules) {
+	ingress := make([]k8sfirewall.ChainRule, len(action.Ingress))
+	egress := make([]k8sfirewall.ChainRule, len(action.Egress))
+
+	//	Ingress
+	for i := 0; i < len(action.Ingress); i++ {
+		ingress[i] = action.Ingress[i]
+		ingress[i].Src = pod.Status.PodIP
+	}
+
+	//	Egress
+	for i := 0; i < len(action.Ingress); i++ {
+		egress[i] = action.Egress[i]
+		egress[i].Dst = pod.Status.PodIP
+	}
+
+	//	No need to specify a policy type
+	d.EnforcePolicy(policyName, "", ingress, egress, pcn_types.FirewallActions{})
 }
 
 func (d *DeployedFirewall) CeasePolicy(policyName string) {
@@ -455,6 +479,9 @@ func (d *DeployedFirewall) CeasePolicy(policyName string) {
 }
 
 func (d *DeployedFirewall) injectRules(direction string, rules []k8sfirewall.ChainRule) ([]k8sfirewall.ChainRule, error) {
+
+	//	UPDATE: it's better to always inject with a policy instead of doing it anonymously.
+	//	That's why this function is un-exported now
 
 	var l = log.WithFields(log.Fields{
 		"by":     d.firewall.Name,
