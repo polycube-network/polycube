@@ -331,7 +331,7 @@ func (d *DeployedFirewall) reactToPod(pod *core_v1.Pod, policyName string, actio
 	log.Printf("####%+v\n", ingress)
 
 	//	Egress
-	for i := 0; i < len(action.Ingress); i++ {
+	for i := 0; i < len(action.Egress); i++ {
 		egress[i] = action.Egress[i]
 		egress[i].Dst = pod.Status.PodIP
 	}
