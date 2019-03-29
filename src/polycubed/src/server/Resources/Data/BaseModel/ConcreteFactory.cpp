@@ -106,7 +106,8 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
     std::unique_ptr<Body::JsonValueField> &&value_field,
     const std::vector<Body::JsonNodeField> &node_fields, bool configuration,
     bool init_only_config, bool mandatory, Types::Scalar type,
-    std::unique_ptr<const std::string> &&default_value) const {
+    std::unique_ptr<const std::string> &&default_value,
+    bool is_enum, const std::vector<std::string> &values) const {
   // TODO: what to check  here? we don't need
   auto tree_names_ = tree_names;
   tree_names_.pop();
@@ -195,7 +196,7 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
       std::move(read_handler_), std::move(replace_handler_), name, description,
       cli_example, rest_endpoint, parent, configuration, init_only_config,
       core_, std::move(value_field), node_fields, mandatory, type,
-      std::move(default_value));
+      std::move(default_value), is_enum, values);
 }
 
 std::unique_ptr<Endpoint::LeafListResource> ConcreteFactory::RestLeafList(

@@ -44,7 +44,7 @@ LeafListResource::LeafListResource(
                          init_only_config, mandatory, type, nullptr),
       LeafResource(name, description, cli_example, rest_endpoint, parent, core,
                    nullptr, node_fields, configuration, init_only_config,
-                   mandatory, type, nullptr),
+                   mandatory, type, nullptr, false, {}),
       Body::LeafListResource(name, description, cli_example, parent, core,
                              nullptr, node_fields, configuration,
                              init_only_config, mandatory, type,

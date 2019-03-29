@@ -52,6 +52,8 @@ class Service : public ParentResource, public Body::Service {
 
   Response Help(HelpType type);
 
+  Response CompletionService(HelpType type);
+
   virtual Response ReadHelp() = 0;
 
  private:

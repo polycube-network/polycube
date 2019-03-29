@@ -36,4 +36,14 @@ bool EnumValidator::Validate(const std::string &value) const {
                  static_cast<int (*)(int)>(std::tolower));
   return values_.count(upper) == 1;
 }
+
+std::vector<std::string> EnumValidator::GetValues() const {
+  // TODO: return without any type conversion
+  std::vector<std::string> values;
+  for (auto &it : values_)
+    values.push_back(it);
+
+  return values;
+}
+
 }  // namespace polycube::polycubed::Rest::Validators

@@ -237,8 +237,13 @@ void ParentResource::options(const Request &request, ResponseWriter response) {
   ListKeyValues keys{};
   Keys(request, keys);
 
-  Server::ResponseGenerator::Generate(
-      {Help(Service::Cube(request), type, keys)}, std::move(response));
+  if (!query_param.has("completion")) {
+    Server::ResponseGenerator::Generate(
+        {Help(Service::Cube(request), type, keys)}, std::move(response));
+  } else {
+    Server::ResponseGenerator::Generate(
+        {Completion(Service::Cube(request), type, keys)}, std::move(response));
+  }
 }
 
 Response ParentResource::Help(const std::string &cube_name, HelpType type,
@@ -348,6 +353,111 @@ std::vector<std::string> ParentResource::helpActions() const {
   }
 
   return r;
+}
+
+std::vector<std::string> ParentResource::completionElements() const {
+  std::vector<std::string> val;
+
+  for (auto i : children_) {
+    if (i->IsKey()) {
+      continue;
+    }
+
+    auto ptr = std::dynamic_pointer_cast<ParentResource>(i);
+    if (ptr && ptr->rpc_action_) {
+      continue;
+    }
+
+    val.push_back(i->Name());
+  }
+
+  return val;
+}
+
+std::vector<std::string> ParentResource::completionWritableLeafs(bool include_init_only) const {
+  std::vector<std::string> val;
+
+  for (auto i : children_) {
+    if (i->IsInitOnlyConfig() && !include_init_only) {
+      continue;
+    }
+
+    if (i->IsConfiguration() && std::dynamic_pointer_cast<LeafResource>(i)) {
+      val.push_back(i->Name() + "=");
+    }
+  }
+
+  return val;
+}
+
+std::vector<std::string> ParentResource::completionComplexElements() const {
+  std::vector<std::string> val;
+
+  for (auto i : children_) {
+    if (i->IsKey()) {
+      continue;
+    }
+
+    auto ptr = std::dynamic_pointer_cast<ParentResource>(i);
+    if (ptr) {
+      val.push_back(i->Name());
+    }
+  }
+
+  return val;
+}
+
+std::vector<std::string> ParentResource::completionActions() const {
+  return helpActions();
+}
+
+std::vector<std::string> ParentResource::completionActionElements(bool include_init_only) const {
+  std::vector<std::string> val;
+
+  for (auto i : children_) {
+    val.push_back(i->Name() + "=");
+  }
+
+  return val;
+}
+
+Response ParentResource::Completion(const std::string &cube_name,
+                                    HelpType type,
+                                    const ListKeyValues &keys) {
+  nlohmann::json val = nlohmann::json::array();
+
+  if (rpc_action_) {
+    if (type != HelpType::NONE) {
+      return {kBadRequest, nullptr};
+    }
+
+    val = completionActionElements();
+    return {kOk, ::strdup(val.dump().c_str())};
+  }
+
+  switch (type) {
+  case HelpType::SHOW:
+    val = completionElements();
+    break;
+  case HelpType::SET:
+    val = completionWritableLeafs();
+    break;
+  case HelpType::NONE:
+    val = completionComplexElements();
+    val += "set";
+    val += "show";
+    break;
+  case HelpType::ADD:
+    if (dynamic_cast<const ListResource *const>(this) ||
+        dynamic_cast<const Service *const>(this)) {
+      val = completionWritableLeafs(true);
+    }
+    break;
+  default:
+    return {kBadRequest, nullptr};
+  }
+
+  return {kOk, ::strdup(val.dump().c_str())};
 }
 
 ParentResource::ParentResource(

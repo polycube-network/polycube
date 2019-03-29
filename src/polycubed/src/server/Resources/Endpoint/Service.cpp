@@ -227,7 +227,12 @@ void Service::options_body(const Request &request, ResponseWriter response) {
   }
 
   ListKeyValues keys{};
-  Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
+  if (!query_param.has("completion")) {
+    Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
+  } else {
+    Server::ResponseGenerator::Generate({CompletionService(type)}, std::move(response));
+  }
+  //Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
 }
 
 Response Service::Help(HelpType type) {
@@ -271,5 +276,39 @@ nlohmann::json Service::getServiceKeys() const {
 
   return val;
 }
+
+Response Service::CompletionService(HelpType type) {
+  nlohmann::json elements_json = nlohmann::json::parse(ReadHelp().message);
+
+  std::vector<nlohmann::fifo_map<std::string, std::string>> elements = elements_json;
+
+  nlohmann::json val = nlohmann::json::array();
+
+  for (auto &item : elements) {
+    for (auto &key: item) {
+      val += key.second;
+    }
+  }
+
+  switch (type) {
+  case HelpType::SHOW:
+    break;
+  case HelpType::ADD:
+    val += "<name>"; //nlohmann::json::array();
+    break;
+  case HelpType::DEL:
+    break;
+  case HelpType::NONE:
+    val += "add";
+    val += "del";
+    val += "show";
+    break;
+  default:
+    return {kBadRequest, nullptr};
+  }
+
+  return {kOk, ::strdup(val.dump().c_str())};
+}
+
 
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

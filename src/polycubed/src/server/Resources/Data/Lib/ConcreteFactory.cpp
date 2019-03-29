@@ -89,14 +89,16 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
     std::unique_ptr<Body::JsonValueField> &&value_field,
     const std::vector<Body::JsonNodeField> &node_fields, bool configuration,
     bool init_only_config, bool mandatory, Types::Scalar type,
-    std::unique_ptr<const std::string> &&default_value) const {
+    std::unique_ptr<const std::string> &&default_value,
+    bool is_enum, const std::vector<std::string> &values) const {
   auto read_handler = LoadHandler<Response(const char *, const Key *, size_t)>(
       GenerateHandlerName(tree_names, Operation::kRead));
   if (!configuration || init_only_config) {
     return std::make_unique<LeafResource>(
         std::move(read_handler), name, description, cli_example, rest_endpoint,
         parent, configuration, init_only_config, core_, std::move(value_field),
-        node_fields, mandatory, type, std::move(default_value));
+        node_fields, mandatory, type, std::move(default_value),
+        is_enum, values);
   }
   auto replace_handler =
       LoadHandler<Response(const char *, const Key *, size_t, const char *)>(
@@ -104,7 +106,8 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
   return std::make_unique<LeafResource>(
       std::move(replace_handler), std::move(read_handler), name, description,
       cli_example, rest_endpoint, parent, core_, std::move(value_field),
-      node_fields, mandatory, type, std::move(default_value));
+      node_fields, mandatory, type, std::move(default_value),
+      is_enum, values);
 }
 
 std::unique_ptr<Endpoint::LeafListResource> ConcreteFactory::RestLeafList(

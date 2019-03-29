@@ -35,7 +35,8 @@ class LeafResource : public Resource, public virtual Body::LeafResource {
                const std::vector<Body::JsonNodeField> &node_fields,
                bool configuration, bool init_only_config, bool mandatory,
                Types::Scalar type,
-               std::unique_ptr<const std::string> &&default_value);
+               std::unique_ptr<const std::string> &&default_value,
+               bool is_enum, const std::vector<std::string> &values);
 
   ~LeafResource() override;
 
@@ -44,6 +45,9 @@ class LeafResource : public Resource, public virtual Body::LeafResource {
 
   void Keys(const Pistache::Rest::Request &request,
             ListKeyValues &parsed) const final;
+
+  Response Completion(const std::string &cube_name,
+                      const ListKeyValues &keys);
 
  private:
   void get(const Request &request, ResponseWriter response);
@@ -55,5 +59,8 @@ class LeafResource : public Resource, public virtual Body::LeafResource {
   void patch(const Request &request, ResponseWriter response);
 
   void options(const Request &request, ResponseWriter response);
+
+  bool is_enum_;
+  std::vector<std::string> values_;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

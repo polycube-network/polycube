@@ -79,6 +79,8 @@ class PolycubedCore {
                                  const std::string &parameter,
                                  const std::string &value);
 
+  std::vector<std::string> get_all_ports();
+
   void set_rest_server(RestServer *rest_server);
   RestServer *get_rest_server();
   BaseModel *base_model();

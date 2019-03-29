@@ -19,6 +19,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace polycube::polycubed::Rest::Validators {
 class EnumValidator : public ValueValidator {
@@ -28,6 +29,8 @@ class EnumValidator : public ValueValidator {
   void AddEnum(const std::string &value);
 
   bool Validate(const std::string &value) const final;
+
+  std::vector<std::string> GetValues() const;
 
  private:
   std::unordered_set<std::string> values_;

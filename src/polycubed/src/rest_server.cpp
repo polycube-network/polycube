@@ -199,6 +199,9 @@ void RestServer::setup_routes() {
   router_->post(base + std::string("/disconnect"),
                 bind(&RestServer::disconnect, this));
 
+  router_->options(base + std::string("/connect"),
+                   bind(&RestServer::connect_help, this));
+
   // attach & detach
   router_->post(base + std::string("/attach"), bind(&RestServer::attach, this));
   router_->post(base + std::string("/detach"), bind(&RestServer::detach, this));
@@ -230,19 +233,32 @@ void RestServer::logJson(json j) {
 
 void RestServer::root_handler(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response) {
-  HelpType help_type;
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help == "NO_HELP") {
-    help_type = HelpType::NO_HELP;
-  } else if (help == "NONE") {
-    help_type = HelpType::NONE;
-  } else {
-    Rest::Server::ResponseGenerator::Generate(
-        std::vector<Response>{{ErrorTag::kInvalidValue, nullptr}},
-        std::move(response));
+    Rest::Server::ResponseGenerator::Generate({{kOk, nullptr}},
+                                              std::move(response));
     return;
   }
 
+  HelpType type;
+  if (help == "NONE") {
+    type = NONE;
+  } else {
+    Rest::Server::ResponseGenerator::Generate({{kBadRequest, nullptr}},
+                                              std::move(response));
+    return;
+  }
+
+  auto completion = request.query().has("completion");
+  if (!completion) {
+    return root_help(type, std::move(response));
+  } else {
+    return root_completion(type, std::move(response));
+  }
+}
+
+void RestServer::root_help(HelpType help_type,
+                           Pistache::Http::ResponseWriter response) {
   if (help_type == HelpType::NONE) {
     json j;
     auto services = core.get_servicectrls_list();
@@ -259,6 +275,37 @@ void RestServer::root_handler(const Pistache::Rest::Request &request,
     }
 
     response.send(Pistache::Http::Code::Ok, j.dump());
+  }
+}
+
+void RestServer::root_completion(HelpType help_type,
+                                 Pistache::Http::ResponseWriter response) {
+  if (help_type == HelpType::NONE) {
+    json val = json::array();
+
+    // fixed commands
+    val += "connect";
+    val += "disconnect";
+    val += "attach";
+    val += "detach";
+    val += "services";
+    val += "cubes";
+    val += "topology";
+    val += "netdevs";
+
+    // services
+    auto services = core.get_servicectrls_list();
+    for (auto &it : services) {
+      val += it->get_name();
+    }
+
+    // cubes
+    auto cubes =ServiceController::get_all_cubes();
+    for (auto &it : cubes) {
+      val += it->get_name();
+    }
+
+    response.send(Pistache::Http::Code::Ok, val.dump());
   }
 }
 
@@ -566,6 +613,36 @@ void RestServer::disconnect(const Pistache::Rest::Request &request,
     logger->error("{0}", e.what());
     response.send(Pistache::Http::Code::Bad_Request, e.what());
   }
+}
+
+void RestServer::connect_help(const Pistache::Rest::Request &request,
+                              Pistache::Http::ResponseWriter response) {
+  auto help = request.query().get("help").getOrElse("NO_HELP");
+  if (help != "NONE") {
+    response.send(Pistache::Http::Code::Bad_Request);
+    return;
+  }
+
+  auto completion = request.query().has("completion");
+  if (completion) {
+    return connect_completion("", std::move(response));
+  }
+
+  response.send(Pistache::Http::Code::Ok, "not implemented");;
+}
+
+void RestServer::connect_completion(const std::string &p1,
+                                    Pistache::Http::ResponseWriter response) {
+  auto ports = core.get_all_ports();
+
+  if (!p1.empty()) {
+    std::string p(p1);
+    //ports.erase(p);
+    ports.erase(std::remove(ports.begin(), ports.end(), p1), ports.end());
+  }
+
+  json val = ports;
+  response.send(Pistache::Http::Code::Ok, val.dump());
 }
 
 void RestServer::attach(const Pistache::Rest::Request &request,

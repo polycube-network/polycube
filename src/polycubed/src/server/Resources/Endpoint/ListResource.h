@@ -60,6 +60,10 @@ class ListResource : public ParentResource, public Body::ListResource {
   Response Help(const std::string &cube_name, HelpType type,
                 const ListKeyValues &keys);
 
+  Response Completion(const std::string &cube_name, HelpType type,
+                      const ListKeyValues &keys,
+                      const ListKeyValues &list_keys);
+
   virtual Response GetElementsList(const std::string &cube_name,
                                    const ListKeyValues &keys) = 0;
 
@@ -67,6 +71,10 @@ class ListResource : public ParentResource, public Body::ListResource {
   nlohmann::json helpKeys() const;
 
  private:
+  // try to get as much as possible Keys
+  void GetListKeys(const Pistache::Rest::Request &request,
+                  ListKeyValues &parsed) const;
+
   std::vector<PathParamField> key_params_;
   std::string multiple_endpoint_;
 

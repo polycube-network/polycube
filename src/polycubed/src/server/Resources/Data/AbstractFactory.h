@@ -55,7 +55,8 @@ class AbstractFactory : public Body::AbstractFactory {
       std::unique_ptr<Body::JsonValueField> &&value_field,
       const std::vector<Body::JsonNodeField> &node_fields, bool configuration,
       bool init_only_config, bool mandatory, Types::Scalar type,
-      std::unique_ptr<const std::string> &&default_value) const = 0;
+      std::unique_ptr<const std::string> &&default_value,
+      bool is_enum, const std::vector<std::string> &values) const = 0;
 
   virtual std::unique_ptr<Endpoint::LeafListResource> RestLeafList(
       const std::queue<std::string> &tree_names, const std::string &name,

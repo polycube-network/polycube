@@ -35,14 +35,15 @@ LeafResource::LeafResource(
     bool init_only_config, PolycubedCore *core,
     std::unique_ptr<Body::JsonValueField> &&value_field,
     const std::vector<Body::JsonNodeField> &node_fields, bool mandatory,
-    Types::Scalar type, std::unique_ptr<const std::string> &&default_value)
+    Types::Scalar type, std::unique_ptr<const std::string> &&default_value,
+    bool is_enum, const std::vector<std::string> &values)
     : Body::LeafResource(name, description, cli_example, parent, core,
                          std::move(value_field), node_fields, configuration,
                          init_only_config, mandatory, type,
                          std::move(default_value)),
       Endpoint::LeafResource(name, description, cli_example, rest_endpoint,
                              parent, core, nullptr, node_fields, configuration,
-                             init_only_config, mandatory, type, nullptr),
+                             init_only_config, mandatory, type, nullptr, is_enum, values),
       read_handler_{std::move(read_handler)},
       replace_handler_{std::move(replace_handler)} {}
 
