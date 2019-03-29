@@ -1,6 +1,7 @@
 package networkpolicies
 
 import (
+	"fmt"
 	"testing"
 
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
@@ -164,6 +165,10 @@ func TestGetConnectionTemplate(t *testing.T) {
 	assert.ElementsMatch(t, expectedIngress, result.Ingress)
 	assert.ElementsMatch(t, expectedEgress, result.Egress)
 
+	for i := 0; i < len(result.Ingress); i++ {
+		fmt.Printf("%+v\n", result.Ingress[i])
+	}
+	fmt.Println("---")
 	//	Case 2
 	direction = "egress"
 	src = "10.0.0.3"
@@ -196,6 +201,10 @@ func TestGetConnectionTemplate(t *testing.T) {
 	result = parser.GetConnectionTemplate(direction, src, dst, action, ports)
 	assert.ElementsMatch(t, expectedIngress, result.Ingress)
 	assert.ElementsMatch(t, expectedEgress, result.Egress)
+
+	for i := 0; i < len(result.Egress); i++ {
+		fmt.Printf("%+v\n", result.Egress[i])
+	}
 }
 
 func TestParseProtocolAndPort(t *testing.T) {
@@ -608,8 +617,7 @@ func TestComplexPolicy(t *testing.T) {
 	//---------------------------------
 	//	The Policy
 	//---------------------------------
-
-	/*tcp := core_v1.ProtocolTCP
+	tcp := core_v1.ProtocolTCP
 	udp := core_v1.ProtocolUDP
 	port1 := &intstr.IntOrString{
 		IntVal: 6895,
@@ -623,106 +631,101 @@ func TestComplexPolicy(t *testing.T) {
 	port4 := &intstr.IntOrString{
 		IntVal: 5000,
 	}
-	namespaceLabels := map[string]string{
-		"environment": "production",
-	}
-	podLabels := map[string]string{
-		"type":    "app",
-		"version": "2.0",
-	}
 	policy := &networking_v1.NetworkPolicy{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: TestDefaultPolicyName,
 			//Namespace: ProductionNamespace,
 		},
 		Spec: networking_v1.NetworkPolicySpec{
-			PodSelector: AppPodSelector,
+			PodSelector: meta_v1.LabelSelector{
+				MatchLabels: LabelsPodsInProduction,
+			},
 			PolicyTypes: []networking_v1.PolicyType{
 				networking_v1.PolicyTypeIngress,
 				networking_v1.PolicyTypeEgress,
 			},
-			Ingress: []networking_v1.NetworkPolicyIngressRule{*/
-	/*
-		Ingress - First rule
-		Block the following if it comes with TCP6895 Or UDP6895
-			- what comes from 192.168.2.0/24
+			Ingress: []networking_v1.NetworkPolicyIngressRule{
+				/*
+					Ingress - First rule
+					Block the following if it comes with TCP6895 Or UDP6895
+						- what comes from 192.168.2.0/24
 
-		Allow the following if it comes with TCP6895 & UDP6895
-			- what comes from 192.168.0.0/16 (see exceptions above)
-			- All pods that belong to all namespaces
-	*/
-	/*networking_v1.NetworkPolicyIngressRule{
-			From: []networking_v1.NetworkPolicyPeer{
-				networking_v1.NetworkPolicyPeer{
-					IPBlock: &networking_v1.IPBlock{
-						CIDR: "192.168.0.0/16",
-						Except: []string{
-							"192.168.2.0/24",
+					Allow the following if it comes with TCP6895 & UDP6895
+						- what comes from 192.168.0.0/16 (see exceptions above)
+						- All pods that belong to all namespaces
+				*/
+				networking_v1.NetworkPolicyIngressRule{
+					From: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.168.0.0/16",
+								Except: []string{
+									"192.168.2.0/24",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: map[string]string{},
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: map[string]string{},
+							},
 						},
 					},
-					PodSelector: &meta_v1.LabelSelector{
-						MatchLabels: map[string]string{},
-					},
-					NamespaceSelector: &meta_v1.LabelSelector{
-						MatchLabels: map[string]string{},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port1,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &udp,
+							Port:     port1,
+						},
 					},
 				},
 			},
-			Ports: []networking_v1.NetworkPolicyPort{
-				networking_v1.NetworkPolicyPort{
-					Protocol: &tcp,
-					Port:     port1,
-				},
-				networking_v1.NetworkPolicyPort{
-					Protocol: &udp,
-					Port:     port1,
-				},
-			},
-		},
-	},
-	Egress: []networking_v1.NetworkPolicyEgressRule{*/
-	/*
-		Egress - First Rule
-		Block the following if it comes with TCP8080 Or TCP80:
-			- what comes from 192.169.2.0/24
+			Egress: []networking_v1.NetworkPolicyEgressRule{
+				/*
+					Egress - First Rule
+					Block the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.2.0/24
 
-		Allow the following if it comes with TCP8080 Or TCP80:
-			- what comes from 192.169.0.0/16 (see exceptions above)
-			- all pods with labels podLabels that belong to certain namespace (namespaceLabels)
-	*/
-	/*networking_v1.NetworkPolicyEgressRule{
-		To: []networking_v1.NetworkPolicyPeer{
-			networking_v1.NetworkPolicyPeer{
-				IPBlock: &networking_v1.IPBlock{
-					CIDR: "192.169.0.0/16",
-					Except: []string{
-						"192.169.2.0/24",
+					Allow the following if it comes with TCP8080 Or TCP80:
+						- what comes from 192.169.0.0/16 (see exceptions above)
+						- all pods with labels podLabels that belong to certain namespace (namespaceLabels)
+				*/
+				networking_v1.NetworkPolicyEgressRule{
+					To: []networking_v1.NetworkPolicyPeer{
+						networking_v1.NetworkPolicyPeer{
+							IPBlock: &networking_v1.IPBlock{
+								CIDR: "192.169.0.0/16",
+								Except: []string{
+									"192.169.2.0/24",
+								},
+							},
+							PodSelector: &meta_v1.LabelSelector{
+								MatchLabels: LabelsPodsInBeta,
+							},
+							NamespaceSelector: &meta_v1.LabelSelector{
+								MatchLabels: BetaNsLabels,
+							},
+						},
+					},
+					Ports: []networking_v1.NetworkPolicyPort{
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port2,
+						},
+						networking_v1.NetworkPolicyPort{
+							Protocol: &tcp,
+							Port:     port3,
+						},
 					},
 				},
-				PodSelector: &meta_v1.LabelSelector{
-					MatchLabels: podLabels,
-				},
-				NamespaceSelector: &meta_v1.LabelSelector{
-					MatchLabels: namespaceLabels,
-				},
-			},
-		},
-		Ports: []networking_v1.NetworkPolicyPort{
-			networking_v1.NetworkPolicyPort{
-				Protocol: &tcp,
-				Port:     port2,
-			},
-			networking_v1.NetworkPolicyPort{
-				Protocol: &tcp,
-				Port:     port3,
-			},
-		},
-	},*/
-	/*
-		Egress - Second Rule
-		Allow everything that goes to port 5000
-	*/
-	/*networking_v1.NetworkPolicyEgressRule{
+				/*
+					Egress - Second Rule
+					Allow everything that goes to port 5000
+				*/
+				networking_v1.NetworkPolicyEgressRule{
 					Ports: []networking_v1.NetworkPolicyPort{
 						networking_v1.NetworkPolicyPort{
 							Protocol: &tcp,
@@ -742,69 +745,75 @@ func TestComplexPolicy(t *testing.T) {
 	//	The pods in this fake cluster
 	//---------------------------------
 
-	allPods := []pcn_types.Pod{}
-	allPods = append(allPods, ProductionPods...)
-	allPods = append(allPods, BetaPods...)
+	//	The pods are in mock_global_test.go
+	allPods := []core_v1.Pod{}
+	allPods = append(allPods, PodsInProduction...)
+	allPods = append(allPods, PodsInBeta...)
 
 	//---------------------------------
 	//	Faking the Pod controller
 	//---------------------------------
 
 	testObj := new(MockPodController)
-	testObj.On("GetPods", pcn_types.PodQuery{
-		Pod: pcn_types.PodQueryObject{
-			By:     "labels",
-			Labels: AppPodSelector.MatchLabels,
-		},
-		Namespace: pcn_types.PodQueryObject{
-			By:   "name",
-			Name: "*",
-		},
+
+	//	Get pods in production
+	testObj.On("GetPods", pcn_types.ObjectQuery{
+		By:     "labels",
+		Labels: LabelsPodsInProduction,
+	}, pcn_types.ObjectQuery{
+		By:   "name",
+		Name: "*",
+	}).Return(PodsInProduction, nil)
+
+	//	Get ALL pods
+	testObj.On("GetPods", pcn_types.ObjectQuery{
+		By:   "name",
+		Name: "*",
+	}, pcn_types.ObjectQuery{
+		By:   "name",
+		Name: "*",
 	}).Return(allPods, nil)
-	testObj.On("GetPods", pcn_types.PodQuery{
-		Pod: pcn_types.PodQueryObject{
-			By:   "name",
-			Name: "*",
-		},
-		Namespace: pcn_types.PodQueryObject{
-			By:   "name",
-			Name: "*",
-		},
-	}).Return(allPods, nil)
-	testObj.On("GetPods", pcn_types.PodQuery{
-		Pod: pcn_types.PodQueryObject{
-			By:     "labels",
-			Labels: podLabels,
-		},
-		Namespace: pcn_types.PodQueryObject{
-			By:     "labels",
-			Labels: namespaceLabels,
-		},
-	}).Return(ProductionPods, nil)
 
-	manager := Init(testObj)
+	testObj.On("GetPods", pcn_types.ObjectQuery{
+		By:     "labels",
+		Labels: LabelsPodsInBeta,
+	}, pcn_types.ObjectQuery{
+		By:     "labels",
+		Labels: BetaNsLabels,
+	}).Return(PodsInBeta, nil)
 
-	nsPods, _ := manager.GetPodsAffected(policy)
-	assert.Len(t, nsPods, 2)
+	parser := Init(testObj)
 
+	nsPods, _ := parser.GetPodsAffected(policy)
+	assert.Len(t, nsPods, 1)
 	productionNsPods, exists := nsPods[ProductionNamespace]
 	assert.True(t, exists)
-	assert.Len(t, productionNsPods, len(ProductionPods))
+	assert.Len(t, productionNsPods, len(PodsInProduction))
 
 	spec := policy.Spec
-	ingress, egress := manager.ParsePolicyTypes(&spec)
+	ingress, egress, _ := parser.ParsePolicyTypes(&spec)
+	result := parser.ParseRules(ingress, egress, ProductionNamespace)
 
-	firstResult := manager.ParseRules(ingress, egress, ProductionNamespace)
+	assert.NotEmpty(t, result.Ingress)
+	assert.NotEmpty(t, result.Egress)
 
 	//---------------------------------
 	//	What we expect for the first pod
 	//---------------------------------
 
-	productionPod := ProductionPods[0]
-	firstResult = manager.FillChains(productionPod, firstResult.Ingress, firstResult.Egress)
+	fmt.Println("----- INGRESS -----")
+	for _, rule := range result.Ingress {
+		fmt.Printf("%+v\n", rule)
+	}
+	fmt.Println("-------------------")
 
-	expectedResult := pcn_types.ParsedRules{}
+	fmt.Println("----- EGRESS -----")
+	for _, rule := range result.Egress {
+		fmt.Printf("%+v\n", rule)
+	}
+	fmt.Println("------------------")
 
+	/* =PPPPPPPPPPPPP
 	//	Ingress
 	expectedResult.Ingress = []k8sfirewall.ChainRule{
 		k8sfirewall.ChainRule{
@@ -1087,7 +1096,9 @@ func TestGetClusterActions(t *testing.T) {
 			Namespace: ProductionNamespace,
 		},
 		Spec: networking_v1.NetworkPolicySpec{
-			PodSelector: AppPodSelector,
+			PodSelector: meta_v1.LabelSelector{
+				MatchLabels: LabelsPodsInProduction,
+			},
 			PolicyTypes: []networking_v1.PolicyType{
 				networking_v1.PolicyTypeIngress,
 				//networking_v1.PolicyTypeEgress,
@@ -1153,34 +1164,39 @@ func TestGetClusterActions(t *testing.T) {
 	}
 
 	testObj := new(MockPodController)
-	manager := Init(testObj)
+	parser := Init(testObj)
 
 	expectedIngress := []pcn_types.FirewallAction{
 		pcn_types.FirewallAction{
 			PodLabels:     policy.Spec.Ingress[0].From[0].PodSelector.MatchLabels,
 			NamespaceName: policy.Namespace,
+			Actions:       parser.GetConnectionTemplate("ingress", "10.0.0.1", "", pcn_types.ActionForward, []pcn_types.ProtoPort{}),
 		},
 		pcn_types.FirewallAction{
 			PodLabels:     policy.Spec.Ingress[1].From[0].PodSelector.MatchLabels,
 			NamespaceName: policy.Namespace,
+			Actions:       parser.GetConnectionTemplate("ingress", "10.0.0.1", "", pcn_types.ActionForward, []pcn_types.ProtoPort{}),
 		},
 		pcn_types.FirewallAction{
 			NamespaceLabels: policy.Spec.Ingress[1].From[1].NamespaceSelector.MatchLabels,
+			Actions:         parser.GetConnectionTemplate("ingress", "10.0.0.1", "", pcn_types.ActionForward, []pcn_types.ProtoPort{}),
 		},
 		pcn_types.FirewallAction{
 			PodLabels:       policy.Spec.Ingress[2].From[0].PodSelector.MatchLabels,
 			NamespaceLabels: policy.Spec.Ingress[2].From[0].NamespaceSelector.MatchLabels,
+			Actions:         parser.GetConnectionTemplate("ingress", "10.0.0.1", "", pcn_types.ActionForward, []pcn_types.ProtoPort{}),
 		},
 	}
 
-	ingress, egress, _ := manager.ParsePolicyTypes(&policy.Spec)
-	actions := manager.GetClusterActions(ingress, egress, policy.Namespace)
+	ingress, egress, _ := parser.ParsePolicyTypes(&policy.Spec)
+	actions := parser.GetClusterActions(ingress, egress, policy.Namespace)
 
 	//	No need to test for the rules as they are tested in GetTemplate
 	for i := 0; i < len(actions.Ingress); i++ {
 		assert.Equal(t, actions.Ingress[i].NamespaceName, expectedIngress[i].NamespaceName)
 		assert.Equal(t, actions.Ingress[i].NamespaceLabels, expectedIngress[i].NamespaceLabels)
 		assert.Equal(t, actions.Ingress[i].PodLabels, expectedIngress[i].PodLabels)
+		fmt.Println(actions.Ingress[i].Actions.Ingress)
 	}
 	assert.Empty(t, actions.Egress)
 
@@ -1231,8 +1247,8 @@ func TestGetClusterActions(t *testing.T) {
 			NamespaceLabels: policy.Spec.Egress[0].To[0].NamespaceSelector.MatchLabels,
 		},
 	}
-	ingress, egress, _ = manager.ParsePolicyTypes(&policy.Spec)
-	actions = manager.GetClusterActions(ingress, egress, policy.Namespace)
+	ingress, egress, _ = parser.ParsePolicyTypes(&policy.Spec)
+	actions = parser.GetClusterActions(ingress, egress, policy.Namespace)
 
 	for i := 0; i < len(actions.Egress); i++ {
 		assert.Equal(t, actions.Egress[i].NamespaceName, expectedEgress[i].NamespaceName)

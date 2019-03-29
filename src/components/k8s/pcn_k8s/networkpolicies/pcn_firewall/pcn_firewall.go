@@ -152,13 +152,6 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 		"method": "InjectRules()",
 	})
 
-	//	Ingress and egress can be empty (e.g.: when having default rules), but cannot be nil
-	if ingress == nil && egress == nil {
-		err := errors.New("Both ingress and egress are nil")
-		l.Errorln(err.Error())
-		return err, err
-	}
-
 	var iError error
 	var eError error
 	var applyWait sync.WaitGroup
@@ -171,10 +164,10 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 	}
 
 	//	How many threads should we wait for?
-	if ingress != nil && len(ingress) > 0 {
+	if len(ingress) > 0 {
 		waitChains++
 	}
-	if egress != nil && len(egress) > 0 {
+	if len(egress) > 0 {
 		waitChains++
 	}
 	applyWait.Add(waitChains)
@@ -193,7 +186,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 	}
 
 	//	Ingress
-	if ingress != nil && len(ingress) > 0 {
+	if len(ingress) > 0 {
 		go func() {
 			defer applyWait.Done()
 
@@ -206,7 +199,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 	}
 
 	//	Egress
-	if egress != nil && len(egress) > 0 {
+	if len(egress) > 0 {
 		go func() {
 			defer applyWait.Done()
 

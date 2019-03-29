@@ -86,7 +86,6 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 	//-------------------------------------
 	//	The basics
 	//-------------------------------------
-
 	nsPods, err := manager.defaultPolicyParser.GetPodsAffected(policy)
 	if err != nil {
 		l.Errorln("Error while trying to get pods affected by policy.", err)

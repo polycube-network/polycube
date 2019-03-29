@@ -599,7 +599,8 @@ func (d *DefaultPolicyParser) ParseIPBlock(block *networking_v1.IPBlock, k8sDire
 	//	Loop through all exceptions
 	for _, exception := range block.Except {
 		exceptionRule := k8sfirewall.ChainRule{
-			Action: pcn_types.ActionDrop,
+			Action:    pcn_types.ActionDrop,
+			Conntrack: pcn_types.ConnTrackNew,
 		}
 
 		if k8sDirection == "ingress" {
@@ -702,8 +703,8 @@ func (d *DefaultPolicyParser) ParseSelectors(podSelector, namespaceSelector *met
 			parsed = d.GetConnectionTemplate(direction, "", pod.Status.PodIP, pcn_types.ActionForward, []pcn_types.ProtoPort{})
 		}
 
-		parsed.Ingress = append(parsed.Ingress, parsed.Ingress...)
-		parsed.Egress = append(parsed.Egress, parsed.Egress...)
+		rules.Ingress = append(rules.Ingress, parsed.Ingress...)
+		rules.Egress = append(rules.Egress, parsed.Egress...)
 	}
 
 	return rules, nil

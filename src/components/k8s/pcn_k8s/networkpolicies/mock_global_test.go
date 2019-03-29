@@ -14,78 +14,88 @@ const (
 	TestDefaultPolicyName = "Test Default Policy"
 )
 
-var ProductionPods = []pcn_types.Pod{
-	pcn_types.Pod{
-		Pod: &core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: ProductionNamespace,
-				UID:       "PRODUCTION-POD-UID-1",
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.20.20.20",
-			},
-		},
-		Veth: "veth123",
+//--------------------------------------
+//	Namespaces
+//--------------------------------------
+
+//	-- The Labels
+var ProductionNsLabels = map[string]string{
+	"app":  "myapp",
+	"type": "production",
+}
+var BetaNsLabels = map[string]string{
+	"app":  "myapp",
+	"type": "beta",
+}
+
+//	-- The namespaces
+var ProductionNs = core_v1.Namespace{
+	ObjectMeta: meta_v1.ObjectMeta{
+		Name:   ProductionNamespace,
+		Labels: ProductionNsLabels,
+	},
+}
+var BetaNs = core_v1.Namespace{
+	ObjectMeta: meta_v1.ObjectMeta{
+		Name:   BetaNamespace,
+		Labels: BetaNsLabels,
 	},
 }
 
-var BetaPods = []pcn_types.Pod{
-	pcn_types.Pod{
-		Pod: &core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: BetaNamespace,
-				UID:       "BETA-POD-UID-1",
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.40.40.40",
-			},
+//--------------------------------------
+//	Pods
+//--------------------------------------
+
+//	-- The labels
+var LabelsPodsInProduction = map[string]string{
+	"app":     "myapp",
+	"version": "2.3",
+}
+var LabelsPodsInBeta = map[string]string{
+	"app":     "myapp",
+	"version": "3.0.0b",
+}
+
+//	-- Pods
+var PodsInProduction = []core_v1.Pod{
+	core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: ProductionNamespace,
+			UID:       "PRODUCTION-POD-UID-1",
+			Labels:    LabelsPodsInProduction,
 		},
-		Veth: "veth512",
+		Status: core_v1.PodStatus{
+			PodIP: "172.10.10.10",
+		},
+	},
+	core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: ProductionNamespace,
+			UID:       "PRODUCTION-POD-UID-2",
+			Labels:    LabelsPodsInProduction,
+		},
+		Status: core_v1.PodStatus{
+			PodIP: "172.20.20.20",
+		},
 	},
 }
 
-var AppPodSelector = meta_v1.LabelSelector{
-	MatchLabels: map[string]string{
-		"type":    "app",
-		"version": "2.5",
+var PodsInBeta = []core_v1.Pod{
+	core_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Namespace: ProductionNamespace,
+			UID:       "BETA-POD-UID-1",
+			Labels:    LabelsPodsInBeta,
+		},
+		Status: core_v1.PodStatus{
+			PodIP: "172.90.90.90",
+		},
 	},
 }
 
-/*var GlobalQuery1 = pcn_types.PodQuery{
-	Pod: pcn_types.PodQueryObject{
-		By:     "labels",
-		Labels: AppPodSelector.MatchLabels,
-	},
-	Namespace: pcn_types.PodQueryObject{
-		By:   "name",
-		Name: ProductionNamespace,
-	},
-}*/
-
-var GlobalPodsFound1 = []pcn_types.Pod{
-	pcn_types.Pod{
-		Pod: &core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: ProductionNamespace,
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.100.10.10",
-			},
-		},
-		Veth: "veth123",
-	},
-	pcn_types.Pod{
-		Pod: &core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: ProductionNamespace,
-			},
-			Status: core_v1.PodStatus{
-				PodIP: "172.100.20.20",
-			},
-		},
-		Veth: "veth123",
-	},
-}
+//--------------------------------------
+//	Mocked Structures
+//--------------------------------------
 
 //	Mock the pod controller
 type MockPodController struct {
