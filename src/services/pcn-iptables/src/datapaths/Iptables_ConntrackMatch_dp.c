@@ -33,7 +33,9 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+  uint32_t sessionId;
+  uint8_t direction;
+} __attribute__((packed));
 
 enum {
   NEW,

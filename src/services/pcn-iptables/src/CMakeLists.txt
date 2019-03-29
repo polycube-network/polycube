@@ -44,6 +44,7 @@ load_file_as_variable(pcn-iptables datapaths/Iptables_InterfaceLookup_dp.c iptab
 load_file_as_variable(pcn-iptables datapaths/Iptables_L4ProtocolLookup_dp.c iptables_code_l4protolookup)
 load_file_as_variable(pcn-iptables datapaths/Iptables_Parser_dp.c iptables_code_parser)
 load_file_as_variable(pcn-iptables datapaths/Iptables_TcpFlagsLookup_dp.c iptables_code_tcpflagslookup)
+load_file_as_variable(pcn-iptables datapaths/Iptables_ActionCache_dp.c iptables_code_actioncache)
 
 # load datamodel in a variable
 load_file_as_variable(pcn-iptables ../datamodel/iptables.yang iptables_datamodel)

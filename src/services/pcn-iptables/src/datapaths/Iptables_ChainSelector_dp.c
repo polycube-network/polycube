@@ -32,7 +32,9 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+  uint32_t sessionId;
+  uint8_t direction;
+} __attribute__((packed));
 
 enum {
   INPUT_LABELING,    // goto input chain and label packet
@@ -138,7 +140,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           "INGRESS LOGIC PASS. No rules for INPUT and FORWARD, and default is "
           "ACCEPT. ");
   updateForwardingDecision(PASS_LABELING);
-  call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 #endif
 
   int key = 0;
@@ -190,7 +192,7 @@ INPUT:;
   updateForwardingDecision(INPUT_LABELING);
 
   // call chain label INGRESS
-  call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 
 #endif
   pcn_log(
@@ -200,7 +202,7 @@ INPUT:;
   // DROP_NO_LABELING if DROP
   incrementDefaultCountersInput(md->packet_len);
   _DEFAULTACTION_INPUT
-  call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 
 FORWARD:;
 #if _NR_ELEMENTS_FORWARD > 0
@@ -225,7 +227,7 @@ FORWARD:;
   updateForwardingDecision(FORWARD_LABELING);
 
   // call chain label INGRESS
-  call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 
 #endif
   pcn_log(ctx, LOG_DEBUG,
@@ -236,7 +238,7 @@ FORWARD:;
   // DROP_NO_LABELING if DROP
   incrementDefaultCountersForward(md->packet_len);
   _DEFAULTACTION_FORWARD
-  call_bpf_program(ctx, _CONNTRACK_LABEL_INGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 
 #endif
 
@@ -278,7 +280,7 @@ OUTPUT:;
   updateForwardingDecision(OUTPUT_LABELING);
 
   // call chain label INGRESS
-  call_bpf_program(ctx, _CONNTRACK_LABEL_EGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_EGRESS);
 #endif
   pcn_log(
       ctx, LOG_DEBUG,
@@ -288,7 +290,7 @@ OUTPUT:;
   // DROP_NO_LABELING if DROP
   incrementDefaultCountersOutput(md->packet_len);
   _DEFAULTACTION_OUTPUT
-  call_bpf_program(ctx, _CONNTRACK_LABEL_EGRESS);
+  call_bpf_program(ctx, _ACTIONCACHE_EGRESS);
 
 PASS:;
   pcn_log(ctx, LOG_DEBUG,

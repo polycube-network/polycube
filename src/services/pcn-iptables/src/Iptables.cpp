@@ -77,6 +77,22 @@ Iptables::Iptables(const std::string name, const IptablesJsonObject &conf)
           new Iptables::ChainSelector(ModulesConstants::CHAINSELECTOR_EGRESS,
                                       *this, ProgramType::EGRESS)));
 
+  // ACTIONCACHE INGRESS
+  programs_.insert(
+      std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
+          std::make_pair(ModulesConstants::ACTIONCACHE_INGRESS,
+                         ChainNameEnum::INVALID_INGRESS),
+          new Iptables::ActionCache(ModulesConstants::ACTIONCACHE_INGRESS,
+                                    *this)));
+
+  // ACTIONCACHE EGRESS
+  programs_.insert(
+      std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
+          std::make_pair(ModulesConstants::ACTIONCACHE_EGRESS,
+                         ChainNameEnum::INVALID_EGRESS),
+          new Iptables::ActionCache(ModulesConstants::ACTIONCACHE_EGRESS, *this,
+                                    ProgramType::EGRESS)));
+
   // CONNTRACK INGRESS
   programs_.insert(
       std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(

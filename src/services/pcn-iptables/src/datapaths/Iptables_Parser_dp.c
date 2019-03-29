@@ -34,7 +34,9 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+  uint32_t sessionId;
+  uint8_t direction;
+} __attribute__((packed));
 
 // Following macro INGRESS/EGRESS Logic, are used in order to distinguish
 // Parser for input/forward chain (declaring maps)

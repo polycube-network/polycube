@@ -25,7 +25,7 @@ namespace ModulesConstants {
 // # of modules for each filtering pipeline
 const uint8_t NR_MODULES = 10;
 // # of initial modules, common across pipelines
-const uint8_t NR_INITIAL_MODULES = 7;
+const uint8_t NR_INITIAL_MODULES = 8;
 
 // index of common modules
 const uint8_t PARSER_INGRESS = 0;
@@ -34,18 +34,21 @@ const uint8_t PARSER_EGRESS = 0;
 const uint8_t CHAINSELECTOR_INGRESS = 1;
 const uint8_t CHAINSELECTOR_EGRESS = 1;
 
-const uint8_t CONNTRACKLABEL_INGRESS = 2;
-const uint8_t CONNTRACKLABEL_EGRESS = 2;
+const uint8_t ACTIONCACHE_INGRESS = 2;
+const uint8_t ACTIONCACHE_EGRESS = 2;
 
-const uint8_t CHAINFORWARDER_INGRESS = 3;
-const uint8_t CHAINFORWARDER_EGRESS = 3;
+const uint8_t CONNTRACKLABEL_INGRESS = 3;
+const uint8_t CONNTRACKLABEL_EGRESS = 3;
 
-const uint8_t CONNTRACKTABLEUPDATE_INGRESS = 4;
-const uint8_t CONNTRACKTABLEUPDATE_EGRESS = 4;
+const uint8_t CHAINFORWARDER_INGRESS = 4;
+const uint8_t CHAINFORWARDER_EGRESS = 4;
+
+const uint8_t CONNTRACKTABLEUPDATE_INGRESS = 5;
+const uint8_t CONNTRACKTABLEUPDATE_EGRESS = 5;
 
 // index of others modules
-const uint8_t HORUS_INGRESS = 5;
-const uint8_t HORUS_INGRESS_SWAP = 6;
+const uint8_t HORUS_INGRESS = 6;
+const uint8_t HORUS_INGRESS_SWAP = 7;
 
 // offset of modules in filtering pipeline
 const uint8_t CONNTRACKMATCH = 0;

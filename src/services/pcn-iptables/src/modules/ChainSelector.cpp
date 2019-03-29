@@ -212,6 +212,12 @@ std::string Iptables::ChainSelector::getCode() {
   replaceAll(no_macro_code, "_CONNTRACK_LABEL_EGRESS",
              std::to_string(ModulesConstants::CONNTRACKLABEL_EGRESS));
 
+  /* Replacing next hops_*/
+  replaceAll(no_macro_code, "_ACTIONCACHE_INGRESS",
+             std::to_string(ModulesConstants::ACTIONCACHE_INGRESS));
+  replaceAll(no_macro_code, "_ACTIONCACHE_EGRESS",
+             std::to_string(ModulesConstants::ACTIONCACHE_EGRESS));
+
   /*Replacing the maximum number of rules*/
   replaceAll(no_macro_code, "_MAXRULES",
              std::to_string(FROM_NRULES_TO_NELEMENTS(iptables_.max_rules_)));

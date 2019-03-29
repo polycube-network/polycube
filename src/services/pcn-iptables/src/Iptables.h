@@ -333,6 +333,15 @@ class Iptables : public polycube::service::Cube<Ports>,
     std::string defaultActionString(ChainNameEnum chain);  // Overrides
   };
 
+  class ActionCache : public Program {
+   public:
+    ActionCache(const int &index, Iptables &outer,
+                const ProgramType type = ProgramType::INGRESS);
+    ~ActionCache();
+
+    std::string getCode();
+  };
+
   class ConntrackLabel : public Program {
    public:
     ConntrackLabel(const int &index, Iptables &outer,
