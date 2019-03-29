@@ -272,6 +272,7 @@ func (d *DeployedFirewall) definePolicyActions(policyName string, ingress, egres
 
 	//d.policyActions[policyName] = &policyActions{}
 	log.Println("###DEFINING ACTIONS")
+
 	//-------------------------------------
 	//	Ingress
 	//-------------------------------------

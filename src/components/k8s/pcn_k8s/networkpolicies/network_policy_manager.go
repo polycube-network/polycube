@@ -122,6 +122,7 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 		go func() {
 			defer podsWaitGroup.Done()
 			fwActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, ns)
+			log.Printf("###got-actions:%+v\n", fwActions)
 		}()
 
 		podsWaitGroup.Wait()
@@ -137,6 +138,11 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 				//	Running in this node? If not, getting the firewall is useless (it's not here.)
 				//	TODO: https://godoc.org/k8s.io/api/core/v1#PodStatus, NodeName is correct?
 				if currentPod.Spec.NodeName != manager.node {
+					return
+				}
+
+				//	If this pod is not ready or is terminating, then don't proceed
+				if currentPod.Status.Phase != core_v1.PodRunning || currentPod.DeletionTimestamp != nil {
 					return
 				}
 
