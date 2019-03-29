@@ -259,6 +259,7 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 		}
 
 		//	---	React to pod events
+		d.policyActions[policyName] = &policyActions{}
 		if len(actions.Ingress) > 0 || len(actions.Egress) > 0 {
 			d.definePolicyActions(policyName, actions.Ingress, actions.Egress)
 		}
@@ -269,8 +270,8 @@ func (d *DeployedFirewall) EnforcePolicy(policyName, policyType string, ingress,
 
 func (d *DeployedFirewall) definePolicyActions(policyName string, ingress, egress []pcn_types.FirewallAction) {
 
-	d.policyActions[policyName] = &policyActions{}
-
+	//d.policyActions[policyName] = &policyActions{}
+	log.Println("###DEFINING ACTIONS")
 	//-------------------------------------
 	//	Ingress
 	//-------------------------------------
@@ -283,6 +284,7 @@ func (d *DeployedFirewall) definePolicyActions(policyName string, ingress, egres
 			Name:   i.NamespaceName,
 			Labels: i.NamespaceLabels,
 		}, pcn_types.PodRunning, func(pod *core_v1.Pod) {
+			log.Printf("###ingress###%+v\n", i)
 			d.reactToPod(pod, policyName, i.Actions)
 		})
 
@@ -302,6 +304,7 @@ func (d *DeployedFirewall) definePolicyActions(policyName string, ingress, egres
 			Name:   e.NamespaceName,
 			Labels: e.NamespaceLabels,
 		}, pcn_types.PodRunning, func(pod *core_v1.Pod) {
+			log.Printf("###egress###%+v\n", e)
 			d.reactToPod(pod, policyName, e.Actions)
 		})
 
@@ -316,17 +319,23 @@ func (d *DeployedFirewall) reactToPod(pod *core_v1.Pod, policyName string, actio
 	ingress := make([]k8sfirewall.ChainRule, len(action.Ingress))
 	egress := make([]k8sfirewall.ChainRule, len(action.Egress))
 
+	log.Println("####", pod.Labels, "is born &", d.firewall.Name, "is reacting to it")
+
 	//	Ingress
 	for i := 0; i < len(action.Ingress); i++ {
 		ingress[i] = action.Ingress[i]
 		ingress[i].Src = pod.Status.PodIP
 	}
 
+	log.Printf("####%+v\n", ingress)
+
 	//	Egress
 	for i := 0; i < len(action.Ingress); i++ {
 		egress[i] = action.Egress[i]
 		egress[i].Dst = pod.Status.PodIP
 	}
+
+	log.Printf("####%+v\n", egress)
 
 	//	No need to specify a policy type
 	d.EnforcePolicy(policyName, "", ingress, egress, pcn_types.FirewallActions{})

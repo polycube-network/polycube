@@ -376,74 +376,9 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 		//	First, cast the item to a pod, so that the consumer will receive exactly what it wants...
 		pod := item.(*core_v1.Pod)
 
-		//	This is actually useless but who knows....
-		if pod == nil {
+		//	Does this pod satisfies the conditions?
+		if !p.podMeetsCriteria(pod, podspec, namespace, phase) {
 			return
-		}
-
-		//	Check the phase
-		if phase != pcn_types.PodAnyPhase {
-
-			//	Pod is terminating?
-			if pod.ObjectMeta.DeletionTimestamp != nil && phase != pcn_types.PodTerminating {
-				//	If the pod is terminating and I am not interested in that, then stop.
-				return
-			}
-
-			if pod.Status.Phase != phase {
-				return
-			}
-
-		}
-
-		//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
-		if len(namespace.Name) > 0 {
-			if pod.Namespace != namespace.Name {
-				return
-			}
-		} else {
-			//	Check the labels of the namespace
-			if len(namespace.Labels) > 0 {
-				nsList, err := p.nsController.GetNamespaces(namespace)
-				if err != nil {
-					return
-				}
-
-				found := false
-				for _, n := range nsList {
-					if n.Name == pod.Namespace {
-						found = true
-						break
-					}
-				}
-				if !found {
-					return
-				}
-			}
-		}
-
-		//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
-		//	It should be very rare to see pods with more than 5 labels...
-		if len(podspec.Labels) > 0 {
-			labelsFound := 0
-			labelsToFind := len(podspec.Labels)
-
-			for neededKey, neededValue := range podspec.Labels {
-				if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
-					labelsFound++
-					if labelsFound == labelsToFind {
-						break
-					}
-				} else {
-					//	I didn't find this key or the value wasn't the one I wanted: it's pointless to go on checking the other labels.
-					break
-				}
-			}
-
-			//	Did we find all labels we needed?
-			if labelsFound != labelsToFind {
-				return
-			}
 		}
 
 		//	Then, execute the consumer in a separate thread.
@@ -495,7 +430,96 @@ func (p *PcnPodController) Subscribe(event pcn_types.EventType, podspec pcn_type
 	default:
 		return nil, fmt.Errorf("Undefined event type")
 	}
+}
 
+func (p *PcnPodController) podMeetsCriteria(pod *core_v1.Pod, podSpec pcn_types.ObjectQuery, nsSpec pcn_types.ObjectQuery, phase core_v1.PodPhase) bool {
+
+	//	This is actually useless but who knows....
+	if pod == nil {
+		return false
+	}
+
+	//-------------------------------------
+	//	The phase
+	//-------------------------------------
+	if phase != pcn_types.PodAnyPhase {
+
+		if phase != pcn_types.PodTerminating {
+			//	I don't want terminating pods.
+
+			if pod.ObjectMeta.DeletionTimestamp != nil {
+				//	The pod is terminating.
+				return false
+			}
+
+			if pod.Status.Phase != phase {
+				//	The pod is not in the phase I want
+				return false
+			}
+		} else {
+			//	I want terminating pods
+
+			if pod.ObjectMeta.DeletionTimestamp == nil {
+				//	The pod is not terminating
+				return false
+			}
+		}
+	}
+
+	//	Check the namespace: if this pod belongs to a namespace I am not interested in, then stop right here.
+	if len(nsSpec.Name) > 0 {
+		if pod.Namespace != nsSpec.Name {
+			return false
+		}
+	} else {
+		//	Check the labels of the namespace
+		if len(nsSpec.Labels) > 0 {
+			nsList, err := p.nsController.GetNamespaces(pcn_types.ObjectQuery{
+				By:     "labels",
+				Labels: nsSpec.Labels,
+			})
+			if err != nil {
+				return false
+			}
+
+			found := false
+			for _, n := range nsList {
+				if n.Name == pod.Namespace {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+	}
+
+	//	Check the labels: if this pod does not contain all the labels I am interested in, then stop right here.
+	//	It should be very rare to see pods with more than 5 labels...
+	if len(podSpec.Labels) > 0 {
+		labelsFound := 0
+		labelsToFind := len(podSpec.Labels)
+
+		for neededKey, neededValue := range podSpec.Labels {
+			if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
+				labelsFound++
+				if labelsFound == labelsToFind {
+					break
+				}
+			} else {
+				//	I didn't find this key or the value wasn't the one I wanted: it's pointless to go on checking the other labels.
+				break
+			}
+		}
+
+		//	Did we find all labels we needed?
+		if labelsFound != labelsToFind {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_types.ObjectQuery) ([]core_v1.Pod, error) {

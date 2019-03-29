@@ -1196,7 +1196,11 @@ func TestGetClusterActions(t *testing.T) {
 		assert.Equal(t, actions.Ingress[i].NamespaceName, expectedIngress[i].NamespaceName)
 		assert.Equal(t, actions.Ingress[i].NamespaceLabels, expectedIngress[i].NamespaceLabels)
 		assert.Equal(t, actions.Ingress[i].PodLabels, expectedIngress[i].PodLabels)
-		fmt.Println(actions.Ingress[i].Actions.Ingress)
+		fmt.Printf("%+v\n", actions.Ingress[i])
+		/*for t := 0; t < len(actions.Ingress[i].Actions.Ingress); t++ {
+			fmt.Printf("---%+v\n", actions.Ingress[i].Actions.Ingress[t])
+		}*/
+		fmt.Println("--")
 	}
 	assert.Empty(t, actions.Egress)
 
