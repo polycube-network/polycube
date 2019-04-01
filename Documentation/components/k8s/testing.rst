@@ -10,7 +10,7 @@ Deploy services and pods to test
 
 .. parsed-literal::
 
-    kubectl create -f |SCM_WEB|/src/components/k8s/examples/echoserver_nodeport.yaml
+    kubectl create -f |SCM_RAW_WEB|/src/components/k8s/examples/echoserver_nodeport.yaml
     kubectl run curl1 --image=tutum/curl --replicas=5 --command -- sleep 600000
 
 

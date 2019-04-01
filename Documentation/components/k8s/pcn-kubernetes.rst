@@ -35,7 +35,7 @@ You may choose either of the below options.
 -------------------------------
 - The fastest mode to test ``pcn-k8s`` including setup.
 
-**Pre-requisite:** 
+**Pre-requisite:**
 
 Download and set up the following packages.
 
@@ -113,14 +113,14 @@ You should see something like:
     kube-system   kube-scheduler-k8s-master            1/1       Running   0          1m
 
 
-``pcn-k8s`` requires an ``etcd`` deployment to work, set the ``etcd_url`` parameter in :scm_web_file:`pcn-k8s.yaml <src/components/k8s/pcn-k8s.yaml>`.
-:scm_web_file:`standalone_etcd.yaml <src/components/k8s/standalone_etcd.yaml>` provides a basic etcd service that can be used for testing, deploy it before deploying pcn-k8s.
+``pcn-k8s`` requires an ``etcd`` deployment to work, set the ``etcd_url`` parameter in :scm_raw_web:`pcn-k8s.yaml <src/components/k8s/pcn-k8s.yaml>`.
+:scm_raw_web:`standalone_etcd.yaml <src/components/k8s/standalone_etcd.yaml>` provides a basic etcd service that can be used for testing, deploy it before deploying pcn-k8s.
 
 At this point you can install ``pcn-k8s``:
 
 .. parsed-literal::
 
-    kubectl apply -f |SCM_WEB|/src/components/k8s/pcn-k8s.yaml
+    kubectl apply -f |SCM_RAW_WEB|/src/components/k8s/pcn-k8s.yaml
     # It will take some time until the images are pulled.
 
     # Optional: if you want to execute pods on the master node
@@ -151,7 +151,7 @@ In order to remove ``pcn-k8s`` execute on the master node:
 
 .. parsed-literal::
 
-    kubectl delete -f |SCM_WEB|/src/components/k8s/pcn-k8s.yaml
+    kubectl delete -f |SCM_RAW_WEB|/src/components/k8s/pcn-k8s.yaml
 
 
 Testing pcn-k8s
@@ -250,7 +250,7 @@ In case you hit any problems, please follow the next steps to recover from a fai
 .. parsed-literal::
 
     #1. Remove pcn-k8s
-    kubectl delete -f |SCM_WEB|/src/components/k8s/pcn-k8s.yaml
+    kubectl delete -f |SCM_RAW_WEB|/src/components/k8s/pcn-k8s.yaml
 
     #2. Disable DNS
     kubectl -n kube-system scale --replicas=0 deployment/kube-dns
@@ -260,7 +260,7 @@ In case you hit any problems, please follow the next steps to recover from a fai
     ip link del dev pcn_vxlan
 
     #4. Relaunch pcn-k8s
-    kubectl apply -f |SCM_WEB|/src/components/k8s/pcn-k8s.yaml
+    kubectl apply -f |SCM_RAW_WEB|/src/components/k8s/pcn-k8s.yaml
 
     # Wait until all pcn-k8s containers are in running state
     kubectl get pods --all-namespaces
