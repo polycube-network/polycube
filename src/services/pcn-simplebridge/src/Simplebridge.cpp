@@ -27,7 +27,7 @@ using namespace Tins;
 
 Simplebridge::Simplebridge(const std::string name,
                            const SimplebridgeJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}), quit_thread_(false) {
+    : Cube(conf.getBase(), {simplebridge_code}, {}), quit_thread_(false) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simplebridge] [%n] [%l] %v");
   logger()->info("Creating Simplebridge instance");
 
@@ -106,14 +106,6 @@ SimplebridgeJsonObject Simplebridge::toJsonObject() {
   }
 
   return conf;
-}
-
-std::string Simplebridge::generate_code() {
-  return simplebridge_code;
-}
-
-std::vector<std::string> Simplebridge::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Simplebridge::packet_in(Ports &port,

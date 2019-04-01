@@ -36,8 +36,6 @@ class K8sfilter : public polycube::service::Cube<Ports>,
  public:
   K8sfilter(const std::string name, const K8sfilterJsonObject &conf);
   virtual ~K8sfilter();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

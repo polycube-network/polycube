@@ -18,7 +18,7 @@
 #include "Firewall_dp.h"
 
 Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {firewall_code}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Firewall] [%n] [%l] %v");
   logger()->info("Creating Firewall instance");
 
@@ -147,14 +147,6 @@ FirewallJsonObject Firewall::toJsonObject() {
   conf.setInteractive(getInteractive());
 
   return conf;
-}
-
-std::string Firewall::generate_code() {
-  return firewall_code;
-}
-
-std::vector<std::string> Firewall::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Firewall::packet_in(Ports &port, polycube::service::PacketInMetadata &md,

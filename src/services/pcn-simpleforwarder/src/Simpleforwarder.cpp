@@ -21,7 +21,7 @@
 
 Simpleforwarder::Simpleforwarder(const std::string name,
                                  const SimpleforwarderJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {simpleforwarder_code}, {}) {
   logger()->set_pattern(
       "[%Y-%m-%d %H:%M:%S.%e] [Simpleforwarder] [%n] [%l] %v");
   logger()->info("Creating Simpleforwarder instance");
@@ -70,14 +70,6 @@ SimpleforwarderJsonObject Simpleforwarder::toJsonObject() {
   }
 
   return conf;
-}
-
-std::string Simpleforwarder::generate_code() {
-  return simpleforwarder_code;
-}
-
-std::vector<std::string> Simpleforwarder::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Simpleforwarder::packet_in(Ports &port,

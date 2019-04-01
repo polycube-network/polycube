@@ -25,7 +25,7 @@
 using namespace Tins;
 
 Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {lbrp_code}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbrp] [%n] [%l] %v");
   logger()->info("Creating Lbrp instance");
 
@@ -81,14 +81,6 @@ LbrpJsonObject Lbrp::toJsonObject() {
   }
 
   return conf;
-}
-
-std::string Lbrp::generate_code() {
-  return lbrp_code;
-}
-
-std::vector<std::string> Lbrp::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md,

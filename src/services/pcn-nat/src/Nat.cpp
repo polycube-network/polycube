@@ -104,10 +104,6 @@ std::string Nat::generate_code() {
   return defines.str() /*+ nat_code*/;
 }
 
-std::vector<std::string> Nat::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
-}
-
 std::string Nat::getExternalIpString() {
   return external_ip_;
 }

@@ -24,7 +24,7 @@ using namespace polycube::service;
 using namespace Tins;
 
 K8switch::K8switch(const std::string name, const K8switchJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8switch] [%n] [%l] %v");
   logger()->info("Creating K8switch instance");
 
@@ -123,23 +123,6 @@ K8switchJsonObject K8switch::toJsonObject() {
   //  conf.addFwdTable(i->toJsonObject());
   //}
   return conf;
-}
-
-std::string K8switch::generate_code() {
-  // this code is compiled on contruction, return stub code that compiles
-  // fast, anyway this will be updated soon
-  const std::string stub_k8switch_code = R"POLYCUBE_DP(
-  static __always_inline
-  int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-    return RX_DROP;
-  }
-  )POLYCUBE_DP";
-
-  return stub_k8switch_code;
-}
-
-std::vector<std::string> K8switch::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void K8switch::packet_in(Ports &port, polycube::service::PacketInMetadata &md,

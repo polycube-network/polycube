@@ -23,7 +23,7 @@ using namespace polycube::service;
 
 Ddosmitigator::Ddosmitigator(const std::string name,
                              const DdosmitigatorJsonObject &conf)
-    : TransparentCube(conf.getBase(), {generate_code()}, {}) {
+    : TransparentCube(conf.getBase(), {ddosmitigator_code}, {}) {
   logger()->info("Creating Ddosmitigator instance {0}", name);
 
   auto value = conf.getStats();
@@ -86,14 +86,6 @@ void Ddosmitigator::packet_in(polycube::service::Sense sense,
                               polycube::service::PacketInMetadata &md,
                               const std::vector<uint8_t> &packet) {
   logger()->info("packet in event");
-}
-
-std::string Ddosmitigator::generate_code() {
-  return ddosmitigator_code;
-}
-
-std::vector<std::string> Ddosmitigator::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Ddosmitigator::replaceAll(std::string &str, const std::string &from,

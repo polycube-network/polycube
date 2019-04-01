@@ -25,7 +25,7 @@
 using namespace polycube::service;
 
 Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {helloworld_code_ingress}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [helloworld] [%n] [%l] %v");
   logger()->info("Creating helloworld instance");
 
@@ -82,14 +82,6 @@ HelloworldJsonObject Helloworld::toJsonObject() {
   }
 
   return conf;
-}
-
-std::string Helloworld::generate_code() {
-  return helloworld_code_ingress;
-}
-
-std::vector<std::string> Helloworld::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Helloworld::packet_in(Ports &port, polycube::service::PacketInMetadata &md,

@@ -20,7 +20,7 @@
 #include "Lbdsr_dp.h"
 
 Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code(true)}, {}) {
+    : Cube(conf.getBase(), {getCode(true)}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbdsr] [%n] [%l] %v");
   logger()->info("Creating Lbdsr instance");
 
@@ -79,14 +79,6 @@ LbdsrJsonObject Lbdsr::toJsonObject() {
   conf.setBackend(getBackend()->toJsonObject());
 
   return conf;
-}
-
-std::string Lbdsr::generate_code(bool first = false) {
-  return getCode(first);
-}
-
-std::vector<std::string> Lbdsr::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Lbdsr::packet_in(Ports &port, polycube::service::PacketInMetadata &md,

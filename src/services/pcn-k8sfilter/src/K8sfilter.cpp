@@ -22,7 +22,7 @@
 #include <cinttypes>
 
 K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {k8sfilter_code}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8sfilter] [%n] [%l] %v");
   logger()->info("Creating K8sfilter instance");
 
@@ -61,14 +61,6 @@ K8sfilterJsonObject K8sfilter::toJsonObject() {
   conf.setNodeportRange(getNodeportRange());
 
   return conf;
-}
-
-std::string K8sfilter::generate_code() {
-  return k8sfilter_code;
-}
-
-std::vector<std::string> K8sfilter::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void K8sfilter::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
