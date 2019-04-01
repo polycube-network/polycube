@@ -99,3 +99,4 @@ install (TARGETS polycubed DESTINATION bin)
 install(CODE
 "execute_process( COMMAND /bin/sh -c \"mkdir -p /var/log/polycube && chown $ENV{USER} /var/log/polycube \")")
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
