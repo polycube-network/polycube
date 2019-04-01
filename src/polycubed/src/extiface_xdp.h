@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "node.h"
+#include "extiface.h"
 #include "port_xdp.h"
 
 #include <api/BPF.h>
@@ -41,38 +41,22 @@ namespace polycubed {
 
 class PortXDP;
 
-class ExtIfaceXDP : public Node {
-public:
-  ExtIfaceXDP(const std::string &iface, const PortXDP &port);
+class ExtIfaceXDP : public ExtIface {
+ public:
+  ExtIfaceXDP(const std::string &iface, int attach_flags = 0);
   virtual ~ExtIfaceXDP();
 
-  // It is not possible to copy or assign an ext_iface.
-  ExtIfaceXDP(const ExtIfaceXDP &) = delete;
-  ExtIfaceXDP &operator=(const ExtIfaceXDP &) = delete;
+ private:
+  virtual std::string get_ingress_code() const;
+  virtual std::string get_egress_code() const;
+  virtual std::string get_tx_code() const;
+  virtual bpf_prog_type get_program_type() const;
 
-  int get_fd() const;
-
-private:
-  static std::set<std::string> used_ifaces;
-  void load_xdp_program();
-  void load_redirect_program();
-  void load_egress();
-
-  std::unique_ptr<ebpf::BPF> xdp_prog_;
-  std::unique_ptr<ebpf::BPF> xdp_redir_prog_;
-  const std::string iface_name_;
-  const PortXDP &port_;
   static const std::string XDP_PROG_CODE;
   static const std::string XDP_REDIR_PROG_CODE;
-  int fd_;
-  int ifindex_;
 
-  ebpf::BPF egress_;
-  bool egress_loaded;
-
-  std::shared_ptr<spdlog::logger> logger;
+  int attach_flags_;
 };
 
-
-} // namespace polycubed
-} // namespace polycube
+}  // namespace polycubed
+}  // namespace polycube

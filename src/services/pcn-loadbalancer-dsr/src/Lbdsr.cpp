@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Lbdsr.h"
 #include "Lbdsr_dp.h"
 
-Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf, CubeType type)
-                             : Cube(name, {generate_code(true)}, {}, type, conf.getPolycubeLoglevel()) {
+Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code(true)}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbdsr] [%n] [%l] %v");
   logger()->info("Creating Lbdsr instance");
 
-  if(conf.algorithmIsSet()) {
+  if (conf.algorithmIsSet()) {
     setAlgorithm(conf.getAlgorithm());
   }
 
@@ -35,60 +33,46 @@ Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf, CubeType type)
   addBackend(conf.getBackend());
 }
 
-
-Lbdsr::~Lbdsr() { }
+Lbdsr::~Lbdsr() {}
 
 void Lbdsr::update(const LbdsrJsonObject &conf) {
-  //This method updates all the object/parameter in Lbdsr object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Lbdsr object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
-  if(conf.frontendIsSet()) {
+  if (conf.frontendIsSet()) {
     auto m = getFrontend();
     m->update(conf.getFrontend());
   }
 
-
-  if(conf.algorithmIsSet()) {
+  if (conf.algorithmIsSet()) {
     setAlgorithm(conf.getAlgorithm());
   }
 
-  if(conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
-
-
-
-  if(conf.portsIsSet()) {
-    for(auto &i : conf.getPorts()){
+  if (conf.portsIsSet()) {
+    for (auto &i : conf.getPorts()) {
       auto name = i.getName();
       auto m = getPorts(name);
       m->update(i);
     }
   }
 
-  if(conf.backendIsSet()) {
+  if (conf.backendIsSet()) {
     auto m = getBackend();
     m->update(conf.getBackend());
   }
 }
 
-LbdsrJsonObject Lbdsr::toJsonObject(){
+LbdsrJsonObject Lbdsr::toJsonObject() {
   LbdsrJsonObject conf;
-
+  conf.setBase(Cube::to_json());
 
   conf.setFrontend(getFrontend()->toJsonObject());
 
-  conf.setName(getName());
-
   conf.setAlgorithm(getAlgorithm());
 
-  conf.setLoglevel(getLoglevel());
-
-  conf.setUuid(getUuid());
-
-  conf.setType(getType());
-
-  for(auto &i : getPortsList()){
+  for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
 
@@ -97,30 +81,31 @@ LbdsrJsonObject Lbdsr::toJsonObject(){
   return conf;
 }
 
-std::string Lbdsr::generate_code(bool first=false){
+std::string Lbdsr::generate_code(bool first = false) {
   return getCode(first);
 }
 
-std::vector<std::string> Lbdsr::generate_code_vector(){
+std::vector<std::string> Lbdsr::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Lbdsr::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet){
+void Lbdsr::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                      const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
 
-std::string Lbdsr::getAlgorithm(){
-  //This method retrieves the algorithm value.
+std::string Lbdsr::getAlgorithm() {
+  // This method retrieves the algorithm value.
   return this->algorithm_;
 }
 
-void Lbdsr::setAlgorithm(const std::string &value){
-  //This method set the algorithm value.
+void Lbdsr::setAlgorithm(const std::string &value) {
+  // This method set the algorithm value.
   this->algorithm_ = value;
 }
 
 void Lbdsr::replaceAll(std::string &str, const std::string &from,
-                          const std::string &to) {
+                       const std::string &to) {
   if (from.empty())
     return;
   size_t start_pos = 0;
@@ -131,33 +116,33 @@ void Lbdsr::replaceAll(std::string &str, const std::string &from,
   }
 }
 
-std::string Lbdsr::getCode(bool first=false){
+std::string Lbdsr::getCode(bool first = false) {
   std::string code = lbdsr_code;
 
   std::string vip_hexbe_str_default_ = "0x6400000a";
   std::string mac_hexbe_str_default_ = "0xccbbaa010101";
 
-  if (!first){
+  if (!first) {
     replaceAll(code, "_FRONTEND_IP", vip_hexbe_str_);
   } else {
     replaceAll(code, "_FRONTEND_IP", vip_hexbe_str_default_);
   }
 
-  if (!first){
+  if (!first) {
     replaceAll(code, "_FRONTEND_MAC", mac_hexbe_str_);
   } else {
     replaceAll(code, "_FRONTEND_MAC", mac_hexbe_str_default_);
   }
 
-  replaceAll(code, "_FRONTEND_PORT",  std::to_string((uint16_t)frontend_port_));
+  replaceAll(code, "_FRONTEND_PORT", std::to_string((uint16_t)frontend_port_));
   replaceAll(code, "_BACKEND_PORT", std::to_string((uint16_t)backend_port_));
 
   return code;
 }
 
-bool Lbdsr::reloadCode(){
+bool Lbdsr::reloadCode() {
   logger()->debug("reloadCode {0} ", is_code_changed_);
-  if (is_code_changed_){
+  if (is_code_changed_) {
     logger()->info("reloading code ...");
     reload(getCode());
     is_code_changed_ = false;
@@ -165,12 +150,8 @@ bool Lbdsr::reloadCode(){
   return true;
 }
 
-void Lbdsr::setFrontendPort(std::string portName){
-  auto p = get_port(portName);
-
-  int index = p->index();
-
-  if (frontend_port_ != -1){
+void Lbdsr::setFrontendPort(std::string portName, int index) {
+  if (frontend_port_ != -1) {
     throw std::runtime_error("Frontend port already set");
   }
 
@@ -181,12 +162,8 @@ void Lbdsr::setFrontendPort(std::string portName){
   reloadCode();
 }
 
-void Lbdsr::setBackendPort(std::string portName){
-  auto p = get_port(portName);
-
-  int index = p->index();
-
-  if (backend_port_ != -1){
+void Lbdsr::setBackendPort(std::string portName, int index) {
+  if (backend_port_ != -1) {
     throw std::runtime_error("Backend port already set");
   }
 
@@ -197,21 +174,21 @@ void Lbdsr::setBackendPort(std::string portName){
   reloadCode();
 }
 
-void Lbdsr::rmPort(std::string portName){
+void Lbdsr::rmPort(std::string portName) {
   if (portName == frontend_port_str_)
-      rmFrontendPort(portName);
+    rmFrontendPort(portName);
   else if (portName == backend_port_str_)
-      rmBackendPort(portName);
+    rmBackendPort(portName);
   else
     throw std::runtime_error("port is not backend not frontend");
 }
 
-void Lbdsr::rmFrontendPort(std::string portName){
+void Lbdsr::rmFrontendPort(std::string portName) {
   auto p = get_port(portName);
 
   int index = p->index();
 
-  if (frontend_port_ == -1){
+  if (frontend_port_ == -1) {
     throw std::runtime_error("Frontend port not set");
   }
 
@@ -222,12 +199,12 @@ void Lbdsr::rmFrontendPort(std::string portName){
   reloadCode();
 }
 
-void Lbdsr::rmBackendPort(std::string portName){
+void Lbdsr::rmBackendPort(std::string portName) {
   auto p = get_port(portName);
 
   int index = p->index();
 
-  if (backend_port_ == -1){
+  if (backend_port_ == -1) {
     throw std::runtime_error("Backend port not set");
   }
 
@@ -238,16 +215,16 @@ void Lbdsr::rmBackendPort(std::string portName){
   reloadCode();
 }
 
-void Lbdsr::setVipHexbe(std::string &value){
-  if (vip_hexbe_str_ != value){
+void Lbdsr::setVipHexbe(std::string &value) {
+  if (vip_hexbe_str_ != value) {
     vip_hexbe_str_ = value;
     is_code_changed_ = true;
     reloadCode();
   }
 }
 
-void Lbdsr::setMacHexbe(std::string &value){
-  if (mac_hexbe_str_ != value){
+void Lbdsr::setMacHexbe(std::string &value) {
+  if (mac_hexbe_str_ != value) {
     mac_hexbe_str_ = value;
     is_code_changed_ = true;
     reloadCode();

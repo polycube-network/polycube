@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "polycube/services/guid.h"
-#include "node.h"
 #include "cube.h"
+#include "node.h"
+#include "polycube/services/guid.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
@@ -37,34 +37,41 @@ namespace polycube {
 namespace polycubed {
 
 class PortXDP;
+class TransparentCubeXDP;
 
 class CubeXDP : public Cube {
   friend class PortXDP;
+  friend class TransparentCubeXDP;
 
  public:
-  explicit CubeXDP(const std::string &name,
-                   const std::string &service_name,
+  explicit CubeXDP(const std::string &name, const std::string &service_name,
                    const std::vector<std::string> &ingress_code,
-                   const std::vector<std::string> &egress_code,
-                   LogLevel level, CubeType type);
+                   const std::vector<std::string> &egress_code, LogLevel level,
+                   CubeType type);
 
   virtual ~CubeXDP();
+  int get_attach_flags() const;
 
  protected:
-  void compile(ebpf::BPF &bpf, const std::string &code, int index, ProgramType type);
+  static std::string get_wrapper_code();
+
+  void compile(ebpf::BPF &bpf, const std::string &code, int index,
+               ProgramType type);
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 
-  void do_unload(ebpf::BPF &bpf);
-  int do_load(ebpf::BPF &bpf);
+  static void do_unload(ebpf::BPF &bpf);
+  static int do_load(ebpf::BPF &bpf);
   void compileIngress(ebpf::BPF &bpf, const std::string &code);
   void compileEgress(ebpf::BPF &bpf, const std::string &code);
 
   int attach_flags_;
 
-  static const std::string XDP_WRAPPERC;
-  static const std::string XDP_HELPERS;
+ private:
+  static const std::string CUBEXDP_COMMON_WRAPPER;
+  static const std::string CUBEXDP_WRAPPER;
+  static const std::string CUBEXDP_HELPERS;
 };
 
-}   // namespace polycubed
-}   // namespace polycube
+}  // namespace polycubed
+}  // namespace polycube

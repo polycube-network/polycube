@@ -88,7 +88,7 @@ static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
- pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
+  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so this code has to be used only in this case.*/
 #if _NR_ELEMENTS > 0
@@ -101,12 +101,15 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   uint8_t connStatus = pkt->connStatus;
   uint32_t ct = connStatus;
-  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching received a packet with state %d", pkt->connStatus);
+  pcn_log(ctx, LOG_DEBUG,
+          "Conntrack_DIRECTIONMatching received a packet with state %d",
+          pkt->connStatus);
 
   struct elements *ele = getBitVect(&ct);
 
   if (ele == NULL) {
-    pcn_log(ctx, LOG_DEBUG, "[ConntrackMatch] Array Lookup miss. this should never happen.");
+    pcn_log(ctx, LOG_DEBUG,
+            "[ConntrackMatch] Array Lookup miss. this should never happen.");
     return RX_DROP;
   }
   struct elements *result = getShared();
@@ -114,25 +117,30 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     /*Can't happen. The PERCPU is preallocated.*/
     return RX_DROP;
   } else {
-/*#pragma unroll does not accept a loop with a single iteration, so we need to
- * distinguish cases to avoid a verifier error.*/
+    /*#pragma unroll does not accept a loop with a single iteration, so we need
+     * to
+     * distinguish cases to avoid a verifier error.*/
     bool isAllZero = true;
 #if _NR_ELEMENTS == 1
     (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
-    if (result->bits[0] != 0)  isAllZero = false;
+    if (result->bits[0] != 0)
+      isAllZero = false;
 #else
     int i = 0;
 #pragma unroll
     for (i = 0; i < _NR_ELEMENTS; ++i) {
       (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
-        if (result->bits[i] != 0)  isAllZero = false;
+      if (result->bits[i] != 0)
+        isAllZero = false;
     }
 
 #endif
     if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG, "Bitvector is all zero. Break pipeline for ConntrackMatch_DIRECTION");
-        incrementDefaultCounters_DIRECTION(md->packet_len);
-        _DEFAULTACTION
+      pcn_log(
+          ctx, LOG_DEBUG,
+          "Bitvector is all zero. Break pipeline for ConntrackMatch_DIRECTION");
+      incrementDefaultCounters_DIRECTION(md->packet_len);
+      _DEFAULTACTION
     }
   }  // if result == NULL
 

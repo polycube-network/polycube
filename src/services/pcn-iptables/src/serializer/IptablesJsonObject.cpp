@@ -23,71 +23,79 @@ namespace server {
 namespace model {
 
 IptablesJsonObject::IptablesJsonObject() {
-
   m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_type = CubeType::TC;
-  m_typeIsSet = false;
-
-  m_loglevel = IptablesLoglevelEnum::INFO;
-  m_loglevelIsSet = false;
-
   m_portsIsSet = false;
-
   m_interactive = true;
-  m_interactiveIsSet = false;
-
+  m_interactiveIsSet = true;
   m_conntrackIsSet = false;
-
   m_horusIsSet = false;
-
   m_sessionTableIsSet = false;
-
   m_chainIsSet = false;
 }
 
-IptablesJsonObject::~IptablesJsonObject() {}
+IptablesJsonObject::IptablesJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_nameIsSet = false;
+  m_portsIsSet = false;
+  m_interactiveIsSet = false;
+  m_conntrackIsSet = false;
+  m_horusIsSet = false;
+  m_sessionTableIsSet = false;
+  m_chainIsSet = false;
 
-void IptablesJsonObject::validateKeys() {
 
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void IptablesJsonObject::validateMandatoryFields() {
+  if (val.count("ports")) {
+    for (auto& item : val["ports"]) {
+      PortsJsonObject newItem{ item };
+      m_ports.push_back(newItem);
+    }
 
-}
+    m_portsIsSet = true;
+  }
 
-void IptablesJsonObject::validateParams() {
+  if (val.count("interactive")) {
+    setInteractive(val.at("interactive").get<bool>());
+  }
 
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  if (val.count("conntrack")) {
+    setConntrack(string_to_IptablesConntrackEnum(val.at("conntrack").get<std::string>()));
+  }
+
+  if (val.count("horus")) {
+    setHorus(string_to_IptablesHorusEnum(val.at("horus").get<std::string>()));
+  }
+
+  if (val.count("session-table")) {
+    for (auto& item : val["session-table"]) {
+      SessionTableJsonObject newItem{ item };
+      m_sessionTable.push_back(newItem);
+    }
+
+    m_sessionTableIsSet = true;
+  }
+
+  if (val.count("chain")) {
+    for (auto& item : val["chain"]) {
+      ChainJsonObject newItem{ item };
+      m_chain.push_back(newItem);
+    }
+
+    m_chainIsSet = true;
   }
 }
 
 nlohmann::json IptablesJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  if (m_uuidIsSet) {
-    val["uuid"] = m_uuid;
-  }
-
-  if (m_typeIsSet) {
-    val["type"] = CubeType_to_string(m_type);
-  }
-
-  if (m_loglevelIsSet) {
-    val["loglevel"] = IptablesLoglevelEnum_to_string(m_loglevel);
   }
 
   {
@@ -100,6 +108,7 @@ nlohmann::json IptablesJsonObject::toJson() const {
       val["ports"] = jsonArray;
     }
   }
+
   if (m_interactiveIsSet) {
     val["interactive"] = m_interactive;
   }
@@ -122,6 +131,7 @@ nlohmann::json IptablesJsonObject::toJson() const {
       val["session-table"] = jsonArray;
     }
   }
+
   {
     nlohmann::json jsonArray;
     for (auto& item : m_chain) {
@@ -133,186 +143,6 @@ nlohmann::json IptablesJsonObject::toJson() const {
     }
   }
 
-  return val;
-}
-
-void IptablesJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_CubeType(val.at("type")));
-  }
-
-  if (val.find("loglevel") != val.end()) {
-    setLoglevel(string_to_IptablesLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
-
-  if (val.find("interactive") != val.end()) {
-    setInteractive(val.at("interactive"));
-  }
-
-  if (val.find("conntrack") != val.end()) {
-    setConntrack(string_to_IptablesConntrackEnum(val.at("conntrack")));
-  }
-
-  if (val.find("horus") != val.end()) {
-    setHorus(string_to_IptablesHorusEnum(val.at("horus")));
-  }
-
-  m_sessionTable.clear();
-  for (auto& item : val["session-table"]) {
-
-    SessionTableJsonObject newItem;
-    newItem.fromJson(item);
-    m_sessionTable.push_back(newItem);
-    m_sessionTableIsSet = true;
-  }
-
-
-  m_chain.clear();
-  for (auto& item : val["chain"]) {
-
-    ChainJsonObject newItem;
-    newItem.fromJson(item);
-    m_chain.push_back(newItem);
-    m_chainIsSet = true;
-  }
-
-}
-
-nlohmann::json IptablesJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["name"]["name"] = "name";
-  val["name"]["type"] = "key";
-  val["name"]["simpletype"] = "string";
-  val["name"]["description"] = R"POLYCUBE(Name of the iptables service)POLYCUBE";
-  val["name"]["example"] = R"POLYCUBE(iptables1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json IptablesJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["uuid"]["name"] = "uuid";
-  val["uuid"]["type"] = "leaf"; // Suppose that type is leaf
-  val["uuid"]["simpletype"] = "string";
-  val["uuid"]["description"] = R"POLYCUBE(UUID of the Cube)POLYCUBE";
-  val["uuid"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["type"]["name"] = "type";
-  val["type"]["type"] = "leaf"; // Suppose that type is leaf
-  val["type"]["simpletype"] = "string";
-  val["type"]["description"] = R"POLYCUBE(Type of the Cube (TC, XDP_SKB, XDP_DRV))POLYCUBE";
-  val["type"]["example"] = R"POLYCUBE(TC)POLYCUBE";
-  val["loglevel"]["name"] = "loglevel";
-  val["loglevel"]["type"] = "leaf"; // Suppose that type is leaf
-  val["loglevel"]["simpletype"] = "string";
-  val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
-  val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "leaf"; // Suppose that type is leaf
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["interactive"]["name"] = "interactive";
-  val["interactive"]["type"] = "leaf"; // Suppose that type is leaf
-  val["interactive"]["simpletype"] = "boolean";
-  val["interactive"]["description"] = R"POLYCUBE(Interactive mode applies new rules immediately; if 'false', the command 'apply-rules' has to be used to apply all the rules at once. Default is TRUE.)POLYCUBE";
-  val["interactive"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["conntrack"]["name"] = "conntrack";
-  val["conntrack"]["type"] = "leaf"; // Suppose that type is leaf
-  val["conntrack"]["simpletype"] = "string";
-  val["conntrack"]["description"] = R"POLYCUBE(Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.)POLYCUBE";
-  val["conntrack"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["horus"]["name"] = "horus";
-  val["horus"]["type"] = "leaf"; // Suppose that type is leaf
-  val["horus"]["simpletype"] = "string";
-  val["horus"]["description"] = R"POLYCUBE(Enables the HORUS optimization. Default is OFF.)POLYCUBE";
-  val["horus"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["session-table"]["name"] = "session-table";
-  val["session-table"]["type"] = "leaf"; // Suppose that type is leaf
-  val["session-table"]["type"] = "list";
-  val["session-table"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["session-table"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["chain"]["name"] = "chain";
-  val["chain"]["type"] = "leaf"; // Suppose that type is leaf
-  val["chain"]["type"] = "list";
-  val["chain"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["chain"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json IptablesJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["loglevel"]["name"] = "loglevel";
-  val["loglevel"]["simpletype"] = "string";
-  val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
-  val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-  val["interactive"]["name"] = "interactive";
-  val["interactive"]["simpletype"] = "boolean";
-  val["interactive"]["description"] = R"POLYCUBE(Interactive mode applies new rules immediately; if 'false', the command 'apply-rules' has to be used to apply all the rules at once. Default is TRUE.)POLYCUBE";
-  val["interactive"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["conntrack"]["name"] = "conntrack";
-  val["conntrack"]["simpletype"] = "string";
-  val["conntrack"]["description"] = R"POLYCUBE(Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.)POLYCUBE";
-  val["conntrack"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["horus"]["name"] = "horus";
-  val["horus"]["simpletype"] = "string";
-  val["horus"]["description"] = R"POLYCUBE(Enables the HORUS optimization. Default is OFF.)POLYCUBE";
-  val["horus"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json IptablesJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["session-table"]["name"] = "session-table";
-  val["session-table"]["type"] = "list";
-  val["session-table"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["session-table"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["chain"]["name"] = "chain";
-  val["chain"]["type"] = "list";
-  val["chain"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["chain"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> IptablesJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -329,152 +159,15 @@ bool IptablesJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void IptablesJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
 
 
-
-std::string IptablesJsonObject::getUuid() const {
-  return m_uuid;
-}
-
-void IptablesJsonObject::setUuid(std::string value) {
-  m_uuid = value;
-  m_uuidIsSet = true;
-}
-
-bool IptablesJsonObject::uuidIsSet() const {
-  return m_uuidIsSet;
-}
-
-void IptablesJsonObject::unsetUuid() {
-  m_uuidIsSet = false;
-}
-
-
-
-CubeType IptablesJsonObject::getType() const {
-  return m_type;
-}
-
-void IptablesJsonObject::setType(CubeType value) {
-  m_type = value;
-  m_typeIsSet = true;
-}
-
-bool IptablesJsonObject::typeIsSet() const {
-  return m_typeIsSet;
-}
-
-void IptablesJsonObject::unsetType() {
-  m_typeIsSet = false;
-}
-
-std::string IptablesJsonObject::CubeType_to_string(const CubeType &value){
-  switch(value){
-    case CubeType::TC:
-      return std::string("tc");
-    case CubeType::XDP_SKB:
-      return std::string("xdp_skb");
-    case CubeType::XDP_DRV:
-      return std::string("xdp_drv");
-    default:
-      throw std::runtime_error("Bad Iptables type");
-  }
-}
-
-CubeType IptablesJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("tc", str))
-    return CubeType::TC;
-  if (JsonObjectBase::iequals("xdp_skb", str))
-    return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("xdp_drv", str))
-    return CubeType::XDP_DRV;
-  throw std::runtime_error("Iptables type is invalid");
-}
-
-
-IptablesLoglevelEnum IptablesJsonObject::getLoglevel() const {
-  return m_loglevel;
-}
-
-void IptablesJsonObject::setLoglevel(IptablesLoglevelEnum value) {
-  m_loglevel = value;
-  m_loglevelIsSet = true;
-}
-
-bool IptablesJsonObject::loglevelIsSet() const {
-  return m_loglevelIsSet;
-}
-
-void IptablesJsonObject::unsetLoglevel() {
-  m_loglevelIsSet = false;
-}
-
-std::string IptablesJsonObject::IptablesLoglevelEnum_to_string(const IptablesLoglevelEnum &value){
-  switch(value){
-    case IptablesLoglevelEnum::TRACE:
-      return std::string("trace");
-    case IptablesLoglevelEnum::DEBUG:
-      return std::string("debug");
-    case IptablesLoglevelEnum::INFO:
-      return std::string("info");
-    case IptablesLoglevelEnum::WARN:
-      return std::string("warn");
-    case IptablesLoglevelEnum::ERR:
-      return std::string("err");
-    case IptablesLoglevelEnum::CRITICAL:
-      return std::string("critical");
-    case IptablesLoglevelEnum::OFF:
-      return std::string("off");
-    default:
-      throw std::runtime_error("Bad Iptables loglevel");
-  }
-}
-
-IptablesLoglevelEnum IptablesJsonObject::string_to_IptablesLoglevelEnum(const std::string &str){
-  if (JsonObjectBase::iequals("trace", str))
-    return IptablesLoglevelEnum::TRACE;
-  if (JsonObjectBase::iequals("debug", str))
-    return IptablesLoglevelEnum::DEBUG;
-  if (JsonObjectBase::iequals("info", str))
-    return IptablesLoglevelEnum::INFO;
-  if (JsonObjectBase::iequals("warn", str))
-    return IptablesLoglevelEnum::WARN;
-  if (JsonObjectBase::iequals("err", str))
-    return IptablesLoglevelEnum::ERR;
-  if (JsonObjectBase::iequals("critical", str))
-    return IptablesLoglevelEnum::CRITICAL;
-  if (JsonObjectBase::iequals("off", str))
-    return IptablesLoglevelEnum::OFF;
-  throw std::runtime_error("Iptables loglevel is invalid");
-}
-
-  polycube::LogLevel IptablesJsonObject::getPolycubeLoglevel() const {
-    switch(m_loglevel) {
-      case IptablesLoglevelEnum::TRACE:
-        return polycube::LogLevel::TRACE;
-      case IptablesLoglevelEnum::DEBUG:
-        return polycube::LogLevel::DEBUG;
-      case IptablesLoglevelEnum::INFO:
-        return polycube::LogLevel::INFO;
-      case IptablesLoglevelEnum::WARN:
-        return polycube::LogLevel::WARN;
-      case IptablesLoglevelEnum::ERR:
-        return polycube::LogLevel::ERR;
-      case IptablesLoglevelEnum::CRITICAL:
-        return polycube::LogLevel::CRITICAL;
-      case IptablesLoglevelEnum::OFF:
-        return polycube::LogLevel::OFF;
-    }
-  }
 const std::vector<PortsJsonObject>& IptablesJsonObject::getPorts() const{
   return m_ports;
 }
 
 void IptablesJsonObject::addPorts(PortsJsonObject value) {
   m_ports.push_back(value);
+  m_portsIsSet = true;
 }
 
 
@@ -485,8 +178,6 @@ bool IptablesJsonObject::portsIsSet() const {
 void IptablesJsonObject::unsetPorts() {
   m_portsIsSet = false;
 }
-
-
 
 bool IptablesJsonObject::getInteractive() const {
   return m_interactive;
@@ -504,8 +195,6 @@ bool IptablesJsonObject::interactiveIsSet() const {
 void IptablesJsonObject::unsetInteractive() {
   m_interactiveIsSet = false;
 }
-
-
 
 IptablesConntrackEnum IptablesJsonObject::getConntrack() const {
   return m_conntrack;
@@ -525,7 +214,7 @@ void IptablesJsonObject::unsetConntrack() {
 }
 
 std::string IptablesJsonObject::IptablesConntrackEnum_to_string(const IptablesConntrackEnum &value){
-  switch(value){
+  switch(value) {
     case IptablesConntrackEnum::ON:
       return std::string("on");
     case IptablesConntrackEnum::OFF:
@@ -542,8 +231,6 @@ IptablesConntrackEnum IptablesJsonObject::string_to_IptablesConntrackEnum(const 
     return IptablesConntrackEnum::OFF;
   throw std::runtime_error("Iptables conntrack is invalid");
 }
-
-
 IptablesHorusEnum IptablesJsonObject::getHorus() const {
   return m_horus;
 }
@@ -562,7 +249,7 @@ void IptablesJsonObject::unsetHorus() {
 }
 
 std::string IptablesJsonObject::IptablesHorusEnum_to_string(const IptablesHorusEnum &value){
-  switch(value){
+  switch(value) {
     case IptablesHorusEnum::ON:
       return std::string("on");
     case IptablesHorusEnum::OFF:
@@ -579,14 +266,13 @@ IptablesHorusEnum IptablesJsonObject::string_to_IptablesHorusEnum(const std::str
     return IptablesHorusEnum::OFF;
   throw std::runtime_error("Iptables horus is invalid");
 }
-
-
 const std::vector<SessionTableJsonObject>& IptablesJsonObject::getSessionTable() const{
   return m_sessionTable;
 }
 
 void IptablesJsonObject::addSessionTable(SessionTableJsonObject value) {
   m_sessionTable.push_back(value);
+  m_sessionTableIsSet = true;
 }
 
 
@@ -598,14 +284,13 @@ void IptablesJsonObject::unsetSessionTable() {
   m_sessionTableIsSet = false;
 }
 
-
-
 const std::vector<ChainJsonObject>& IptablesJsonObject::getChain() const{
   return m_chain;
 }
 
 void IptablesJsonObject::addChain(ChainJsonObject value) {
   m_chain.push_back(value);
+  m_chainIsSet = true;
 }
 
 
@@ -616,8 +301,6 @@ bool IptablesJsonObject::chainIsSet() const {
 void IptablesJsonObject::unsetChain() {
   m_chainIsSet = false;
 }
-
-
 
 
 }

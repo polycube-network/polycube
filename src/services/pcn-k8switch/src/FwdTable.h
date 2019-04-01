@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/FwdTableInterface.h"
 #include "polycube/services/utils.h"
@@ -41,12 +39,13 @@ class FwdTable : public FwdTableInterface {
            const std::string &port);
   virtual ~FwdTable();
 
-  static void create(K8switch &parent, const std::string &address, const FwdTableJsonObject &conf);
-  static std::shared_ptr<FwdTable> getEntry(K8switch &parent, const std::string &address);
+  static void create(K8switch &parent, const std::string &address,
+                     const FwdTableJsonObject &conf);
+  static std::shared_ptr<FwdTable> getEntry(K8switch &parent,
+                                            const std::string &address);
   static void removeEntry(K8switch &parent, const std::string &address);
   static std::vector<std::shared_ptr<FwdTable>> get(K8switch &parent);
   static void remove(K8switch &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const FwdTableJsonObject &conf) override;
   FwdTableJsonObject toJsonObject() override;
@@ -68,11 +67,10 @@ class FwdTable : public FwdTableInterface {
   std::string getPort() override;
   void setPort(const std::string &value) override;
 
-private:
+ private:
   static uint32_t get_index(const std::string &ip);
-  K8switch   &parent_;
+  K8switch &parent_;
   std::string ip_;
   std::string mac_;
   std::string port_;
 };
-

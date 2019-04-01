@@ -23,89 +23,29 @@ namespace server {
 namespace model {
 
 ChainResetCountersOutputJsonObject::ChainResetCountersOutputJsonObject() {
-
   m_resultIsSet = false;
 }
 
-ChainResetCountersOutputJsonObject::~ChainResetCountersOutputJsonObject() {}
+ChainResetCountersOutputJsonObject::ChainResetCountersOutputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_resultIsSet = false;
 
-void ChainResetCountersOutputJsonObject::validateKeys() {
 
-}
-
-void ChainResetCountersOutputJsonObject::validateMandatoryFields() {
-
-}
-
-void ChainResetCountersOutputJsonObject::validateParams() {
-
+  if (val.count("result")) {
+    setResult(val.at("result").get<bool>());
+  }
 }
 
 nlohmann::json ChainResetCountersOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_resultIsSet) {
     val["result"] = m_result;
   }
 
-
-  return val;
-}
-
-void ChainResetCountersOutputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("result") != val.end()) {
-    setResult(val.at("result"));
-  }
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["type"] = "leaf"; // Suppose that type is leaf
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["result"]["name"] = "result";
-  val["result"]["simpletype"] = "boolean";
-  val["result"]["description"] = R"POLYCUBE(True if the operation is successful)POLYCUBE";
-  val["result"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainResetCountersOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainResetCountersOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -125,8 +65,6 @@ bool ChainResetCountersOutputJsonObject::resultIsSet() const {
 void ChainResetCountersOutputJsonObject::unsetResult() {
   m_resultIsSet = false;
 }
-
-
 
 
 }

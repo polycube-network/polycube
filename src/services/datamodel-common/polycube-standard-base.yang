@@ -1,0 +1,45 @@
+module polycube-standard-base {
+  yang-version 1.1;
+  namespace "http://polycube.network/polycube-standard-base";
+  prefix "polycube-standard-base";
+
+  import polycube-base { prefix "polycube-base"; }
+
+  grouping standard-base-yang-module {
+    uses "polycube-base:base-yang-module";
+    list ports {
+      key "name";
+      unique "uuid";
+      description "Entry of the ports table";
+      polycube-base:polycube-class "polycube::service::Port";
+
+      leaf name {
+        type string;
+        mandatory true;
+        description "Port Name";
+        polycube-base:cli-example "port1";
+      }
+
+      leaf uuid {
+        type polycube-base:polycube-uuid;
+        config false;
+        description "UUID of the port";
+      }
+
+      leaf status {
+        type enumeration {
+          enum UP;
+          enum DOWN;
+        }
+        config false;
+        description "Status of the port (UP or DOWN)";
+      }
+
+      leaf peer {
+        type string;
+        description "Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2')";
+        polycube-base:cli-example "r0:port1";
+      }
+    }
+  }
+}

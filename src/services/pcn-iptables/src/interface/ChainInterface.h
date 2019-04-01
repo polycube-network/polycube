@@ -44,6 +44,11 @@ public:
   virtual ChainJsonObject toJsonObject() = 0;
 
   /// <summary>
+  /// Chain in which the rule will be inserted. Default: FORWARD.
+  /// </summary>
+  virtual ChainNameEnum getName() = 0;
+
+  /// <summary>
   /// Default action if no rule matches in the ingress chain. Default is DROP.
   /// </summary>
   virtual ActionEnum getDefault() = 0;
@@ -59,11 +64,6 @@ public:
   virtual void replaceStats(const uint32_t &id, const ChainStatsJsonObject &conf) = 0;
   virtual void delStats(const uint32_t &id) = 0;
   virtual void delStatsList() = 0;
-
-  /// <summary>
-  /// Chain in which the rule will be inserted. Default: FORWARD.
-  /// </summary>
-  virtual ChainNameEnum getName() = 0;
 
   /// <summary>
   ///

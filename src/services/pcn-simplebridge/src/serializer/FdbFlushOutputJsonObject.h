@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -36,25 +36,10 @@ namespace model {
 class  FdbFlushOutputJsonObject : public JsonObjectBase {
 public:
   FdbFlushOutputJsonObject();
-  virtual ~FdbFlushOutputJsonObject();
+  FdbFlushOutputJsonObject(const nlohmann::json &json);
+  ~FdbFlushOutputJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// FdbFlushOutputJsonObject members
 
   /// <summary>
   /// Returns true if the Filtering database has been flushed. False otherwise
@@ -62,14 +47,10 @@ public:
   bool getFlushed() const;
   void setFlushed(bool value);
   bool flushedIsSet() const;
-  void unsetFlushed();
 
-
-protected:
+private:
   bool m_flushed;
   bool m_flushedIsSet;
-
-  std::vector<std::string> allowedParameters_{ "flushed" };
 };
 
 }

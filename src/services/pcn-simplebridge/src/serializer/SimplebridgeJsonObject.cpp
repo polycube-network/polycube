@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -23,62 +23,47 @@ namespace server {
 namespace model {
 
 SimplebridgeJsonObject::SimplebridgeJsonObject() {
-
   m_nameIsSet = false;
-
-  m_uuidIsSet = false;
-
-  m_type = CubeType::TC;
-  m_typeIsSet = false;
-
-  m_loglevel = SimplebridgeLoglevelEnum::INFO;
-  m_loglevelIsSet = false;
-
   m_portsIsSet = false;
-
   m_fdbIsSet = false;
 }
 
-SimplebridgeJsonObject::~SimplebridgeJsonObject() {}
+SimplebridgeJsonObject::SimplebridgeJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_nameIsSet = false;
+  m_portsIsSet = false;
+  m_fdbIsSet = false;
 
-void SimplebridgeJsonObject::validateKeys() {
 
-  if (!m_nameIsSet) {
-    throw std::runtime_error("Variable name is required");
+  if (val.count("name")) {
+    setName(val.at("name").get<std::string>());
   }
-}
 
-void SimplebridgeJsonObject::validateMandatoryFields() {
+  if (val.count("ports")) {
+    for (auto& item : val["ports"]) {
+      PortsJsonObject newItem{ item };
+      m_ports.push_back(newItem);
+    }
 
-}
+    m_portsIsSet = true;
+  }
 
-void SimplebridgeJsonObject::validateParams() {
-
-  if (m_uuidIsSet) {
-    std::string patter_value = R"PATTERN([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})PATTERN";
-    std::regex e (patter_value);
-    if (!std::regex_match(m_uuid, e))
-      throw std::runtime_error("Variable uuid has not a valid format");
+  if (val.count("fdb")) {
+    if (!val["fdb"].is_null()) {
+      FdbJsonObject newItem { val["fdb"] };
+      setFdb(newItem);
+    }
   }
 }
 
 nlohmann::json SimplebridgeJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  if (m_uuidIsSet) {
-    val["uuid"] = m_uuid;
-  }
-
-  if (m_typeIsSet) {
-    val["type"] = CubeType_to_string(m_type);
-  }
-
-  if (m_loglevelIsSet) {
-    val["loglevel"] = SimplebridgeLoglevelEnum_to_string(m_loglevel);
   }
 
   {
@@ -91,131 +76,11 @@ nlohmann::json SimplebridgeJsonObject::toJson() const {
       val["ports"] = jsonArray;
     }
   }
+
   if (m_fdbIsSet) {
     val["fdb"] = JsonObjectBase::toJson(m_fdb);
   }
 
-  return val;
-}
-
-void SimplebridgeJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("name") != val.end()) {
-    setName(val.at("name"));
-  }
-
-  if (val.find("uuid") != val.end()) {
-    setUuid(val.at("uuid"));
-  }
-
-  if (val.find("type") != val.end()) {
-    setType(string_to_CubeType(val.at("type")));
-  }
-
-  if (val.find("loglevel") != val.end()) {
-    setLoglevel(string_to_SimplebridgeLoglevelEnum(val.at("loglevel")));
-  }
-
-  m_ports.clear();
-  for (auto& item : val["ports"]) {
-
-    PortsJsonObject newItem;
-    newItem.fromJson(item);
-    m_ports.push_back(newItem);
-    m_portsIsSet = true;
-  }
-
-
-  if (val.find("fdb") != val.end()) {
-
-
-    if (!val["fdb"].is_null()) {
-      FdbJsonObject newItem;
-      newItem.fromJson(val["fdb"]);
-      setFdb(newItem);
-    }
-  }
-}
-
-nlohmann::json SimplebridgeJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["name"]["name"] = "name";
-  val["name"]["type"] = "key";
-  val["name"]["simpletype"] = "string";
-  val["name"]["description"] = R"POLYCUBE(Name of the simplebridge service)POLYCUBE";
-  val["name"]["example"] = R"POLYCUBE(simplebridge1)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SimplebridgeJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["uuid"]["name"] = "uuid";
-  val["uuid"]["type"] = "leaf"; // Suppose that type is leaf
-  val["uuid"]["simpletype"] = "string";
-  val["uuid"]["description"] = R"POLYCUBE(UUID of the Cube)POLYCUBE";
-  val["uuid"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["type"]["name"] = "type";
-  val["type"]["type"] = "leaf"; // Suppose that type is leaf
-  val["type"]["simpletype"] = "string";
-  val["type"]["description"] = R"POLYCUBE(Type of the Cube (TC, XDP_SKB, XDP_DRV))POLYCUBE";
-  val["type"]["example"] = R"POLYCUBE(TC)POLYCUBE";
-  val["loglevel"]["name"] = "loglevel";
-  val["loglevel"]["type"] = "leaf"; // Suppose that type is leaf
-  val["loglevel"]["simpletype"] = "string";
-  val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
-  val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "leaf"; // Suppose that type is leaf
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["fdb"]["name"] = "fdb";
-  val["fdb"]["type"] = "leaf"; // Suppose that type is leaf
-  val["fdb"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["fdb"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SimplebridgeJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["loglevel"]["name"] = "loglevel";
-  val["loglevel"]["simpletype"] = "string";
-  val["loglevel"]["description"] = R"POLYCUBE(Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE))POLYCUBE";
-  val["loglevel"]["example"] = R"POLYCUBE(INFO)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SimplebridgeJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["ports"]["name"] = "ports";
-  val["ports"]["type"] = "list";
-  val["ports"]["description"] = R"POLYCUBE(Entry of the ports table)POLYCUBE";
-  val["ports"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["fdb"]["name"] = "fdb";
-  val["fdb"]["type"] = "complex";
-  val["fdb"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["fdb"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> SimplebridgeJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -232,152 +97,15 @@ bool SimplebridgeJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-void SimplebridgeJsonObject::unsetName() {
-  m_nameIsSet = false;
-}
 
 
-
-std::string SimplebridgeJsonObject::getUuid() const {
-  return m_uuid;
-}
-
-void SimplebridgeJsonObject::setUuid(std::string value) {
-  m_uuid = value;
-  m_uuidIsSet = true;
-}
-
-bool SimplebridgeJsonObject::uuidIsSet() const {
-  return m_uuidIsSet;
-}
-
-void SimplebridgeJsonObject::unsetUuid() {
-  m_uuidIsSet = false;
-}
-
-
-
-CubeType SimplebridgeJsonObject::getType() const {
-  return m_type;
-}
-
-void SimplebridgeJsonObject::setType(CubeType value) {
-  m_type = value;
-  m_typeIsSet = true;
-}
-
-bool SimplebridgeJsonObject::typeIsSet() const {
-  return m_typeIsSet;
-}
-
-void SimplebridgeJsonObject::unsetType() {
-  m_typeIsSet = false;
-}
-
-std::string SimplebridgeJsonObject::CubeType_to_string(const CubeType &value){
-  switch(value){
-    case CubeType::TC:
-      return std::string("TC");
-    case CubeType::XDP_SKB:
-      return std::string("XDP_SKB");
-    case CubeType::XDP_DRV:
-      return std::string("XDP_DRV");
-    default:
-      throw std::runtime_error("Bad Simplebridge type");
-  }
-}
-
-CubeType SimplebridgeJsonObject::string_to_CubeType(const std::string &str){
-  if (JsonObjectBase::iequals("TC", str))
-    return CubeType::TC;
-  if (JsonObjectBase::iequals("XDP_SKB", str))
-    return CubeType::XDP_SKB;
-  if (JsonObjectBase::iequals("XDP_DRV", str))
-    return CubeType::XDP_DRV;
-  throw std::runtime_error("Simplebridge type is invalid");
-}
-
-
-SimplebridgeLoglevelEnum SimplebridgeJsonObject::getLoglevel() const {
-  return m_loglevel;
-}
-
-void SimplebridgeJsonObject::setLoglevel(SimplebridgeLoglevelEnum value) {
-  m_loglevel = value;
-  m_loglevelIsSet = true;
-}
-
-bool SimplebridgeJsonObject::loglevelIsSet() const {
-  return m_loglevelIsSet;
-}
-
-void SimplebridgeJsonObject::unsetLoglevel() {
-  m_loglevelIsSet = false;
-}
-
-std::string SimplebridgeJsonObject::SimplebridgeLoglevelEnum_to_string(const SimplebridgeLoglevelEnum &value){
-  switch(value){
-    case SimplebridgeLoglevelEnum::TRACE:
-      return std::string("trace");
-    case SimplebridgeLoglevelEnum::DEBUG:
-      return std::string("debug");
-    case SimplebridgeLoglevelEnum::INFO:
-      return std::string("info");
-    case SimplebridgeLoglevelEnum::WARN:
-      return std::string("warn");
-    case SimplebridgeLoglevelEnum::ERR:
-      return std::string("err");
-    case SimplebridgeLoglevelEnum::CRITICAL:
-      return std::string("critical");
-    case SimplebridgeLoglevelEnum::OFF:
-      return std::string("off");
-    default:
-      throw std::runtime_error("Bad Simplebridge loglevel");
-  }
-}
-
-SimplebridgeLoglevelEnum SimplebridgeJsonObject::string_to_SimplebridgeLoglevelEnum(const std::string &str){
-  if (JsonObjectBase::iequals("trace", str))
-    return SimplebridgeLoglevelEnum::TRACE;
-  if (JsonObjectBase::iequals("debug", str))
-    return SimplebridgeLoglevelEnum::DEBUG;
-  if (JsonObjectBase::iequals("info", str))
-    return SimplebridgeLoglevelEnum::INFO;
-  if (JsonObjectBase::iequals("warn", str))
-    return SimplebridgeLoglevelEnum::WARN;
-  if (JsonObjectBase::iequals("err", str))
-    return SimplebridgeLoglevelEnum::ERR;
-  if (JsonObjectBase::iequals("critical", str))
-    return SimplebridgeLoglevelEnum::CRITICAL;
-  if (JsonObjectBase::iequals("off", str))
-    return SimplebridgeLoglevelEnum::OFF;
-  throw std::runtime_error("Simplebridge loglevel is invalid");
-}
-
-  polycube::LogLevel SimplebridgeJsonObject::getPolycubeLoglevel() const {
-    switch(m_loglevel) {
-      case SimplebridgeLoglevelEnum::TRACE:
-        return polycube::LogLevel::TRACE;
-      case SimplebridgeLoglevelEnum::DEBUG:
-        return polycube::LogLevel::DEBUG;
-      case SimplebridgeLoglevelEnum::INFO:
-        return polycube::LogLevel::INFO;
-      case SimplebridgeLoglevelEnum::WARN:
-        return polycube::LogLevel::WARN;
-      case SimplebridgeLoglevelEnum::ERR:
-        return polycube::LogLevel::ERR;
-      case SimplebridgeLoglevelEnum::CRITICAL:
-        return polycube::LogLevel::CRITICAL;
-      case SimplebridgeLoglevelEnum::OFF:
-        return polycube::LogLevel::OFF;
-    }
-  }
 const std::vector<PortsJsonObject>& SimplebridgeJsonObject::getPorts() const{
   return m_ports;
 }
 
 void SimplebridgeJsonObject::addPorts(PortsJsonObject value) {
   m_ports.push_back(value);
+  m_portsIsSet = true;
 }
 
 
@@ -388,8 +116,6 @@ bool SimplebridgeJsonObject::portsIsSet() const {
 void SimplebridgeJsonObject::unsetPorts() {
   m_portsIsSet = false;
 }
-
-
 
 FdbJsonObject SimplebridgeJsonObject::getFdb() const {
   return m_fdb;
@@ -407,8 +133,6 @@ bool SimplebridgeJsonObject::fdbIsSet() const {
 void SimplebridgeJsonObject::unsetFdb() {
   m_fdbIsSet = false;
 }
-
-
 
 
 }

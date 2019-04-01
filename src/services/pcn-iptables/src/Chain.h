@@ -46,7 +46,6 @@ class Chain : public ChainInterface {
   static void removeEntry(Iptables &parent, const ChainNameEnum &name);
   static std::vector<std::shared_ptr<Chain>> get(Iptables &parent);
   static void remove(Iptables &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
   ChainJsonObject toJsonObject() override;
@@ -107,30 +106,35 @@ class Chain : public ChainInterface {
 
   void updateChain();
   static bool ipFromRulesToMap(
-          const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool transportProtoFromRulesToMap(
-          std::map<int, std::vector<uint64_t>> &protocols,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::map<int, std::vector<uint64_t>> &protocols,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool portFromRulesToMap(
-          const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
+
+  static bool interfaceFromRulesToMap(
+      const uint8_t &type,
+      std::map<uint16_t, std::vector<uint64_t>> &interfaces,
+      const std::vector<std::shared_ptr<ChainRule>> &rules, Iptables &iptables);
 
   static bool flagsFromRulesToMap(
-          std::vector<std::vector<uint64_t>> &flags,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::vector<std::vector<uint64_t>> &flags,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
   static bool conntrackFromRulesToMap(
-          std::map<uint8_t, std::vector<uint64_t>> &statusMap,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+      std::map<uint8_t, std::vector<uint64_t>> &statusMap,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void ddosFromRulesToMap(
-          std::map<struct DdosRule, struct DdosValue> &ddos,
-          const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static void horusFromRulesToMap(
+      std::map<struct HorusRule, struct HorusValue> &horus,
+      const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
-                                     struct DdosRule &key,
-                                     struct DdosValue &value);
+  static void fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+                                      struct HorusRule &key,
+                                      struct HorusValue &value);
 };

@@ -23,51 +23,54 @@ namespace server {
 namespace model {
 
 SessionTableJsonObject::SessionTableJsonObject() {
-
   m_srcIsSet = false;
-
   m_dstIsSet = false;
-
   m_l4protoIsSet = false;
-
   m_sportIsSet = false;
-
   m_dportIsSet = false;
-
   m_stateIsSet = false;
 }
 
-SessionTableJsonObject::~SessionTableJsonObject() {}
+SessionTableJsonObject::SessionTableJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_srcIsSet = false;
+  m_dstIsSet = false;
+  m_l4protoIsSet = false;
+  m_sportIsSet = false;
+  m_dportIsSet = false;
+  m_stateIsSet = false;
 
-void SessionTableJsonObject::validateKeys() {
 
-  if (!m_srcIsSet) {
-    throw std::runtime_error("Variable src is required");
+  if (val.count("src")) {
+    setSrc(val.at("src").get<std::string>());
   }
-  if (!m_dstIsSet) {
-    throw std::runtime_error("Variable dst is required");
-  }
-  if (!m_l4protoIsSet) {
-    throw std::runtime_error("Variable l4proto is required");
-  }
-  if (!m_sportIsSet) {
-    throw std::runtime_error("Variable sport is required");
-  }
-  if (!m_dportIsSet) {
-    throw std::runtime_error("Variable dport is required");
-  }
-}
 
-void SessionTableJsonObject::validateMandatoryFields() {
+  if (val.count("dst")) {
+    setDst(val.at("dst").get<std::string>());
+  }
 
-}
+  if (val.count("l4proto")) {
+    setL4proto(val.at("l4proto").get<std::string>());
+  }
 
-void SessionTableJsonObject::validateParams() {
+  if (val.count("sport")) {
+    setSport(val.at("sport").get<uint16_t>());
+  }
 
+  if (val.count("dport")) {
+    setDport(val.at("dport").get<uint16_t>());
+  }
+
+  if (val.count("state")) {
+    setState(val.at("state").get<std::string>());
+  }
 }
 
 nlohmann::json SessionTableJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_srcIsSet) {
     val["src"] = m_src;
@@ -93,105 +96,6 @@ nlohmann::json SessionTableJsonObject::toJson() const {
     val["state"] = m_state;
   }
 
-
-  return val;
-}
-
-void SessionTableJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("src") != val.end()) {
-    setSrc(val.at("src"));
-  }
-
-  if (val.find("dst") != val.end()) {
-    setDst(val.at("dst"));
-  }
-
-  if (val.find("l4proto") != val.end()) {
-    setL4proto(val.at("l4proto"));
-  }
-
-  if (val.find("sport") != val.end()) {
-    setSport(val.at("sport"));
-  }
-
-  if (val.find("dport") != val.end()) {
-    setDport(val.at("dport"));
-  }
-
-  if (val.find("state") != val.end()) {
-    setState(val.at("state"));
-  }
-}
-
-nlohmann::json SessionTableJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["src"]["name"] = "src";
-  val["src"]["type"] = "key";
-  val["src"]["simpletype"] = "string";
-  val["src"]["description"] = R"POLYCUBE(Source IP)POLYCUBE";
-  val["src"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dst"]["name"] = "dst";
-  val["dst"]["type"] = "key";
-  val["dst"]["simpletype"] = "string";
-  val["dst"]["description"] = R"POLYCUBE(Destination IP)POLYCUBE";
-  val["dst"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["l4proto"]["name"] = "l4proto";
-  val["l4proto"]["type"] = "key";
-  val["l4proto"]["simpletype"] = "string";
-  val["l4proto"]["description"] = R"POLYCUBE(Level 4 Protocol.)POLYCUBE";
-  val["l4proto"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["sport"]["name"] = "sport";
-  val["sport"]["type"] = "key";
-  val["sport"]["simpletype"] = "integer";
-  val["sport"]["description"] = R"POLYCUBE(Source Port)POLYCUBE";
-  val["sport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dport"]["name"] = "dport";
-  val["dport"]["type"] = "key";
-  val["dport"]["simpletype"] = "integer";
-  val["dport"]["description"] = R"POLYCUBE(Destination)POLYCUBE";
-  val["dport"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["state"]["name"] = "state";
-  val["state"]["type"] = "leaf"; // Suppose that type is leaf
-  val["state"]["simpletype"] = "string";
-  val["state"]["description"] = R"POLYCUBE(Connection state.)POLYCUBE";
-  val["state"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json SessionTableJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> SessionTableJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -206,10 +110,6 @@ void SessionTableJsonObject::setSrc(std::string value) {
 
 bool SessionTableJsonObject::srcIsSet() const {
   return m_srcIsSet;
-}
-
-void SessionTableJsonObject::unsetSrc() {
-  m_srcIsSet = false;
 }
 
 
@@ -227,10 +127,6 @@ bool SessionTableJsonObject::dstIsSet() const {
   return m_dstIsSet;
 }
 
-void SessionTableJsonObject::unsetDst() {
-  m_dstIsSet = false;
-}
-
 
 
 std::string SessionTableJsonObject::getL4proto() const {
@@ -244,10 +140,6 @@ void SessionTableJsonObject::setL4proto(std::string value) {
 
 bool SessionTableJsonObject::l4protoIsSet() const {
   return m_l4protoIsSet;
-}
-
-void SessionTableJsonObject::unsetL4proto() {
-  m_l4protoIsSet = false;
 }
 
 
@@ -265,10 +157,6 @@ bool SessionTableJsonObject::sportIsSet() const {
   return m_sportIsSet;
 }
 
-void SessionTableJsonObject::unsetSport() {
-  m_sportIsSet = false;
-}
-
 
 
 uint16_t SessionTableJsonObject::getDport() const {
@@ -282,10 +170,6 @@ void SessionTableJsonObject::setDport(uint16_t value) {
 
 bool SessionTableJsonObject::dportIsSet() const {
   return m_dportIsSet;
-}
-
-void SessionTableJsonObject::unsetDport() {
-  m_dportIsSet = false;
 }
 
 
@@ -306,8 +190,6 @@ bool SessionTableJsonObject::stateIsSet() const {
 void SessionTableJsonObject::unsetState() {
   m_stateIsSet = false;
 }
-
-
 
 
 }

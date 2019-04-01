@@ -42,32 +42,9 @@ class Ports : public polycube::service::Port, public PortsInterface {
   static void removeEntry(Iptables &parent, const std::string &name);
   static std::vector<std::shared_ptr<Ports>> get(Iptables &parent);
   static void remove(Iptables &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsJsonObject &conf) override;
   PortsJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Status of the port (UP or DOWN)
-  /// </summary>
-  PortsStatusEnum getStatus() override;
-
-  /// <summary>
-  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another
-  /// cube (e.g., &#39;br1:port2&#39;)
-  /// </summary>
-  std::string getPeer() override;
-  void setPeer(const std::string &value) override;
-
-  /// <summary>
-  /// Port Name
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the port
-  /// </summary>
-  std::string getUuid() override;
 
  private:
   Iptables &parent_;

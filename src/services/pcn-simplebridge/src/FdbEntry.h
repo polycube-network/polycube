@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../interface/FdbEntryInterface.h"
-
 
 #include <spdlog/spdlog.h>
 
@@ -27,24 +24,26 @@ class Fdb;
 
 /* definitions copied from datapath */
 struct fwd_entry {
-  uint64_t timestamp;
+  uint32_t timestamp;
   uint32_t port;
 } __attribute__((packed));
 
 using namespace io::swagger::server::model;
 
 class FdbEntry : public FdbEntryInterface {
-public:
+ public:
   FdbEntry(Fdb &parent, const FdbEntryJsonObject &conf);
-  FdbEntry(Fdb &parent, const std::string &address, uint64_t entry_age, uint32_t out_port);
+  FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age,
+           uint32_t out_port);
   virtual ~FdbEntry();
 
-  static void create(Fdb &parent, const std::string &address, const FdbEntryJsonObject &conf);
-  static std::shared_ptr<FdbEntry> getEntry(Fdb &parent, const std::string &address);
+  static void create(Fdb &parent, const std::string &address,
+                     const FdbEntryJsonObject &conf);
+  static std::shared_ptr<FdbEntry> getEntry(Fdb &parent,
+                                            const std::string &address);
   static void removeEntry(Fdb &parent, const std::string &address);
   static std::vector<std::shared_ptr<FdbEntry>> get(Fdb &parent);
   static void remove(Fdb &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const FdbEntryJsonObject &conf) override;
   FdbEntryJsonObject toJsonObject() override;
@@ -65,19 +64,19 @@ public:
   /// </summary>
   std::string getAddress() override;
 
-private:
+ private:
   Fdb &parent_;
 
   /*
    * tries to construct a FdbEntry from map data, it checks the age of the
    * entry as well as if the port is still valid
    */
-  static std::shared_ptr<FdbEntry> constructFromMap(Fdb &parent, const std::string &key,
+  static std::shared_ptr<FdbEntry> constructFromMap(Fdb &parent,
+                                                    const std::string &key,
                                                     const fwd_entry &value);
 
   std::string address_;
   std::string port_name_;
-  uint64_t entry_age_;
+  uint32_t entry_age_;
   uint32_t port_no_;
 };
-

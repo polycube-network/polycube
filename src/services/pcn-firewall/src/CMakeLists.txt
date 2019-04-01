@@ -41,6 +41,9 @@ load_file_as_variable(pcn-firewall datapaths/Firewall_L4ProtocolLookup_dp.c fire
 load_file_as_variable(pcn-firewall datapaths/Firewall_Parser_dp.c firewall_code_parser)
 load_file_as_variable(pcn-firewall datapaths/Firewall_TcpFlagsLookup_dp.c firewall_code_tcpflagslookup)
 
+# load datamodel in a variable
+load_file_as_variable(pcn-firewall ../datamodel/firewall.yang firewall_datamodel)
+
 target_link_libraries(pcn-firewall
   polycube
   uuid)

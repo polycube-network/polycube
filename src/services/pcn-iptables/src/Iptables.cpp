@@ -19,10 +19,8 @@
 #include "./../../../polycubed/src/utils.h"
 #include "Iptables_dp.h"
 
-Iptables::Iptables(const std::string name, const IptablesJsonObject &conf,
-                   CubeType type)
-    : Cube(name, {iptables_code_ingress}, {iptables_code_egress}, type,
-           conf.getPolycubeLoglevel()) {
+Iptables::Iptables(const std::string name, const IptablesJsonObject &conf)
+    : Cube(conf.getBase(), {iptables_code_ingress}, {iptables_code_egress}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Iptables] [%n] [%l] %v");
   logger()->info("Creating Iptables instance");
 
@@ -135,15 +133,15 @@ Iptables::Iptables(const std::string name, const IptablesJsonObject &conf,
 }
 
 Iptables::~Iptables() {
-  Iptables::Program *pr =
+  std::shared_ptr<Iptables::Program> pr =
       programs_[std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)];
-  Iptables::ConntrackTableUpdate *ctu =
-      static_cast<Iptables::ConntrackTableUpdate *>(pr);
+                               ChainNameEnum::INVALID_INGRESS)];
+  std::shared_ptr<Iptables::ConntrackTableUpdate> ctu =
+      std::dynamic_pointer_cast<Iptables::ConntrackTableUpdate>(pr);
   ctu->quitAndJoin();
 
-  netlink_instance_iptables_.unregisterObserver(polycube::polycubed::Netlink::Event::ALL,
-                                      netlink_notification_index_);
+  netlink_instance_iptables_.unregisterObserver(
+      polycube::polycubed::Netlink::Event::ALL, netlink_notification_index_);
 
   logger()->info("[{0}] Destroying iptables...", get_name());
   // cleanup chains struct contained in control plane
@@ -151,7 +149,7 @@ Iptables::~Iptables() {
 
   // Delete all eBPF programs
   for (auto it = programs_.begin(); it != programs_.end(); ++it) {
-    delete it->second;
+    programs_.erase(it);
   }
 }
 
@@ -164,6 +162,7 @@ void Iptables::update(const IptablesJsonObject &conf) {
   // This method updates all the object/parameter in Iptables object specified
   // in the conf JsonObject.
   // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
   if (conf.chainIsSet()) {
     for (auto &i : conf.getChain()) {
@@ -171,10 +170,6 @@ void Iptables::update(const IptablesJsonObject &conf) {
       auto m = getChain(name);
       m->update(i);
     }
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.interactiveIsSet()) {
@@ -196,25 +191,20 @@ void Iptables::update(const IptablesJsonObject &conf) {
 
 IptablesJsonObject Iptables::toJsonObject() {
   IptablesJsonObject conf;
-
-  conf.setName(getName());
+  conf.setBase(Cube::to_json());
 
   // Remove comments when you implement all sub-methods
   // for(auto &i : getChainList()){
   //  conf.addChain(i->toJsonObject());
   //}
 
-  conf.setLoglevel(getLoglevel());
   conf.setConntrack(getConntrack());
   conf.setHorus(getHorus());
   conf.setInteractive(getInteractive());
-  conf.setType(getType());
 
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setUuid(getUuid());
 
   return conf;
 }
@@ -329,10 +319,11 @@ void Iptables::attachInterfaces() {
 bool Iptables::connectPort(const std::string &name) {
   try {
     PortsJsonObject conf;
+    // TODO: is this right?
     conf.setName(name);
-    conf.setPeer(name);
-
     Ports::create(*this, name, conf);
+    auto port = get_port(name);
+    port->set_peer(name);
   } catch (...) {
     return false;
   }
@@ -367,7 +358,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_input_ = true;
       conntrack_mode_input_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
     break;
@@ -380,7 +371,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_forward_ = true;
       conntrack_mode_forward_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
     break;
@@ -393,7 +384,7 @@ void Iptables::enableAcceptEstablished(Chain &chain) {
       accept_established_enabled_output_ = true;
       conntrack_mode_output_ = ConntrackModes::ON;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_EGRESS,
-                              ChainNameEnum::INVALID_EGRESS)]
+                               ChainNameEnum::INVALID_EGRESS)]
           ->reload();
     }
   }
@@ -414,8 +405,6 @@ void Iptables::setHorus(const IptablesHorusEnum &value) {
   }
 }
 
-
-
 void Iptables::disableAcceptEstablished(Chain &chain) {
   switch (chain.getName()) {
   case ChainNameEnum::INPUT:
@@ -427,7 +416,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_input_ = false;
       conntrack_mode_input_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   case ChainNameEnum::FORWARD:
@@ -439,7 +428,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_forward_ = false;
       conntrack_mode_forward_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   case ChainNameEnum::OUTPUT:
@@ -451,7 +440,7 @@ void Iptables::disableAcceptEstablished(Chain &chain) {
       accept_established_enabled_output_ = false;
       conntrack_mode_output_ = ConntrackModes::OFF;
       programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_EGRESS,
-                              ChainNameEnum::INVALID_INGRESS)]
+                               ChainNameEnum::INVALID_INGRESS)]
           ->reload();
     }
   }
@@ -467,7 +456,7 @@ bool Iptables::isContrackActive() {
 bool Iptables::fibLookupEnabled() {
   if (!fib_lookup_set_) {
     fib_lookup_enabled_ = true;
-    if (getType() == CubeType::TC) {
+    if (get_type() == CubeType::TC) {
       fib_lookup_enabled_ = false;
     }
 
@@ -486,4 +475,10 @@ bool Iptables::fibLookupEnabled() {
   }
 
   return fib_lookup_enabled_;
+}
+
+uint16_t Iptables::interfaceNameToIndex(const std::string &interface_string) {
+  auto p = get_port(interface_string);
+  int index = p->index();
+  return index;
 }

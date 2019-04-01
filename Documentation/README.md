@@ -23,9 +23,9 @@ make html
 
 ### Check spelling
 
-``
+```
 cd Documentation
 make spelling
-``
+```
 
 The html documentation files will be in the `Documentation/_build` folder.

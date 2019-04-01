@@ -72,7 +72,7 @@ Documentation about YANG can be found on `RFC6020 <https://tools.ietf.org/html/r
 2. Generating (or updating) a service stub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Please follow the instructions available in :doc:`devel <devel/developers>` in order to understand how to generate code of your `Polycube` service using the automatic code generation.
+Please follow the instructions available in :ref:`codegen` in order to understand how to generate code of your `Polycube` service using the automatic code generation.
 
 Our tools for automatic code generation will automatically generate all the REST API of your service starting from the YANG, leaving only a few details to customize.
 This will save a lot of time since developers do not have to create the code that validates input parameters, or implement all the HTTP methods that provide access (create/read/update/delete) any object defined in the service YANG model.
@@ -155,7 +155,6 @@ Two special format specifiers are available:
 Please note the the custom specifiers spec the data to be in network byte order while standard specifiers expects it to be in host by order.
 
 Current limitations:
- - The whole call to `pcn_log` should be on the same line
  - Cannot be used inside a macro
  - Maximum 4 arguments are allowed
 
@@ -253,7 +252,7 @@ If the service is intended to receive data packets in the control path (using an
 Generating PacketOut events
 +++++++++++++++++++++++++++
 
-The `Port` class contains the `send_packet_out(const std::vector<uint8_t> &packet, Sense sense = Sense::EGRESS)` method that allows to inject packets into the datapath, the sense parameter allows to specify if the packet should be sent (`Sense::EGRESS`) or received through the port (`Sense::INGRESS`).
+The `Port` class contains the `send_packet_out(EthernetII &packet, bool recirculate = false)` method that allows to inject packets into the datapath, the recirculate parameter allows to specify if the packet should be sent out of the port (`recirculate = false`) or received through the port (`recirculate = true`).
 
 A reference to a port can be got using the `get_port` function of the Cube base class.
 
@@ -349,7 +348,10 @@ Additional hints
 
 1. **Creating multiple data plane programs**. If possible, it would be nice to create a single dataplane program, and enabling/disabling some portions using conditional compilation macros.
 
-2. **Coding Style**: Please be sure that the coding style satisfies the rules defined in the [clang-format](.clang-format) file. In order to fix the style of a source file run `clang-format -style=file -i <file.[cpp,h]>` on the root folder of polycube.
+2. **Coding Style**: The `scripts/check-style.py` uses `clang-format` to check the code style.
+This tool has to be executed from the root folder.
+A list of files or folders to check is received as argument; the entire source code is checked when no parameters are passed.
+The `--fix` option will automatically fix the code style instead of simply checking
 
 3. **Trailing white spaces**: Trailing white spaces could generate some git noise.
 Any decent text editor has an option to remove them automatically, it is a good idea to enable it.

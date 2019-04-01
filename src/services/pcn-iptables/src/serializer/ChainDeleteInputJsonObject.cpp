@@ -23,44 +23,78 @@ namespace server {
 namespace model {
 
 ChainDeleteInputJsonObject::ChainDeleteInputJsonObject() {
-
   m_inIfaceIsSet = false;
-
   m_outIfaceIsSet = false;
-
   m_srcIsSet = false;
-
   m_dstIsSet = false;
-
   m_l4protoIsSet = false;
-
   m_sportIsSet = false;
-
   m_dportIsSet = false;
-
   m_tcpflagsIsSet = false;
-
   m_conntrackIsSet = false;
-
   m_actionIsSet = false;
 }
 
-ChainDeleteInputJsonObject::~ChainDeleteInputJsonObject() {}
+ChainDeleteInputJsonObject::ChainDeleteInputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_inIfaceIsSet = false;
+  m_outIfaceIsSet = false;
+  m_srcIsSet = false;
+  m_dstIsSet = false;
+  m_l4protoIsSet = false;
+  m_sportIsSet = false;
+  m_dportIsSet = false;
+  m_tcpflagsIsSet = false;
+  m_conntrackIsSet = false;
+  m_actionIsSet = false;
 
-void ChainDeleteInputJsonObject::validateKeys() {
 
-}
+  if (val.count("in-iface")) {
+    setInIface(val.at("in-iface").get<std::string>());
+  }
 
-void ChainDeleteInputJsonObject::validateMandatoryFields() {
+  if (val.count("out-iface")) {
+    setOutIface(val.at("out-iface").get<std::string>());
+  }
 
-}
+  if (val.count("src")) {
+    setSrc(val.at("src").get<std::string>());
+  }
 
-void ChainDeleteInputJsonObject::validateParams() {
+  if (val.count("dst")) {
+    setDst(val.at("dst").get<std::string>());
+  }
 
+  if (val.count("l4proto")) {
+    setL4proto(val.at("l4proto").get<std::string>());
+  }
+
+  if (val.count("sport")) {
+    setSport(val.at("sport").get<uint16_t>());
+  }
+
+  if (val.count("dport")) {
+    setDport(val.at("dport").get<uint16_t>());
+  }
+
+  if (val.count("tcpflags")) {
+    setTcpflags(val.at("tcpflags").get<std::string>());
+  }
+
+  if (val.count("conntrack")) {
+    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack").get<std::string>()));
+  }
+
+  if (val.count("action")) {
+    setAction(string_to_ActionEnum(val.at("action").get<std::string>()));
+  }
 }
 
 nlohmann::json ChainDeleteInputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_inIfaceIsSet) {
     val["in-iface"] = m_inIface;
@@ -102,181 +136,6 @@ nlohmann::json ChainDeleteInputJsonObject::toJson() const {
     val["action"] = ActionEnum_to_string(m_action);
   }
 
-
-  return val;
-}
-
-void ChainDeleteInputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("in-iface") != val.end()) {
-    setInIface(val.at("in-iface"));
-  }
-
-  if (val.find("out-iface") != val.end()) {
-    setOutIface(val.at("out-iface"));
-  }
-
-  if (val.find("src") != val.end()) {
-    setSrc(val.at("src"));
-  }
-
-  if (val.find("dst") != val.end()) {
-    setDst(val.at("dst"));
-  }
-
-  if (val.find("l4proto") != val.end()) {
-    setL4proto(val.at("l4proto"));
-  }
-
-  if (val.find("sport") != val.end()) {
-    setSport(val.at("sport"));
-  }
-
-  if (val.find("dport") != val.end()) {
-    setDport(val.at("dport"));
-  }
-
-  if (val.find("tcpflags") != val.end()) {
-    setTcpflags(val.at("tcpflags"));
-  }
-
-  if (val.find("conntrack") != val.end()) {
-    setConntrack(string_to_ConntrackstatusEnum(val.at("conntrack")));
-  }
-
-  if (val.find("action") != val.end()) {
-    setAction(string_to_ActionEnum(val.at("action")));
-  }
-}
-
-nlohmann::json ChainDeleteInputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainDeleteInputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["in-iface"]["name"] = "in-iface";
-  val["in-iface"]["type"] = "leaf"; // Suppose that type is leaf
-  val["in-iface"]["simpletype"] = "string";
-  val["in-iface"]["description"] = R"POLYCUBE(Name of the interface via which the packet is received)POLYCUBE";
-  val["in-iface"]["example"] = R"POLYCUBE(eth0)POLYCUBE";
-  val["out-iface"]["name"] = "out-iface";
-  val["out-iface"]["type"] = "leaf"; // Suppose that type is leaf
-  val["out-iface"]["simpletype"] = "string";
-  val["out-iface"]["description"] = R"POLYCUBE(Name of the interface via which the packet is going to be sent)POLYCUBE";
-  val["out-iface"]["example"] = R"POLYCUBE(eth1)POLYCUBE";
-  val["src"]["name"] = "src";
-  val["src"]["type"] = "leaf"; // Suppose that type is leaf
-  val["src"]["simpletype"] = "string";
-  val["src"]["description"] = R"POLYCUBE(Source IP Address.)POLYCUBE";
-  val["src"]["example"] = R"POLYCUBE(10.0.0.1/24)POLYCUBE";
-  val["dst"]["name"] = "dst";
-  val["dst"]["type"] = "leaf"; // Suppose that type is leaf
-  val["dst"]["simpletype"] = "string";
-  val["dst"]["description"] = R"POLYCUBE(Destination IP Address.)POLYCUBE";
-  val["dst"]["example"] = R"POLYCUBE(10.0.0.2/24)POLYCUBE";
-  val["l4proto"]["name"] = "l4proto";
-  val["l4proto"]["type"] = "leaf"; // Suppose that type is leaf
-  val["l4proto"]["simpletype"] = "string";
-  val["l4proto"]["description"] = R"POLYCUBE(Level 4 Protocol.)POLYCUBE";
-  val["l4proto"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["sport"]["name"] = "sport";
-  val["sport"]["type"] = "leaf"; // Suppose that type is leaf
-  val["sport"]["simpletype"] = "integer";
-  val["sport"]["description"] = R"POLYCUBE(Source L4 Port)POLYCUBE";
-  val["sport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dport"]["name"] = "dport";
-  val["dport"]["type"] = "leaf"; // Suppose that type is leaf
-  val["dport"]["simpletype"] = "integer";
-  val["dport"]["description"] = R"POLYCUBE(Destination L4 Port)POLYCUBE";
-  val["dport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["tcpflags"]["name"] = "tcpflags";
-  val["tcpflags"]["type"] = "leaf"; // Suppose that type is leaf
-  val["tcpflags"]["simpletype"] = "string";
-  val["tcpflags"]["description"] = R"POLYCUBE(TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.)POLYCUBE";
-  val["tcpflags"]["example"] = R"POLYCUBE(!FIN,SYN,!RST,!ACK)POLYCUBE";
-  val["conntrack"]["name"] = "conntrack";
-  val["conntrack"]["type"] = "leaf"; // Suppose that type is leaf
-  val["conntrack"]["simpletype"] = "string";
-  val["conntrack"]["description"] = R"POLYCUBE(Connection status (NEW, ESTABLISHED, RELATED, INVALID))POLYCUBE";
-  val["conntrack"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["action"]["name"] = "action";
-  val["action"]["type"] = "leaf"; // Suppose that type is leaf
-  val["action"]["simpletype"] = "string";
-  val["action"]["description"] = R"POLYCUBE(Action if the rule matches. Default is DROP.)POLYCUBE";
-  val["action"]["example"] = R"POLYCUBE(DROP, ACCEPT, LOG)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainDeleteInputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["in-iface"]["name"] = "in-iface";
-  val["in-iface"]["simpletype"] = "string";
-  val["in-iface"]["description"] = R"POLYCUBE(Name of the interface via which the packet is received)POLYCUBE";
-  val["in-iface"]["example"] = R"POLYCUBE(eth0)POLYCUBE";
-  val["out-iface"]["name"] = "out-iface";
-  val["out-iface"]["simpletype"] = "string";
-  val["out-iface"]["description"] = R"POLYCUBE(Name of the interface via which the packet is going to be sent)POLYCUBE";
-  val["out-iface"]["example"] = R"POLYCUBE(eth1)POLYCUBE";
-  val["src"]["name"] = "src";
-  val["src"]["simpletype"] = "string";
-  val["src"]["description"] = R"POLYCUBE(Source IP Address.)POLYCUBE";
-  val["src"]["example"] = R"POLYCUBE(10.0.0.1/24)POLYCUBE";
-  val["dst"]["name"] = "dst";
-  val["dst"]["simpletype"] = "string";
-  val["dst"]["description"] = R"POLYCUBE(Destination IP Address.)POLYCUBE";
-  val["dst"]["example"] = R"POLYCUBE(10.0.0.2/24)POLYCUBE";
-  val["l4proto"]["name"] = "l4proto";
-  val["l4proto"]["simpletype"] = "string";
-  val["l4proto"]["description"] = R"POLYCUBE(Level 4 Protocol.)POLYCUBE";
-  val["l4proto"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["sport"]["name"] = "sport";
-  val["sport"]["simpletype"] = "integer";
-  val["sport"]["description"] = R"POLYCUBE(Source L4 Port)POLYCUBE";
-  val["sport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["dport"]["name"] = "dport";
-  val["dport"]["simpletype"] = "integer";
-  val["dport"]["description"] = R"POLYCUBE(Destination L4 Port)POLYCUBE";
-  val["dport"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["tcpflags"]["name"] = "tcpflags";
-  val["tcpflags"]["simpletype"] = "string";
-  val["tcpflags"]["description"] = R"POLYCUBE(TCP flags. Allowed values: SYN, FIN, ACK, RST, PSH, URG, CWR, ECE. ! means set to 0.)POLYCUBE";
-  val["tcpflags"]["example"] = R"POLYCUBE(!FIN,SYN,!RST,!ACK)POLYCUBE";
-  val["conntrack"]["name"] = "conntrack";
-  val["conntrack"]["simpletype"] = "string";
-  val["conntrack"]["description"] = R"POLYCUBE(Connection status (NEW, ESTABLISHED, RELATED, INVALID))POLYCUBE";
-  val["conntrack"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["action"]["name"] = "action";
-  val["action"]["simpletype"] = "string";
-  val["action"]["description"] = R"POLYCUBE(Action if the rule matches. Default is DROP.)POLYCUBE";
-  val["action"]["example"] = R"POLYCUBE(DROP, ACCEPT, LOG)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainDeleteInputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainDeleteInputJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -297,8 +156,6 @@ void ChainDeleteInputJsonObject::unsetInIface() {
   m_inIfaceIsSet = false;
 }
 
-
-
 std::string ChainDeleteInputJsonObject::getOutIface() const {
   return m_outIface;
 }
@@ -315,8 +172,6 @@ bool ChainDeleteInputJsonObject::outIfaceIsSet() const {
 void ChainDeleteInputJsonObject::unsetOutIface() {
   m_outIfaceIsSet = false;
 }
-
-
 
 std::string ChainDeleteInputJsonObject::getSrc() const {
   return m_src;
@@ -335,8 +190,6 @@ void ChainDeleteInputJsonObject::unsetSrc() {
   m_srcIsSet = false;
 }
 
-
-
 std::string ChainDeleteInputJsonObject::getDst() const {
   return m_dst;
 }
@@ -353,8 +206,6 @@ bool ChainDeleteInputJsonObject::dstIsSet() const {
 void ChainDeleteInputJsonObject::unsetDst() {
   m_dstIsSet = false;
 }
-
-
 
 std::string ChainDeleteInputJsonObject::getL4proto() const {
   return m_l4proto;
@@ -373,8 +224,6 @@ void ChainDeleteInputJsonObject::unsetL4proto() {
   m_l4protoIsSet = false;
 }
 
-
-
 uint16_t ChainDeleteInputJsonObject::getSport() const {
   return m_sport;
 }
@@ -391,8 +240,6 @@ bool ChainDeleteInputJsonObject::sportIsSet() const {
 void ChainDeleteInputJsonObject::unsetSport() {
   m_sportIsSet = false;
 }
-
-
 
 uint16_t ChainDeleteInputJsonObject::getDport() const {
   return m_dport;
@@ -411,8 +258,6 @@ void ChainDeleteInputJsonObject::unsetDport() {
   m_dportIsSet = false;
 }
 
-
-
 std::string ChainDeleteInputJsonObject::getTcpflags() const {
   return m_tcpflags;
 }
@@ -429,8 +274,6 @@ bool ChainDeleteInputJsonObject::tcpflagsIsSet() const {
 void ChainDeleteInputJsonObject::unsetTcpflags() {
   m_tcpflagsIsSet = false;
 }
-
-
 
 ConntrackstatusEnum ChainDeleteInputJsonObject::getConntrack() const {
   return m_conntrack;
@@ -450,7 +293,7 @@ void ChainDeleteInputJsonObject::unsetConntrack() {
 }
 
 std::string ChainDeleteInputJsonObject::ConntrackstatusEnum_to_string(const ConntrackstatusEnum &value){
-  switch(value){
+  switch(value) {
     case ConntrackstatusEnum::NEW:
       return std::string("new");
     case ConntrackstatusEnum::ESTABLISHED:
@@ -475,8 +318,6 @@ ConntrackstatusEnum ChainDeleteInputJsonObject::string_to_ConntrackstatusEnum(co
     return ConntrackstatusEnum::INVALID;
   throw std::runtime_error("ChainDeleteInput conntrack is invalid");
 }
-
-
 ActionEnum ChainDeleteInputJsonObject::getAction() const {
   return m_action;
 }
@@ -495,7 +336,7 @@ void ChainDeleteInputJsonObject::unsetAction() {
 }
 
 std::string ChainDeleteInputJsonObject::ActionEnum_to_string(const ActionEnum &value){
-  switch(value){
+  switch(value) {
     case ActionEnum::DROP:
       return std::string("drop");
     case ActionEnum::LOG:
@@ -516,8 +357,6 @@ ActionEnum ChainDeleteInputJsonObject::string_to_ActionEnum(const std::string &s
     return ActionEnum::ACCEPT;
   throw std::runtime_error("ChainDeleteInput action is invalid");
 }
-
-
 
 }
 }

@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "RulePortForwardingEntry.h"
 #include "Nat.h"
 
 using namespace polycube::service;
 
-RulePortForwardingEntry::RulePortForwardingEntry(RulePortForwarding &parent, const RulePortForwardingEntryJsonObject &conf): parent_(parent) {
+RulePortForwardingEntry::RulePortForwardingEntry(
+    RulePortForwarding &parent, const RulePortForwardingEntryJsonObject &conf)
+    : parent_(parent) {
   update(conf);
-  logger()->info("Creating RulePortForwardingEntry instance: {0}:{1} -> {2}:{3}",
-    conf.getExternalIp(), conf.getExternalPort(), conf.getInternalIp(), conf.getInternalPort());
+  logger()->info(
+      "Creating RulePortForwardingEntry instance: {0}:{1} -> {2}:{3}",
+      conf.getExternalIp(), conf.getExternalPort(), conf.getInternalIp(),
+      conf.getInternalPort());
 }
 
-RulePortForwardingEntry::~RulePortForwardingEntry() { }
+RulePortForwardingEntry::~RulePortForwardingEntry() {}
 
-void RulePortForwardingEntry::update(const RulePortForwardingEntryJsonObject &conf) {
-  // This method updates all the object/parameter in RulePortForwardingEntry object specified in the conf JsonObject.
+void RulePortForwardingEntry::update(
+    const RulePortForwardingEntryJsonObject &conf) {
+  // This method updates all the object/parameter in RulePortForwardingEntry
+  // object specified in the conf JsonObject.
   // You can modify this implementation.
   if (conf.externalIpIsSet()) {
     setExternalIp(conf.getExternalIp());
@@ -53,7 +57,7 @@ void RulePortForwardingEntry::update(const RulePortForwardingEntryJsonObject &co
   }
 }
 
-RulePortForwardingEntryJsonObject RulePortForwardingEntry::toJsonObject(){
+RulePortForwardingEntryJsonObject RulePortForwardingEntry::toJsonObject() {
   RulePortForwardingEntryJsonObject conf;
   conf.setId(getId());
   conf.setExternalIp(getExternalIp());
@@ -64,23 +68,27 @@ RulePortForwardingEntryJsonObject RulePortForwardingEntry::toJsonObject(){
   return conf;
 }
 
-
-void RulePortForwardingEntry::create(RulePortForwarding &parent, const uint32_t &id, const RulePortForwardingEntryJsonObject &conf){
-  // This method creates the actual RulePortForwardingEntry object given thee key param.
-  // Please remember to call here the create static method for all sub-objects of RulePortForwardingEntry.
+void RulePortForwardingEntry::create(
+    RulePortForwarding &parent, const uint32_t &id,
+    const RulePortForwardingEntryJsonObject &conf) {
+  // This method creates the actual RulePortForwardingEntry object given thee
+  // key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of RulePortForwardingEntry.
 
   auto newRule = new RulePortForwardingEntry(parent, conf);
   if (newRule == nullptr) {
-    //Totally useless, but it is needed to avoid the compiler making wrong assumptions and reordering
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
     throw std::runtime_error("I won't be thrown");
   }
 
   // Check for duplicates
   for (int i = 0; i < parent.rules_.size(); i++) {
     auto rule = parent.rules_[i];
-    if (rule->getExternalIp() == newRule->getExternalIp()
-        && rule->getExternalPort() == newRule->getExternalPort()
-        && rule->getProto() == newRule->getProto()) {
+    if (rule->getExternalIp() == newRule->getExternalIp() &&
+        rule->getExternalPort() == newRule->getExternalPort() &&
+        rule->getProto() == newRule->getProto()) {
       throw std::runtime_error("Cannot insert duplicate mapping");
     }
   }
@@ -93,8 +101,10 @@ void RulePortForwardingEntry::create(RulePortForwarding &parent, const uint32_t 
   newRule->injectToDatapath();
 }
 
-std::shared_ptr<RulePortForwardingEntry> RulePortForwardingEntry::getEntry(RulePortForwarding &parent, const uint32_t &id){
-  // This method retrieves the pointer to RulePortForwardingEntry object specified by its keys.
+std::shared_ptr<RulePortForwardingEntry> RulePortForwardingEntry::getEntry(
+    RulePortForwarding &parent, const uint32_t &id) {
+  // This method retrieves the pointer to RulePortForwardingEntry object
+  // specified by its keys.
   for (int i = 0; i < parent.rules_.size(); i++) {
     if (parent.rules_[i]->id == id) {
       return parent.rules_[i];
@@ -103,9 +113,12 @@ std::shared_ptr<RulePortForwardingEntry> RulePortForwardingEntry::getEntry(RuleP
   throw std::runtime_error("There is no rule " + id);
 }
 
-void RulePortForwardingEntry::removeEntry(RulePortForwarding &parent, const uint32_t &id){
-  // This method removes the single RulePortForwardingEntry object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of RulePortForwardingEntry.
+void RulePortForwardingEntry::removeEntry(RulePortForwarding &parent,
+                                          const uint32_t &id) {
+  // This method removes the single RulePortForwardingEntry object specified by
+  // its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RulePortForwardingEntry.
   if (parent.rules_.size() < id || !parent.rules_[id]) {
     throw std::runtime_error("There is no rule " + id);
   }
@@ -124,8 +137,10 @@ void RulePortForwardingEntry::removeEntry(RulePortForwarding &parent, const uint
   parent.logger()->info("Removed PortForwarding entry {0}", id);
 }
 
-std::vector<std::shared_ptr<RulePortForwardingEntry>> RulePortForwardingEntry::get(RulePortForwarding &parent){
-  // This methods get the pointers to all the RulePortForwardingEntry objects in RulePortForwarding.
+std::vector<std::shared_ptr<RulePortForwardingEntry>>
+RulePortForwardingEntry::get(RulePortForwarding &parent) {
+  // This methods get the pointers to all the RulePortForwardingEntry objects in
+  // RulePortForwarding.
   std::vector<std::shared_ptr<RulePortForwardingEntry>> rules;
   for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
     if (*it) {
@@ -135,56 +150,55 @@ std::vector<std::shared_ptr<RulePortForwardingEntry>> RulePortForwardingEntry::g
   return rules;
 }
 
-void RulePortForwardingEntry::remove(RulePortForwarding &parent){
-  // This method removes all RulePortForwardingEntry objects in RulePortForwarding.
-  // Remember to call here the remove static method for all-sub-objects of RulePortForwardingEntry.
+void RulePortForwardingEntry::remove(RulePortForwarding &parent) {
+  // This method removes all RulePortForwardingEntry objects in
+  // RulePortForwarding.
+  // Remember to call here the remove static method for all-sub-objects of
+  // RulePortForwardingEntry.
   RulePortForwarding::removeEntry(parent.parent_);
 }
 
-uint32_t RulePortForwardingEntry::getId(){
+uint32_t RulePortForwardingEntry::getId() {
   // This method retrieves the id value.
   return id;
 }
 
-
-std::string RulePortForwardingEntry::getExternalIp(){
+std::string RulePortForwardingEntry::getExternalIp() {
   // This method retrieves the externalIp value.
   struct IpAddr addr = {externalIp, 32};
   return addr.toString();
 }
 
-void RulePortForwardingEntry::setExternalIp(const std::string &value){
+void RulePortForwardingEntry::setExternalIp(const std::string &value) {
   // This method set the externalIp value.
   struct IpAddr addr;
   addr.fromString(value);
   this->externalIp = addr.ip;
 }
 
-
-uint16_t RulePortForwardingEntry::getExternalPort(){
+uint16_t RulePortForwardingEntry::getExternalPort() {
   // This method retrieves the externalPort value.
   return externalPort;
 }
 
-void RulePortForwardingEntry::setExternalPort(const uint16_t &value){
+void RulePortForwardingEntry::setExternalPort(const uint16_t &value) {
   // This method set the externalPort value.
   externalPort = value;
 }
 
-
-std::string RulePortForwardingEntry::getProto(){
+std::string RulePortForwardingEntry::getProto() {
   // This method retrieves the proto value.
-  switch(proto) {
-    case ProtoEnum::TCP:
-      return "tcp";
-    case ProtoEnum::UDP:
-      return "udp";
-    case ProtoEnum::ALL:
-      return "all";
+  switch (proto) {
+  case ProtoEnum::TCP:
+    return "tcp";
+  case ProtoEnum::UDP:
+    return "udp";
+  case ProtoEnum::ALL:
+    return "all";
   }
 }
 
-void RulePortForwardingEntry::setProto(const std::string &value){
+void RulePortForwardingEntry::setProto(const std::string &value) {
   // This method set the proto value.
   if (value.empty()) {
     proto = ProtoEnum::ALL;
@@ -192,9 +206,8 @@ void RulePortForwardingEntry::setProto(const std::string &value){
   }
 
   std::string v = value;
-  for_each(v.begin(), v.end(), [](char &c){
-    c = std::tolower(static_cast<unsigned char>(c));
-  });
+  for_each(v.begin(), v.end(),
+           [](char &c) { c = std::tolower(static_cast<unsigned char>(c)); });
   if (v == "tcp") {
     proto = ProtoEnum::TCP;
     return;
@@ -211,27 +224,25 @@ void RulePortForwardingEntry::setProto(const std::string &value){
   throw std::runtime_error("Invalid protocol");
 }
 
-
-std::string RulePortForwardingEntry::getInternalIp(){
+std::string RulePortForwardingEntry::getInternalIp() {
   // This method retrieves the internalIp value.
   struct IpAddr addr = {internalIp, 32};
   return addr.toString();
 }
 
-void RulePortForwardingEntry::setInternalIp(const std::string &value){
+void RulePortForwardingEntry::setInternalIp(const std::string &value) {
   // This method set the internalIp value.
   struct IpAddr addr;
   addr.fromString(value);
   this->internalIp = addr.ip;
 }
 
-
-uint16_t RulePortForwardingEntry::getInternalPort(){
+uint16_t RulePortForwardingEntry::getInternalPort() {
   // This method retrieves the internalPort value.
   return internalPort;
 }
 
-void RulePortForwardingEntry::setInternalPort(const uint16_t &value){
+void RulePortForwardingEntry::setInternalPort(const uint16_t &value) {
   // This method set the internalPort value.
   internalPort = value;
 }
@@ -241,19 +252,20 @@ std::shared_ptr<spdlog::logger> RulePortForwardingEntry::logger() {
 }
 
 void RulePortForwardingEntry::injectToDatapath() {
-  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>(
+      "dp_rules", 0, ProgramType::INGRESS);
 
-  dp_k key {
-    .mask = 0, /* will be set later on */
-    .external_ip = externalIp,
-    .external_port = htons(externalPort),
-    .proto = 0, /* will be set later on */
+  dp_k key{
+      .mask = 0, /* will be set later on */
+      .external_ip = externalIp,
+      .external_port = htons(externalPort),
+      .proto = 0, /* will be set later on */
   };
 
-  dp_v value {
-    .internal_ip = internalIp,
-    .internal_port = htons(internalPort),
-    .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::PORTFORWARDING,
+  dp_v value{
+      .internal_ip = internalIp,
+      .internal_port = htons(internalPort),
+      .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::PORTFORWARDING,
   };
 
   if (proto == ProtoEnum::ALL) {
@@ -266,20 +278,21 @@ void RulePortForwardingEntry::injectToDatapath() {
     key.mask = 56;
     key.proto = (uint8_t)IPPROTO_UDP;
   } else {
-    return; // TODO: is this case possible?
+    return;  // TODO: is this case possible?
   }
 
   dp_rules.set(key, value);
 }
 
 void RulePortForwardingEntry::removeFromDatapath() {
-  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>("dp_rules");
+  auto dp_rules = parent_.parent_.getParent().get_hash_table<dp_k, dp_v>(
+      "dp_rules", 0, ProgramType::INGRESS);
 
-  dp_k key {
-    .mask = 0, /* will be set later on */
-    .external_ip = externalIp,
-    .external_port = htons(externalPort),
-    .proto = 0, /* will be set later on */
+  dp_k key{
+      .mask = 0, /* will be set later on */
+      .external_ip = externalIp,
+      .external_port = htons(externalPort),
+      .proto = 0, /* will be set later on */
   };
 
   if (proto == ProtoEnum::ALL) {
@@ -292,7 +305,7 @@ void RulePortForwardingEntry::removeFromDatapath() {
     key.mask = 56;
     key.proto = (uint8_t)IPPROTO_UDP;
   } else {
-    return; // TODO: is this case possible?
+    return;  // TODO: is this case possible?
   }
 
   dp_rules.remove(key);

@@ -38,7 +38,7 @@ ChainStatsJsonObject ChainStats::toJsonObject() {
   conf.setPkts(getPkts());
   conf.setBytes(getBytes());
   conf.setId(getId());
-  conf.setDesc(counter.getDesc());
+  conf.setDescription(counter.getDescription());
 
   return conf;
 }
@@ -94,7 +94,8 @@ void ChainStats::removeEntry(Chain &parent, const uint32_t &id) {
 
 void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
                                uint64_t &pkts, uint64_t &bytes) {
-  std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> &programs =
+  std::map<std::pair<uint8_t, ChainNameEnum>,
+           std::shared_ptr<Iptables::Program>> &programs =
       parent.parent_.programs_;
 
   if (programs.find(std::make_pair(ModulesConstants::ACTION, parent.name)) ==
@@ -104,7 +105,7 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
     return;
   }
 
-  auto actionProgram = dynamic_cast<Iptables::ActionLookup *>(
+  auto actionProgram = std::dynamic_pointer_cast<Iptables::ActionLookup>(
       programs[std::make_pair(ModulesConstants::ACTION, parent.name)]);
 
   bytes = actionProgram->getBytesCount(id);
@@ -115,7 +116,8 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
     // if first rule and acceptEstablished optimization enabled for this chain
     // sum accept established optimization counters to first rule
 
-    std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> &programs =
+    std::map<std::pair<uint8_t, ChainNameEnum>,
+             std::shared_ptr<Iptables::Program>> &programs =
         parent.parent_.programs_;
 
     uint8_t module = 0;
@@ -140,8 +142,9 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
       module = ModulesConstants::CONNTRACKLABEL_EGRESS;
     }
 
-    auto conntrackLabelProgram = dynamic_cast<Iptables::ConntrackLabel *>(
-        programs[std::make_pair(module, chainnameenum)]);
+    auto conntrackLabelProgram =
+        std::dynamic_pointer_cast<Iptables::ConntrackLabel>(
+            programs[std::make_pair(module, chainnameenum)]);
 
     pkts += conntrackLabelProgram->getAcceptEstablishedPktsCount(parent.name);
     bytes += conntrackLabelProgram->getAcceptEstablishedBytesCount(parent.name);
@@ -149,20 +152,21 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
     conntrackLabelProgram->flushCounters(parent.name, id);
   }
 
-  if (parent.parent_.ddos_mitigator_runtime_enabled_) {
-    if (!parent.parent_.ddos_mitigator_swap_) {
-      auto ddosProgram = dynamic_cast<Iptables::Ddos *>(programs[std::make_pair(
-          ModulesConstants::DDOS_INGRESS, ChainNameEnum::INVALID_INGRESS)]);
-      bytes += ddosProgram->getBytesCount(id);
-      pkts += ddosProgram->getPktsCount(id);
-      ddosProgram->flushCounters(id);
-    } else {
-      auto ddosProgram = dynamic_cast<Iptables::Ddos *>(
-          programs[std::make_pair(ModulesConstants::DDOS_INGRESS_SWAP,
+  if (parent.parent_.horus_runtime_enabled_) {
+    if (!parent.parent_.horus_swap_) {
+      auto horusProgram = std::dynamic_pointer_cast<Iptables::Horus>(
+          programs[std::make_pair(ModulesConstants::HORUS_INGRESS,
                                   ChainNameEnum::INVALID_INGRESS)]);
-      bytes += ddosProgram->getBytesCount(id);
-      pkts += ddosProgram->getPktsCount(id);
-      ddosProgram->flushCounters(id);
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
+    } else {
+      auto horusProgram = std::dynamic_pointer_cast<Iptables::Horus>(
+          programs[std::make_pair(ModulesConstants::HORUS_INGRESS_SWAP,
+                                  ChainNameEnum::INVALID_INGRESS)]);
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
     }
   }
 }
@@ -175,9 +179,10 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
   /*Assigning an random ID just for showing*/
   csj.setId(parent.rules_.size());
 
-  csj.setDesc("DEFAULT");
+  csj.setDescription("DEFAULT");
 
-  std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> &programs =
+  std::map<std::pair<uint8_t, ChainNameEnum>,
+           std::shared_ptr<Iptables::Program>> &programs =
       parent.parent_.programs_;
 
   uint8_t module = 0;
@@ -196,8 +201,9 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
     module = ModulesConstants::CHAINSELECTOR_EGRESS;
   }
 
-  auto chainSelectorProgram = dynamic_cast<Iptables::ChainSelector *>(
-      programs[std::make_pair(module, chainnameenum)]);
+  auto chainSelectorProgram =
+      std::dynamic_pointer_cast<Iptables::ChainSelector>(
+          programs[std::make_pair(module, chainnameenum)]);
 
   csj.setPkts(chainSelectorProgram->getDefaultPktsCount(parent.name));
   csj.setBytes(chainSelectorProgram->getDefaultBytesCount(parent.name));
@@ -241,6 +247,11 @@ uint64_t ChainStats::getBytes() {
 uint32_t ChainStats::getId() {
   // This method retrieves the id value.
   return counter.getId();
+}
+
+std::string ChainStats::getDescription() {
+  // This method retrieves the description value.
+  return "";
 }
 
 std::shared_ptr<spdlog::logger> ChainStats::logger() {

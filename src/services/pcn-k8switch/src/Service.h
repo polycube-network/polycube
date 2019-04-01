@@ -35,7 +35,7 @@ struct vip {
   uint16_t port;
   uint16_t proto;
 
-  uint16_t index;  //refers to backend's index for that Service(vip)
+  uint16_t index;  // refers to backend's index for that Service(vip)
   uint16_t pad0;
   uint16_t pad1;
   uint16_t pad2;
@@ -48,11 +48,10 @@ struct backend {
 } __attribute__((packed));
 
 class Service : public ServiceInterface {
-public:
+ public:
   Service(K8switch &parent, const ServiceJsonObject &conf);
   virtual ~Service();
 
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceJsonObject &conf) override;
   ServiceJsonObject toJsonObject() override;
@@ -81,11 +80,15 @@ public:
   /// <summary>
   /// Pool of backend servers that actually serve requests
   /// </summary>
-  std::shared_ptr<ServiceBackend> getBackend(const std::string &ip, const uint16_t &port) override;
+  std::shared_ptr<ServiceBackend> getBackend(const std::string &ip,
+                                             const uint16_t &port) override;
   std::vector<std::shared_ptr<ServiceBackend>> getBackendList() override;
-  void addBackend(const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &conf) override;
-  void addBackendList(const std::vector<ServiceBackendJsonObject> &conf) override;
-  void replaceBackend(const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &conf) override;
+  void addBackend(const std::string &ip, const uint16_t &port,
+                  const ServiceBackendJsonObject &conf) override;
+  void addBackendList(
+      const std::vector<ServiceBackendJsonObject> &conf) override;
+  void replaceBackend(const std::string &ip, const uint16_t &port,
+                      const ServiceBackendJsonObject &conf) override;
   void delBackend(const std::string &ip, const uint16_t &port) override;
   void delBackendList() override;
 
@@ -94,7 +97,7 @@ public:
   static ServiceProtoEnum convertNumberToProto(const uint8_t proto);
   static uint8_t convertProtoToNumber(const ServiceProtoEnum &proto);
 
-private:
+ private:
   K8switch &parent_;
   std::map<ServiceBackend::Key, ServiceBackend> service_backends_;
   std::map<ServiceBackend::Key, std::vector<int>> backend_matrix_;
@@ -132,4 +135,3 @@ private:
   std::vector<int> getRandomIntVector(int vect_size);
   std::vector<int> getEmptyIntVector(int vect_size);
 };
-

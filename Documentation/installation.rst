@@ -51,7 +51,7 @@ In this case you have to:
     cd polycube
     git submodule update --init --recursive
 
-    # launch the automatic install script
+    # launch the automatic install script (use -h to see the different installation modes)
     ./scripts/install.sh
 
 Once the installation is completed, you can follow the :doc:`quickstart` instructions.
@@ -97,14 +97,18 @@ Install dependencies
         curl uuid-dev build-essential autoconf libtool
 
 
+Install libyang
+^^^^^^^^^^^^^^^^
+
+Please check the `libyang installation documentation <https://software.opensuse.org//download.html?project=home%3Aliberouter&package=libyang>`_.
+
 Install pistache
 ^^^^^^^^^^^^^^^^
 
 ::
 
     # Install Pistache (a library to create web servers that is used in polycubed)
-    # we use a custom version until security is added in main repo
-    git clone https://github.com/mauriciovasquezbernal/pistache.git
+    git clone https://github.com/oktal/pistache.git
     cd pistache
     git submodule update --init
     mkdir build &&  cd build

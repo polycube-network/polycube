@@ -35,27 +35,6 @@ public:
   virtual IptablesJsonObject toJsonObject() = 0;
 
   /// <summary>
-  /// Name of the iptables service
-  /// </summary>
-  virtual std::string getName() = 0;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  virtual std::string getUuid() = 0;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  virtual CubeType getType() = 0;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
-  /// </summary>
-  virtual IptablesLoglevelEnum getLoglevel() = 0;
-  virtual void setLoglevel(const IptablesLoglevelEnum &value) = 0;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   virtual std::shared_ptr<Ports> getPorts(const std::string &name) = 0;

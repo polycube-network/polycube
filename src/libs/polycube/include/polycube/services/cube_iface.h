@@ -17,16 +17,14 @@
 #pragma once
 
 #include "polycube/services/cube_factory.h"
-#include "polycube/services/table.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/port_iface.h"
+#include "polycube/services/table.h"
 
 #include <map>
 #include <string>
 
 #include "polycube/services/json.hpp"
-
-using json = nlohmann::json;
 
 namespace polycube {
 namespace service {
@@ -38,35 +36,32 @@ enum class ProgramType {
   EGRESS,
 };
 
+enum class Sense {
+  INGRESS,
+  EGRESS,
+};
+
 enum class CubeType {
   TC,
   XDP_SKB,
   XDP_DRV,
 };
 
-class CubeIface {
-
-public:
+class BaseCubeIface {
+ public:
   virtual void reload(const std::string &code, int index, ProgramType type) = 0;
-  virtual int add_program(const std::string &code, int inde, ProgramType type) = 0;
+  virtual int add_program(const std::string &code, int index,
+                          ProgramType type) = 0;
   virtual void del_program(int index, ProgramType type) = 0;
 
-  virtual std::shared_ptr<PortIface> add_port(const std::string &name) = 0;
-  virtual void remove_port(const std::string &name) = 0;
-  virtual std::shared_ptr<PortIface> get_port(const std::string &name) = 0;
-
   virtual CubeType get_type() const = 0;
-
+  virtual const std::string get_service_name() const = 0;
   // get unique system-wide module id
   // TODO: how is this related to uuid?
   virtual uint32_t get_id() const = 0;
-
   virtual uint16_t get_index(ProgramType type) const = 0;
-
-  virtual void update_forwarding_table(int index, int value) = 0;
-
   virtual int get_table_fd(const std::string &table_name, int index,
-                             ProgramType type) = 0;
+                           ProgramType type) = 0;
 
   virtual void set_log_level(LogLevel level) = 0;
   virtual LogLevel get_log_level() const = 0;
@@ -74,8 +69,34 @@ public:
   virtual const Guid &uuid() const = 0;
   virtual const std::string get_name() const = 0;
 
-  virtual json toJson(bool include_ports = false) const = 0;
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
 };
 
+class CubeIface : virtual public BaseCubeIface {
+ public:
+  virtual std::shared_ptr<PortIface> add_port(const std::string &name,
+    const nlohmann::json &conf) = 0;
+  virtual void remove_port(const std::string &name) = 0;
+  virtual std::shared_ptr<PortIface> get_port(const std::string &name) = 0;
+
+  virtual void update_forwarding_table(int index, int value) = 0;
+
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
+};
+
+class TransparentCubeIface : virtual public BaseCubeIface {
+ public:
+  virtual void set_next(uint16_t next, ProgramType type) = 0;
+  virtual std::string get_parent_parameter(const std::string &parameter) = 0;
+  virtual void set_parameter(const std::string &parameter,
+                             const std::string &value) = 0;
+  virtual void send_packet_out(const std::vector<uint8_t> &packet, Sense sense,
+                               bool recirculate = false) = 0;
+
+  virtual void set_conf(const nlohmann::json &conf) = 0;
+  virtual nlohmann::json to_json() const = 0;
+};
 }
 }

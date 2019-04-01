@@ -17,8 +17,8 @@
 #pragma once
 
 //#include "polycube/services/guid.h"
-#include "polycube/services/cube_iface.h"
 #include "polycube/services/cube_factory.h"
+#include "polycube/services/cube_iface.h"
 
 #include "controller.h"
 #include "datapath_log.h"
@@ -28,31 +28,47 @@
 namespace polycube {
 namespace polycubed {
 
+using service::BaseCubeIface;
 using service::CubeIface;
+using service::TransparentCubeIface;
 using service::CubeFactory;
 using service::packet_in_cb;
 using service::log_msg_cb;
+using service::attach_cb;
 
 class CubeFactoryImpl : public CubeFactory {
  public:
   CubeFactoryImpl(const std::string &service_name);
-  ~CubeFactoryImpl();
+  ~CubeFactoryImpl() = default;
 
-  std::shared_ptr<CubeIface> create_cube(const std::string &name,
-                         const std::vector<std::string> &ingress_code,
-                         const std::vector<std::string> &egress_code,
-                         const log_msg_cb &log_msg,
-                         const CubeType type,
-                         const packet_in_cb &cb,
-                         LogLevel level);
+  std::shared_ptr<CubeIface> create_cube(
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const packet_in_cb &cb) override;
 
-  void destroy_cube(const std::string &name);
+  std::shared_ptr<TransparentCubeIface> create_transparent_cube(
+      const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const packet_in_cb &cb, const attach_cb &attach) override;
 
-  std::vector<std::shared_ptr<CubeIface>> get_cubes();
+  void destroy_cube(const std::string &name) override;
+
+  std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
 
  private:
+  std::shared_ptr<CubeIface> create_cube(
+      const std::string &name, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const CubeType type, const packet_in_cb &cb, LogLevel level);
+
+  std::shared_ptr<TransparentCubeIface> create_transparent_cube(
+      const std::string &name, const std::vector<std::string> &ingress_code,
+      const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const CubeType type, const packet_in_cb &cb, const attach_cb &attach,
+      LogLevel level);
+
   std::string service_name_;
-  std::unordered_map<std::string, std::shared_ptr<CubeIface>> cubes_;
+  std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes_;
   Controller &controller_tc_;
   Controller &controller_xdp_;
   DatapathLog &datapathlog_;

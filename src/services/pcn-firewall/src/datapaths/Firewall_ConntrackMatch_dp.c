@@ -61,7 +61,7 @@ static __always_inline struct elements *getBitVect(uint8_t *key) {
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
- pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
+  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so this code has to be used only in this case.*/
 #if _NR_ELEMENTS > 0
@@ -73,7 +73,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   uint8_t connStatus = pkt->connStatus;
-  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching received a packet with state %d", pkt->connStatus);
+  pcn_log(ctx, LOG_DEBUG,
+          "Conntrack_DIRECTIONMatching received a packet with state %d",
+          pkt->connStatus);
 
   struct elements *ele = getBitVect(&connStatus);
 

@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/PortsInterface.h"
 
@@ -26,38 +24,27 @@
 
 #include <spdlog/spdlog.h>
 
-
 class Lbdsr;
 
 using namespace io::swagger::server::model;
 
 class Ports : public polycube::service::Port, public PortsInterface {
-public:
+ public:
   Ports(polycube::service::Cube<Ports> &parent,
         std::shared_ptr<polycube::service::PortIface> port,
         const PortsJsonObject &conf);
   virtual ~Ports();
 
-  static void create(Lbdsr &parent, const std::string &name, const PortsJsonObject &conf);
-  static std::shared_ptr<Ports> getEntry(Lbdsr &parent, const std::string &name);
+  static void create(Lbdsr &parent, const std::string &name,
+                     const PortsJsonObject &conf);
+  static std::shared_ptr<Ports> getEntry(Lbdsr &parent,
+                                         const std::string &name);
   static void removeEntry(Lbdsr &parent, const std::string &name);
   static std::vector<std::shared_ptr<Ports>> get(Lbdsr &parent);
   static void remove(Lbdsr &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsJsonObject &conf) override;
   PortsJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Status of the port (UP or DOWN)
-  /// </summary>
-  PortsStatusEnum getStatus() override;
-
-  /// <summary>
-  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)
-  /// </summary>
-  std::string getPeer() override;
-  void setPeer(const std::string &value) override;
 
   /// <summary>
   /// Type of the LB port (e.g. FRONTEND or BACKEND)
@@ -65,19 +52,7 @@ public:
   PortsTypeEnum getType() override;
   void setType(const PortsTypeEnum &value) override;
 
-  /// <summary>
-  /// Port Name
-  /// </summary>
-  std::string getName() override;
-
-  /// <summary>
-  /// UUID of the port
-  /// </summary>
-  std::string getUuid() override;
-
-private:
+ private:
   Lbdsr &parent_;
   PortsTypeEnum port_type_;
-
 };
-

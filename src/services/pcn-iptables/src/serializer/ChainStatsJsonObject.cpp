@@ -23,33 +23,42 @@ namespace server {
 namespace model {
 
 ChainStatsJsonObject::ChainStatsJsonObject() {
-
   m_idIsSet = false;
-
   m_pktsIsSet = false;
-
   m_bytesIsSet = false;
+  m_descriptionIsSet = false;
 }
 
-ChainStatsJsonObject::~ChainStatsJsonObject() {}
+ChainStatsJsonObject::ChainStatsJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_idIsSet = false;
+  m_pktsIsSet = false;
+  m_bytesIsSet = false;
+  m_descriptionIsSet = false;
 
-void ChainStatsJsonObject::validateKeys() {
 
-  if (!m_idIsSet) {
-    throw std::runtime_error("Variable id is required");
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
   }
-}
 
-void ChainStatsJsonObject::validateMandatoryFields() {
+  if (val.count("pkts")) {
+    setPkts(val.at("pkts").get<uint64_t>());
+  }
 
-}
+  if (val.count("bytes")) {
+    setBytes(val.at("bytes").get<uint64_t>());
+  }
 
-void ChainStatsJsonObject::validateParams() {
-
+  if (val.count("description")) {
+    setDescription(val.at("description").get<std::string>());
+  }
 }
 
 nlohmann::json ChainStatsJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_idIsSet) {
     val["id"] = m_id;
@@ -63,85 +72,10 @@ nlohmann::json ChainStatsJsonObject::toJson() const {
     val["bytes"] = m_bytes;
   }
 
-  if (m_descIsSet) {
-    val["description"] = m_desc;
+  if (m_descriptionIsSet) {
+    val["description"] = m_description;
   }
 
-  return val;
-}
-
-void ChainStatsJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("id") != val.end()) {
-    setId(val.at("id"));
-  }
-
-  if (val.find("pkts") != val.end()) {
-    setPkts(val.at("pkts"));
-  }
-
-  if (val.find("bytes") != val.end()) {
-    setBytes(val.at("bytes"));
-  }
-
-  if (val.find("description") != val.end()) {
-    setDesc(val.at("description"));
-  }
-}
-
-nlohmann::json ChainStatsJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "key";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE(Rule Identifier)POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["pkts"]["name"] = "pkts";
-  val["pkts"]["type"] = "leaf"; // Suppose that type is leaf
-  val["pkts"]["simpletype"] = "integer";
-  val["pkts"]["description"] = R"POLYCUBE(Number of packets matching the rule)POLYCUBE";
-  val["pkts"]["example"] = R"POLYCUBE()POLYCUBE";
-  val["bytes"]["name"] = "bytes";
-  val["bytes"]["type"] = "leaf"; // Suppose that type is leaf
-  val["bytes"]["simpletype"] = "integer";
-  val["bytes"]["description"] = R"POLYCUBE(Number of bytes matching the rule)POLYCUBE";
-  val["bytes"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainStatsJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainStatsJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -156,10 +90,6 @@ void ChainStatsJsonObject::setId(uint32_t value) {
 
 bool ChainStatsJsonObject::idIsSet() const {
   return m_idIsSet;
-}
-
-void ChainStatsJsonObject::unsetId() {
-  m_idIsSet = false;
 }
 
 
@@ -181,8 +111,6 @@ void ChainStatsJsonObject::unsetPkts() {
   m_pktsIsSet = false;
 }
 
-
-
 uint64_t ChainStatsJsonObject::getBytes() const {
   return m_bytes;
 }
@@ -200,22 +128,23 @@ void ChainStatsJsonObject::unsetBytes() {
   m_bytesIsSet = false;
 }
 
-std::string ChainStatsJsonObject::getDesc() const {
-  return m_desc;
+std::string ChainStatsJsonObject::getDescription() const {
+  return m_description;
 }
 
-void ChainStatsJsonObject::setDesc(std::string value) {
-  m_desc = value;
-  m_descIsSet = true;
+void ChainStatsJsonObject::setDescription(std::string value) {
+  m_description = value;
+  m_descriptionIsSet = true;
 }
 
-bool ChainStatsJsonObject::descIsSet() const {
-  return m_descIsSet;
+bool ChainStatsJsonObject::descriptionIsSet() const {
+  return m_descriptionIsSet;
 }
 
-void ChainStatsJsonObject::unsetDesc() {
-  m_descIsSet = false;
+void ChainStatsJsonObject::unsetDescription() {
+  m_descriptionIsSet = false;
 }
+
 
 }
 }

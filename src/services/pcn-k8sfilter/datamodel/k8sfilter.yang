@@ -3,22 +3,18 @@ module k8sfilter {
   namespace "http://polycube.network/nat";
   prefix "k8sfilter";
 
-  import polycube-base { prefix "basemodel"; }
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube traffic filter for Kubernetes";
 
-  extension cli-example {
-    argument "value";
-    description "A sample value used by the CLI generator";
-  }
+  polycube-base:service-description "Kubernetes Traffic Filtering Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "k8sfilter";
+  polycube-base:service-min-kernel-version "4.14.0";
 
-  basemodel:service-description "Kubernetes Traffic Filtering Service";
-  basemodel:service-version "2.0";
-  basemodel:service-name "k8sfilter";
-  basemodel:service-min-kernel-version "4.14.0";
-
-  uses "basemodel:base-yang-module" {
+  uses "polycube-standard-base:standard-base-yang-module" {
     augment ports {
       leaf type {
         type enumeration {
@@ -36,6 +32,6 @@ module k8sfilter {
     type string;
     description "Port range used for NodePort services";
     default "30000-32767";
-    k8sfilter:cli-example "30000-32767";
+    polycube-base:cli-example "30000-32767";
   }
 }

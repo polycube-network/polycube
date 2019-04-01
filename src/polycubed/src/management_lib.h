@@ -13,53 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
-#include "dynamic_library.h"
-#include "polycube/services/cube_factory.h"
-#include "polycube/services/management_interface.h"
+#include <string>
 
-namespace polycube {
-namespace polycubed {
+#include "management_interface.h"
 
-using service::CubeFactory;
-using service::ManagementInterface;
-using service::HttpHandleRequest;
-using service::HttpHandleResponse;
-using service::ServiceMetadata;
+namespace polycube::service {
+class CubeFactory;
+}
+
+namespace polycube::polycubed {
+
+class PolycubedCore;
 
 class ManagementLib : public ManagementInterface {
  public:
-  ManagementLib();
-  ManagementLib(const std::string &libName);
-  ~ManagementLib();
+  ManagementLib(const std::string &uri, const std::string &base_url,
+                const std::string &name, PolycubedCore *core);
+  virtual ~ManagementLib();
 
-  void setLibName(const std::string &libName);
-  bool load();
-  void unload();
-  bool loaded() const;
-
-  ServiceMetadata init(CubeFactory *factory, std::string logfile);
-  void control_handler(const HttpHandleRequest &request,
-                   HttpHandleResponse &response) override;
-
-  typedef ServiceMetadata (*init_t)(CubeFactory *polycubed, std::string logfile);
-  typedef void (*control_handler_t)(const HttpHandleRequest &request,
-                                HttpHandleResponse &response);
-  typedef void (*uninit_t)();
+  ServiceMetadata init(service::CubeFactory *factory, std::string logfile);
 
  private:
-
-  DynamicLibrary library;
-  bool loadFunctions();
-  void unloadFunctions();
-  bool isloaded = false;
-
-  init_t init_f;
-  control_handler_t control_handler_f;
-  uninit_t uninit_f;
+  std::string get_lib_info(std::shared_ptr<void> handle,
+                           const std::string &field);
+  const std::string uri_;
+  const std::string base_url_;
+  const std::string name_;
+  PolycubedCore *const core_;
 };
 
-}  // namespace polycubed
-}  // namespace polycube
+}  // namespace polycube::polycubed

@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "polycube/services/guid.h"
-#include "node.h"
 #include "cube.h"
+#include "polycube/services/guid.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
@@ -35,30 +34,37 @@ namespace polycubed {
 
 class PortTC;
 class CubeXDP;
+class TransparentCubeTC;
+class TransparetCubeXDP;
 
 class CubeTC : public Cube {
   friend class PortTC;
   friend class CubeXDP;
+  friend class TransparentCubeTC;
+  friend class TransparentCubeXDP;
 
  public:
-  explicit CubeTC(const std::string &name,
-                  const std::string &service_name,
+  explicit CubeTC(const std::string &name, const std::string &service_name,
                   const std::vector<std::string> &ingres_code,
-                  const std::vector<std::string> &egress_code,
-                  LogLevel level);
+                  const std::vector<std::string> &egress_code, LogLevel level);
   virtual ~CubeTC();
 
  protected:
+  static std::string get_wrapper_code();
+
   static void do_compile(int module_index, ProgramType type, LogLevel level_,
                          ebpf::BPF &bpf, const std::string &code, int index);
   static int do_load(ebpf::BPF &bpf);
   static void do_unload(ebpf::BPF &bpf);
 
-  void compile(ebpf::BPF &bpf, const std::string &code, int index, ProgramType type);
+  void compile(ebpf::BPF &bpf, const std::string &code, int index,
+               ProgramType type);
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 
-  static const std::string WRAPPERC;
+ private:
+  static const std::string CUBE_TC_COMMON_WRAPPER;
+  static const std::string CUBETC_WRAPPER;
 };
 
 }  // namespace polycubed

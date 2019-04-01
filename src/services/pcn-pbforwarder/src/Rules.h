@@ -58,7 +58,6 @@ class Rules : public RulesInterface {
   static void removeEntry(Pbforwarder &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<Rules>> get(Pbforwarder &parent);
   static void remove(Pbforwarder &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulesJsonObject &conf) override;
   RulesJsonObject toJsonObject() override;
@@ -118,7 +117,7 @@ class Rules : public RulesInterface {
   void setDstIp(const std::string &value) override;
 
   /// <summary>
-  /// Level 4 Protocol (i.e. UDP, TCP; default: TCP)
+  /// Level 4 Protocol (i.e. UDP, TCP)
   /// </summary>
   RulesL4ProtoEnum getL4Proto() override;
   void setL4Proto(const RulesL4ProtoEnum &value) override;

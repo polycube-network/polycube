@@ -28,8 +28,9 @@ class IDGenerator {
   ~IDGenerator();
   uint32_t acquire();
   void release(uint32_t v);
+
  private:
- std::set<uint32_t> elements_;
+  std::set<uint32_t> elements_;
   std::mutex mutex_;
 };
 

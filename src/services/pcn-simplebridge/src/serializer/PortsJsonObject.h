@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -29,9 +29,6 @@ namespace swagger {
 namespace server {
 namespace model {
 
-enum class PortsStatusEnum {
-  UP, DOWN
-};
 
 /// <summary>
 ///
@@ -39,25 +36,10 @@ enum class PortsStatusEnum {
 class  PortsJsonObject : public JsonObjectBase {
 public:
   PortsJsonObject();
-  virtual ~PortsJsonObject();
+  PortsJsonObject(const nlohmann::json &json);
+  ~PortsJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// PortsJsonObject members
 
   /// <summary>
   /// Port Name
@@ -65,33 +47,6 @@ public:
   std::string getName() const;
   void setName(std::string value);
   bool nameIsSet() const;
-  void unsetName();
-
-  /// <summary>
-  /// UUID of the port
-  /// </summary>
-  std::string getUuid() const;
-  void setUuid(std::string value);
-  bool uuidIsSet() const;
-  void unsetUuid();
-
-  /// <summary>
-  /// Status of the port (UP or DOWN)
-  /// </summary>
-  PortsStatusEnum getStatus() const;
-  void setStatus(PortsStatusEnum value);
-  bool statusIsSet() const;
-  void unsetStatus();
-  static std::string PortsStatusEnum_to_string(const PortsStatusEnum &value);
-  static PortsStatusEnum string_to_PortsStatusEnum(const std::string &str);
-
-  /// <summary>
-  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)
-  /// </summary>
-  std::string getPeer() const;
-  void setPeer(std::string value);
-  bool peerIsSet() const;
-  void unsetPeer();
 
   /// <summary>
   /// MAC address of the port
@@ -101,20 +56,11 @@ public:
   bool macIsSet() const;
   void unsetMac();
 
-
-protected:
+private:
   std::string m_name;
   bool m_nameIsSet;
-  std::string m_uuid;
-  bool m_uuidIsSet;
-  PortsStatusEnum m_status;
-  bool m_statusIsSet;
-  std::string m_peer;
-  bool m_peerIsSet;
   std::string m_mac;
   bool m_macIsSet;
-
-  std::vector<std::string> allowedParameters_{ "name", "uuid", "status", "peer", "mac" };
 };
 
 }

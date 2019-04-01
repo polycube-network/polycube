@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Frontend.h"
 #include "Lbdsr.h"
 
-Frontend::Frontend(Lbdsr &parent, const FrontendJsonObject &conf): parent_(parent) {
+Frontend::Frontend(Lbdsr &parent, const FrontendJsonObject &conf)
+    : parent_(parent) {
   logger()->info("Creating Frontend instance");
 
   if (conf.vipIsSet()) {
@@ -35,24 +34,24 @@ Frontend::Frontend(Lbdsr &parent, const FrontendJsonObject &conf): parent_(paren
 
 Frontend::Frontend(Lbdsr &parent) : parent_(parent) {}
 
-Frontend::~Frontend() { }
+Frontend::~Frontend() {}
 
 void Frontend::update(const FrontendJsonObject &conf) {
-  //This method updates all the object/parameter in Frontend object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Frontend object specified
+  // in the conf JsonObject.
+  // You can modify this implementation.
 
-  if(conf.vipIsSet()) {
+  if (conf.vipIsSet()) {
     setVip(conf.getVip());
   }
 
-  if(conf.macIsSet()) {
+  if (conf.macIsSet()) {
     setMac(conf.getMac());
   }
 }
 
-FrontendJsonObject Frontend::toJsonObject(){
+FrontendJsonObject Frontend::toJsonObject() {
   FrontendJsonObject conf;
-
 
   conf.setVip(getVip());
 
@@ -61,16 +60,16 @@ FrontendJsonObject Frontend::toJsonObject(){
   return conf;
 }
 
-
-void Frontend::create(Lbdsr &parent, const FrontendJsonObject &conf){
-  //This method creates the actual Frontend object given thee key param.
-  //Please remember to call here the create static method for all sub-objects of Frontend.
+void Frontend::create(Lbdsr &parent, const FrontendJsonObject &conf) {
+  // This method creates the actual Frontend object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of Frontend.
   parent.logger()->debug("[Frontend] Received request to create new Frontend");
   parent.frontend_ = std::make_shared<Frontend>(parent, conf);
 }
 
-std::shared_ptr<Frontend> Frontend::getEntry(Lbdsr &parent){
-  //This method retrieves the pointer to Frontend object specified by its keys.
+std::shared_ptr<Frontend> Frontend::getEntry(Lbdsr &parent) {
+  // This method retrieves the pointer to Frontend object specified by its keys.
   if (parent.frontend_ != nullptr) {
     return parent.frontend_;
   } else {
@@ -78,9 +77,10 @@ std::shared_ptr<Frontend> Frontend::getEntry(Lbdsr &parent){
   }
 }
 
-void Frontend::removeEntry(Lbdsr &parent){
-  //This method removes the single Frontend object specified by its keys.
-  //Remember to call here the remove static method for all-sub-objects of Frontend.
+void Frontend::removeEntry(Lbdsr &parent) {
+  // This method removes the single Frontend object specified by its keys.
+  // Remember to call here the remove static method for all-sub-objects of
+  // Frontend.
   if (parent.frontend_ != nullptr) {
     parent.frontend_ = nullptr;
   } else {
@@ -88,14 +88,13 @@ void Frontend::removeEntry(Lbdsr &parent){
   }
 }
 
-
-std::string Frontend::getVip(){
-  //This method retrieves the vip value.
+std::string Frontend::getVip() {
+  // This method retrieves the vip value.
   return this->vip_;
 }
 
-void Frontend::setVip(const std::string &value){
-  //This method set the vip value.
+void Frontend::setVip(const std::string &value) {
+  // This method set the vip value.
 
   // convert value to hexbe string ip
   logger()->info("Set Vip request str: {0} ", value);
@@ -107,16 +106,15 @@ void Frontend::setVip(const std::string &value){
   this->vip_ = value;
 }
 
-
-std::string Frontend::getMac(){
-  //This method retrieves the mac value.
+std::string Frontend::getMac() {
+  // This method retrieves the mac value.
   return this->mac_;
 }
 
-void Frontend::setMac(const std::string &value){
-  //This method set the mac value.
+void Frontend::setMac(const std::string &value) {
+  // This method set the mac value.
 
-  try{
+  try {
     // convert value to hexbe string ip
     logger()->info("Set Mac request str: {0} ", value);
     std::string mac_hexbe = utils::mac_string_to_hexbe_string(value);
@@ -125,7 +123,7 @@ void Frontend::setMac(const std::string &value){
     // if success set vip and mac_hexbe_string in parent
     parent_.setMacHexbe(mac_hexbe);
     this->mac_ = value;
-  } catch (...){
+  } catch (...) {
     throw std::runtime_error("no valid mac");
   }
 }

@@ -24,47 +24,43 @@ BPF_TABLE("percpu_array", int, u64, bytesIngress, 1);
 BPF_TABLE("percpu_array", int, u64, pktsEgress, 1);
 BPF_TABLE("percpu_array", int, u64, bytesEgress, 1);
 
-
 static __always_inline void incrementCountersIngress(u32 bytes) {
   u64 *value;
-  int zero=0;
-  value= pktsIngress.lookup(&zero);
-  if(value){
-    *value+=1;
+  int zero = 0;
+  value = pktsIngress.lookup(&zero);
+  if (value) {
+    *value += 1;
   }
-  value=bytesIngress.lookup(&zero);
-  if(value){
-    *value+=bytes;
+  value = bytesIngress.lookup(&zero);
+  if (value) {
+    *value += bytes;
   }
-
 }
 
 static __always_inline void incrementCountersEgress(u32 bytes) {
   u64 *value;
-  int zero=0;
-  value= pktsEgress.lookup(&zero);
-  if(value){
-    *value+=1;
+  int zero = 0;
+  value = pktsEgress.lookup(&zero);
+  if (value) {
+    *value += 1;
   }
-  value=bytesEgress.lookup(&zero);
-  if(value){
-    *value+=bytes;
+  value = bytesEgress.lookup(&zero);
+  if (value) {
+    *value += bytes;
   }
-
 }
 
-
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-pcn_log(ctx, LOG_DEBUG, "Default Action receiving packet." );
-   if (md->in_port == _INGRESSPORT){
-     incrementCountersIngress(md->packet_len);
+  pcn_log(ctx, LOG_DEBUG, "Default Action receiving packet.");
+  if (md->in_port == _INGRESSPORT) {
+    incrementCountersIngress(md->packet_len);
     _ACTIONINGRESS
   }
 
-  if (md->in_port == _EGRESSPORT){
+  if (md->in_port == _EGRESSPORT) {
     incrementCountersEgress(md->packet_len);
     _ACTIONEGRESS
   }
 
-return RX_DROP;
+  return RX_DROP;
 }

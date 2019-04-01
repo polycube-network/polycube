@@ -20,33 +20,20 @@
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
-  : Port(port), parent_(static_cast<Firewall&>(parent)) {
+    : Port(port), parent_(static_cast<Firewall &>(parent)) {
   logger()->info(
       "Creating Port. Please remember to set it as ingress or egress.");
-  if(conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
 }
 
 Ports::~Ports() {}
 
 void Ports::update(const PortsJsonObject &conf) {
-  if (conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
+  Port::set_conf(conf.getBase());
 }
 
 PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
-
+  conf.setBase(Port::to_json());
   return conf;
 }
 
@@ -56,7 +43,6 @@ void Ports::create(Firewall &parent, const std::string &name,
 
   parent.add_port<PortsJsonObject>(name, conf);
   auto ports = parent.get_ports();
-
 
   if (ports.size() == 1) {
     // First port inserted. By default this is the ingress port.

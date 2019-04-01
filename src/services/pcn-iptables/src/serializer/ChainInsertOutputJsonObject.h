@@ -36,25 +36,10 @@ namespace model {
 class  ChainInsertOutputJsonObject : public JsonObjectBase {
 public:
   ChainInsertOutputJsonObject();
-  virtual ~ChainInsertOutputJsonObject();
+  ChainInsertOutputJsonObject(const nlohmann::json &json);
+  ~ChainInsertOutputJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainInsertOutputJsonObject members
 
   /// <summary>
   ///
@@ -64,12 +49,9 @@ public:
   bool idIsSet() const;
   void unsetId();
 
-
-protected:
+private:
   uint32_t m_id;
   bool m_idIsSet;
-
-  std::vector<std::string> allowedParameters_{ "id" };
 };
 
 }

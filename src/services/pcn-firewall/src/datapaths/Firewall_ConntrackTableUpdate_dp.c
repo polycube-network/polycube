@@ -241,12 +241,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
-
     // If it is a RST, label it as established.
-    if((pkt->flags & TCPHDR_RST) != 0){
-	connections.delete(&key);
-	connections.delete(&rev_key);
-	goto forward_action;
+    if ((pkt->flags & TCPHDR_RST) != 0) {
+      connections.delete(&key);
+      connections.delete(&rev_key);
+      goto forward_action;
     }
 
     value = connections.lookup(&key);
@@ -322,7 +321,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto forward_action;
       }
 
-      pcn_log(ctx, LOG_DEBUG, "[TableUpdate][FW_DIRECTION] Should not get here. Flags: %d. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[TableUpdate][FW_DIRECTION] Should not get here. Flags: %d. "
+              "State: %d. ",
+              pkt->flags, value->state);
       // TODO Unexpected situation
       goto forward_action;
     }
@@ -386,7 +388,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto forward_action;
       }
 
-      pcn_log(ctx, LOG_DEBUG, "[TableUpdate][REV_DIRECTION] Should not get here. Flags: %d. " "State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[TableUpdate][REV_DIRECTION] Should not get here. Flags: %d. "
+              "State: %d. ",
+              pkt->flags, value->state);
       goto forward_action;
     }
 

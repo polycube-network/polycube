@@ -82,7 +82,7 @@ static __always_inline struct packetHeaders *getPacket() {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
 
 /*The struct elements and the lookup table are defined only if NR_ELEMENTS>0, so
  * this code has to be used only in those cases.*/
@@ -106,23 +106,27 @@ pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
       /*Can't happen. The PERCPU is preallocated.*/
       return RX_DROP;
     } else {
-/*#pragma unroll does not accept a loop with a single iteration, so we need to
- * distinguish cases to avoid a verifier error.*/
-    bool isAllZero = true;
+      /*#pragma unroll does not accept a loop with a single iteration, so we
+       * need to
+       * distinguish cases to avoid a verifier error.*/
+      bool isAllZero = true;
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
-      if (result->bits[0] != 0)  isAllZero = false;
+      if (result->bits[0] != 0)
+        isAllZero = false;
 #else
 #pragma unroll
       for (int i = 0; i < _NR_ELEMENTS; ++i) {
         /*This is the first module, it initializes the percpu*/
         (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
 
-        if (result->bits[i] != 0)  isAllZero = false;
+        if (result->bits[i] != 0)
+          isAllZero = false;
       }
 #endif
       if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG, "Bitvector is all zero. Break pipeline for Ip_TYPE_DIRECTION");
+        pcn_log(ctx, LOG_DEBUG,
+                "Bitvector is all zero. Break pipeline for Ip_TYPE_DIRECTION");
         incrementDefaultCounters_DIRECTION(md->packet_len);
         _DEFAULTACTION
       }

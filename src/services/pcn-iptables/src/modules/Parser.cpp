@@ -74,18 +74,18 @@ std::string Iptables::Parser::getCode() {
     replaceAll(no_macro_code, "call_bpf_program", "call_egress_program");
   }
 
-  if (iptables_.ddos_mitigator_runtime_enabled_) {
-    replaceAll(no_macro_code, "_DDOS_ENABLED", "1");
+  if (iptables_.horus_runtime_enabled_) {
+    replaceAll(no_macro_code, "_HORUS_ENABLED", "1");
   } else {
-    replaceAll(no_macro_code, "_DDOS_ENABLED", "0");
+    replaceAll(no_macro_code, "_HORUS_ENABLED", "0");
   }
 
-  if (iptables_.ddos_mitigator_swap_) {
-    replaceAll(no_macro_code, "_DDOS_MITIGATOR",
-               std::to_string(ModulesConstants::DDOS_INGRESS_SWAP));
+  if (iptables_.horus_swap_) {
+    replaceAll(no_macro_code, "_HORUS",
+               std::to_string(ModulesConstants::HORUS_INGRESS_SWAP));
   } else {
-    replaceAll(no_macro_code, "_DDOS_MITIGATOR",
-               std::to_string(ModulesConstants::DDOS_INGRESS));
+    replaceAll(no_macro_code, "_HORUS",
+               std::to_string(ModulesConstants::HORUS_INGRESS));
   }
 
   return no_macro_code;

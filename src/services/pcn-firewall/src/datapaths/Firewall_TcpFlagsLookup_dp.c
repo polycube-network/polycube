@@ -47,7 +47,6 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-
 BPF_ARRAY(tcpFlags_DIRECTION, struct elements, 256);
 static __always_inline struct elements *getBitVect(int *key) {
   return tcpFlags_DIRECTION.lookup(key);
@@ -71,7 +70,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     // Not possible
     return RX_DROP;
   }
-  if( pkt->l4proto != IPPROTO_TCP){
+  if (pkt->l4proto != IPPROTO_TCP) {
     pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION ignoring packet. ");
     call_ingress_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
@@ -84,7 +83,6 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct elements *ele = getBitVect(&flags);
 
   if (ele == NULL) {
-
     _DEFAULTACTION
   } else {
     struct elements *result = getShared();
@@ -96,7 +94,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
  * distinguish cases to avoid a verifier error.*/
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
-      pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION  Match found. Bitvec: %llu, result %llu. ", (ele->bits)[0], (result->bits)[0]);
+      pcn_log(ctx, LOG_DEBUG,
+              "Code flags _DIRECTION  Match found. Bitvec: %llu, result %llu. ",
+              (ele->bits)[0], (result->bits)[0]);
 #else
       int i = 0;
 #pragma unroll

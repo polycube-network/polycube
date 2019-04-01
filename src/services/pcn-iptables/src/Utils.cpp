@@ -221,8 +221,8 @@ static int ChainRuleConntrackEnumToInt(const ConntrackstatusEnum &status) {
 // convert ip address list from internal rules representation, to Api
 // representation
 bool Chain::ipFromRulesToMap(
-        const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+    const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
   // track if, at least, one wildcard rule is present
   std::vector<uint32_t> dont_care_rules;
 
@@ -368,8 +368,8 @@ bool Chain::ipFromRulesToMap(
       }
     }
 
-    ips.insert(
-        std::pair<struct IpAddr, std::vector<uint64_t>>(wildcard_ip, bitVector));
+    ips.insert(std::pair<struct IpAddr, std::vector<uint64_t>>(wildcard_ip,
+                                                               bitVector));
     brk = false;
   }
 
@@ -385,8 +385,8 @@ bool Chain::ipFromRulesToMap(
 }
 
 bool Chain::transportProtoFromRulesToMap(
-        std::map<int, std::vector<uint64_t>> &protocols,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+    std::map<int, std::vector<uint64_t>> &protocols,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
   std::vector<uint32_t> dont_care_rules;
 
   int proto;
@@ -430,9 +430,9 @@ bool Chain::transportProtoFromRulesToMap(
 }
 
 bool Chain::portFromRulesToMap(
-        const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint16_t> dont_care_rules;
+    const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  std::vector<uint32_t> dont_care_rules;
 
   uint32_t rule_id;
   uint16_t port;
@@ -479,16 +479,71 @@ bool Chain::portFromRulesToMap(
   return brk;
 }
 
-void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
-                                   struct DdosRule &key,
-                                   struct DdosValue &value) {
+bool Chain::interfaceFromRulesToMap(
+    const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &interfaces,
+    const std::vector<std::shared_ptr<ChainRule>> &rules, Iptables &iptables) {
+  std::vector<uint32_t> dont_care_rules;
+
+  uint32_t rule_id;
+  uint16_t interface;
+
+  bool brk = true;
+
+  for (auto const &rule : rules) {
+    try {
+      rule_id = rule->getId();
+      interface = 0;
+      if (type == IN_TYPE) {
+        std::string interface_string = rule->getInIface();
+        interface = iptables.interfaceNameToIndex(interface_string);
+      } else {
+        std::string interface_string = rule->getOutIface();
+        interface = iptables.interfaceNameToIndex(interface_string);
+      }
+    } catch (std::runtime_error re) {
+      // Interface not set: don't care rule.
+      dont_care_rules.push_back(rule_id);
+      continue;
+    }
+
+    auto it = interfaces.find(interface);
+    if (it == interfaces.end()) {
+      // First entry
+      std::vector<uint64_t> bitVector(
+          FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
+      SET_BIT(bitVector[rule_id / 63], rule_id % 63);
+      interfaces.insert(
+          std::pair<uint16_t, std::vector<uint64_t>>(interface, bitVector));
+    } else {
+      SET_BIT((it->second)[rule_id / 63], rule_id % 63);
+    }
+  }
+  // Don't care rules are in all entries. Anyway, this loop is useless if there
+  // are no rules at all requiring matching on this field.
+  if (interfaces.size() != 0 && dont_care_rules.size() != 0) {
+    std::vector<uint64_t> bitVector(
+        FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
+    interfaces.insert(std::pair<uint16_t, std::vector<uint64_t>>(0, bitVector));
+    for (auto const &ruleNumber : dont_care_rules) {
+      for (auto &interface : interfaces) {
+        SET_BIT((interface.second)[ruleNumber / 63], ruleNumber % 63);
+      }
+    }
+    brk = false;
+  }
+  return brk;
+}
+
+void Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+                                    struct HorusRule &key,
+                                    struct HorusValue &value) {
   key.setFields = 0;
 
   try {
     IpAddr ips;
     ips.fromString(rule->getSrc());
     if (ips.netmask == 32) {
-      SET_BIT(key.setFields, DdosConst::SRCIP);
+      SET_BIT(key.setFields, HorusConst::SRCIP);
       key.src_ip = ips.ip;
     }
   } catch (std::runtime_error) {
@@ -498,7 +553,7 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
     IpAddr ipd;
     ipd.fromString(rule->getDst());
     if (ipd.netmask == 32) {
-      SET_BIT(key.setFields, DdosConst::DSTIP);
+      SET_BIT(key.setFields, HorusConst::DSTIP);
       key.dst_ip = ipd.ip;
     }
   } catch (std::runtime_error) {
@@ -506,21 +561,21 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
 
   try {
     uint8_t proto = Iptables::protocolFromStringToInt(rule->getL4proto());
-    SET_BIT(key.setFields, DdosConst::L4PROTO);
+    SET_BIT(key.setFields, HorusConst::L4PROTO);
     key.l4proto = proto;
   } catch (std::runtime_error) {
   }
 
   try {
     uint16_t srcport = rule->getSport();
-    SET_BIT(key.setFields, DdosConst::SRCPORT);
+    SET_BIT(key.setFields, HorusConst::SRCPORT);
     key.src_port = srcport;
   } catch (std::runtime_error) {
   }
 
   try {
     uint16_t dstport = rule->getDport();
-    SET_BIT(key.setFields, DdosConst::DSTPORT);
+    SET_BIT(key.setFields, HorusConst::DSTPORT);
     key.dst_port = dstport;
   } catch (std::runtime_error) {
   }
@@ -538,11 +593,11 @@ void Chain::fromRuleToDdosKeyValue(std::shared_ptr<ChainRule> rule,
   return;
 }
 
-void Chain::ddosFromRulesToMap(
-        std::map<struct DdosRule, struct DdosValue> &ddos,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  struct DdosRule key;
-  struct DdosValue value;
+void Chain::horusFromRulesToMap(
+    std::map<struct HorusRule, struct HorusValue> &horus,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  struct HorusRule key;
+  struct HorusValue value;
 
   bool first_rule = true;
   uint64_t set_fields = 0;
@@ -553,7 +608,7 @@ void Chain::ddosFromRulesToMap(
 
   for (auto const &rule : rules) {
     i++;
-    fromRuleToDdosKeyValue(rule, key, value);
+    fromRuleToHorusKeyValue(rule, key, value);
 
     if (i == 1) {
       if (key.setFields == 0) {
@@ -567,13 +622,13 @@ void Chain::ddosFromRulesToMap(
       break;
     }
 
-    ddos.insert(std::pair<struct DdosRule, struct DdosValue>(key, value));
+    horus.insert(std::pair<struct HorusRule, struct HorusValue>(key, value));
   }
 }
 
 bool Chain::conntrackFromRulesToMap(
-        std::map<uint8_t, std::vector<uint64_t>> &statusMap,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+    std::map<uint8_t, std::vector<uint64_t>> &statusMap,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
   std::vector<uint8_t> statesVector({NEW, ESTABLISHED, RELATED, INVALID});
   uint32_t rule_id;
   uint8_t rule_state;
@@ -612,8 +667,8 @@ bool Chain::conntrackFromRulesToMap(
 }
 
 bool Chain::flagsFromRulesToMap(
-        std::vector<std::vector<uint64_t>> &flags,
-        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+    std::vector<std::vector<uint64_t>> &flags,
+    const std::vector<std::shared_ptr<ChainRule>> &rules) {
   flags.clear();
   // Preliminary check if there are rules requiring match on flags.
   bool are_flags_present = false;
@@ -630,7 +685,8 @@ bool Chain::flagsFromRulesToMap(
     return false;
   }
 
-  std::vector<uint64_t> bitVector(FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
+  std::vector<uint64_t> bitVector(
+      FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
   for (int j = 0; j < 256; ++j) {
     // Flags map is an ARRAY. All entries will be allocated, this requires to
     // populate the entire table.

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -30,27 +30,6 @@ public:
 
   virtual void update(const PortsJsonObject &conf) = 0;
   virtual PortsJsonObject toJsonObject() = 0;
-
-  /// <summary>
-  /// Port Name
-  /// </summary>
-  virtual std::string getName() = 0;
-
-  /// <summary>
-  /// UUID of the port
-  /// </summary>
-  virtual std::string getUuid() = 0;
-
-  /// <summary>
-  /// Status of the port (UP or DOWN)
-  /// </summary>
-  virtual PortsStatusEnum getStatus() = 0;
-
-  /// <summary>
-  /// Peer name, such as a network interfaces (e.g., &#39;veth0&#39;) or another cube (e.g., &#39;br1:port2&#39;)
-  /// </summary>
-  virtual std::string getPeer() = 0;
-  virtual void setPeer(const std::string &value) = 0;
 
   /// <summary>
   /// MAC address of the port

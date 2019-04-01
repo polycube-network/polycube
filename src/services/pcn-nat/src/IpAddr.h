@@ -22,32 +22,32 @@
 using namespace polycube::service;
 
 struct IpAddr {
-    uint32_t ip;
-    uint8_t netmask;
-    std::string toString() const {
-      return utils::be_uint_to_ip_string(ip) +
-             "/" + std::to_string(netmask);
-    }
-    void fromString(std::string ipnetmask) {
-      std::string ip_;
-      uint8_t netmask_;
+  uint32_t ip;
+  uint8_t netmask;
+  std::string toString() const {
+    return utils::be_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
+  }
+  void fromString(std::string ipnetmask) {
+    std::string ip_;
+    uint8_t netmask_;
 
-      std::size_t found = ipnetmask.find("/");
-      if (found != std::string::npos) {
-        std::string netmask = ipnetmask.substr(found + 1, std::string::npos);
-        netmask_ = std::stol(netmask);
-      } else {
-        netmask_ = 32;
-      }
-
-      if (netmask_ > 32)
-        throw std::runtime_error("Netmask can't be bigger than 32");
-
-      ip_ = ipnetmask.substr(0, found);
-      ip = utils::ip_string_to_be_uint(ip_);
-      netmask = netmask_;
+    std::size_t found = ipnetmask.find("/");
+    if (found != std::string::npos) {
+      std::string netmask = ipnetmask.substr(found + 1, std::string::npos);
+      netmask_ = std::stol(netmask);
+    } else {
+      netmask_ = 32;
     }
-    bool operator<(const IpAddr &that) const {
-        return std::make_pair(this->ip, this->netmask) < std::make_pair(that.ip, that.netmask);
-    }
+
+    if (netmask_ > 32)
+      throw std::runtime_error("Netmask can't be bigger than 32");
+
+    ip_ = ipnetmask.substr(0, found);
+    ip = utils::ip_string_to_be_uint(ip_);
+    netmask = netmask_;
+  }
+  bool operator<(const IpAddr &that) const {
+    return std::make_pair(this->ip, this->netmask) <
+           std::make_pair(that.ip, that.netmask);
+  }
 };

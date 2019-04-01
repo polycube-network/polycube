@@ -25,7 +25,7 @@
 #include "polycube/services/port_iface.h"
 
 namespace Tins {
-  class EthernetII;
+class EthernetII;
 }
 
 using Tins::EthernetII;
@@ -39,7 +39,7 @@ class Port {
  public:
   Port(std::shared_ptr<PortIface> port);
   ~Port();
-  void send_packet_out(EthernetII &packet, Direction direction = Direction::EGRESS);
+  void send_packet_out(EthernetII &packet, bool recirculate = false);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);
@@ -47,6 +47,13 @@ class Port {
   const Guid &uuid() const;
   PortStatus get_status() const;
   PortType get_type() const;
+
+  virtual void set_conf(const nlohmann::json &conf);
+  virtual nlohmann::json to_json() const;
+
+  // The code generation depends on this function, that's the reason why
+  // this uses a different naming convention
+  std::string getName() const;
 
  private:
   class impl;

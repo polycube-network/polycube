@@ -63,6 +63,16 @@ void ChainRule::update(const ChainRuleJsonObject &conf) {
     l4Proto = protocolFromStringToInt(conf.getL4proto());
     l4ProtoIsSet = true;
   }
+  if (conf.inIfaceIsSet()) {
+    this->inIface = conf.getInIface();
+    parent_.parent_.interfaceNameToIndex(inIface);
+    inIfaceIsSet = true;
+  }
+  if (conf.outIfaceIsSet()) {
+    this->outIface = conf.getOutIface();
+    parent_.parent_.interfaceNameToIndex(outIface);
+    outIfaceIsSet = true;
+  }
   if (conf.actionIsSet()) {
     this->action = conf.getAction();
     actionIsSet = true;
@@ -426,10 +436,12 @@ void ChainRule::setDst(const std::string &value) {
       "new one.");
 }
 
-// TODO TO IMPLEMENT
 std::string ChainRule::getOutIface() {
   // This method retrieves the outIface value.
-  throw std::runtime_error("[ChainRule]: Method getOutIface not implemented");
+  if (!outIfaceIsSet) {
+    throw std::runtime_error("Out iface not set.");
+  }
+  return this->outIface;
 }
 
 void ChainRule::setOutIface(const std::string &value) {
@@ -470,10 +482,12 @@ void ChainRule::setTcpflags(const std::string &value) {
       "new one.");
 }
 
-// TODO TO IMPLEMENT
 std::string ChainRule::getInIface() {
   // This method retrieves the inIface value.
-  throw std::runtime_error("[ChainRule]: Method getInIface not implemented");
+  if (!inIfaceIsSet) {
+    throw std::runtime_error("Out iface not set.");
+  }
+  return this->inIface;
 }
 
 void ChainRule::setInIface(const std::string &value) {

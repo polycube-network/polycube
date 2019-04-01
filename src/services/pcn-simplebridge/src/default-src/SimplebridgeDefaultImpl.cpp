@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -14,74 +14,6 @@
 
 
 #include "../Simplebridge.h"
-
-
-
-
-std::string Simplebridge::getName(){
-  // This method retrieves the name value.
-  return Cube::get_name();
-}
-
-
-std::string Simplebridge::getUuid(){
-  // This method retrieves the uuid value.
-  return Cube::get_uuid().str();
-}
-
-
-CubeType Simplebridge::getType(){
-  // This method retrieves the type value.
-  return Cube::get_type();
-}
-
-
-SimplebridgeLoglevelEnum Simplebridge::getLoglevel(){
-  // This method retrieves the loglevel value.
-    switch(Cube::get_log_level()){
-      case polycube::LogLevel::TRACE:
-        return SimplebridgeLoglevelEnum::TRACE;
-      case polycube::LogLevel::DEBUG:
-        return SimplebridgeLoglevelEnum::DEBUG;
-      case polycube::LogLevel::INFO:
-        return SimplebridgeLoglevelEnum::INFO;
-      case polycube::LogLevel::WARN:
-        return SimplebridgeLoglevelEnum::WARN;
-      case polycube::LogLevel::ERR:
-        return SimplebridgeLoglevelEnum::ERR;
-      case polycube::LogLevel::CRITICAL:
-        return SimplebridgeLoglevelEnum::CRITICAL;
-      case polycube::LogLevel::OFF:
-        return SimplebridgeLoglevelEnum::OFF;
-    }
-}
-
-void Simplebridge::setLoglevel(const SimplebridgeLoglevelEnum &value){
-  // This method sets the loglevel value.
-    switch(value){
-      case SimplebridgeLoglevelEnum::TRACE:
-        Cube::set_log_level(polycube::LogLevel::TRACE);
-        break;
-      case SimplebridgeLoglevelEnum::DEBUG:
-        Cube::set_log_level(polycube::LogLevel::DEBUG);
-        break;
-      case SimplebridgeLoglevelEnum::INFO:
-        Cube::set_log_level(polycube::LogLevel::INFO);
-        break;
-      case SimplebridgeLoglevelEnum::WARN:
-        Cube::set_log_level(polycube::LogLevel::WARN);
-        break;
-      case SimplebridgeLoglevelEnum::ERR:
-        Cube::set_log_level(polycube::LogLevel::ERR);
-        break;
-      case SimplebridgeLoglevelEnum::CRITICAL:
-        Cube::set_log_level(polycube::LogLevel::CRITICAL);
-        break;
-      case SimplebridgeLoglevelEnum::OFF:
-        Cube::set_log_level(polycube::LogLevel::OFF);
-        break;
-    }
-}
 
 std::shared_ptr<Ports> Simplebridge::getPorts(const std::string &name){
   return Ports::getEntry(*this, name);

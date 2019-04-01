@@ -76,9 +76,8 @@ void Actions::create(Simpleforwarder &parent, const std::string &inport,
     }
   }
 
-  action map_value {
-    .action = actionEnumToNumber(conf.getAction()),
-    .port = outPortId,
+  action map_value{
+      .action = actionEnumToNumber(conf.getAction()), .port = outPortId,
   };
 
   auto actions_table = parent.get_hash_table<uint16_t, action>("actions");
@@ -142,7 +141,7 @@ std::vector<std::shared_ptr<Actions>> Actions::get(Simpleforwarder &parent) {
   auto actions_table = parent.get_hash_table<uint16_t, action>("actions");
   auto entries = actions_table.get_all();
 
-  for (auto &entry: entries) {
+  for (auto &entry : entries) {
     actionsPtr.push_back(getEntry(parent, std::to_string(entry.first)));
   }
 

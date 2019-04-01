@@ -16,47 +16,115 @@
 
 #include "port.h"
 #include "controller.h"
+#include "extiface.h"
 #include "netlink.h"
 
 #include "service_controller.h"
 
+// workaround for now
+#include "polycubed_core.h"
+extern polycube::polycubed::PolycubedCore *core;
+
 namespace polycube {
 namespace polycubed {
 
-Port::Port(CubeIface &parent, const std::string &name, uint16_t index)
-    : parent_(parent),
+Port::Port(CubeIface &parent, const std::string &name, uint16_t index,
+           const nlohmann::json &conf)
+    : PeerIface(port_mutex_),
+      parent_(parent),
       name_(name),
       path_(parent.get_name() + ":" + name),
       index_(index),
       uuid_(GuidGenerator().newGuid()),
       peer_port_(nullptr),
-      peer_iface_(nullptr),
       logger(spdlog::get("polycubed")) {
-  netlink_notification_index = Netlink::getInstance().registerObserver(Netlink::Event::LINK_DELETED,
-                               std::bind(&Port::netlink_notification, this, std::placeholders::_1, std::placeholders::_2));
+  netlink_notification_index = Netlink::getInstance().registerObserver(
+      Netlink::Event::LINK_DELETED,
+      std::bind(&Port::netlink_notification, this, std::placeholders::_1,
+                std::placeholders::_2));
 }
 
 Port::~Port() {
-  Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED, netlink_notification_index);
+  Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED,
+                                            netlink_notification_index);
 }
 
+uint16_t Port::get_port_id() const {
+  return index_;  // TODO: rename this variable
+}
+
+// TODO: to be renamed
 uint16_t Port::index() const {
   return index_;
+}
+
+uint16_t Port::get_index() const {
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  return __get_index();
+}
+
+uint16_t Port::__get_index() const {
+  // check if there is ingress-enabled transparent cube
+  for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
+    auto index = (*it)->get_index(ProgramType::INGRESS);
+    if (index) {
+      return index;
+    }
+  }
+  // there are not transparent cubes
+  return get_parent_index();
+}
+
+void Port::set_next_index(uint16_t index) {
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  // TODO
+  if (index == 0) {
+    return;
+  }
+
+  // it there is loaded an egrees cube, set next on it
+  for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
+    if ((*it)->get_index(ProgramType::EGRESS)) {
+      (*it)->set_next(index, ProgramType::EGRESS);
+      return;
+    }
+  }
+
+  update_parent_fwd_table(index);
+}
+
+void Port::set_peer_iface(PeerIface *peer) {
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  peer_port_ = peer;
+  update_indexes();
+}
+
+PeerIface *Port::get_peer_iface() {
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  return peer_port_;
+}
+
+std::string Port::get_parameter(const std::string &parameter) {
+  return core->get_cube_port_parameter(parent_.get_name(), name(), parameter);
 }
 
 const Guid &Port::uuid() const {
   return uuid_;
 }
 
-uint32_t Port::serialize_ingress() const {
-  return index_ << 16 | parent_.get_index(ProgramType::INGRESS);
-};
+// gets index of element that should be called when a packet comes in
+uint16_t Port::get_parent_index() const {
+  return parent_.get_index(ProgramType::INGRESS);
+}
 
-uint32_t Port::serialize_egress() const {
-  if (!parent_.get_index(ProgramType::EGRESS))
-    return 0;
-  return index_ << 16 | parent_.get_index(ProgramType::EGRESS);
-};
+uint16_t Port::get_egress_index() const {
+  return parent_.get_index(ProgramType::EGRESS);
+}
+
+void Port::update_parent_fwd_table(uint16_t next) {
+  uint16_t id = peer_port_ ? peer_port_->get_port_id() : 0;
+  parent_.update_forwarding_table(index(), next | id << 16);
+}
 
 std::string Port::name() const {
   return name_;
@@ -67,11 +135,11 @@ std::string Port::get_path() const {
 }
 
 bool Port::operator==(const PortIface &rhs) const {
-  if(dynamic_cast<const Port *>(&rhs) != NULL)
+  if (dynamic_cast<const Port *>(&rhs) != NULL)
     return this->uuid() == rhs.uuid();
   else
     return false;
-};
+}
 
 void Port::netlink_notification(int ifindex, const std::string &ifname) {
   if (peer_ == ifname) {
@@ -99,17 +167,32 @@ const std::string &Port::peer() const {
 
 PortStatus Port::get_status() const {
   std::lock_guard<std::mutex> guard(port_mutex_);
-  if (peer_port_ || peer_iface_)
-    return PortStatus::UP;
-
-  return PortStatus::DOWN;
+  return peer_port_ ? PortStatus::UP : PortStatus::DOWN;
 }
 
 PortType Port::get_type() const {
   return type_;
 }
 
-void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction direction) {
+void Port::set_conf(const nlohmann::json &conf) {
+  if (conf.count("peer")) {
+    set_peer(conf.at("peer").get<std::string>());
+  }
+}
+
+nlohmann::json Port::to_json() const {
+  nlohmann::json val;
+
+  val["name"] = name();
+  val["uuid"] = uuid().str();
+  val["status"] = port_status_to_string(get_status());
+  val["peer"] = peer();
+
+  return val;
+}
+
+void Port::send_packet_out(const std::vector<uint8_t> &packet,
+                           bool recirculate) {
   if (get_status() != PortStatus::UP) {
     logger->warn("packetout: port {0}:{1} is down", parent_.get_name(), name_);
     return;
@@ -117,58 +200,98 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet, Direction directi
 
   std::lock_guard<std::mutex> guard(port_mutex_);
 
-  Controller &c = (type_ == PortType::TC) ? Controller::get_tc_instance() :
-                                            Controller::get_xdp_instance();
+  Controller &c = (type_ == PortType::TC) ? Controller::get_tc_instance()
+                                          : Controller::get_xdp_instance();
 
   uint16_t port;
   uint16_t module;
 
-  if (direction == Direction::INGRESS) {
-    module = parent_.get_index(ProgramType::INGRESS);
+  if (recirculate) {
+    module = get_parent_index();
     port = index();
-  } else if (direction == Direction::EGRESS) {
-    if(peer_port_) {
-      module = static_cast<Port*>(peer_port_)->parent_.get_index(ProgramType::INGRESS);
-      port = peer_port_->index();
-    } else if(peer_iface_) {
-      module = peer_iface_->get_index();
-      port = 0;
-    }
+  } else if (peer_port_) {
+    port = peer_port_->get_port_id();
+    module = peer_port_->get_index();
   }
   c.send_packet_to_cube(module, port, packet);
 }
 
-void Port::connect(Port &p1, Node &iface) {
-  std::lock_guard<std::mutex> guard(p1.port_mutex_);
-  p1.peer_iface_ = &iface;
-  // TODO: provide an accessor for forward chain?
-  // Even smarter, should be forward chain a property of Port?
-  p1.parent_.update_forwarding_table(p1.index_, iface.get_index());
+void Port::update_indexes() {
+  int i;
+
+  // TODO: could we avoid to recalculate in case there is not peer?
+
+  std::vector<uint16_t> ingress_indexes(cubes_.size());
+  std::vector<uint16_t> egress_indexes(cubes_.size());
+
+  for (i = 0; i < cubes_.size(); i++) {
+    ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
+    egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
+  }
+
+  // ingress chain: peer -> cube[N-1] -> ... -> cube[0] -> port
+  // CASE2: cube[0] -> port
+  for (i = 0; i < cubes_.size(); i++) {
+    if (ingress_indexes[i]) {
+      cubes_[i]->set_next(get_parent_index(), ProgramType::INGRESS);
+      break;
+    }
+  }
+
+  // cube[N-1] -> ... -> cube[0]
+  for (int j = i + 1; j < cubes_.size(); j++) {
+    if (ingress_indexes[j]) {
+      cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
+      i = j;
+    }
+  }
+
+  // CASE4: peer -> cube[N-1]
+  if (peer_port_) {
+    peer_port_->set_next_index(__get_index());
+  }
+
+  // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
+  // CASE3: cube[N-1] -> peer
+  uint16_t egress_next = peer_port_ ? peer_port_->get_index() : 0;
+  for (i = cubes_.size() - 1; i >= 0; i--) {
+    if (egress_indexes[i]) {
+      cubes_[i]->set_next(egress_next, ProgramType::EGRESS);
+      break;
+    }
+  }
+
+  if (i < 0) {
+    update_parent_fwd_table(egress_next);
+    return;
+  }
+
+  // cube[N-2] -> Tcube[N-1] (egress)
+  // i = 0;
+  for (int j = i - 1; j >= 0; j--) {
+    if (egress_indexes[j]) {
+      cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
+      i = j;
+    }
+  }
+
+  // CASE1: port -> cubes[0]
+  for (i = 0; i < cubes_.size(); i++) {
+    if (egress_indexes[i]) {
+      update_parent_fwd_table(egress_indexes[i]);
+      break;
+    }
+  }
 }
 
-void Port::connect(Port &p1, Port &p2) {
-  std::lock_guard<std::mutex> guard1(p1.port_mutex_);
-  std::lock_guard<std::mutex> guard2(p2.port_mutex_);
-  p1.logger->debug("connecting ports {0} and {1}", p1.name_, p2.name_);
-  p1.peer_port_ = &p2;
-  p2.peer_port_ = &p1;
-  p1.parent_.update_forwarding_table(p1.index_, p2.serialize_ingress());
-  p2.parent_.update_forwarding_table(p2.index_, p1.serialize_ingress());
+void Port::connect(PeerIface &p1, PeerIface &p2) {
+  p1.set_peer_iface(&p2);
+  p2.set_peer_iface(&p1);
 }
 
-void Port::unconnect(Port &p1, Node &iface) {
-  std::lock_guard<std::mutex> guard(p1.port_mutex_);
-  p1.peer_iface_ = nullptr;
-  p1.parent_.update_forwarding_table(p1.index_, 0);
-}
-
-void Port::unconnect(Port &p1, Port &p2) {
-  std::lock_guard<std::mutex> guard1(p1.port_mutex_);
-  std::lock_guard<std::mutex> guard2(p2.port_mutex_);
-  p1.peer_port_ = nullptr;
-  p2.peer_port_ = nullptr;
-  p1.parent_.update_forwarding_table(p1.index_, 0);
-  p2.parent_.update_forwarding_table(p2.index_, 0);
+void Port::unconnect(PeerIface &p1, PeerIface &p2) {
+  p1.set_peer_iface(nullptr);
+  p2.set_peer_iface(nullptr);
 }
 
 }  // namespace polycubed

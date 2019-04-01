@@ -4,3 +4,15 @@
 # Use this file to prevent files from being overwritten by the generator.
 
 .swagger-codegen-ignore
+
+cmake/
+
+CMakeLists.txt
+
+src/*.cpp
+src/*.c
+src/*.h
+
+!src/*lib.cpp
+
+src/CMakeLists.txt

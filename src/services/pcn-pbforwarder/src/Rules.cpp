@@ -376,25 +376,27 @@ rule Rules::to_rule() {
   uint16_t outPortIndex = 0;
   try {
     inPortIndex = parent_.get_port(inPort)->index();
-  } catch (...) {}
+  } catch (...) {
+  }
 
   try {
     outPortIndex = parent_.get_port(outPort)->index();
-  } catch (...) {}
+  } catch (...) {
+  }
 
-  rule r {
-    .srcMac = utils::mac_string_to_be_uint(srcMac),
-    .dstMac = utils::mac_string_to_be_uint(dstMac),
-    .vlanid = vlan,
-    .srcIp = utils::ip_string_to_be_uint(srcIp),
-    .dstIp = utils::ip_string_to_be_uint(dstIp),
-    .lvl4_proto = rulesL4ProtoEnum_to_int(L4Proto),
-    .src_port = srcPort,
-    .dst_port = dstPort,
-    .inport = inPortIndex,
-    .action = rulesActionEnum_to_int(action),
-    .outport = outPortIndex,
-    .flags = flags,
+  rule r{
+      .srcMac = utils::mac_string_to_be_uint(srcMac),
+      .dstMac = utils::mac_string_to_be_uint(dstMac),
+      .vlanid = vlan,
+      .srcIp = utils::ip_string_to_be_uint(srcIp),
+      .dstIp = utils::ip_string_to_be_uint(dstIp),
+      .lvl4_proto = rulesL4ProtoEnum_to_int(L4Proto),
+      .src_port = srcPort,
+      .dst_port = dstPort,
+      .inport = inPortIndex,
+      .action = rulesActionEnum_to_int(action),
+      .outport = outPortIndex,
+      .flags = flags,
   };
 
   return r;
@@ -477,7 +479,7 @@ void Rules::updateRuleMapAndReload() {
         parent_.nr_rules != oldNrRules) {
       parent_.match_level = oldMatchLevel;
       parent_.nr_rules = oldNrRules;
-    parent_.reload(parent_.generate_code_parsing(), 0);
+      parent_.reload(parent_.generate_code_parsing(), 0);
       parent_.reload(parent_.generate_code_matching(), 1);
     }
 

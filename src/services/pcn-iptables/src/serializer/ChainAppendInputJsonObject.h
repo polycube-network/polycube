@@ -48,25 +48,10 @@ enum class ActionEnum {
 class  ChainAppendInputJsonObject : public JsonObjectBase {
 public:
   ChainAppendInputJsonObject();
-  virtual ~ChainAppendInputJsonObject();
+  ChainAppendInputJsonObject(const nlohmann::json &json);
+  ~ChainAppendInputJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainAppendInputJsonObject members
 
   /// <summary>
   /// Name of the interface via which the packet is received
@@ -152,8 +137,7 @@ public:
   static std::string ActionEnum_to_string(const ActionEnum &value);
   static ActionEnum string_to_ActionEnum(const std::string &str);
 
-
-protected:
+private:
   std::string m_inIface;
   bool m_inIfaceIsSet;
   std::string m_outIface;
@@ -174,8 +158,6 @@ protected:
   bool m_conntrackIsSet;
   ActionEnum m_action;
   bool m_actionIsSet;
-
-  std::vector<std::string> allowedParameters_{ "in-iface", "out-iface", "src", "dst", "l4proto", "sport", "dport", "tcpflags", "conntrack", "action" };
 };
 
 }

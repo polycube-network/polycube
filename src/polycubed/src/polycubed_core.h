@@ -17,41 +17,43 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <list>
+#include <string>
+#include <unordered_map>
 
-#include "polycube/services/http.h"
+#include "base_model.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "service_controller.h"
 
-#include "extiface_info.h"
 #include "cube_factory_impl.h"
+#include "extiface_info.h"
 #include "netlink.h"
 
 using json = nlohmann::json;
 
-using polycube::service::HttpHandleRequest;
-using polycube::service::HttpHandleResponse;
-
 namespace polycube {
 namespace polycubed {
 
+class RestServer;
+
 class PolycubedCore {
  public:
-  PolycubedCore();
+  PolycubedCore(BaseModel *base_model);
   ~PolycubedCore();
 
-  void control_handler(const std::string &service,
-                       const HttpHandleRequest &request,
-                       HttpHandleResponse &response);
-
-  void add_servicectrl(const std::string &name, const std::string &path);
+  void add_servicectrl(const std::string &name, ServiceControllerType type,
+                       const std::string &base_url, const std::string &path);
   std::string get_servicectrl(const std::string &name);
+  const ServiceController &get_service_controller(
+      const std::string &name) const;
   std::string get_servicectrls();
   std::list<std::string> get_servicectrls_names();
   std::list<ServiceController const *> get_servicectrls_list() const;
   void delete_servicectrl(const std::string &name);
+  void clear_servicectrl_list();
 
   std::string get_cube(const std::string &name);
   std::string get_cubes();
@@ -63,17 +65,34 @@ class PolycubedCore {
 
   void connect(const std::string &peer1, const std::string &peer2);
   void disconnect(const std::string &peer1, const std::string &peer2);
+  void attach(const std::string &cube_name, const std::string &port_name,
+              const std::string &position, const std::string &other);
+  void detach(const std::string &cube_name, const std::string &port_name);
 
   void set_polycubeendpoint(std::string &polycube);
   std::string get_polycubeendpoint();
 
+  std::string get_cube_port_parameter(const std::string &cube,
+                                      const std::string &port_name,
+                                      const std::string &parameter);
+  std::string set_cube_parameter(const std::string &cube,
+                                 const std::string &parameter,
+                                 const std::string &value);
+
+  std::vector<std::string> get_all_ports();
+
+  void set_rest_server(RestServer *rest_server);
+  RestServer *get_rest_server();
+  BaseModel *base_model();
+
  private:
-  bool try_to_set_peer(const std::string &peer1,
-                       const std::string &peer2);
+  bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
 
   std::unordered_map<std::string, ServiceController> servicectrls_map_;
   std::string polycubeendpoint_;
   std::shared_ptr<spdlog::logger> logger;
+  RestServer *rest_server_;
+  BaseModel *base_model_;
 };
 
 }  // namespace polycubed

@@ -291,9 +291,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       // Valid entry
 
       // If it is a RST, label it as established.
-      if((pkt->flags & TCPHDR_RST) != 0){
-	pkt->connStatus = ESTABLISHED;
-	goto action;
+      if ((pkt->flags & TCPHDR_RST) != 0) {
+        pkt->connStatus = ESTABLISHED;
+        goto action;
       }
 
       if (value->state == SYN_SENT) {
@@ -336,7 +336,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       // Unexpected situation
-      pcn_log(ctx, LOG_DEBUG, "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
     }
@@ -362,9 +364,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       // If it is a RST, label it as established.
-      if((pkt->flags & TCPHDR_RST) != 0){
-	pkt->connStatus = ESTABLISHED;
-	goto action;
+      if ((pkt->flags & TCPHDR_RST) != 0) {
+        pkt->connStatus = ESTABLISHED;
+        goto action;
       }
 
       if (value->state == SYN_SENT) {
@@ -402,7 +404,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
-      pcn_log(ctx, LOG_DEBUG, "[REV_DIRECTION] Should not get here. Flags: %d. State: %d. ", pkt->flags, value->state);
+      pcn_log(ctx, LOG_DEBUG,
+              "[REV_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
     }
@@ -420,7 +424,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d", pkt->l4proto);
+  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d",
+          pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
   pkt->connStatus = INVALID;

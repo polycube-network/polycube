@@ -38,11 +38,13 @@ class PatchPanel {
   ~PatchPanel();
   void add(Node &n);
   void add(Node &n, uint16_t index);  // add node at specific position
-  uint16_t add(int fd); // returns the index
+  uint16_t add(int fd);               // returns the index
   void remove(Node &n);
   void remove(uint16_t index);
   void update(Node &n);
   void update(uint16_t index, int fd);
+
+  static const int _POLYCUBE_MAX_NODES = 1024;
 
  private:
   PatchPanel(const std::string &map_name, int max_nodes);

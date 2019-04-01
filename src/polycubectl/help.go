@@ -141,6 +141,9 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 
 		children, _ = jsonParsed.S("optional-params").ChildrenMap()
 		if len(children.Keys()) > 0 {
+			if countLines == 0 {
+				countLines++
+			}
 			Output = append(Output, []string{""})
 			Output = append(Output, []string{"Other parameters:"})
 		}
@@ -392,6 +395,10 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			Output = append(Output, []string{""})
 			Output = append(Output, []string{"connect", "command", "Connect ports"})
 			Output = append(Output, []string{"disconnect", "command", "Disconnect ports"})
+			Output = append(Output, []string{""})
+
+			Output = append(Output, []string{"attach", "command", "Attach transparent cubes"})
+			Output = append(Output, []string{"detach", "command", "Detach transparent cubes"})
 			Output = append(Output, []string{""})
 
 			// hardcoded root help for services/cubes/netdevs commands

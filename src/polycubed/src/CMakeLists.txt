@@ -1,5 +1,10 @@
 find_package(PkgConfig REQUIRED)
 
+find_package(Pistache CONFIG REQUIRED)
+
+find_package(OpenSSL REQUIRED)
+include_directories(OPENSSL_INCLUDE_DIR)
+
 pkg_check_modules(NL3 libnl-3.0)
 pkg_check_modules(NL3GENL libnl-genl-3.0)
 pkg_check_modules(NL3ROUTE libnl-route-3.0)
@@ -9,9 +14,9 @@ pkg_check_modules(TINS libtins)
 include_directories(${NL3_INCLUDE_DIRS})
 include_directories(${TINS_INCLUDE_DIRS})
 
-include_directories(${CMAKE_SOURCE_DIR}/src/libs/polycube/include)
-include_directories(${CMAKE_SOURCE_DIR}/src/libs/spdlog)
-include_directories(${CMAKE_SOURCE_DIR}/src/libs/viface)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/polycube/include/)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/spdlog/)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/viface/)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/)
 
 GET_PROPERTY(LOAD_SERVICES GLOBAL PROPERTY LOAD_SERVICES_)
@@ -22,23 +27,30 @@ configure_file(version.cpp.in version.cpp)
 # this is needed for load_services.cpp that is located under a different folder
 include_directories(.)
 
+add_subdirectory(server)
+
 set(polycubed_sources
   bcc_mutex.cpp
   config.cpp
   polycubed.cpp
+  base_model.cpp
   cube_factory_impl.cpp
-  dynamic_library.cpp
   management_lib.cpp
   polycubed_core.cpp
   rest_server.cpp
+  peer_iface.cpp
   port.cpp
   port_tc.cpp
   port_xdp.cpp
+  base_cube.cpp
   cube.cpp
   cube_tc.cpp
   cube_xdp.cpp
+  transparent_cube.cpp
+  transparent_cube_tc.cpp
+  transparent_cube_xdp.cpp
   controller.cpp
-  port_host.cpp
+  extiface.cpp
   extiface_tc.cpp
   extiface_xdp.cpp
   extiface_info.cpp
@@ -48,6 +60,7 @@ set(polycubed_sources
   datapath_log.cpp
   utils.cpp
   id_generator.cpp
+  ${server_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/load_services.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
@@ -62,8 +75,9 @@ set(polycubed_libraries
   pistache
   pthread
   bcc-static
-  ssl
-  crypto
+  yang
+  xpath
+  ${OPENSSL_LIBRARIES}
   ${NL3_LIBRARIES}
   ${NL3ROUTE_LIBRARIES}
   ${NL3GENL_LIBRARIES}
@@ -75,7 +89,7 @@ if (HAVE_POLYCUBE_TOOLS)
 endif (HAVE_POLYCUBE_TOOLS)
 
 target_link_libraries(polycubed
-  ${polycubed_libraries})
+        ${polycubed_libraries})
 
 # for now install the binary directly, later on we could create a folder with
 # the binary and all the resources

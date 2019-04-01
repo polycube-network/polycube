@@ -28,6 +28,8 @@ const (
 	TopologyCommandStr   = "topology"
 	ConnectCommandStr    = "connect"
 	DisconnectCommandStr = "disconnect"
+	AttachCommandStr     = "attach"
+	DetachCommandStr     = "detach"
 	ServicesCommandStr   = "services"
 	VersionCommandStr    = "version"
 )
@@ -239,6 +241,135 @@ func FillAliases() {
 		},
 	}
 	Aliases = append(Aliases, disconnect_alias)
+
+	// attach ? -> print help for attach
+	attach_help_alias := Alias {
+		match: func(args *cliargs.CLIArgs) (bool, error) {
+			if len(args.PathArgs) == 0 {
+				return false, nil
+			}
+
+			if args.PathArgs[0] != AttachCommandStr {
+				return false, nil
+			}
+
+			if !args.IsHelp {
+				return false, nil
+			}
+
+			//if len(args.PathArgs) != 1 {
+			//	return false, fmt.Errorf("Bad syntax, usage: connect peer1 peer2")
+			//}
+
+			return true, nil
+		},
+		transform: func(args *cliargs.CLIArgs) bool {
+			printAttachHelp()
+			return true
+		},
+	}
+	Aliases = append(Aliases, attach_help_alias)
+
+	// detach ? -> print help for detach
+	detach_help_alias := Alias {
+		match: func(args *cliargs.CLIArgs) (bool, error) {
+			if len(args.PathArgs) == 0 {
+				return false, nil
+			}
+
+			if args.PathArgs[0] != DetachCommandStr {
+				return false, nil
+			}
+
+			if !args.IsHelp {
+				return false, nil
+			}
+
+			//if len(args.PathArgs) != 1 {
+			//	return false, fmt.Errorf("Bad syntax, usage: connect peer1 peer2")
+			//}
+
+			return true, nil
+		},
+		transform: func(args *cliargs.CLIArgs) bool {
+			printDetachHelp()
+			return true
+		},
+	}
+	Aliases = append(Aliases, detach_help_alias)
+
+	// attach a b -> attach add cube=a port=b
+	attach_alias := Alias {
+		match: func(args *cliargs.CLIArgs) (bool, error) {
+			if len(args.PathArgs) == 0 {
+				return false, nil
+			}
+
+			if args.PathArgs[0] != AttachCommandStr {
+				return false, nil
+			}
+
+			if len(args.PathArgs) < 3 {
+				return false, fmt.Errorf("Bad syntax, usage: attach cube port [position=auto, first, last], [before=cube], [after=cube]")
+			}
+
+			if len(args.BodyArgs) > 1 {
+				return false, fmt.Errorf("Only one parameter is supported")
+			}
+
+			for key, value := range args.BodyArgs {
+				if key != "position" && key != "after" && key != "before" {
+					return false, fmt.Errorf("Parameter %s is not valid", key)
+				}
+
+				if key == "position" {
+					if value != "auto" && value != "first" && value != "last" {
+						return false, fmt.Errorf("%s is not valid for position argument", value)
+					}
+				}
+			}
+
+			return true, nil
+		},
+		transform: func(args *cliargs.CLIArgs) bool {
+			args.Command = cliargs.AddCommand
+			args.BodyArgs["cube"] = args.PathArgs[1]
+			args.BodyArgs["port"] = args.PathArgs[2]
+
+			args.PathArgs = []string{AttachCommandStr}
+			return false
+		},
+	}
+	Aliases = append(Aliases, attach_alias)
+
+	// detach a b -> detach add cube=a port=b
+	detach_alias := Alias {
+		match: func(args *cliargs.CLIArgs) (bool, error) {
+			if len(args.PathArgs) == 0 {
+				return false, nil
+			}
+
+			if args.PathArgs[0] != DetachCommandStr {
+				return false, nil
+			}
+
+			if len(args.PathArgs) != 3 {
+				return false, fmt.Errorf("Bad syntax, usage: detach peer1 peer2")
+			}
+
+			return true, nil
+		},
+		transform: func(args *cliargs.CLIArgs) bool {
+			args.Command = cliargs.AddCommand
+			args.BodyArgs = map[string]string{
+				"cube": args.PathArgs[1],
+				"port": args.PathArgs[2],
+			}
+			args.PathArgs = []string{DetachCommandStr}
+			return false
+		},
+	}
+	Aliases = append(Aliases, detach_alias)
 }
 
 // Loops through all registered aliases

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "Router.h"
 #include "UtilityMethods.h"
+#include "Router.h"
 
 /*utility methods*/
 
@@ -81,9 +81,8 @@ unsigned int ip_to_int(const char *ip) {
   return value;
 }
 
-bool address_in_subnet(const std::string &ip,
-                               const std::string &netmask,
-                               const std::string &network) {
+bool address_in_subnet(const std::string &ip, const std::string &netmask,
+                       const std::string &network) {
   uint32_t ipAddress = ip_to_int(ip.c_str());
   uint32_t mask = ip_to_int(netmask.c_str());
   uint32_t net = ip_to_int(network.c_str());
@@ -94,7 +93,7 @@ bool address_in_subnet(const std::string &ip,
 }
 
 std::string get_network_from_ip(const std::string &ip,
-                                        const std::string &netmask) {
+                                const std::string &netmask) {
   // get the network from ip
   uint32_t address = ip_to_int(ip.c_str());
   uint32_t mask = ip_to_int(netmask.c_str());

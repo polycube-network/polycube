@@ -42,20 +42,20 @@ struct packetHeaders {
 
 // This is the percpu array containing the current packet headers
 #if _INGRESS_LOGIC
-  BPF_TABLE_SHARED("percpu_array", int, struct packetHeaders, packet, 1);
+BPF_TABLE_SHARED("percpu_array", int, struct packetHeaders, packet, 1);
 
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Input, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Input, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Input, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Input, 1);
 
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Forward, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Forward, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Forward, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Forward, 1);
 #endif
 
 #if _EGRESS_LOGIC
-  BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
-  BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Output, 1);
-  BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Output, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, pkts_default_Output, 1);
+BPF_TABLE_SHARED("percpu_array", int, u64, bytes_default_Output, 1);
 #endif
 
 struct elements {
@@ -64,11 +64,11 @@ struct elements {
 
 // This is the percpu array containing the current bitvector
 #if _INGRESS_LOGIC
-  BPF_TABLE_SHARED("percpu_array", int, struct elements, sharedEle, 1);
+BPF_TABLE_SHARED("percpu_array", int, struct elements, sharedEle, 1);
 #endif
 
 #if _EGRESS_LOGIC
-  BPF_TABLE("extern", int, struct elements, sharedEle, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 #endif
 
 struct eth_hdr {
@@ -142,8 +142,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->dstPort = udp->dest;
   }
 
-#if _DDOS_ENABLED
-  call_bpf_program(ctx, _DDOS_MITIGATOR);
+#if _HORUS_ENABLED
+  call_bpf_program(ctx, _HORUS);
 #endif
 
   // or INGRESS or EGRESS

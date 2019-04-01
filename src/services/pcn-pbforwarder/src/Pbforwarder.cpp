@@ -15,13 +15,13 @@
  */
 
 #include "Pbforwarder.h"
-#include "Pbforwarder_dp_parsing.h"
-#include "Pbforwarder_dp_matching.h"
 #include "Pbforwarder_dp_action.h"
+#include "Pbforwarder_dp_matching.h"
+#include "Pbforwarder_dp_parsing.h"
 
 Pbforwarder::Pbforwarder(const std::string name,
-                         const PbforwarderJsonObject &conf, CubeType type)
-    : Cube(name, generate_code_vector(), {}, type, conf.getPolycubeLoglevel()) {
+                         const PbforwarderJsonObject &conf)
+    : Cube(conf.getBase(), generate_code_vector(), {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Pbforwarder] [%n] [%l] %v");
   logger()->info("Creating Pbforwarder instance");
 
@@ -36,9 +36,7 @@ Pbforwarder::~Pbforwarder() {
 }
 
 void Pbforwarder::update(const PbforwarderJsonObject &conf) {
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
+  Cube::set_conf(conf.getBase());
 
   if (conf.rulesIsSet()) {
     for (auto &i : conf.getRules()) {
@@ -59,22 +57,15 @@ void Pbforwarder::update(const PbforwarderJsonObject &conf) {
 
 PbforwarderJsonObject Pbforwarder::toJsonObject() {
   PbforwarderJsonObject conf;
-
-  conf.setUuid(getUuid());
-
-  conf.setLoglevel(getLoglevel());
+  conf.setBase(Cube::to_json());
 
   for (auto &i : getRulesList()) {
     conf.addRules(i->toJsonObject());
   }
 
-  conf.setType(getType());
-
   for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setName(getName());
 
   return conf;
 }

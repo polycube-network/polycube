@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "port.h"
 #include "polycube/services/guid.h"
+#include "port.h"
 
 #include <cstdint>
 #include <string>
@@ -27,8 +27,9 @@ namespace polycubed {
 
 class PortXDP : public Port {
  public:
-  PortXDP(CubeIface &parent, const std::string& name, uint16_t id);
-  ~PortXDP();
+  PortXDP(CubeIface &parent, const std::string &name, uint16_t id,
+          const nlohmann::json &conf);
+  virtual ~PortXDP();
 
   uint32_t get_parent_index() const;
   std::string get_cube_name() const;
@@ -40,5 +41,5 @@ class PortXDP : public Port {
   void detach_xdp();
 };
 
-} //namespace polycube
-} //namespace polycubed
+}  // namespace polycube
+}  // namespace polycubed

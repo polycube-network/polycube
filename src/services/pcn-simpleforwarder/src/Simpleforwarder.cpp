@@ -14,101 +14,74 @@
  * limitations under the License.
  */
 
-
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Simpleforwarder.h"
 #include "Simpleforwarder_dp.h"
 
-Simpleforwarder::Simpleforwarder(const std::string name, const SimpleforwarderJsonObject &conf, CubeType type)
-                             : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
-  logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simpleforwarder] [%n] [%l] %v");
+Simpleforwarder::Simpleforwarder(const std::string name,
+                                 const SimpleforwarderJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
+  logger()->set_pattern(
+      "[%Y-%m-%d %H:%M:%S.%e] [Simpleforwarder] [%n] [%l] %v");
   logger()->info("Creating Simpleforwarder instance");
-
-
 
   addActionsList(conf.getActions());
 
   addPortsList(conf.getPorts());
-
 }
 
-
-Simpleforwarder::~Simpleforwarder() { }
+Simpleforwarder::~Simpleforwarder() {}
 
 void Simpleforwarder::update(const SimpleforwarderJsonObject &conf) {
-  //This method updates all the object/parameter in Simpleforwarder object specified in the conf JsonObject.
-  //You can modify this implementation.
+  // This method updates all the object/parameter in Simpleforwarder object
+  // specified in the conf JsonObject.
+  // You can modify this implementation.
+  Cube::set_conf(conf.getBase());
 
-
-  if(conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
-  }
-
-  if(conf.actionsIsSet()) {
-    for(auto &i : conf.getActions()){
+  if (conf.actionsIsSet()) {
+    for (auto &i : conf.getActions()) {
       auto inport = i.getInport();
       auto m = getActions(inport);
       m->update(i);
     }
   }
 
-
-  if(conf.portsIsSet()) {
-    for(auto &i : conf.getPorts()){
+  if (conf.portsIsSet()) {
+    for (auto &i : conf.getPorts()) {
       auto name = i.getName();
       auto m = getPorts(name);
       m->update(i);
     }
   }
-
 }
 
-SimpleforwarderJsonObject Simpleforwarder::toJsonObject(){
+SimpleforwarderJsonObject Simpleforwarder::toJsonObject() {
   SimpleforwarderJsonObject conf;
+  conf.setBase(Cube::to_json());
 
-
-  conf.setUuid(getUuid());
-
-  conf.setLoglevel(getLoglevel());
-
-
-  //Remove comments when you implement all sub-methods
-  for(auto &i : getActionsList()){
+  // Remove comments when you implement all sub-methods
+  for (auto &i : getActionsList()) {
     conf.addActions(i->toJsonObject());
   }
 
-  conf.setType(getType());
-
-  for(auto &i : getPortsList()){
+  for (auto &i : getPortsList()) {
     conf.addPorts(i->toJsonObject());
   }
-
-  conf.setName(getName());
 
   return conf;
 }
 
-std::string Simpleforwarder::generate_code(){
+std::string Simpleforwarder::generate_code() {
   return simpleforwarder_code;
 }
 
-std::vector<std::string> Simpleforwarder::generate_code_vector(){
+std::vector<std::string> Simpleforwarder::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Simpleforwarder::packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet){
+void Simpleforwarder::packet_in(Ports &port,
+                                polycube::service::PacketInMetadata &md,
+                                const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
-
-
-
-
-
-
-
-
-
-
-

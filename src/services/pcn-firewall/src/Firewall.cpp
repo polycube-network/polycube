@@ -17,9 +17,8 @@
 #include "Firewall.h"
 #include "Firewall_dp.h"
 
-Firewall::Firewall(const std::string name, const FirewallJsonObject &conf,
-                   CubeType type)
-    : Cube(name, {generate_code()}, {}, type, conf.getPolycubeLoglevel()) {
+Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
+    : Cube(conf.getBase(), {generate_code()}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Firewall] [%n] [%l] %v");
   logger()->info("Creating Firewall instance");
 
@@ -85,6 +84,7 @@ Firewall::~Firewall() {
 void Firewall::update(const FirewallJsonObject &conf) {
   // This method updates all the object/parameter in Firewall object specified
   // in the conf JsonObject.
+  Cube::set_conf(conf.getBase());
 
   if (conf.chainIsSet()) {
     for (auto &i : conf.getChain()) {
@@ -96,10 +96,6 @@ void Firewall::update(const FirewallJsonObject &conf) {
 
   if (conf.ingressPortIsSet()) {
     setIngressPort(conf.getIngressPort());
-  }
-
-  if (conf.loglevelIsSet()) {
-    setLoglevel(conf.getLoglevel());
   }
 
   if (conf.egressPortIsSet()) {
@@ -129,8 +125,7 @@ void Firewall::update(const FirewallJsonObject &conf) {
 
 FirewallJsonObject Firewall::toJsonObject() {
   FirewallJsonObject conf;
-
-  conf.setName(getName());
+  conf.setBase(Cube::to_json());
 
   // Remove comments when you implement all sub-methods
   for (auto &i : getChainList()) {
@@ -139,13 +134,7 @@ FirewallJsonObject Firewall::toJsonObject() {
 
   conf.setIngressPort(getIngressPort());
 
-  conf.setLoglevel(getLoglevel());
-
-  conf.setUuid(getUuid());
-
   conf.setEgressPort(getEgressPort());
-
-  conf.setType(getType());
 
   conf.setConntrack(getConntrack());
 
@@ -168,8 +157,7 @@ std::vector<std::string> Firewall::generate_code_vector() {
   throw std::runtime_error("Method not implemented");
 }
 
-void Firewall::packet_in(Ports &port,
-                         polycube::service::PacketInMetadata &md,
+void Firewall::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                          const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
@@ -182,10 +170,6 @@ std::string Firewall::getIngressPort() {
 void Firewall::setIngressPort(const std::string &value) {
   // This method sets the ingressPort value.
   auto port = getPorts(value);
-  if (!port->getPeer().empty() && port->getPeer() == ":host") {
-    throw std::runtime_error(
-        "The ingress port can't be connected to the host.");
-  }
   ingressPort = port->getName();
   reload_all();
 }
@@ -198,16 +182,18 @@ std::string Firewall::getEgressPort() {
 void Firewall::setEgressPort(const std::string &value) {
   // This method sets the egressPort value.
   auto port = getPorts(value);
-  if (!port->getPeer().empty() && port->getPeer() == ":host" && transparent) {
-    logger()->info(
-        "Switching to Host mode. The EGRESS chain will be disabled.");
-    transparent = false;
-  }
-  if (!port->getPeer().empty() && port->getPeer() == ":host" && !transparent) {
-    logger()->info(
-        "Switching to Transparent mode. The EGRESS chain will be enabled.");
-    transparent = true;
-  }
+  // if (!port->getPeer().empty() && port->getPeer() == ":host" && transparent)
+  // {
+  //   logger()->info(
+  //       "Switching to Host mode. The EGRESS chain will be disabled.");
+  //   transparent = false;
+  // }
+  // if (!port->getPeer().empty() && port->getPeer() == ":host" && !transparent)
+  // {
+  //   logger()->info(
+  //       "Switching to Transparent mode. The EGRESS chain will be enabled.");
+  //   transparent = true;
+  // }
 
   egressPort = port->getName();
   reload_all();

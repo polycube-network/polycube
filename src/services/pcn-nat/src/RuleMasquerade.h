@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/RuleMasqueradeInterface.h"
 
-
 #include <spdlog/spdlog.h>
-
 
 class Rule;
 
@@ -46,8 +42,8 @@ class RuleMasquerade : public RuleMasqueradeInterface {
 
   bool getEnabled() override;
   void setEnabled(const bool &value) override;
-private:
-  Rule   &parent_;
+
+ private:
+  Rule &parent_;
   bool enabled;
 };
-

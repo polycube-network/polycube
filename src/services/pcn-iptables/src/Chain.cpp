@@ -144,7 +144,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_EGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINFORWARDER_EGRESS,
-                                     ChainNameEnum::INVALID_EGRESS)]
+                                      ChainNameEnum::INVALID_EGRESS)]
             ->reload();
       }
       if (parent_.programs_.find(std::make_pair(
@@ -152,7 +152,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_EGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINSELECTOR_EGRESS,
-                                     ChainNameEnum::INVALID_EGRESS)]
+                                      ChainNameEnum::INVALID_EGRESS)]
             ->reload();
       }
     } else if (getName() == ChainNameEnum::INPUT ||
@@ -162,7 +162,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_INGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINFORWARDER_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
       }
       if (parent_.programs_.find(std::make_pair(
@@ -170,7 +170,7 @@ void Chain::setDefault(const ActionEnum &value) {
               ChainNameEnum::INVALID_INGRESS)) != parent_.programs_.end()) {
         parent_
             .programs_[std::make_pair(ModulesConstants::CHAINSELECTOR_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
       }
     }
@@ -204,6 +204,12 @@ ChainAppendOutputJsonObject Chain::append(ChainAppendInputJsonObject input) {
   }
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
+  }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
   }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
@@ -253,6 +259,12 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
   }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
+  }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
   }
@@ -301,6 +313,12 @@ void Chain::deletes(ChainDeleteInputJsonObject input) {
   if (input.dportIsSet()) {
     conf.setDport(input.getDport());
   }
+  if (input.inIfaceIsSet()) {
+    conf.setInIface(input.getInIface());
+  }
+  if (input.outIfaceIsSet()) {
+    conf.setOutIface(input.getOutIface());
+  }
   if (input.tcpflagsIsSet()) {
     conf.setTcpflags(input.getTcpflags());
   }
@@ -325,16 +343,17 @@ void Chain::deletes(ChainDeleteInputJsonObject input) {
 ChainResetCountersOutputJsonObject Chain::resetCounters() {
   ChainResetCountersOutputJsonObject result;
   try {
-    std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *> &programs =
-        parent_.programs_;
+    std::map<std::pair<uint8_t, ChainNameEnum>,
+             std::shared_ptr<Iptables::Program>> &programs = parent_.programs_;
 
     if (programs.find(std::make_pair(ModulesConstants::ACTION, name)) ==
         programs.end()) {
       throw std::runtime_error("No action loaded yet.");
     }
 
-    auto actionProgram = dynamic_cast<Iptables::ActionLookup *>(
-        programs[std::make_pair(ModulesConstants::ACTION, name)]);
+    std::shared_ptr<Iptables::ActionLookup> actionProgram =
+        std::dynamic_pointer_cast<Iptables::ActionLookup>(
+            programs[std::make_pair(ModulesConstants::ACTION, name)]);
 
     for (auto cr : rules_) {
       actionProgram->flushCounters(cr->getId());
@@ -412,9 +431,10 @@ void Chain::updateChain() {
   // srarting index found
   int startingIndex = index;
   // save first program loaded, since parser needs to know how to point to it
-  Iptables::Program *firstProgramLoaded;
+  std::shared_ptr<Iptables::Program> firstProgramLoaded;
 
-  std::map<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>
+  std::map<std::pair<uint8_t, ChainNameEnum>,
+           std::shared_ptr<Iptables::Program>>
       newProgramsChain;
 
   // containing various bitvector(s)
@@ -423,90 +443,125 @@ void Chain::updateChain() {
   std::map<struct IpAddr, std::vector<uint64_t>> ipdst_map;
   std::map<uint16_t, std::vector<uint64_t>> portsrc_map;
   std::map<uint16_t, std::vector<uint64_t>> portdst_map;
+  std::map<uint16_t, std::vector<uint64_t>> interface_map;
   std::map<int, std::vector<uint64_t>> protocol_map;
   std::vector<std::vector<uint64_t>> flags_map;
 
-  std::map<struct DdosRule, struct DdosValue> ddos;
+  std::map<struct HorusRule, struct HorusValue> horus;
 
   /*
-   * DDOS mitigator optimization
+   * HORUS - Homogeneous RUleset analySis
    *
-   * if first rules of INPUT ruleset are matching on same fields (e.g. srcIp,
-   * dstIp, l4protocol, srcPort, dstPort)
-   * or a subset of them, but with exactly same subset
-   * and no rules are present for FORWARD chain
-   * a specific DDoS eBPF program is loaded before the INPUT/FORWARD chains
-   * it contains an hashmap with the current subset of fields
-   * each pkt received by the program, is looked-up vs this hashmap.
-   * hit -> DROP action: drop the packet; ACCEPT action: goto CTLABELING and
-   * CTTABLEUPDATE without goint through pipeline
-   * miss -> goto all pipeline steps
+   * Horus optimization allows to
+   * a) offload a group of contiguous rules matching on same field
+   * b) match the group of offloaded rules with complexity O(1) - single map
+   * lookup
+   * c) dynamically adapting to different groups of rules, matching each
+   * combination of ipsrc/dst, portsrc/dst, tcpflags
+   * d) dynamically check when the optimization is possible according to current
+   * ruleset. It means check orthogonality
+   * of rules before the offloaded group, respect to the group itself.
+   *
+   * -Working on INPUT chain, if no FORWARD rules are present.
+   * TODO: put Horus after chainselector, so it can work only on INPUT pkts
+   * without possible semantic issues.
+   *
+   * each pkt received by the program, is looked-up vs the HORUS HASHMAP.
+   * hit ->
+   * DROP action: drop the packet;
+   * ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through
+   * pipeline
+   * miss ->
+   * GOTO all pipeline steps
    */
 
-  // Apply DDoS Mitigator optimization only if we are updating INPUT chain
+  parent_.horus_runtime_enabled_ = false;
+
+  // Apply Horus optimization only if we are updating INPUT chain
   if ((name == ChainNameEnum::INPUT) && (parent_.horus_enabled)) {
-    // if len INPUT >= MIN_RULES_DDOS_OPTIMIZATION
+    // if len INPUT >= MIN_RULES_HORUS_OPTIMIZATION
     // if len FORWARD == 0
-    if ((getRuleList().size() >= DdosConst::MIN_RULE_SIZE_FOR_DDOS) &&
+    if ((getRuleList().size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) &&
         (parent_.getChain(ChainNameEnum::FORWARD)->getRuleList().size() == 0)) {
-      // calculate ddos mitigator ruleset
-      ddosFromRulesToMap(ddos, getRuleList());
+      // calculate horus ruleset
+      horusFromRulesToMap(horus, getRuleList());
 
-      // if ddos.size() >= MIN_RULES_DDOS_OPTIMIZATION
-      if (ddos.size() >= DdosConst::MIN_RULE_SIZE_FOR_DDOS) {
-        logger()->info("DDoS Mitigator Optimization ENABLED for this rule-set");
+      // if horus.size() >= MIN_RULES_HORUS_OPTIMIZATION
+      if (horus.size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+        logger()->info("Horus Optimization ENABLED for this rule-set");
 
-        // ddos_mitigator_runtime_enabled_ = true -> (Parser should access to
+        // horus_runtime_enabled_ = true -> (Parser should access to
         // this var to compile itself)
-        parent_.ddos_mitigator_runtime_enabled_ = true;
+        parent_.horus_runtime_enabled_ = true;
 
         // SWAP indexes
-        parent_.ddos_mitigator_swap_ = !parent_.ddos_mitigator_swap_;
+        parent_.horus_swap_ = !parent_.horus_swap_;
 
-        uint8_t ddos_index_new = -1;
-        uint8_t ddos_index_old = -1;
+        uint8_t horus_index_new = -1;
+        uint8_t horus_index_old = -1;
 
-        // Apply DDos mitigator
+        // Apply Horus mitigator
 
         // Calculate current new/old indexes
-        if (parent_.ddos_mitigator_swap_) {
-          ddos_index_new = ModulesConstants::DDOS_INGRESS_SWAP;
-          ddos_index_old = ModulesConstants::DDOS_INGRESS;
+        if (parent_.horus_swap_) {
+          horus_index_new = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_old = ModulesConstants::HORUS_INGRESS;
         } else {
-          ddos_index_old = ModulesConstants::DDOS_INGRESS_SWAP;
-          ddos_index_new = ModulesConstants::DDOS_INGRESS;
+          horus_index_old = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_new = ModulesConstants::HORUS_INGRESS;
         }
 
-        // Compile and inject program (DDoS Mitigator should have 1 static var
+        // Compile and inject program (Horus should have 1 static var
         // to switch index)
 
-        // DDoS Constructor is in charge to compile datapath with correct const
-        parent_.programs_.insert(
-            std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
-                std::make_pair(ddos_index_new, ChainNameEnum::INVALID_INGRESS),
-                new Iptables::Ddos(ddos_index_new, parent_, ddos)));
+        // Horus Constructor is in charge to compile datapath with correct const
+        parent_.programs_.insert(std::pair<std::pair<uint8_t, ChainNameEnum>,
+                                           std::shared_ptr<Iptables::Program>>(
+            std::make_pair(horus_index_new, ChainNameEnum::INVALID_INGRESS),
+            new Iptables::Horus(horus_index_new, parent_, horus)));
 
-        // DDoS UpdateMap is in charge to update maps
-        dynamic_cast<Iptables::Ddos *>(
-            parent_.programs_[std::make_pair(ddos_index_new,
-                                            ChainNameEnum::INVALID_INGRESS)])
-            ->updateMap(ddos);
+        // Horus UpdateMap is in charge to update maps
+        std::dynamic_pointer_cast<Iptables::Horus>(
+            parent_.programs_[std::make_pair(horus_index_new,
+                                             ChainNameEnum::INVALID_INGRESS)])
+            ->updateMap(horus);
 
         // Recompile parser
-        // parser should ask to DDos its index getIndex from DDoS
+        // parser should ask to Horus its index getIndex from Horus
         parent_
             .programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,
-                                     ChainNameEnum::INVALID_INGRESS)]
+                                      ChainNameEnum::INVALID_INGRESS)]
             ->reload();
 
-        // Delete old DDos, if present
+        // Delete old Horus, if present
         auto it = parent_.programs_.find(
-            std::make_pair(ddos_index_old, ChainNameEnum::INVALID_INGRESS));
+            std::make_pair(horus_index_old, ChainNameEnum::INVALID_INGRESS));
         if (it != parent_.programs_.end()) {
-          delete it->second;
           parent_.programs_.erase(it);
         }
       }
+    }
+  }
+  if (parent_.horus_runtime_enabled_ == false) {
+    // Recompile parser
+    // parser should ask to Horus its index getIndex from Horus
+    parent_
+        .programs_[std::make_pair(ModulesConstants::PARSER_INGRESS,
+                                  ChainNameEnum::INVALID_INGRESS)]
+        ->reload();
+
+    // Delete old Horus, if present
+    auto it = parent_.programs_.find(std::make_pair(
+        ModulesConstants::HORUS_INGRESS, ChainNameEnum::INVALID_INGRESS));
+    if (it != parent_.programs_.end()) {
+      parent_.programs_.erase(it);
+    }
+
+    // Delete old Horus, if present
+    it = parent_.programs_.find(std::make_pair(
+        ModulesConstants::HORUS_INGRESS_SWAP, ChainNameEnum::INVALID_INGRESS));
+    if (it != parent_.programs_.end()) {
+      parent_.programs_.erase(it);
     }
   }
 
@@ -514,25 +569,26 @@ void Chain::updateChain() {
   // if no wildcard is present, we can early break the pipeline.
   // so we put modules with _break flags, before the others in order
   // to maximize probability to early break the pipeline.
-  bool conntrack_break =
-          conntrackFromRulesToMap(conntrack_map, getRuleList());
-  bool ipsrc_break =
-          ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, getRuleList());
+  bool conntrack_break = conntrackFromRulesToMap(conntrack_map, getRuleList());
+  bool ipsrc_break = ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, getRuleList());
   bool ipdst_break =
-          ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, getRuleList());
+      ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, getRuleList());
   bool protocol_break =
-          transportProtoFromRulesToMap(protocol_map, getRuleList());
+      transportProtoFromRulesToMap(protocol_map, getRuleList());
   bool portsrc_break =
-          portFromRulesToMap(SOURCE_TYPE, portsrc_map, getRuleList());
+      portFromRulesToMap(SOURCE_TYPE, portsrc_map, getRuleList());
   bool portdst_break =
-          portFromRulesToMap(DESTINATION_TYPE, portdst_map, getRuleList());
+      portFromRulesToMap(DESTINATION_TYPE, portdst_map, getRuleList());
+  bool interface_break = interfaceFromRulesToMap(
+      (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE, interface_map,
+      getRuleList(), parent_);
   bool flags_break = flagsFromRulesToMap(flags_map, getRuleList());
 
   logger()->debug(
       "Early break of pipeline conntrack:{0} ipsrc:{1} ipdst:{2} protocol:{3} "
-      "portstc:{4} portdst:{5} flags:{6} ",
+      "portstc:{4} portdst:{5} interface:{6} flags:{7} ",
       conntrack_break, ipsrc_break, ipdst_break, protocol_break, portsrc_break,
-      portdst_break, flags_break);
+      portdst_break, interface_break, flags_break);
 
   // first loop iteration pushes program that could early break the pipeline
   // second iteration, push others programs
@@ -557,7 +613,7 @@ void Chain::updateChain() {
               std::make_pair(ModulesConstants::CONNTRACKMATCH, name),
               new Iptables::ConntrackMatch(index, name, this->parent_)));
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::ConntrackMatch *>(
+      std::dynamic_pointer_cast<Iptables::ConntrackMatch>(
           newProgramsChain[std::make_pair(ModulesConstants::CONNTRACKMATCH,
                                           name)])
           ->updateMap(conntrack_map);
@@ -599,7 +655,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::IpLookup *>(
+      std::dynamic_pointer_cast<Iptables::IpLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::IPSOURCE, name)])
           ->updateMap(ipsrc_map);
     }
@@ -624,7 +680,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::IpLookup *>(
+      std::dynamic_pointer_cast<Iptables::IpLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::IPDESTINATION,
                                           name)])
           ->updateMap(ipdst_map);
@@ -651,7 +707,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4ProtocolLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4ProtocolLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::L4PROTO, name)])
           ->updateMap(protocol_map);
     }
@@ -677,7 +733,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4PortLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4PortLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::PORTSOURCE, name)])
           ->updateMap(portsrc_map);
     }
@@ -703,13 +759,40 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::L4PortLookup *>(
+      std::dynamic_pointer_cast<Iptables::L4PortLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::PORTDESTINATION,
                                           name)])
           ->updateMap(portdst_map);
     }
     // portdst_map.clear();
     // Done looping through destination port
+
+    // Looping through interface
+    if (!interface_map.empty() && interface_break ^ second) {
+      // At least one rule requires a matching on interface,
+      // so inject the  module  on the first available position
+      newProgramsChain.insert(
+          std::pair<std::pair<uint8_t, ChainNameEnum>, Iptables::Program *>(
+              std::make_pair(ModulesConstants::INTERFACE, name),
+              new Iptables::InterfaceLookup(
+                  index, name,
+                  (name == ChainNameEnum::OUTPUT) ? OUT_TYPE : IN_TYPE,
+                  this->parent_, interface_map)));
+
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded =
+            newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)];
+      }
+      logger()->trace("Interface index:{0}", index);
+      ++index;
+
+      // Now the program is loaded, populate it.
+      std::dynamic_pointer_cast<Iptables::InterfaceLookup>(
+          newProgramsChain[std::make_pair(ModulesConstants::INTERFACE, name)])
+          ->updateMap(interface_map);
+    }
+    // Done looping through interface
 
     // Looping through tcp flags
     if (!flags_map.empty() && flags_break ^ second) {
@@ -729,7 +812,7 @@ void Chain::updateChain() {
       ++index;
 
       // Now the program is loaded, populate it.
-      dynamic_cast<Iptables::TcpFlagsLookup *>(
+      std::dynamic_pointer_cast<Iptables::TcpFlagsLookup>(
           newProgramsChain[std::make_pair(ModulesConstants::TCPFLAGS, name)])
           ->updateMap(flags_map);
     }
@@ -756,7 +839,7 @@ void Chain::updateChain() {
           new Iptables::ActionLookup(index, name, this->parent_)));
 
   for (auto rule : getRuleList()) {
-    dynamic_cast<Iptables::ActionLookup *>(
+    std::dynamic_pointer_cast<Iptables::ActionLookup>(
         newProgramsChain[std::make_pair(ModulesConstants::ACTION, name)])
         ->updateTableValue(rule->getId(),
                            ChainRule::ActionEnumToInt(rule->getAction()));
@@ -793,7 +876,6 @@ void Chain::updateChain() {
   // Except parser for OUTPUT chain
   for (auto it = parent_.programs_.begin(); it != parent_.programs_.end();) {
     if (it->first.second == name) {
-      delete it->second;
       it = parent_.programs_.erase(it);
     } else {
       ++it;

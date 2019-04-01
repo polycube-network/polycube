@@ -5,9 +5,14 @@
 
 .swagger-codegen-ignore
 
+cmake/
+
 src/*.cpp
+src/*.c
 src/*.h
 
-!src/*Interface.h
-!src/*JsonObject.h
-!src/*JsonObject.cpp
+CMakeLists.txt
+
+!src/*lib.cpp
+
+src/CMakeLists.txt

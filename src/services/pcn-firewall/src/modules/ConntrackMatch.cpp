@@ -52,8 +52,8 @@ std::string Firewall::ConntrackMatch::getCode() {
   return noMacroCode;
 }
 
-bool Firewall::ConntrackMatch::updateTableValue(uint8_t status,
-                                                const std::vector<uint64_t> &value) {
+bool Firewall::ConntrackMatch::updateTableValue(
+    uint8_t status, const std::vector<uint64_t> &value) {
   std::string tableName;
   tableName = "Conntrack";
 

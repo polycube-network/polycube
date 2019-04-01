@@ -22,6 +22,7 @@
 
 
 #include "polycube/services/json.hpp"
+#include "polycube/services/fifo_map.hpp"
 #include <ctime>
 #include <string>
 
@@ -30,20 +31,15 @@ namespace swagger {
 namespace server {
 namespace model {
 
-class  JsonObjectBase
-{
-public:
-  JsonObjectBase();
-  virtual ~JsonObjectBase();
-
-  virtual void validateKeys() = 0;
-  virtual void validateMandatoryFields() = 0;
-  virtual void validateParams() = 0;
+class  JsonObjectBase {
+ public:
+  JsonObjectBase() = default;
+  JsonObjectBase(const nlohmann::json &base);
+  virtual ~JsonObjectBase() = default;
 
   virtual nlohmann::json toJson() const = 0;
-  virtual void fromJson(nlohmann::json& json) = 0;
 
-	static bool iequals(const std::string &a, const std::string &b);
+  static bool iequals(const std::string &a, const std::string &b);
   static std::string toJson(const std::string& value);
   static std::string toJson(const std::time_t& value);
   static int32_t toJson(int32_t value);
@@ -52,6 +48,11 @@ public:
   static bool toJson(bool value);
   static nlohmann::json toJson(const JsonObjectBase &content);
 
+  const nlohmann::json &getBase() const;
+  void setBase(const nlohmann::json &base);
+
+ private:
+  nlohmann::json base_;
 };
 
 }

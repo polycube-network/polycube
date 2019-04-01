@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-//Modify these methods with your own implementation
-
+// Modify these methods with your own implementation
 
 #include "Ports.h"
 #include "Helloworld.h"
@@ -23,46 +22,33 @@
 using namespace polycube::service;
 
 Ports::Ports(polycube::service::Cube<Ports> &parent,
-  std::shared_ptr<polycube::service::PortIface> port,
-  const PortsJsonObject &conf):
-  Port(port), parent_(static_cast<Helloworld&>(parent)) {
+             std::shared_ptr<polycube::service::PortIface> port,
+             const PortsJsonObject &conf)
+    : Port(port), parent_(static_cast<Helloworld &>(parent)) {
   logger()->info("Creating Ports instance");
 }
 
-Ports::~Ports() { }
+Ports::~Ports() {}
 
 void Ports::update(const PortsJsonObject &conf) {
-  //This method updates all the object/parameter in Ports object specified in the conf JsonObject.
-  //You can modify this implementation.
-
-
-  if(conf.peerIsSet()) {
-    setPeer(conf.getPeer());
-  }
-
-
+  Port::set_conf(conf.getBase());
+  // This method updates all the object/parameter in Ports object specified in
+  // the conf JsonObject.
+  // You can modify this implementation.
 }
 
-PortsJsonObject Ports::toJsonObject(){
+PortsJsonObject Ports::toJsonObject() {
   PortsJsonObject conf;
-
-
-  conf.setStatus(getStatus());
-
-  conf.setPeer(getPeer());
-
-  conf.setName(getName());
-
-  conf.setUuid(getUuid());
+  conf.setBase(Port::to_json());
 
   return conf;
 }
 
-
-void Ports::create(Helloworld &parent, const std::string &name, const PortsJsonObject &conf){
-
-  //This method creates the actual Ports object given thee key param.
-  //Please remember to call here the create static method for all sub-objects of Ports.
+void Ports::create(Helloworld &parent, const std::string &name,
+                   const PortsJsonObject &conf) {
+  // This method creates the actual Ports object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of Ports.
 
   if (parent.get_ports().size() == 2) {
     throw std::runtime_error("maximum number of ports reached");
@@ -88,20 +74,17 @@ void Ports::create(Helloworld &parent, const std::string &name, const PortsJsonO
   }
 
   ports_table.set(port_map_index, p->index());
-
-  if (conf.peerIsSet()) {
-    p->setPeer(conf.getPeer());
-  }
 }
 
-std::shared_ptr<Ports> Ports::getEntry(Helloworld &parent, const std::string &name){
-  //This method retrieves the pointer to Ports object specified by its keys.
-  //logger()->info("Called getEntry with name: {0}", name);
+std::shared_ptr<Ports> Ports::getEntry(Helloworld &parent,
+                                       const std::string &name) {
+  // This method retrieves the pointer to Ports object specified by its keys.
+  // logger()->info("Called getEntry with name: {0}", name);
   return parent.get_port(name);
 }
 
-void Ports::removeEntry(Helloworld &parent, const std::string &name){
-  //This method removes the single Ports object specified by its keys.
+void Ports::removeEntry(Helloworld &parent, const std::string &name) {
+  // This method removes the single Ports object specified by its keys.
   int index = parent.get_port(name)->index();
 
   auto ports_table = parent.get_array_table<uint16_t>("ports_map");
@@ -118,13 +101,13 @@ void Ports::removeEntry(Helloworld &parent, const std::string &name){
   parent.logger()->info("port {0} was removed", name);
 }
 
-std::vector<std::shared_ptr<Ports>> Ports::get(Helloworld &parent){
-  //This methods get the pointers to all the Ports objects in Helloworld.
+std::vector<std::shared_ptr<Ports>> Ports::get(Helloworld &parent) {
+  // This methods get the pointers to all the Ports objects in Helloworld.
   return parent.get_ports();
 }
 
-void Ports::remove(Helloworld &parent){
-  //This method removes all Ports objects in Helloworld.
+void Ports::remove(Helloworld &parent) {
+  // This method removes all Ports objects in Helloworld.
   auto ports = parent.get_ports();
   for (auto it : ports) {
     parent.remove_port(it->name());
@@ -134,5 +117,3 @@ void Ports::remove(Helloworld &parent){
 std::shared_ptr<spdlog::logger> Ports::logger() {
   return parent_.logger();
 }
-
-

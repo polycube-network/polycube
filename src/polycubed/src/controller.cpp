@@ -19,9 +19,9 @@
 #include "controller.h"
 #include "cube_tc.h"
 #include "cube_xdp.h"
+#include "datapath_log.h"
 #include "netlink.h"
 #include "patchpanel.h"
-#include "datapath_log.h"
 
 #include "polycube/services/utils.h"
 
@@ -285,7 +285,7 @@ void Controller::call_back_proxy(void *cb_cookie, void *data, int data_size) {
     std::vector<uint8_t> packet(data_, data_ + md->packet_len);
     auto cb = c->cbs_.at(md->cube_id);
     cb(md, packet);
-  } catch(const std::exception &e) {
+  } catch (const std::exception &e) {
     // TODO: ignore the problem, what else can we do?
     c->logger->warn("Error processing packet in event: {}", e.what());
   }
@@ -296,8 +296,10 @@ Controller &Controller::get_tc_instance() {
   static Controller instance(CTRL_TC_TX, CTRL_TC_RX, BPF_PROG_TYPE_SCHED_CLS);
   static bool initialized = false;
   if (!initialized) {
-    Netlink::getInstance().attach_to_tc(instance.iface_->getName(), instance.fd_rx_);
-    PatchPanel::get_tc_instance().add(instance, Node::_POLYCUBE_MAX_NODES - 1);
+    Netlink::getInstance().attach_to_tc(instance.iface_->getName(),
+                                        instance.fd_rx_);
+    PatchPanel::get_tc_instance().add(instance,
+                                      PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
@@ -312,40 +314,39 @@ Controller &Controller::get_xdp_instance() {
     attach_flags |= 2 << 0;
     Netlink::getInstance().attach_to_xdp(instance.iface_->getName(),
                                          instance.fd_rx_, attach_flags);
-    PatchPanel::get_xdp_instance().add(instance, Node::_POLYCUBE_MAX_NODES - 1);
+    PatchPanel::get_xdp_instance().add(instance,
+                                       PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
 }
 
 Controller::Controller(const std::string &tx_code, const std::string &rx_code,
-                       enum bpf_prog_type type) :
-  ctrl_rx_md_index_(0), logger(spdlog::get("polycubed")),
-  id_(_POLYCUBE_MAX_NODES - 1) {
+                       enum bpf_prog_type type)
+    : ctrl_rx_md_index_(0),
+      logger(spdlog::get("polycubed")),
+      id_(PatchPanel::_POLYCUBE_MAX_NODES - 1) {
   ebpf::StatusTuple res(0);
 
-  if(type == BPF_PROG_TYPE_XDP)
-    iface_ = std::unique_ptr<viface::VIface>(new viface::VIface("pcn_xdp_cp", true, -1));
+  if (type == BPF_PROG_TYPE_XDP)
+    iface_ = std::unique_ptr<viface::VIface>(
+        new viface::VIface("pcn_xdp_cp", true, -1));
   else
-    iface_ = std::unique_ptr<viface::VIface>(new viface::VIface("pcn_tc_cp", true, -1));
+    iface_ = std::unique_ptr<viface::VIface>(
+        new viface::VIface("pcn_tc_cp", true, -1));
 
   std::vector<std::string> flags;
   flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
-                  std::to_string(_POLYCUBE_MAX_NODES));
-  flags.push_back(std::string("-DCUBE_ID=") +
-                  std::to_string(get_id()));
-  flags.push_back(std::string("-DMD_MAP_SIZE=") +
-                  std::to_string(MD_MAP_SIZE));
+                  std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
+  flags.push_back(std::string("-DCUBE_ID=") + std::to_string(get_id()));
+  flags.push_back(std::string("-DMD_MAP_SIZE=") + std::to_string(MD_MAP_SIZE));
   // FIXME: this should be taken from a global log level conf
-  flags.push_back(std::string("-DLOG_LEVEL=") +
-                  std::string("LOG_INFO"));
+  flags.push_back(std::string("-DLOG_LEVEL=") + std::string("LOG_INFO"));
 
   // replace code with parsed debug
   auto &&datapath_log = DatapathLog::get_instance();
 
-  handle_log_msg = [&](const LogMsg *msg) -> void {
-    this->log_msg(msg);
-  };
+  handle_log_msg = [&](const LogMsg *msg) -> void { this->log_msg(msg); };
 
   datapath_log.register_cb(get_id(), handle_log_msg);
 
@@ -367,12 +368,13 @@ Controller::Controller(const std::string &tx_code, const std::string &rx_code,
   res =
       tx_module_.open_perf_buffer("controller", call_back_proxy, nullptr, this);
   if (res.code() != 0) {
-    logger->error("cannot open perf ring buffer for controller: {0}", res.msg());
+    logger->error("cannot open perf ring buffer for controller: {0}",
+                  res.msg());
     throw BPFError("cannot open controller perf buffer");
   }
 
-  std::string cmd_string = "sysctl -w net.ipv6.conf." + \
-    iface_->getName() + ".disable_ipv6=1" + "> /dev/null";
+  std::string cmd_string = "sysctl -w net.ipv6.conf." + iface_->getName() +
+                           ".disable_ipv6=1" + "> /dev/null";
   system(cmd_string.c_str());
   iface_->setMTU(9000);
   iface_->up();
@@ -416,7 +418,7 @@ void Controller::unregister_cb(int id) {
 
 // caller must guarantee that module_index and port_id are valid
 void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
-                                    const std::vector<uint8_t> &packet) {
+                                     const std::vector<uint8_t> &packet) {
   ctrl_rx_md_index_++;
   ctrl_rx_md_index_ %= MD_MAP_SIZE;
 
@@ -456,8 +458,10 @@ int Controller::get_fd() const {
 }
 
 void Controller::log_msg(const LogMsg *msg) {
-  spdlog::level::level_enum level_ = logLevelToSPDLog((polycube::LogLevel)msg->level);
-  auto print = polycube::service::utils::format_debug_string(msg->msg, msg->args);
+  spdlog::level::level_enum level_ =
+      logLevelToSPDLog((polycube::LogLevel)msg->level);
+  auto print =
+      polycube::service::utils::format_debug_string(msg->msg, msg->args);
   logger->log(level_, print.c_str());
 }
 

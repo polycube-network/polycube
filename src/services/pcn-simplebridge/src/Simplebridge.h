@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/SimplebridgeInterface.h"
 
@@ -25,28 +23,29 @@
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
+#include <thread>
 
 #include "Fdb.h"
 #include "Ports.h"
 
-
 using namespace io::swagger::server::model;
 using namespace polycube::service;
-using polycube::service::CubeType;
 
 enum class SlowPathReason { FLOODING = 1 };
 
-class Simplebridge : public polycube::service::Cube<Ports>, public SimplebridgeInterface {
+class Simplebridge : public polycube::service::Cube<Ports>,
+                     public SimplebridgeInterface {
   friend class Ports;
   friend class Fdb;
   friend class FdbEntry;
-public:
-  Simplebridge(const std::string name, const SimplebridgeJsonObject &conf,
-    CubeType type = CubeType::TC);
+
+ public:
+  Simplebridge(const std::string name, const SimplebridgeJsonObject &conf);
   virtual ~Simplebridge();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md, const std::vector<uint8_t> &packet) override;
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
+                 const std::vector<uint8_t> &packet) override;
 
   void update(const SimplebridgeJsonObject &conf) override;
   SimplebridgeJsonObject toJsonObject() override;
@@ -60,43 +59,31 @@ public:
   void delFdb() override;
 
   /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE). Default: OFF
-  /// </summary>
-  SimplebridgeLoglevelEnum getLoglevel() override;
-  void setLoglevel(const SimplebridgeLoglevelEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
-
-  /// <summary>
   /// Entry of the ports table
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name, const PortsJsonObject &conf) override;
+  void replacePorts(const std::string &name,
+                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
-  /// <summary>
-  /// Name of the simplebridge service
-  /// </summary>
-  std::string getName() override;
   void reloadCodeWithAgingtime(uint32_t value);
 
-private:
+ private:
   std::unordered_map<std::string, Ports> ports_;
   std::shared_ptr<Fdb> fdb_ = nullptr;
 
-  void flood_packet(Port &port, PacketInMetadata &md, const std::vector<uint8_t> &packet);
+  void updateTimestamp();
+  void updateTimestampTimer();
+  void quitAndJoin();
+
+  std::thread timestamp_update_thread_;
+  std::atomic<bool> quit_thread_;
+
+  void flood_packet(Port &port, PacketInMetadata &md,
+                    const std::vector<uint8_t> &packet);
   std::mutex ports_mutex_;
 };
-

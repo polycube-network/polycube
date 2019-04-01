@@ -61,7 +61,6 @@ static __always_inline struct elements *getBitVect(uint16_t *key) {
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
  * this code has to be used only in this case.*/
@@ -72,7 +71,6 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     // Not possible
     return RX_DROP;
   }
-
 
   uint16_t _TYPEPort = 0;
   if (pkt->l4proto != IPPROTO_TCP && pkt->l4proto != IPPROTO_UDP) {

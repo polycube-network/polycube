@@ -46,7 +46,6 @@ class Chain : public ChainInterface {
   static void removeEntry(Firewall &parent, const ChainNameEnum &name);
   static std::vector<std::shared_ptr<Chain>> get(Firewall &parent);
   static void remove(Firewall &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
   ChainJsonObject toJsonObject() override;

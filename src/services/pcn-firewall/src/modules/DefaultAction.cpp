@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "polycube/common.h"
 #include "../Firewall.h"
 #include "datapaths/Firewall_DefaultAction_dp.h"
+#include "polycube/common.h"
 
 Firewall::DefaultAction::DefaultAction(const int &index, Firewall &outer)
     : Firewall::Program(firewall_code_defaultaction, index,
@@ -90,7 +90,8 @@ uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
 
   try {
     uint64_t bytes = 0;
-    auto bytesTable = firewall.get_percpuarray_table<uint64_t>(tableName, index);
+    auto bytesTable =
+        firewall.get_percpuarray_table<uint64_t>(tableName, index);
     auto values = bytesTable.get(0);
 
     return std::accumulate(values.begin(), values.end(), bytes);
@@ -112,8 +113,10 @@ void Firewall::DefaultAction::flushCounters(ChainNameEnum chain) {
   }
 
   try {
-    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
-    auto bytesTable = firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
+    auto pktsTable =
+        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
+    auto bytesTable =
+        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
 
     pktsTable.set(0, 0);
     bytesTable.set(0, 0);

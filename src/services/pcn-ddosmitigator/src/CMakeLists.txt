@@ -18,12 +18,14 @@ add_library(pcn-ddosmitigator SHARED
   BlacklistDst.cpp
   BlacklistSrc.cpp
   Ddosmitigator.cpp
-  Ports.cpp
   Stats.cpp
   Ddosmitigator-lib.cpp)
 
 # load ebpf datapath code in std::string variables
 load_file_as_variable(pcn-ddosmitigator Ddosmitigator_dp.c ddosmitigator_code)
+
+# load datamodel in a variable
+load_file_as_variable(pcn-ddosmitigator ../datamodel/ddosmitigator.yang ddosmitigator_datamodel)
 
 target_link_libraries(pcn-ddosmitigator
   polycube

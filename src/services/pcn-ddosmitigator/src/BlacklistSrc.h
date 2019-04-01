@@ -19,24 +19,25 @@
 #include "./interface/BlacklistSrcInterface.h"
 
 #include <spdlog/spdlog.h>
-#include "polycube/services/utils.h"
 #include "polycube/services/cube.h"
+#include "polycube/services/utils.h"
 
 class Ddosmitigator;
 
 using namespace io::swagger::server::model;
 
 class BlacklistSrc : public BlacklistSrcInterface {
-public:
+ public:
   BlacklistSrc(Ddosmitigator &parent, const BlacklistSrcJsonObject &conf);
   virtual ~BlacklistSrc();
 
-  static void create(Ddosmitigator &parent, const std::string &ip, const BlacklistSrcJsonObject &conf);
-  static std::shared_ptr<BlacklistSrc> getEntry(Ddosmitigator &parent, const std::string &ip);
+  static void create(Ddosmitigator &parent, const std::string &ip,
+                     const BlacklistSrcJsonObject &conf);
+  static std::shared_ptr<BlacklistSrc> getEntry(Ddosmitigator &parent,
+                                                const std::string &ip);
   static void removeEntry(Ddosmitigator &parent, const std::string &ip);
   static std::vector<std::shared_ptr<BlacklistSrc>> get(Ddosmitigator &parent);
   static void remove(Ddosmitigator &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const BlacklistSrcJsonObject &conf) override;
   BlacklistSrcJsonObject toJsonObject() override;
@@ -51,8 +52,7 @@ public:
   /// </summary>
   uint64_t getDropPkts() override;
 
-private:
+ private:
   Ddosmitigator &parent_;
   std::string ip_;
 };
-

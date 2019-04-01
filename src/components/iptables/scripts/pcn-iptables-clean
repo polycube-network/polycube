@@ -6,7 +6,7 @@ ret=$(echo $?)
 
 if [ $ret -ne 0 ]
     then
-        echo "pcn-iptables already closed ..."
+        echo "pcn-iptables already closed"
 else
-    echo "pcn-iptables closed!"
+    echo "pcn-iptables closed"
 fi

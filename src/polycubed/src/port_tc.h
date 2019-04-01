@@ -29,8 +29,9 @@ namespace polycubed {
 
 class PortTC : public Port {
  public:
-  PortTC(CubeIface &parent, const std::string &name, uint16_t id);
-  ~PortTC();
+  PortTC(CubeIface &parent, const std::string &name, uint16_t id,
+         const nlohmann::json &conf);
+  virtual ~PortTC();
 };
 
 }  // namespace polycubed

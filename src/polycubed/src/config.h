@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <string>
 #include <spdlog/spdlog.h>
+#include <string>
 
 namespace configuration {
 

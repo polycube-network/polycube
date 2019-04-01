@@ -37,7 +37,6 @@
 #include "defines.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Ports;
 class Chain;
@@ -56,7 +55,8 @@ struct ct_v {
   uint32_t sequence;
 } __attribute__((packed));
 
-class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface {
+class Firewall : public polycube::service::Cube<Ports>,
+                 public FirewallInterface {
   friend class Ports;
   friend class Chain;
   friend class ChainRule;
@@ -64,22 +64,15 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
   friend class SessionTable;
 
  public:
-  Firewall(const std::string name, const FirewallJsonObject &conf,
-           CubeType type = CubeType::TC);
+  Firewall(const std::string name, const FirewallJsonObject &conf);
   virtual ~Firewall();
   std::string generate_code();
   std::vector<std::string> generate_code_vector();
-  void packet_in(Ports &port,
-                 polycube::service::PacketInMetadata &md,
+  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
   void update(const FirewallJsonObject &conf) override;
   FirewallJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Name of the firewall service
-  /// </summary>
-  std::string getName() override;
 
   /// <summary>
   ///
@@ -100,18 +93,6 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
   /// </summary>
   std::string getIngressPort() override;
   void setIngressPort(const std::string &value) override;
-
-  /// <summary>
-  /// Defines the logging level of a service instance, from none (OFF) to the
-  /// most verbose (TRACE). Default: INFO
-  /// </summary>
-  FirewallLoglevelEnum getLoglevel() override;
-  void setLoglevel(const FirewallLoglevelEnum &value) override;
-
-  /// <summary>
-  /// UUID of the Cube
-  /// </summary>
-  std::string getUuid() override;
 
   /// <summary>
   ///
@@ -158,11 +139,6 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
   /// </summary>
   FirewallConntrackEnum getConntrack() override;
   void setConntrack(const FirewallConntrackEnum &value) override;
-
-  /// <summary>
-  /// Type of the Cube (TC, XDP_SKB, XDP_DRV)
-  /// </summary>
-  CubeType getType() override;
 
   /// <summary>
   /// Entry of the ports table
@@ -262,7 +238,8 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
              Firewall &outer);
     ~IpLookup() override;
     std::string getCode();
-    void updateTableValue(uint8_t netmask, std::string ip, const std::vector<uint64_t> &value);
+    void updateTableValue(uint8_t netmask, std::string ip,
+                          const std::vector<uint64_t> &value);
     void updateTableValue(IpAddr ip, const std::vector<uint64_t> &value);
     void updateMap(const std::map<struct IpAddr, std::vector<uint64_t>> &ips);
   };
@@ -297,7 +274,8 @@ class Firewall : public polycube::service::Cube<Ports>, public FirewallInterface
                    Firewall &outer);
     ~TcpFlagsLookup();
     std::string getCode();
-    bool updateTableValue(uint32_t flagMask, const std::vector<uint64_t> &value);
+    bool updateTableValue(uint32_t flagMask,
+                          const std::vector<uint64_t> &value);
     void updateMap(const std::vector<std::vector<uint64_t>> &flags);
   };
 

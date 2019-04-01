@@ -1,7 +1,7 @@
 module polycube-base {
   yang-version 1.1;
   namespace "http://polycube.network/polycube-base";
-  prefix "modelbase";
+  prefix "polycube-base";
 
   organization "Polycube open source project";
 
@@ -48,6 +48,10 @@ module polycube-base {
     description "Minimum kernel version required by the service. Format is x.y.z (e.g. 4.13.1, 4.14.0)";
   }
 
+  extension init-only-config {
+    description "TODO";
+  }
+
   grouping base-yang-module {
     leaf uuid {
       type polycube-uuid;
@@ -61,10 +65,11 @@ module polycube-base {
         enum XDP_SKB;
         enum XDP_DRV;
       }
-      config false;
+      config true;
       default TC;
+      polycube-base:init-only-config;
       description "Type of the Cube (TC, XDP_SKB, XDP_DRV)";
-      modelbase:cli-example "TC";
+      polycube-base:cli-example "TC";
     }
 
     leaf loglevel {
@@ -79,42 +84,7 @@ module polycube-base {
       }
       default INFO;
       description "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)";
-      modelbase:cli-example "INFO";
-    }
-
-    list ports {
-      key "name";
-      unique "uuid";
-      description "Entry of the ports table";
-      modelbase:polycube-class "polycube::service::Port";
-
-      leaf name {
-        type string;
-        mandatory true;
-        description "Port Name";
-        modelbase:cli-example "port1";
-      }
-
-      leaf uuid {
-        type polycube-uuid;
-        config false;
-        description "UUID of the port";
-      }
-
-      leaf status {
-        type enumeration {
-          enum UP;
-          enum DOWN;
-        }
-        config false;
-        description "Status of the port (UP or DOWN)";
-      }
-
-      leaf peer {
-        type string;
-        description "Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2')";
-        modelbase:cli-example "r0:port1";
-      }
+      polycube-base:cli-example "INFO";
     }
   }
 }

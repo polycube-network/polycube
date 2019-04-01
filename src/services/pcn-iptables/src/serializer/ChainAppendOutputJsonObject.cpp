@@ -23,89 +23,29 @@ namespace server {
 namespace model {
 
 ChainAppendOutputJsonObject::ChainAppendOutputJsonObject() {
-
   m_idIsSet = false;
 }
 
-ChainAppendOutputJsonObject::~ChainAppendOutputJsonObject() {}
+ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_idIsSet = false;
 
-void ChainAppendOutputJsonObject::validateKeys() {
 
-}
-
-void ChainAppendOutputJsonObject::validateMandatoryFields() {
-
-}
-
-void ChainAppendOutputJsonObject::validateParams() {
-
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
+  }
 }
 
 nlohmann::json ChainAppendOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_idIsSet) {
     val["id"] = m_id;
   }
 
-
-  return val;
-}
-
-void ChainAppendOutputJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("id") != val.end()) {
-    setId(val.at("id"));
-  }
-}
-
-nlohmann::json ChainAppendOutputJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json ChainAppendOutputJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["type"] = "leaf"; // Suppose that type is leaf
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainAppendOutputJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["id"]["name"] = "id";
-  val["id"]["simpletype"] = "integer";
-  val["id"]["description"] = R"POLYCUBE()POLYCUBE";
-  val["id"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json ChainAppendOutputJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-std::vector<std::string> ChainAppendOutputJsonObject::helpActions() {
-  std::vector<std::string> val;
   return val;
 }
 
@@ -125,8 +65,6 @@ bool ChainAppendOutputJsonObject::idIsSet() const {
 void ChainAppendOutputJsonObject::unsetId() {
   m_idIsSet = false;
 }
-
-
 
 
 }

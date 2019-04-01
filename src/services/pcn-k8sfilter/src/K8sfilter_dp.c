@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <linux/jhash.h>
 #include <uapi/linux/if_arp.h>
 #include <uapi/linux/ip.h>
 #include <uapi/linux/tcp.h>
 #include <uapi/linux/udp.h>
-#include <linux/jhash.h>
 
 #ifndef EXTERNAL_PORT
 #define EXTERNAL_PORT 0
@@ -37,14 +37,13 @@
 #endif
 
 struct eth_hdr {
-  __be64   dst:48;
-  __be64   src:48;
-  __be16   proto;
+  __be64 dst : 48;
+  __be64 src : 48;
+  __be16 proto;
 } __attribute__((packed));
 
-static __always_inline
-int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-
+static __always_inline int handle_rx(struct CTXTYPE *ctx,
+                                     struct pkt_metadata *md) {
   pcn_log(ctx, LOG_TRACE, "k8s received packet");
 
   if (md->in_port == INTERNAL_PORT)
@@ -80,7 +79,8 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_OK;
   }
 
-  if (ntohs(dst_port) >= NODEPORT_RANGE_LOW && ntohs(dst_port) <= NODEPORT_RANGE_HIGH) {
+  if (ntohs(dst_port) >= NODEPORT_RANGE_LOW &&
+      ntohs(dst_port) <= NODEPORT_RANGE_HIGH) {
     pcn_log(ctx, LOG_DEBUG, "Sending packet to internal port");
     return pcn_pkt_redirect(ctx, md, INTERNAL_PORT);
   }

@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -23,28 +23,35 @@ namespace server {
 namespace model {
 
 FdbJsonObject::FdbJsonObject() {
-
   m_agingTimeIsSet = false;
-
   m_entryIsSet = false;
 }
 
-FdbJsonObject::~FdbJsonObject() {}
+FdbJsonObject::FdbJsonObject(const nlohmann::json &val) :
+  JsonObjectBase(val) {
+  m_agingTimeIsSet = false;
+  m_entryIsSet = false;
 
-void FdbJsonObject::validateKeys() {
 
-}
+  if (val.count("aging-time")) {
+    setAgingTime(val.at("aging-time").get<uint32_t>());
+  }
 
-void FdbJsonObject::validateMandatoryFields() {
+  if (val.count("entry")) {
+    for (auto& item : val["entry"]) {
+      FdbEntryJsonObject newItem{ item };
+      m_entry.push_back(newItem);
+    }
 
-}
-
-void FdbJsonObject::validateParams() {
-
+    m_entryIsSet = true;
+  }
 }
 
 nlohmann::json FdbJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
+  if (!getBase().is_null()) {
+    val.update(getBase());
+  }
 
   if (m_agingTimeIsSet) {
     val["aging-time"] = m_agingTime;
@@ -61,83 +68,6 @@ nlohmann::json FdbJsonObject::toJson() const {
     }
   }
 
-  return val;
-}
-
-void FdbJsonObject::fromJson(nlohmann::json& val) {
-  for(nlohmann::json::iterator it = val.begin(); it != val.end(); ++it) {
-    std::string key = it.key();
-    bool found = (std::find(allowedParameters_.begin(), allowedParameters_.end(), key) != allowedParameters_.end());
-    if (!found) {
-      throw std::runtime_error(key + " is not a valid parameter");
-      return;
-    }
-  }
-
-  if (val.find("aging-time") != val.end()) {
-    setAgingTime(val.at("aging-time"));
-  }
-
-  m_entry.clear();
-  for (auto& item : val["entry"]) {
-
-    FdbEntryJsonObject newItem;
-    newItem.fromJson(item);
-    m_entry.push_back(newItem);
-    m_entryIsSet = true;
-  }
-
-}
-
-nlohmann::json FdbJsonObject::helpKeys() {
-  nlohmann::json val = nlohmann::json::object();
-
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["aging-time"]["name"] = "aging-time";
-  val["aging-time"]["type"] = "leaf"; // Suppose that type is leaf
-  val["aging-time"]["simpletype"] = "integer";
-  val["aging-time"]["description"] = R"POLYCUBE(Aging time of the filtering database (in seconds))POLYCUBE";
-  val["aging-time"]["example"] = R"POLYCUBE(300)POLYCUBE";
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "leaf"; // Suppose that type is leaf
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(Entry associated with the filtering database)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpWritableLeafs() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["aging-time"]["name"] = "aging-time";
-  val["aging-time"]["simpletype"] = "integer";
-  val["aging-time"]["description"] = R"POLYCUBE(Aging time of the filtering database (in seconds))POLYCUBE";
-  val["aging-time"]["example"] = R"POLYCUBE(300)POLYCUBE";
-
-  return val;
-}
-
-nlohmann::json FdbJsonObject::helpComplexElements() {
-  nlohmann::json val = nlohmann::json::object();
-
-  val["entry"]["name"] = "entry";
-  val["entry"]["type"] = "list";
-  val["entry"]["description"] = R"POLYCUBE(Entry associated with the filtering database)POLYCUBE";
-  val["entry"]["example"] = R"POLYCUBE()POLYCUBE";
-
-  return val;
-}
-
-std::vector<std::string> FdbJsonObject::helpActions() {
-  std::vector<std::string> val;
-  val.push_back("flush");
   return val;
 }
 
@@ -158,14 +88,13 @@ void FdbJsonObject::unsetAgingTime() {
   m_agingTimeIsSet = false;
 }
 
-
-
 const std::vector<FdbEntryJsonObject>& FdbJsonObject::getEntry() const{
   return m_entry;
 }
 
 void FdbJsonObject::addFdbEntry(FdbEntryJsonObject value) {
   m_entry.push_back(value);
+  m_entryIsSet = true;
 }
 
 
@@ -176,8 +105,6 @@ bool FdbJsonObject::entryIsSet() const {
 void FdbJsonObject::unsetEntry() {
   m_entryIsSet = false;
 }
-
-
 
 
 }

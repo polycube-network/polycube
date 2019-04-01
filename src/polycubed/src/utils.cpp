@@ -18,8 +18,8 @@
 
 #include <linux/version.h>
 #include <sys/utsname.h>
-#include <stdexcept>
 #include <cstring>
+#include <stdexcept>
 
 namespace polycube {
 namespace polycubed {
@@ -34,13 +34,14 @@ bool check_kernel_version(const std::string &version) {
   struct utsname buf;
   if (uname(&buf) == -1) {
     throw std::runtime_error("error getting kernel version: " +
-      std::string(std::strerror(errno)));
+                             std::string(std::strerror(errno)));
   }
 
   sscanf(buf.release, "%u.%u.%u", &major, &minor, &patch);
   sscanf(version.c_str(), "%u.%u.%u", &major_r, &minor_r, &patch_r);
 
-  return KERNEL_VERSION(major, minor, patch) >= KERNEL_VERSION(major_r, minor_r, patch_r);
+  return KERNEL_VERSION(major, minor, patch) >=
+         KERNEL_VERSION(major_r, minor_r, patch_r);
 }
 
 }  // namespace utils

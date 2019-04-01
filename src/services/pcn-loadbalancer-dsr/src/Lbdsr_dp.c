@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <linux/jhash.h>
 #include <uapi/linux/bpf.h>
 #include <uapi/linux/filter.h>
 #include <uapi/linux/icmp.h>
@@ -25,7 +26,6 @@
 #include <uapi/linux/pkt_cls.h>
 #include <uapi/linux/tcp.h>
 #include <uapi/linux/udp.h>
-#include <linux/jhash.h>
 
 #define SESSIONS_TABLE_DIM 10000
 
@@ -44,8 +44,8 @@
 #define BACKEND_PORT _BACKEND_PORT
 
 // frontend ip and mac addresses
-#define FRONTEND_IP _FRONTEND_IP //0x6400000a       // 10.0.0.100
-#define FRONTEND_MAC _FRONTEND_MAC //0xccbbaa010101  // 01:01:01:aa:bb:cc
+#define FRONTEND_IP _FRONTEND_IP    // 0x6400000a       // 10.0.0.100
+#define FRONTEND_MAC _FRONTEND_MAC  // 0xccbbaa010101  // 01:01:01:aa:bb:cc
 
 // address used as mac_src in outgoing traffic
 #define LB_MAC 0xddeeff020202
@@ -98,9 +98,10 @@ BPF_TABLE("lru_hash", struct sessions_key, struct sessions_value,
 BPF_TABLE("array", u32, __be64, config_table, CONFIG_TABLE_DIM);
 
 // implements arp responder on frontend interface
-static __always_inline
-int arp_responder(struct CTXTYPE *ctx, struct pkt_metadata *md,
-                  struct eth_hdr *eth, struct arp_hdr *arp) {
+static __always_inline int arp_responder(struct CTXTYPE *ctx,
+                                         struct pkt_metadata *md,
+                                         struct eth_hdr *eth,
+                                         struct arp_hdr *arp) {
   __be32 target_ip = arp->ar_tip;
   __be32 sender = 0;
   if (target_ip == FRONTEND_IP)
@@ -142,9 +143,9 @@ static inline struct sessions_value *get_sessions_value(__be32 ip_src,
   sessions_key.port_src = port_src;
   sessions_key.port_dst = port_dst;
   sessions_key.proto = proto;
-  struct sessions_value *sessions_value_p = sessions_table.lookup(&sessions_key);
+  struct sessions_value *sessions_value_p =
+      sessions_table.lookup(&sessions_key);
   if (!sessions_value_p) {
-
     // pcn_log(ctx, LOG_ERR, "miss session_table\n");
 
     // create rule for sessions
@@ -178,39 +179,39 @@ static inline struct sessions_value *get_sessions_value(__be32 ip_src,
     }
     sessions_value.mac = *mac;
 
-    // pcn_log(ctx, LOG_TRACE, "+create new session+ (id = %d) (mac = %M)\n", id, *mac);
+    // pcn_log(ctx, LOG_TRACE, "+create new session+ (id = %d) (mac = %M)\n",
+    // id, *mac);
 
     // update sessions table
     sessions_table.lookup_or_init(&sessions_key, &sessions_value);
     sessions_value_p = &sessions_value;
   } else {
-
     // pcn_log(ctx, LOG_DEBUG, "hit session_table");
-
   }
   return sessions_value_p;
 }
 
-static __always_inline
-int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
+static __always_inline int handle_rx(struct CTXTYPE *ctx,
+                                     struct pkt_metadata *md) {
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   struct eth_hdr *eth = data;
   if (data + sizeof(*eth) > data_end)
     goto DROP;
 
-  pcn_log(ctx, LOG_TRACE, "(in_port = %P) (proto = %x)\n", md->in_port, eth->proto);
+  pcn_log(ctx, LOG_TRACE, "(in_port = %P) (proto = %x)\n", md->in_port,
+          eth->proto);
 
   // allow only traffic from FRONTEND_PORT
   if (md->in_port != FRONTEND_PORT)
     goto DROP;
   switch (eth->proto) {
-    case htons(ETH_P_IP):
-      goto ip;
-    case htons(ETH_P_ARP):
-      goto arp;
-    default:
-      goto DROP;
+  case htons(ETH_P_IP):
+    goto ip;
+  case htons(ETH_P_ARP):
+    goto arp;
+  default:
+    goto DROP;
   }
 
 ip:;
@@ -223,14 +224,14 @@ ip:;
   if (data + sizeof(*eth) + sizeof(*ip) > data_end)
     goto DROP;
   switch (ip->protocol) {
-    case IPPROTO_UDP:
-      goto udp;
-    case IPPROTO_TCP:
-      goto tcp;
-    case IPPROTO_ICMP:
-      goto icmp;
-    default:
-      goto DROP;
+  case IPPROTO_UDP:
+    goto udp;
+  case IPPROTO_TCP:
+    goto tcp;
+  case IPPROTO_ICMP:
+    goto icmp;
+  default:
+    goto DROP;
   }
 
 arp : {
@@ -248,7 +249,8 @@ udp : {
   if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*udp) > data_end)
     return RX_DROP;
 
-  pcn_log(ctx, LOG_TRACE, "UDP packet. source:%P dest:%P\n", bpf_ntohs(udp->source), bpf_ntohs(udp->dest));
+  pcn_log(ctx, LOG_TRACE, "UDP packet. source:%P dest:%P\n",
+          bpf_ntohs(udp->source), bpf_ntohs(udp->dest));
 
   struct sessions_value *sessions_value_p = get_sessions_value(
       ip->saddr, ip->daddr, udp->source, udp->dest, ip->protocol);
@@ -256,7 +258,8 @@ udp : {
     eth->dst = sessions_value_p->mac;
     eth->src = LB_MAC;
 
-    pcn_log(ctx, LOG_TRACE, "UDP packet, redirect to (mac = %M)\n", PRINT_MAC(eth->dst));
+    pcn_log(ctx, LOG_TRACE, "UDP packet, redirect to (mac = %M)\n",
+            PRINT_MAC(eth->dst));
 
     return pcn_pkt_redirect(ctx, md, BACKEND_PORT);
   } else {
@@ -269,7 +272,8 @@ tcp : {
   if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
     return RX_DROP;
 
-  pcn_log(ctx, LOG_TRACE, "TCP packet, source: %P dest: %P\n", bpf_ntohs(tcp->source), bpf_ntohs(tcp->dest));
+  pcn_log(ctx, LOG_TRACE, "TCP packet, source: %P dest: %P\n",
+          bpf_ntohs(tcp->source), bpf_ntohs(tcp->dest));
 
   struct sessions_value *sessions_value_p = get_sessions_value(
       ip->saddr, ip->daddr, tcp->source, tcp->dest, ip->protocol);
@@ -277,7 +281,8 @@ tcp : {
     eth->dst = sessions_value_p->mac;
     eth->src = LB_MAC;
 
-    pcn_log(ctx, LOG_TRACE, "TCP packet, redirect to (mac = %M)\n", PRINT_MAC(eth->dst));
+    pcn_log(ctx, LOG_TRACE, "TCP packet, redirect to (mac = %M)\n",
+            PRINT_MAC(eth->dst));
 
     return pcn_pkt_redirect(ctx, md, BACKEND_PORT);
   } else {
@@ -290,8 +295,10 @@ icmp : {
   if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*icmp) > data_end)
     return RX_DROP;
 
-  pcn_log(ctx, LOG_TRACE, "ICMP packet type: %d code: %d\n", icmp->type, icmp->code);
-  pcn_log(ctx, LOG_TRACE, "ICMP packet id: %d seq: %d\n", icmp->un.echo.id, icmp->un.echo.sequence);
+  pcn_log(ctx, LOG_TRACE, "ICMP packet type: %d code: %d\n", icmp->type,
+          icmp->code);
+  pcn_log(ctx, LOG_TRACE, "ICMP packet id: %d seq: %d\n", icmp->un.echo.id,
+          icmp->un.echo.sequence);
 
   // Only manage ICMP Request and Reply
   if (!((icmp->type == ICMP_ECHO) || (icmp->type == ICMP_ECHOREPLY)))
@@ -302,7 +309,8 @@ icmp : {
     eth->dst = sessions_value_p->mac;
     eth->src = LB_MAC;
 
-    pcn_log(ctx, LOG_TRACE, "ICMP packet, redirect to (mac = %M)\n", PRINT_MAC(eth->dst));
+    pcn_log(ctx, LOG_TRACE, "ICMP packet, redirect to (mac = %M)\n",
+            PRINT_MAC(eth->dst));
 
     return pcn_pkt_redirect(ctx, md, BACKEND_PORT);
   } else {

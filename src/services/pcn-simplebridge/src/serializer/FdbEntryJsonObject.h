@@ -1,6 +1,6 @@
 /**
 * simplebridge API
-* Simple L2 Bridge Service
+* simplebridge API generated from simplebridge.yang
 *
 * OpenAPI spec version: 1.0.0
 *
@@ -36,25 +36,10 @@ namespace model {
 class  FdbEntryJsonObject : public JsonObjectBase {
 public:
   FdbEntryJsonObject();
-  virtual ~FdbEntryJsonObject();
+  FdbEntryJsonObject(const nlohmann::json &json);
+  ~FdbEntryJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// FdbEntryJsonObject members
 
   /// <summary>
   /// Address of the filtering database entry
@@ -62,7 +47,6 @@ public:
   std::string getAddress() const;
   void setAddress(std::string value);
   bool addressIsSet() const;
-  void unsetAddress();
 
   /// <summary>
   /// Output port name
@@ -70,7 +54,6 @@ public:
   std::string getPort() const;
   void setPort(std::string value);
   bool portIsSet() const;
-  void unsetPort();
 
   /// <summary>
   /// Age of the current filtering database entry
@@ -80,16 +63,13 @@ public:
   bool ageIsSet() const;
   void unsetAge();
 
-
-protected:
+private:
   std::string m_address;
   bool m_addressIsSet;
   std::string m_port;
   bool m_portIsSet;
   uint32_t m_age;
   bool m_ageIsSet;
-
-  std::vector<std::string> allowedParameters_{ "address", "port", "age" };
 };
 
 }

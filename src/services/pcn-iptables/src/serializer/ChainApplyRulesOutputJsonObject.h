@@ -36,25 +36,10 @@ namespace model {
 class  ChainApplyRulesOutputJsonObject : public JsonObjectBase {
 public:
   ChainApplyRulesOutputJsonObject();
-  virtual ~ChainApplyRulesOutputJsonObject();
+  ChainApplyRulesOutputJsonObject(const nlohmann::json &json);
+  ~ChainApplyRulesOutputJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// ChainApplyRulesOutputJsonObject members
 
   /// <summary>
   /// True if the operation is successful
@@ -64,12 +49,9 @@ public:
   bool resultIsSet() const;
   void unsetResult();
 
-
-protected:
+private:
   bool m_result;
   bool m_resultIsSet;
-
-  std::vector<std::string> allowedParameters_{ "result" };
 };
 
 }

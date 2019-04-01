@@ -63,7 +63,7 @@ class Controller : public Node {
   void register_cb(int id, const packet_in_cb &cb);
   void unregister_cb(int id);
   void send_packet_to_cube(uint16_t module_index, uint16_t port_id,
-                          const std::vector<uint8_t> &packet);
+                           const std::vector<uint8_t> &packet);
 
   int get_fd() const;
   uint32_t get_id() const;
@@ -71,7 +71,8 @@ class Controller : public Node {
   static void call_back_proxy(void *cb_cookie, void *data, int data_size);
 
  private:
-  Controller(const std::string &tx_code, const std::string &rx_code, enum bpf_prog_type type);
+  Controller(const std::string &tx_code, const std::string &rx_code,
+             enum bpf_prog_type type);
   log_msg_cb handle_log_msg;
   void log_msg(const LogMsg *msg);
 
@@ -97,7 +98,7 @@ class Controller : public Node {
   std::unique_ptr<std::thread> pkt_in_thread_;
 
   std::map<int, const packet_in_cb &> cbs_;
-  std::mutex cbs_mutex_; // protects the cbs_ container
+  std::mutex cbs_mutex_;  // protects the cbs_ container
 
   std::shared_ptr<spdlog::logger> logger;
 };

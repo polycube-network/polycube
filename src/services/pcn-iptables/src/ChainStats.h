@@ -38,7 +38,6 @@ class ChainStats : public ChainStatsInterface {
   static void removeEntry(Chain &parent, const uint32_t &id);
   static std::vector<std::shared_ptr<ChainStats>> get(Chain &parent);
   static void remove(Chain &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainStatsJsonObject &conf) override;
   ChainStatsJsonObject toJsonObject() override;
@@ -58,6 +57,11 @@ class ChainStats : public ChainStatsInterface {
   /// Rule Identifier
   /// </summary>
   uint32_t getId() override;
+
+  /// <summary>
+  /// Description
+  /// </summary>
+  std::string getDescription() override;
 
  private:
   Chain &parent_;

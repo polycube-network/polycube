@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/NattingTableInterface.h"
 
-
 #include <spdlog/spdlog.h>
-
 
 class Nat;
 
@@ -47,16 +43,29 @@ class NattingTable : public NattingTableInterface {
  public:
   NattingTable(Nat &parent, const NattingTableJsonObject &conf);
   NattingTable(Nat &parent, const std::string srcIp, const std::string dstIp,
-              const uint16_t srcPort, const uint16_t dstPort, const uint8_t proto,
-              const std::string newIp, const uint16_t newPort, const uint8_t originatingRule);
+               const uint16_t srcPort, const uint16_t dstPort,
+               const uint8_t proto, const std::string newIp,
+               const uint16_t newPort, const uint8_t originatingRule);
   virtual ~NattingTable();
 
-  static void create(Nat &parent, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto, const NattingTableJsonObject &conf);
-  static std::shared_ptr<NattingTable> getEntry(Nat &parent, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
-  static void removeEntry(Nat &parent, const std::string &internalSrc, const std::string &internalDst, const uint16_t &internalSport, const uint16_t &internalDport, const std::string &proto);
+  static void create(Nat &parent, const std::string &internalSrc,
+                     const std::string &internalDst,
+                     const uint16_t &internalSport,
+                     const uint16_t &internalDport, const std::string &proto,
+                     const NattingTableJsonObject &conf);
+  static std::shared_ptr<NattingTable> getEntry(Nat &parent,
+                                                const std::string &internalSrc,
+                                                const std::string &internalDst,
+                                                const uint16_t &internalSport,
+                                                const uint16_t &internalDport,
+                                                const std::string &proto);
+  static void removeEntry(Nat &parent, const std::string &internalSrc,
+                          const std::string &internalDst,
+                          const uint16_t &internalSport,
+                          const uint16_t &internalDport,
+                          const std::string &proto);
   static std::vector<std::shared_ptr<NattingTable>> get(Nat &parent);
   static void remove(Nat &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const NattingTableJsonObject &conf) override;
   NattingTableJsonObject toJsonObject() override;
@@ -90,7 +99,8 @@ class NattingTable : public NattingTableInterface {
   /// The set of rules that created this mapping
   /// </summary>
   NattingTableOriginatingRuleEnum getOriginatingRule() override;
-  void setOriginatingRule(const NattingTableOriginatingRuleEnum &value) override;
+  void setOriginatingRule(
+      const NattingTableOriginatingRuleEnum &value) override;
 
   /// <summary>
   /// Translated IP address
@@ -104,8 +114,8 @@ class NattingTable : public NattingTableInterface {
   uint16_t getExternalPort() override;
   void setExternalPort(const uint16_t &value) override;
 
-private:
-  Nat   &parent_;
+ private:
+  Nat &parent_;
   std::string srcIp;
   std::string dstIp;
   uint16_t srcPort;
@@ -115,4 +125,3 @@ private:
   uint16_t newPort;
   NattingTableOriginatingRuleEnum originatingRule;
 };
-

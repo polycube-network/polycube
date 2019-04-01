@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../interface/RulePortForwardingEntryInterface.h"
 #include "IpAddr.h"
 
-
 #include <spdlog/spdlog.h>
-
 
 class RulePortForwarding;
 
@@ -31,15 +27,18 @@ using namespace io::swagger::server::model;
 
 class RulePortForwardingEntry : public RulePortForwardingEntryInterface {
  public:
-  RulePortForwardingEntry(RulePortForwarding &parent, const RulePortForwardingEntryJsonObject &conf);
+  RulePortForwardingEntry(RulePortForwarding &parent,
+                          const RulePortForwardingEntryJsonObject &conf);
   virtual ~RulePortForwardingEntry();
 
-  static void create(RulePortForwarding &parent, const uint32_t &id, const RulePortForwardingEntryJsonObject &conf);
-  static std::shared_ptr<RulePortForwardingEntry> getEntry(RulePortForwarding &parent, const uint32_t &id);
+  static void create(RulePortForwarding &parent, const uint32_t &id,
+                     const RulePortForwardingEntryJsonObject &conf);
+  static std::shared_ptr<RulePortForwardingEntry> getEntry(
+      RulePortForwarding &parent, const uint32_t &id);
   static void removeEntry(RulePortForwarding &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<RulePortForwardingEntry>> get(RulePortForwarding &parent);
+  static std::vector<std::shared_ptr<RulePortForwardingEntry>> get(
+      RulePortForwarding &parent);
   static void remove(RulePortForwarding &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulePortForwardingEntryJsonObject &conf) override;
   RulePortForwardingEntryJsonObject toJsonObject() override;
@@ -82,10 +81,10 @@ class RulePortForwardingEntry : public RulePortForwardingEntryInterface {
   void injectToDatapath();
   void removeFromDatapath();
 
-  enum ProtoEnum {TCP, UDP, ALL};
+  enum ProtoEnum { TCP, UDP, ALL };
 
-private:
-  RulePortForwarding   &parent_;
+ private:
+  RulePortForwarding &parent_;
   uint32_t id;
   uint32_t internalIp;
   uint32_t externalIp;
@@ -93,4 +92,3 @@ private:
   uint16_t externalPort;
   ProtoEnum proto;
 };
-

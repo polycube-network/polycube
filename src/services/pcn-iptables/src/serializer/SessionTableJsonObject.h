@@ -36,25 +36,10 @@ namespace model {
 class  SessionTableJsonObject : public JsonObjectBase {
 public:
   SessionTableJsonObject();
-  virtual ~SessionTableJsonObject();
+  SessionTableJsonObject(const nlohmann::json &json);
+  ~SessionTableJsonObject() final = default;
+  nlohmann::json toJson() const final;
 
-  /////////////////////////////////////////////
-  /// JsonObjectBase overrides
-
-  void validateKeys() override;
-  void validateMandatoryFields() override;
-  void validateParams() override;
-
-  nlohmann::json toJson() const override;
-  void fromJson(nlohmann::json& json) override;
-
-  static nlohmann::json helpKeys();
-  static nlohmann::json helpElements();
-  static nlohmann::json helpWritableLeafs();
-  static nlohmann::json helpComplexElements();
-  static std::vector<std::string> helpActions();
-  /////////////////////////////////////////////
-  /// SessionTableJsonObject members
 
   /// <summary>
   /// Source IP
@@ -62,7 +47,6 @@ public:
   std::string getSrc() const;
   void setSrc(std::string value);
   bool srcIsSet() const;
-  void unsetSrc();
 
   /// <summary>
   /// Destination IP
@@ -70,7 +54,6 @@ public:
   std::string getDst() const;
   void setDst(std::string value);
   bool dstIsSet() const;
-  void unsetDst();
 
   /// <summary>
   /// Level 4 Protocol.
@@ -78,7 +61,6 @@ public:
   std::string getL4proto() const;
   void setL4proto(std::string value);
   bool l4protoIsSet() const;
-  void unsetL4proto();
 
   /// <summary>
   /// Source Port
@@ -86,7 +68,6 @@ public:
   uint16_t getSport() const;
   void setSport(uint16_t value);
   bool sportIsSet() const;
-  void unsetSport();
 
   /// <summary>
   /// Destination
@@ -94,7 +75,6 @@ public:
   uint16_t getDport() const;
   void setDport(uint16_t value);
   bool dportIsSet() const;
-  void unsetDport();
 
   /// <summary>
   /// Connection state.
@@ -104,8 +84,7 @@ public:
   bool stateIsSet() const;
   void unsetState();
 
-
-protected:
+private:
   std::string m_src;
   bool m_srcIsSet;
   std::string m_dst;
@@ -118,8 +97,6 @@ protected:
   bool m_dportIsSet;
   std::string m_state;
   bool m_stateIsSet;
-
-  std::vector<std::string> allowedParameters_{ "src", "dst", "l4proto", "sport", "dport", "state" };
 };
 
 }

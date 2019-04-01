@@ -41,7 +41,6 @@ class Actions : public ActionsInterface {
   static void removeEntry(Simpleforwarder &parent, const std::string &inport);
   static std::vector<std::shared_ptr<Actions>> get(Simpleforwarder &parent);
   static void remove(Simpleforwarder &parent);
-  nlohmann::fifo_map<std::string, std::string> getKeys();
   std::shared_ptr<spdlog::logger> logger();
   void update(const ActionsJsonObject &conf) override;
   ActionsJsonObject toJsonObject() override;
