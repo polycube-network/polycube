@@ -40,7 +40,7 @@ static __always_inline int *getForwardingDecision() {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code ChainForwarder receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ChainForwarder] receiving packet.");
 
   int *decision = getForwardingDecision();
 
@@ -52,26 +52,26 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   switch (*decision) {
   case INPUT_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ChainForwarder: Call INPUT Chain %d ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ChainForwarder] Call INPUT Chain %d ",
             _NEXT_HOP_INPUT_1);
     call_bpf_program(ctx, _NEXT_HOP_INPUT_1);
     return RX_DROP;
 
   case FORWARD_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ChainForwarder: Call FORWARD Chain %d ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ChainForwarder] Call FORWARD Chain %d ",
             _NEXT_HOP_FORWARD_1);
     call_bpf_program(ctx, _NEXT_HOP_FORWARD_1);
     return RX_DROP;
 
   case PASS_LABELING:
     pcn_log(ctx, LOG_DEBUG,
-            "ChainForwarder INGRESS: Call ConntrackTablesUpdate %d ",
+            "[_HOOK] [ChainForwarder] Call ConntrackTablesUpdate %d ",
             _CONNTRACKTABLEUPDATE);
     call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "ChainForwarder Ingress: Something went wrong. ");
+    pcn_log(ctx, LOG_ERR, "[_HOOK] [ChainForwarder] Something went wrong. ");
     return RX_DROP;
   }
 
@@ -81,20 +81,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   switch (*decision) {
   case OUTPUT_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ChainForwarder: Call OUTPUT Chain %d ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ChainForwarder] Call OUTPUT Chain %d ",
             _NEXT_HOP_OUTPUT_1);
     call_bpf_program(ctx, _NEXT_HOP_OUTPUT_1);
     return RX_DROP;
 
   case PASS_LABELING:
     pcn_log(ctx, LOG_DEBUG,
-            "ChainForwarder EGRESS: Call ConntrackTablesUpdate %d ",
+            "[_HOOK] [ChainForwarder] Call ConntrackTablesUpdate %d ",
             _CONNTRACKTABLEUPDATE);
     call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "ChainForwarder Egress: Something went wrong. ");
+    pcn_log(ctx, LOG_ERR, "[_HOOK] [ChainForwarder] Something went wrong. ");
     return RX_DROP;
   }
 

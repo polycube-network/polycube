@@ -140,6 +140,13 @@ std::string Iptables::Horus::getCode() {
   iptables_.logger()->debug("HORUS fields ENABLED: {0} - DISABLED {1} ",
                             enabled, disabled);
 
+  /*Ingress or Egress logic*/
+  if (program_type_ == ProgramType::INGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "INGRESS");
+  } else if (program_type_ == ProgramType::EGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "EGRESS");
+  }
+
   return no_macro_code;
 }
 

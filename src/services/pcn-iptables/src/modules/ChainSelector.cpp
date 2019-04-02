@@ -55,11 +55,11 @@ std::string Iptables::ChainSelector::defaultActionString(
   try {
     auto chain = iptables_.getChain(direction);
     if (chain->getDefault() == ActionEnum::DROP) {
-      return "pcn_log(ctx, LOG_TRACE, \"ChainSelector DROP_NO_LABELING\"); \n "
+      return "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] DROP_NO_LABELING\"); \n "
              "return RX_DROP;";
     } else if (chain->getDefault() == ActionEnum::ACCEPT) {
       std::string ret =
-          "pcn_log(ctx, LOG_TRACE, \"ChainSelector PASS_LABELING\"); \n "
+          "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] PASS_LABELING\"); \n "
           "updateForwardingDecision(PASS_LABELING);";
       return ret;
     }
@@ -259,6 +259,13 @@ std::string Iptables::ChainSelector::getCode() {
     replaceAll(no_macro_code, "call_bpf_program", "call_ingress_program");
   } else if (program_type_ == ProgramType::EGRESS) {
     replaceAll(no_macro_code, "call_bpf_program", "call_egress_program");
+  }
+
+  /*Ingress or Egress logic*/
+  if (program_type_ == ProgramType::INGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "INGRESS");
+  } else if (program_type_ == ProgramType::EGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "EGRESS");
   }
 
   return no_macro_code;

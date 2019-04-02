@@ -23,6 +23,7 @@
 
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
+#define IPPROTO_ICMP 1
 
 struct packetHeaders {
   uint32_t srcIp;
@@ -94,7 +95,7 @@ struct tcp_hdr {
 } __attribute__((packed));
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code Parse receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] receiving packet.");
 
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
@@ -103,7 +104,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   if (ethernet->proto != bpf_htons(ETH_P_IP)) {
     /*Let everything that is not IP pass. */
-    pcn_log(ctx, LOG_DEBUG, "Packet not IP. Let this traffic pass by default.");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] Packet not IP. Let this traffic pass by default.");
     return RX_OK;
   }
 
@@ -142,6 +143,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     pkt->srcPort = udp->source;
     pkt->dstPort = udp->dest;
+  } else if (ip->protocol == IPPROTO_ICMP) {
+    pkt->srcPort = 0;
+    pkt->dstPort = 0;
   }
 
 #if _HORUS_ENABLED
