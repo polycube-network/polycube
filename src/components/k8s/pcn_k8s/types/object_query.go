@@ -5,4 +5,5 @@ type ObjectQuery struct {
 	By     string
 	Name   string
 	Labels map[string]string
+	Node   string
 }

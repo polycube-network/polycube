@@ -7,6 +7,7 @@ import (
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
+	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
@@ -18,9 +19,8 @@ type PcnNetworkPolicyManager interface {
 }
 
 type NetworkPolicyManager struct {
-	dnpc            *pcn_controllers.DefaultNetworkPolicyController
-	podController   pcn_controllers.PodController
-	firewallManager pcn_firewall.Manager
+	dnpc          *pcn_controllers.DefaultNetworkPolicyController
+	podController pcn_controllers.PodController
 
 	defaultPolicyParser PcnDefaultPolicyParser
 	deployedPolicies    map[string][]k8s_types.UID
@@ -29,6 +29,8 @@ type NetworkPolicyManager struct {
 	lock                sync.Mutex
 	checkPodsLock       sync.Mutex
 	log                 *log.Logger
+	localFirewalls      map[k8s_types.UID]pcn_firewall.PcnFirewall
+	fwAPI               k8sfirewall.FirewallAPI
 }
 
 type checkedPod struct {
@@ -36,28 +38,31 @@ type checkedPod struct {
 	sync.Mutex
 }
 
-func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyController, podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager, nodeName string) PcnNetworkPolicyManager {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
-		"method": "StartNetworkPolicyManager()",
-	})
+func StartNetworkPolicyManager(basePath string, dnpc *pcn_controllers.DefaultNetworkPolicyController, podController pcn_controllers.PodController, nodeName string) PcnNetworkPolicyManager {
+	l := log.NewEntry(log.New())
+	l.WithFields(log.Fields{"by": PM, "method": "StartNetworkPolicyManager()"})
 	l.Infoln("Starting Network Policy Manager")
+
+	cfgK8firewall := k8sfirewall.Configuration{BasePath: basePath}
+	srK8firewall := k8sfirewall.NewAPIClient(&cfgK8firewall)
+	fwAPI := srK8firewall.FirewallApi
 
 	manager := NetworkPolicyManager{
 		dnpc:             dnpc,
 		podController:    podController,
-		firewallManager:  firewallManager,
 		deployedPolicies: map[string][]k8s_types.UID{},
 		checkedPods:      map[k8s_types.UID]*checkedPod{},
 		node:             nodeName,
+		localFirewalls:   map[k8s_types.UID]pcn_firewall.PcnFirewall{},
 		log:              log.New(),
+		fwAPI:            fwAPI,
 	}
 
 	//-------------------------------------
 	//	Subscribe to default policies events
 	//-------------------------------------
 
-	manager.defaultPolicyParser = newDefaultPolicyParser(podController, firewallManager, nodeName)
+	manager.defaultPolicyParser = newDefaultPolicyParser(podController, nodeName)
 
 	//	Deploy a new default policy
 	dnpc.Subscribe(pcn_types.New, manager.DeployDefaultPolicy)
@@ -81,7 +86,7 @@ func StartNetworkPolicyManager(dnpc *pcn_controllers.DefaultNetworkPolicyControl
 
 func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.NetworkPolicy) {
 	l := log.NewEntry(manager.log)
-	l.WithFields(log.Fields{"by": "Network-Policy-Manager", "method": "DeployDefaultPolicy(" + policy.Name + ")"})
+	l.WithFields(log.Fields{"by": PM, "method": "DeployDefaultPolicy(" + policy.Name + ")"})
 
 	//-------------------------------------
 	//	The basics
@@ -122,7 +127,6 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 		go func() {
 			defer podsWaitGroup.Done()
 			fwActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, ns)
-			log.Printf("###got-actions:%+v\n", fwActions)
 		}()
 
 		podsWaitGroup.Wait()
@@ -135,12 +139,6 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 			go func(currentPod core_v1.Pod) {
 				defer podsWaitGroup.Done()
 
-				//	Running in this node? If not, getting the firewall is useless (it's not here.)
-				//	TODO: https://godoc.org/k8s.io/api/core/v1#PodStatus, NodeName is correct?
-				if currentPod.Spec.NodeName != manager.node {
-					return
-				}
-
 				//	If this pod is not ready or is terminating, then don't proceed
 				if currentPod.Status.Phase != core_v1.PodRunning || currentPod.DeletionTimestamp != nil {
 					return
@@ -148,9 +146,9 @@ func (manager *NetworkPolicyManager) DeployDefaultPolicy(policy *networking_v1.N
 
 				//	Deploy...
 				//	Create the firewall (or get it if already exists)
-				fw := manager.firewallManager.GetOrCreate(currentPod)
-				if fw == nil {
-					l.Errorln("Could not create firewall fw-", currentPod.Status.PodIP, ". Will stop here.")
+				fw, exists := manager.localFirewalls[pod.UID]
+				if !exists {
+					l.Errorln("No firewall exists for pod", pod.Status.PodIP)
 					return
 				}
 
@@ -175,15 +173,12 @@ func (manager *NetworkPolicyManager) RemoveDefaultPolicy(policy *networking_v1.N
 		return
 	}
 
+	//	We are iterating only through pods which are here in this node.
 	for _, pods := range podsAffected {
 		for _, pod := range pods {
-
-			if pod.Spec.NodeName == manager.node {
-				fw := manager.firewallManager.Get(pod)
-
-				if fw != nil {
-					fw.CeasePolicy(policy.Name)
-				}
+			fw, exists := manager.localFirewalls[pod.UID]
+			if exists && fw.ImplementsPolicy(policy.Name) {
+				fw.CeasePolicy(policy.Name)
 			}
 		}
 	}
@@ -196,10 +191,8 @@ func (manager *NetworkPolicyManager) UpdateDefaultPolicy(policy *networking_v1.N
 }
 
 func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
-		"method": "checkNewPod(" + pod.Name + ")",
-	})
+	l := log.NewEntry(manager.log)
+	l.WithFields(log.Fields{"by": PM, "method": "checkNewPod(" + pod.Name + ")"})
 
 	//-------------------------------------
 	//	Basic Checks
@@ -212,32 +205,82 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 		return
 	}
 
+	//	Did I already create a firewall for this?
+	//	Let's do it in a lambda, so we can use defer
+	fw, existed := func(uid k8s_types.UID) (pcn_firewall.PcnFirewall, bool) {
+		manager.checkPodsLock.Lock()
+		defer manager.checkPodsLock.Unlock()
+
+		fw, exists := manager.localFirewalls[uid]
+		if !exists {
+			manager.localFirewalls[uid] = pcn_firewall.StartFirewall(*pod, manager.fwAPI, manager.podController)
+		}
+		return fw, exists
+	}(pod.UID)
+
+	if existed {
+		//	The firewall already existed, it's useless to go on.
+		return
+	}
+
+	//-------------------------------------
+	//	Must this pod enforce any policy?
+	//-------------------------------------
+
+	k8sPolicies, _ := manager.dnpc.GetPolicies(pcn_types.ObjectQuery{By: "name", Name: "*"})
+
+	//	TODO: in a thread for each of them?
+	for _, kp := range k8sPolicies {
+		if manager.defaultPolicyParser.DoesPolicyAffectPod(&kp, pod) && !fw.ImplementsPolicy(kp.Name) {
+
+			var parsed pcn_types.ParsedRules
+			fwActions := pcn_types.FirewallActions{}
+			ingress, egress, policyType := manager.defaultPolicyParser.ParsePolicyTypes(&kp.Spec)
+
+			var podsWaitGroup sync.WaitGroup
+			podsWaitGroup.Add(2)
+
+			//	Parse...
+			go func() {
+				defer podsWaitGroup.Done()
+				parsed = manager.defaultPolicyParser.ParseRules(ingress, egress, pod.Namespace)
+			}()
+
+			go func() {
+				defer podsWaitGroup.Done()
+				fwActions = manager.defaultPolicyParser.GetClusterActions(ingress, egress, pod.Namespace)
+			}()
+
+			podsWaitGroup.Wait()
+			fw.EnforcePolicy(kp.Name, policyType, parsed.Ingress, parsed.Egress, fwActions)
+		}
+	}
+
 	//	Have I already checked this before?
-	manager.checkPodsLock.Lock()
+	/*manager.checkPodsLock.Lock()
 	checked, ok := manager.checkedPods[pod.UID]
 	if !ok {
 		checked = &checkedPod{}
 		manager.checkedPods[pod.UID] = checked
 	}
-	manager.checkPodsLock.Unlock()
+	manager.checkPodsLock.Unlock()*/
 
-	checked.Lock()
-	defer checked.Unlock()
+	/*checked.Lock()
+	defer checked.Unlock()*/
 
 	//	Already checked before?
-	if checked.lastKnownIP == pod.Status.PodIP {
+	/*if checked.lastKnownIP == pod.Status.PodIP {
 		//l.Debugln("pod", pod.Name, "has already been checked before: no point in checking it again. Will stop here.")
 		return
-	}
+	}*/
 
 	//l.Debugln("Ok,", pod.Name, "Has never been checked.")
 
 	var policyWait sync.WaitGroup
 	policyWait.Add(2)
 	//policyWait.Add(2)
-	k8sPolicies, _ := manager.dnpc.GetPolicies(pcn_types.ObjectQuery{By: "name", Name: "*"})
-
-	//	The most recently deployed policies should have precedence, but the firewall doesn't support insertion in head yet.
+	//k8sPolicies, _ := manager.dnpc.GetPolicies(pcn_types.ObjectQuery{By: "name", Name: "*"})
+	//	The most recently deployed policies should have precedence, but the firewall doesn't support haed insertion yet.
 	//sort.Slice(k8sPolicies, func(i, j int) bool {return k8sPolicies[i].ObjectMeta.CreationTimestamp < k8sPolicies[j].ObjectMeta.CreationTimestamp})
 
 	/*	This is going to be a bit tricky, so here is a brief explanation.
@@ -251,19 +294,19 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 	//-------------------------------------
 	go func(policiesList []networking_v1.NetworkPolicy) {
 		defer policyWait.Done()
-		if pod.Spec.NodeName != manager.node {
+		/*if pod.Spec.NodeName != manager.node {
 			//l.Infoln("pod", pod.Name, "is not in my node: no point in injecting rules. Will stop here.")
 			return
-		}
+		}*/
 
 		//	First start the firewall
-		fw := manager.firewallManager.GetOrCreate(*pod)
+		/*fw := manager.firewallManager.GetOrCreate(*pod)
 		if fw == nil {
 			l.Errorln("Could not get firewall for pod", pod.Name, ": I won't be able to inject rules. Will stop here.")
 			return
-		}
+		}*/
 
-		for _, k8sPolicy := range policiesList {
+		/*for _, k8sPolicy := range policiesList {
 			//	Make sure it doesn't already enforce this policy
 			if !fw.ImplementsPolicy(k8sPolicy.Name) {
 				if manager.defaultPolicyParser.DoesPolicyAffectPod(&k8sPolicy, pod) {
@@ -274,7 +317,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 					fw.EnforcePolicy(k8sPolicy.Name, policyType, parsed.Ingress, parsed.Egress, pcn_types.FirewallActions{})
 				}
 			}
-		}
+		}*/
 	}(k8sPolicies)
 
 	//-------------------------------------
@@ -302,15 +345,13 @@ func (manager *NetworkPolicyManager) checkNewPod(pod *core_v1.Pod) {
 
 	policyWait.Wait()
 
-	checked.lastKnownIP = pod.Status.PodIP
+	//checked.lastKnownIP = pod.Status.PodIP
 	return
 }
 
 func (manager *NetworkPolicyManager) manageDeletedPod(pod *core_v1.Pod) {
-	var l = log.WithFields(log.Fields{
-		"by":     PM,
-		"method": "manageDeletedPod(" + pod.Name + ")",
-	})
+	l := log.NewEntry(manager.log)
+	l.WithFields(log.Fields{"by": PM, "method": "manageDeletePod(" + pod.Name + ")"})
 
 	if pod == nil {
 		l.Errorln("Called with a nil pod! Will stop here.")
@@ -322,15 +363,10 @@ func (manager *NetworkPolicyManager) manageDeletedPod(pod *core_v1.Pod) {
 		return
 	}
 
-	fws := manager.firewallManager.GetAll()
-	//var fwWait sync.WaitGroup
-	for _, fw := range fws {
-		if fw.ForPod() != pod.UID {
-			fw.RemoveIPReferences(pod.Status.PodIP)
-		}
-	}
-
 	manager.checkPodsLock.Lock()
-	delete(manager.checkedPods, pod.UID)
-	manager.checkPodsLock.Unlock()
+	defer manager.checkPodsLock.Unlock()
+	if fw, exists := manager.localFirewalls[pod.UID]; exists {
+		fw.Destroy()
+	}
+	delete(manager.localFirewalls, pod.UID)
 }

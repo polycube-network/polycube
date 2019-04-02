@@ -540,6 +540,12 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 		ns = append(ns, n.Name)
 	}
 
+	//	Node specified?
+	node := "*"
+	if len(queryPod.Node) > 0 && queryPod.Node != "*" {
+		node = queryPod.Node
+	}
+
 	//	Query by name
 	if strings.ToLower(queryPod.By) == "name" {
 		//	If we query by name, we don't need the namespace...
@@ -554,11 +560,16 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 		if queryPod.Name == "*" {
 			for _, pod := range p.pods {
 				if len(ns) < 1 {
-					list = append(list, *pod.Pod)
+					//	I don't care about the namespace
+					if node == "*" || (*pod.Pod).Spec.NodeName == node {
+						list = append(list, *pod.Pod)
+					}
 				}
 				for _, namespace := range ns {
 					if pod.Pod.Namespace == namespace {
-						list = append(list, *pod.Pod)
+						if node == "*" || (*pod.Pod).Spec.NodeName == node {
+							list = append(list, *pod.Pod)
+						}
 					}
 				}
 
@@ -566,7 +577,7 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 			return list, nil
 		}
 
-		//	Get the pod with that name
+		//	Get the pod with that name (namespace and node are ignored)
 		if pod, exists := p.pods[queryPod.Name]; exists {
 			return []core_v1.Pod{*pod.Pod}, nil
 		}
@@ -591,12 +602,16 @@ func (p *PcnPodController) GetPods(queryPod pcn_types.ObjectQuery, queryNs pcn_t
 		if len(ns) < 1 {
 			ns = append(ns, meta_v1.NamespaceAll)
 		}
+		listOptions := meta_v1.ListOptions{
+			LabelSelector: labels,
+		}
+		if node != "*" {
+			listOptions.FieldSelector = "spec.nodename == " + node
+		}
 
 		for _, namespace := range ns {
 
-			if currentList, err := p.clientset.CoreV1().Pods(namespace).List(meta_v1.ListOptions{
-				LabelSelector: labels,
-			}); err != nil {
+			if currentList, err := p.clientset.CoreV1().Pods(namespace).List(listOptions); err != nil {
 				log.Error("Error while trying to get pods with labels", labels, "on namespace", namespace)
 			} else {
 				list = append(list, currentList.Items...)

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
-	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 	pcn_types "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/SunSince90/polycube/src/components/k8s/utils/k8sfirewall"
 
@@ -25,6 +24,7 @@ type PcnDefaultPolicyParser interface {
 	ParseSelectors(*meta_v1.LabelSelector, *meta_v1.LabelSelector, string, string) (pcn_types.ParsedRules, error)
 	GetClusterActions([]networking_v1.NetworkPolicyIngressRule, []networking_v1.NetworkPolicyEgressRule, string) pcn_types.FirewallActions
 	GetConnectionTemplate(string, string, string, string, []pcn_types.ProtoPort) pcn_types.ParsedRules
+	DoesPolicyAffectPod(*networking_v1.NetworkPolicy, *core_v1.Pod) bool
 
 	//	TO-BE-JOINED
 	Parse(*networking_v1.NetworkPolicy, bool)
@@ -32,21 +32,18 @@ type PcnDefaultPolicyParser interface {
 
 	//	TO-BE-REMOVED
 	GetPodsAffected(*networking_v1.NetworkPolicy) (map[string][]core_v1.Pod, error)
-	DoesPolicyAffectPod(*networking_v1.NetworkPolicy, *core_v1.Pod) bool
 	DoesPolicyTargetPod(*networking_v1.NetworkPolicy, *core_v1.Pod) pcn_types.ParsedRules
 }
 
 type DefaultPolicyParser struct {
-	firewallManager    pcn_firewall.Manager
 	podController      pcn_controllers.PodController
 	supportedProtocols string
 	node               string
 	log                *log.Logger
 }
 
-func newDefaultPolicyParser(podController pcn_controllers.PodController, firewallManager pcn_firewall.Manager, nodeName string) *DefaultPolicyParser {
+func newDefaultPolicyParser(podController pcn_controllers.PodController, nodeName string) *DefaultPolicyParser {
 	return &DefaultPolicyParser{
-		firewallManager:    firewallManager,
 		podController:      podController,
 		supportedProtocols: "TCP,UDP",
 		node:               nodeName,
@@ -121,11 +118,11 @@ func (d *DefaultPolicyParser) Parse(policy *networking_v1.NetworkPolicy, deploy 
 
 				if deploy {
 					//	Create the firewall (or get it if already exists)
-					fw := d.firewallManager.GetOrCreate(currentPod)
+					/*fw := d.firewallManager.GetOrCreate(currentPod)
 					if fw == nil {
 						//l.Errorln("Could not create firewall fw-", currentPod.Status.PodIP, ". Will stop here.")
 						return
-					}
+					}*/
 
 					//-------------------------------------
 					//	Inject the rules
@@ -882,7 +879,7 @@ func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolic
 	ns := "*"
 
 	if len(policy.Spec.PodSelector.MatchExpressions) > 0 {
-		return nil, errors.New("MatchExpressions not supported yet.")
+		return nil, errors.New("MatchExpressions not supported yet")
 	}
 
 	//	Finally get the pod selector
@@ -898,6 +895,8 @@ func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolic
 	if err != nil {
 		return nil, err
 	}
+
+	podQuery.Node = d.node
 
 	//	Now get the pods
 	podsAffected, err := d.podController.GetPods(podQuery, nsQuery)
@@ -933,32 +932,51 @@ func (d *DefaultPolicyParser) GetPodsAffected(policy *networking_v1.NetworkPolic
 	return namespacesGroup, nil
 }
 
-//	TO-BE-REMOVED
 func (d *DefaultPolicyParser) DoesPolicyAffectPod(policy *networking_v1.NetworkPolicy, pod *core_v1.Pod) bool {
 
-	//	First, get pods affected by the policy.
-	podsAffected, err := d.GetPodsAffected(policy)
-	if err != nil {
+	//	Not in the same namespace?
+	if len(policy.Namespace) > 0 && policy.Namespace != pod.Namespace {
 		return false
 	}
 
-	//	Now let's check if this pod is included:
-	//	Doesn't even affect anyone
-	if len(podsAffected) < 1 {
+	//	MatchExpressions? (we don't support them yet)
+	if len(policy.Spec.PodSelector.MatchExpressions) < 1 {
 		return false
 	}
 
-	//	Its namespace is not affected?
-	podsInNamespace, exists := podsAffected[pod.Namespace]
-	if !exists {
+	//	No labels in the policy? (= must be applied by all pods)
+	if len(policy.Spec.PodSelector.MatchLabels) < 1 {
+		return true
+	}
+
+	//	No labels in the pod?
+	//	(if you're here, it means that there are labels in the policy. But this pod has no labels, so this policy does not apply to it)
+	if len(pod.Labels) < 1 {
 		return false
 	}
 
-	//	Finally, is this pod affected?
-	for _, currentPod := range podsInNamespace {
-		if currentPod.UID == pod.UID {
-			return true
+	//	Finally check the labels
+	labelsFound := 0
+	labelsToFind := len(policy.Spec.PodSelector.MatchLabels)
+	for pKey, pValue := range policy.Spec.PodSelector.MatchLabels {
+		_, exists := pod.Labels[pKey]
+
+		if !exists {
+			//	This policy label does not even exists in the pod: no point in checking the others
+			return false
 		}
+
+		if pod.Labels[pKey] != pValue {
+			//	This policy label exists but does not have the value we wanted: no point in going on checking the others
+			return false
+		}
+
+		labelsFound++
+	}
+
+	if labelsFound == labelsToFind {
+		//	We found all labels: the pod must enforce this policy!
+		return true
 	}
 
 	return false

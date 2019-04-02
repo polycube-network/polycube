@@ -99,38 +99,37 @@ func (f *FirewallManager) manageFirewallForPod(pod *core_v1.Pod) {
 	}
 
 	//	Ok add this.
-	fw := newFirewall(*pod, f.fwAPI, f.podController)
+	/*fw := newFirewall(*pod, f.fwAPI, f.podController)
 	if fw == nil {
 		l.Errorln("Could not get the firewall for pod", pod.Name)
 		return
-	}
+	}*/
 
-	f.firewalls[ID] = fw
+	//f.firewalls[ID] = fw
 }
 
 func (f *FirewallManager) GetOrCreate(pod core_v1.Pod) PcnFirewall {
 
 	//	Firewall name
 	//ID := k8s_types.UID("fw-" + pod.UID)
-	ID := "fw-" + pod.Status.PodIP
+	//ID := "fw-" + pod.Status.PodIP
 
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
 	//	Exists?
-	if fw := f.Get(pod); fw != nil {
-		return fw
-	}
+	fw := f.Get(pod)
+	return fw
 
 	//	Create it
-	fw := newFirewall(pod, f.fwAPI, f.podController)
+	/*fw := newFirewall(pod, f.fwAPI, f.podController)
 	if fw == nil {
 		return nil
 	}
 
 	f.firewalls[ID] = fw
 
-	return fw
+	return fw*/
 }
 
 func (f *FirewallManager) Get(pod core_v1.Pod) PcnFirewall {

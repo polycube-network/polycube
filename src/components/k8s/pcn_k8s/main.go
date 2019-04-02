@@ -33,7 +33,6 @@ import (
 	//"github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_controllers "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers"
 	networkpolicies "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies"
-	pcn_firewall "github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	//"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
@@ -89,7 +88,6 @@ var (
 	//	--- /Controllers
 
 	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
-	firewallManager      pcn_firewall.Manager
 
 	stop bool
 )
@@ -274,11 +272,8 @@ func main() {
 	//	Start the pod controller
 	go podController.Run()
 
-	//	Start the firewall manager
-	firewallManager = pcn_firewall.StartFirewallManager(basePath, nodeName, podController)
-
 	//	Start the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, firewallManager, nodeName)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, nodeName)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
