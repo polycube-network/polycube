@@ -110,7 +110,7 @@ static inline uint32_t get_free_index() {
 
 // TODO use a userspace cleanup thread to free exipred entries
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "ActionCache _DIRECTION receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] receiving packet.");
 
   int k = 0;
   struct packetHeaders *pkt = packet.lookup(&k);
@@ -135,24 +135,24 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     new_index = get_free_index();
 
     pcn_log(ctx, LOG_DEBUG,
-            "ActionCache _DIRECTION tuple src:%I dst:%I sport:%P ", tuple.srcIp,
+            "[_HOOK] [ActionCache] tuple src:%I dst:%I sport:%P ", tuple.srcIp,
             tuple.dstIp, tuple.srcPort);
     pcn_log(ctx, LOG_DEBUG,
-            "ActionCache _DIRECTION tuple dport:%P - MISS - new_index:%d ",
+            "[_HOOK] [ActionCache] tuple dport:%P - MISS - new_index:%d ",
             tuple.dstPort, new_index);
 
     // set session info into pkt metadata
     pkt->sessionId = new_index;
     pkt->direction = DIRECTION_FORWARD;
 
-    pcn_log(ctx, LOG_DEBUG, "ActionCache _DIRECTION sessionId:%d direction:%d ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] sessionId:%d direction:%d ",
             pkt->sessionId, pkt->direction);
 
     // init current session to not set
     struct session_v *session_v_p = session.lookup(&new_index);
     if (session_v_p == NULL) {
       pcn_log(ctx, LOG_DEBUG,
-              "ActionCache _DIRECTION not able to access session id ");
+              "[_HOOK] [ActionCache] not able to access session id ");
       return RX_DROP;
     }
     session_v_p->setMask = 0;
@@ -191,12 +191,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->direction = tts_v_p->direction;
 
     pcn_log(ctx, LOG_DEBUG,
-            "ActionCache _DIRECTION tuple src:%I dst:%I sport:%P ", tuple.srcIp,
+            "[_HOOK] [ActionCache] tuple src:%I dst:%I sport:%P ", tuple.srcIp,
             tuple.dstIp, tuple.srcPort);
-    pcn_log(ctx, LOG_DEBUG, "ActionCache _DIRECTION tuple dport:%P - HIT ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] tuple dport:%P - HIT ",
             tuple.dstPort);
 
-    pcn_log(ctx, LOG_DEBUG, "ActionCache _DIRECTION sessionId:%d direction:%d ",
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] sessionId:%d direction:%d ",
             pkt->sessionId, pkt->direction);
 
     // TODO right now, we always go to ctlabeling since we want to execute

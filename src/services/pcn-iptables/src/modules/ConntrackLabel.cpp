@@ -165,5 +165,12 @@ std::string Iptables::ConntrackLabel::getCode() {
     replaceAll(no_macro_code, "call_bpf_program", "call_egress_program");
   }
 
+  /*Ingress or Egress logic*/
+  if (program_type_ == ProgramType::INGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "INGRESS");
+  } else if (program_type_ == ProgramType::EGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "EGRESS");
+  }
+
   return no_macro_code;
 }

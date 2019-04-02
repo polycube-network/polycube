@@ -58,5 +58,12 @@ std::string Iptables::ActionCache::getCode() {
   replaceAll(no_macro_code, "_CONNTRACKLABEL_EGRESS",
              std::to_string(ModulesConstants::CONNTRACKLABEL_EGRESS));
 
+  /*Ingress or Egress logic*/
+  if (program_type_ == ProgramType::INGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "INGRESS");
+  } else if (program_type_ == ProgramType::EGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "EGRESS");
+  }
+
   return no_macro_code;
 }

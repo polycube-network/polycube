@@ -102,6 +102,13 @@ std::string Iptables::ConntrackTableUpdate::getCode() {
   replaceAll(no_macro_code, "_FIB_LOOKUP_ENABLED",
              iptables_.fibLookupEnabled() ? "1" : "0");
 
+  /*Ingress or Egress logic*/
+  if (program_type_ == ProgramType::INGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "INGRESS");
+  } else if (program_type_ == ProgramType::EGRESS) {
+    replaceAll(no_macro_code, "_HOOK", "EGRESS");
+  }
+
   return no_macro_code;
 }
 

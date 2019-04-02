@@ -94,29 +94,59 @@ struct packetHeaders {
   uint8_t direction;
 } __attribute__((packed));
 
-struct ct_k {
-  uint32_t srcIp;
-  uint32_t dstIp;
-  uint8_t l4proto;
-  uint16_t srcPort;
-  uint16_t dstPort;
+enum {
+    DIRECTION_FORWARD,  // Forward direction in session table
+    DIRECTION_REVERSE   // Reverse direction in session table
+};
+
+struct session_v {
+    uint8_t setMask;     // bitmask for set fields
+    uint8_t actionMask;  // bitmask for actions to be applied or not
+
+    uint64_t ttl;
+    uint8_t state;
+    uint32_t sequence;
+
+    uint32_t dnatFwdToIp;
+    uint16_t dnatFwdToPort;
+
+    uint32_t snatFwdToIp;
+    uint16_t snatFwdToPort;
+
+    uint32_t dnatRevToIp;
+    uint16_t dnatRevToPort;
+
+    uint32_t snatRevToIp;
+    uint16_t snatRevToPort;
+
 } __attribute__((packed));
 
-struct ct_v {
-  uint64_t ttl;
-  uint8_t state;
-  uint8_t ipRev;
-  uint8_t portRev;
-  uint32_t sequence;
-} __attribute__((packed));
+#define SESSION_DIM 2048
+BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
 
-#if _INGRESS_LOGIC
-BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
-#endif
+//struct ct_k {
+//  uint32_t srcIp;
+//  uint32_t dstIp;
+//  uint8_t l4proto;
+//  uint16_t srcPort;
+//  uint16_t dstPort;
+//} __attribute__((packed));
+//
+//struct ct_v {
+//  uint64_t ttl;
+//  uint8_t state;
+//  uint8_t ipRev;
+//  uint8_t portRev;
+//  uint32_t sequence;
+//} __attribute__((packed));
 
-#if _EGRESS_LOGIC
-BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
-#endif
+//#if _INGRESS_LOGIC
+////BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
+//#endif
+//
+//#if _EGRESS_LOGIC
+////BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
+//#endif
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 // BPF_TABLE("extern", int, struct packetHeaders, packetEgress, 1);
@@ -189,8 +219,23 @@ static __always_inline void incrementAcceptEstablishedOutput(u32 bytes) {
 }
 #endif
 
+enum {
+  BIT_CONNTRACK,
+  BIT_DNAT_FWD,
+  BIT_DNAT_REV,
+  BIT_SNAT_FWD,
+  BIT_SNAT_REV
+};
+
+//#define BIT(n)                      ( 1<<(n) )
+
+#define BIT_SET(y, mask)            ( y |=  (mask) )
+#define BIT_CLEAR(y, mask)          ( y &= ~(mask) )
+
+#define CHECK_MASK_IS_SET(y, mask)  ( y &=  mask )
+
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Conntrack label received packet");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] received packet");
   struct packetHeaders *pkt;
   int k = 0;
   pkt = packet.lookup(&k);
@@ -200,52 +245,74 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  struct ct_k key = {0, 0, 0, 0, 0};
-  uint8_t ipRev = 0;
-  uint8_t portRev = 0;
+  struct session_v * session_value_p = 0;
+  uint32_t sessionId = pkt->sessionId;
 
-  if (pkt->srcIp <= pkt->dstIp) {
-    key.srcIp = pkt->srcIp;
-    key.dstIp = pkt->dstIp;
-    ipRev = 0;
-  } else {
-    key.srcIp = pkt->dstIp;
-    key.dstIp = pkt->srcIp;
-    ipRev = 1;
+  session_value_p = session.lookup(&sessionId);
+  if (session_value_p == NULL) {
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] lookup sessionId: %d FAILED ", sessionId);
+    return RX_DROP;
   }
 
-  key.l4proto = pkt->l4proto;
-
-  if (pkt->srcPort < pkt->dstPort) {
-    key.srcPort = pkt->srcPort;
-    key.dstPort = pkt->dstPort;
-    portRev = 0;
-  } else if (pkt->srcPort > pkt->dstPort) {
-    key.srcPort = pkt->dstPort;
-    key.dstPort = pkt->srcPort;
-    portRev = 1;
-  } else {
-    key.srcPort = pkt->srcPort;
-    key.dstPort = pkt->dstPort;
-    portRev = ipRev;
-  }
-
-  struct ct_v *value;
-  struct ct_v newEntry = {0, 0, 0, 0, 0};
+//  struct ct_k key = {0, 0, 0, 0, 0};
+//  uint8_t ipRev = 0;
+//  uint8_t portRev = 0;
+//
+//  if (pkt->srcIp <= pkt->dstIp) {
+//    key.srcIp = pkt->srcIp;
+//    key.dstIp = pkt->dstIp;
+//    ipRev = 0;
+//  } else {
+//    key.srcIp = pkt->dstIp;
+//    key.dstIp = pkt->srcIp;
+//    ipRev = 1;
+//  }
+//
+//  key.l4proto = pkt->l4proto;
+//
+//  if (pkt->srcPort < pkt->dstPort) {
+//    key.srcPort = pkt->srcPort;
+//    key.dstPort = pkt->dstPort;
+//    portRev = 0;
+//  } else if (pkt->srcPort > pkt->dstPort) {
+//    key.srcPort = pkt->dstPort;
+//    key.dstPort = pkt->srcPort;
+//    portRev = 1;
+//  } else {
+//    key.srcPort = pkt->srcPort;
+//    key.dstPort = pkt->dstPort;
+//    portRev = ipRev;
+//  }
+//
+//  struct ct_v *value;
+//  struct ct_v newEntry = {0, 0, 0, 0, 0};
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
-    value = connections.lookup(&key);
-    if (value != NULL) {
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] PROTO TCP setMask: 0x%x direction %d ", session_value_p->setMask, pkt->direction);
+    if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
+      if (pkt->direction == DIRECTION_FORWARD) {
         goto TCP_FORWARD;
-      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+      } else if (pkt->direction == DIRECTION_REVERSE) {
         goto TCP_REVERSE;
       } else {
         goto TCP_MISS;
       }
 
+//
+//    value = connections.lookup(&key);
+//    if (value != NULL) {
+//      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+//        goto TCP_FORWARD;
+//      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+//        goto TCP_REVERSE;
+//      } else {
+//        goto TCP_MISS;
+//      }
+
     TCP_FORWARD:;
+
+      pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] TCP FORWARD ");
 
       // If it is a RST, label it as established.
       if ((pkt->flags & TCPHDR_RST) != 0) {
@@ -253,7 +320,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      if (value->state == SYN_SENT) {
+      if (session_value_p->state == SYN_SENT) {
         // Still haven't received a SYN,ACK To the SYN
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
@@ -269,11 +336,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           goto action;
         }
       }
-      if (value->state == SYN_RECV) {
+      if (session_value_p->state == SYN_RECV) {
         // Expecting an ACK here
         if ((pkt->flags & TCPHDR_ACK) != 0 &&
             (pkt->flags | TCPHDR_ACK) == TCPHDR_ACK &&
-            (pkt->ackN == value->sequence)) {
+            (pkt->ackN == session_value_p->sequence)) {
           // Valid ACK to the SYN, ACK
           pkt->connStatus = ESTABLISHED;
           goto action;
@@ -286,13 +353,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         }
       }
 
-      if (value->state == ESTABLISHED || value->state == FIN_WAIT_1 ||
-          value->state == FIN_WAIT_2 || value->state == LAST_ACK) {
+      if (session_value_p->state == ESTABLISHED || session_value_p->state == FIN_WAIT_1 ||
+          session_value_p->state == FIN_WAIT_2 || session_value_p->state == LAST_ACK) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
 
-      if (value->state == TIME_WAIT) {
+      if (session_value_p->state == TIME_WAIT) {
         // If the state is TIME_WAIT but we receive a new SYN the connection is
         // considered NEW
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
@@ -304,8 +371,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       // Unexpected situation
       pcn_log(ctx, LOG_DEBUG,
-              "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ",
-              pkt->flags, value->state);
+              "[_HOOK] [ConntrackLabel] Should not get here. Flags: %d. State: %d. ",
+              pkt->flags, session_value_p->state);
       pkt->connStatus = INVALID;
       goto action;
 
@@ -317,12 +384,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      if (value->state == SYN_SENT) {
+      if (session_value_p->state == SYN_SENT) {
         // This should be a SYN, ACK answer
         if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
                 (TCPHDR_SYN | TCPHDR_ACK) &&
-            pkt->ackN == value->sequence) {
+            pkt->ackN == session_value_p->sequence) {
           pkt->connStatus = ESTABLISHED;
           goto action;
         }
@@ -333,13 +400,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      if (value->state == SYN_RECV) {
+      if (session_value_p->state == SYN_RECV) {
         // The only acceptable packet in SYN_RECV here is a SYN,ACK
         // retransmission
         if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
                 (TCPHDR_SYN | TCPHDR_ACK) &&
-            pkt->ackN == value->sequence) {
+            pkt->ackN == session_value_p->sequence) {
           pkt->connStatus = ESTABLISHED;
           goto action;
         }
@@ -347,13 +414,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      if (value->state == ESTABLISHED || value->state == FIN_WAIT_1 ||
-          value->state == FIN_WAIT_2 || value->state == LAST_ACK) {
+      if (session_value_p->state == ESTABLISHED || session_value_p->state == FIN_WAIT_1 ||
+          session_value_p->state == FIN_WAIT_2 || session_value_p->state == LAST_ACK) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
 
-      if (value->state == TIME_WAIT) {
+      if (session_value_p->state == TIME_WAIT) {
         // If the state is TIME_WAIT but we receive a new SYN the connection is
         // considered NEW
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
@@ -364,9 +431,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       pcn_log(ctx, LOG_DEBUG,
-              "[ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: "
+              "[_HOOK] [ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: "
               "%d. State: %d. ",
-              pkt->flags, value->state);
+              pkt->flags, session_value_p->state);
       pkt->connStatus = INVALID;
       goto action;
     }
@@ -388,20 +455,29 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   /* == UDP == */
   if (pkt->l4proto == IPPROTO_UDP) {
-    value = connections.lookup(&key);
-    if (value != NULL) {
-      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+    if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
+      if (pkt->direction == DIRECTION_FORWARD) {
         goto UDP_FORWARD;
-      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+      } else if (pkt->direction == DIRECTION_REVERSE) {
         goto UDP_REVERSE;
       } else {
         goto UDP_MISS;
       }
+//
+//    value = connections.lookup(&key);
+//    if (value != NULL) {
+//      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+//        goto UDP_FORWARD;
+//      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+//        goto UDP_REVERSE;
+//      } else {
+//        goto UDP_MISS;
+//      }
 
     UDP_FORWARD:;
 
       // Valid entry
-      if (value->state == NEW) {
+      if (session_value_p->state == NEW) {
         // An entry was already present with the NEW state. This means that
         // there has been no answer, from the other side. Connection is still
         // NEW.
@@ -415,7 +491,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
     UDP_REVERSE:;
 
-      if (value->state == NEW) {
+      if (session_value_p->state == NEW) {
         // An entry was present in the rev direction with the NEW state. This
         // means that this is an answer, from the other side. Connection is
         // now ESTABLISHED.
@@ -451,15 +527,24 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }
 
     if (icmp->type == ICMP_ECHOREPLY) {
-      value = connections.lookup(&key);
-      if (value != NULL) {
-        if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+
+      if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
+        if (pkt->direction == DIRECTION_REVERSE) {
           goto ICMP_REVERSE;
         } else {
           goto ICMP_MISS;
         }
 
-      ICMP_REVERSE:;
+//    if (icmp->type == ICMP_ECHOREPLY) {
+//      value = connections.lookup(&key);
+//      if (value != NULL) {
+//        if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+//          goto ICMP_REVERSE;
+//        } else {
+//          goto ICMP_MISS;
+//        }
+
+          ICMP_REVERSE:;
 
         pkt->connStatus = ESTABLISHED;
         goto action;
@@ -481,46 +566,53 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       goto action;
     }
 
-    // Here there are only ICMP errors
-    // Error messages always include a copy of the offending IP header and up to
-    // 8 bytes of the data that caused the host or gateway to send the error
-    // message.
-    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) > data_end) {
-      return RX_DROP;
-    }
-    struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
-    if (encapsulatedIp->saddr <= encapsulatedIp->daddr) {
-      key.srcIp = encapsulatedIp->saddr;
-      key.dstIp = encapsulatedIp->daddr;
-      ipRev = 0;
-    } else {
-      key.srcIp = encapsulatedIp->daddr;
-      key.dstIp = encapsulatedIp->saddr;
-      ipRev = 1;
-    }
+//    // Here there are only ICMP errors
+//    // Error messages always include a copy of the offending IP header and up to
+//    // 8 bytes of the data that caused the host or gateway to send the error
+//    // message.
+//    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) > data_end) {
+//      return RX_DROP;
+//    }
+//    struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
+//    if (encapsulatedIp->saddr <= encapsulatedIp->daddr) {
+//      key.srcIp = encapsulatedIp->saddr;
+//      key.dstIp = encapsulatedIp->daddr;
+//      ipRev = 0;
+//    } else {
+//      key.srcIp = encapsulatedIp->daddr;
+//      key.dstIp = encapsulatedIp->saddr;
+//      ipRev = 1;
+//    }
+//
+//    key.l4proto = encapsulatedIp->protocol;
+//
+//    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8 >
+//        data_end) {
+//      return RX_DROP;
+//    }
+//    uint16_t *temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr);
+//    key.srcPort = *temp;
+//    temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
+//    key.dstPort = *temp;
+//
+//    if (key.srcPort <= key.dstPort) {
+//      portRev = 0;
+//    } else {
+//      *temp = key.srcPort;
+//      key.srcPort = key.dstPort;
+//      key.dstPort = *temp;
+//      portRev = 1;
+//    }
 
-    key.l4proto = encapsulatedIp->protocol;
+//    value = connections.lookup(&key);
+//    if (value != NULL) {
+//      pkt->connStatus = RELATED;
+//      goto action;
+//    }
 
-    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8 >
-        data_end) {
-      return RX_DROP;
-    }
-    uint16_t *temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr);
-    key.srcPort = *temp;
-    temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
-    key.dstPort = *temp;
-
-    if (key.srcPort <= key.dstPort) {
-      portRev = 0;
-    } else {
-      *temp = key.srcPort;
-      key.srcPort = key.dstPort;
-      key.dstPort = *temp;
-      portRev = 1;
-    }
-
-    value = connections.lookup(&key);
-    if (value != NULL) {
+    if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
+//    value = connections.lookup(&key);
+//    if (value != NULL) {
       pkt->connStatus = RELATED;
       goto action;
     }
@@ -532,7 +624,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     goto action;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d",
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] does not support the l4proto= %d",
           pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
@@ -551,7 +643,7 @@ action:;
 
   switch (*decision) {
   case INPUT_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: INPUT_LABELING ");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] INPUT_LABELING ");
 
 #if _CONNTRACK_MODE_INPUT == 2
     goto DISABLED;
@@ -566,7 +658,7 @@ action:;
     return RX_DROP;
 
   case FORWARD_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: FORWARD_LABELING ");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] FORWARD_LABELING ");
 
 #if _CONNTRACK_MODE_FORWARD == 2
     goto DISABLED;
@@ -581,13 +673,13 @@ action:;
     return RX_DROP;
 
   case PASS_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: PASS_LABELING ");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] PASS_LABELING ");
 
     goto DISABLED;
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "ConntrackLabel Ingress: Something went wrong. ");
+    pcn_log(ctx, LOG_ERR, "[_HOOK] [ConntrackLabel] Something went wrong. ");
     return RX_DROP;
   }
 
@@ -597,7 +689,7 @@ action:;
 
   switch (*decision) {
   case OUTPUT_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: OUTPUT_LABELING ");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] OUTPUT_LABELING ");
 
 #if _CONNTRACK_MODE_OUTPUT == 2
     goto DISABLED;
@@ -612,13 +704,13 @@ action:;
     return RX_DROP;
 
   case PASS_LABELING:
-    pcn_log(ctx, LOG_DEBUG, "ConntrackLabel: PASS_LABELING ");
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] PASS_LABELING ");
 
     goto DISABLED;
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "ChainForwarder Egress: Something went wrong. ");
+    pcn_log(ctx, LOG_ERR, "[_HOOK] [ConntrackLabel] Something went wrong. ");
     return RX_DROP;
   }
 
@@ -626,34 +718,34 @@ action:;
 
 DISABLED:;
   pcn_log(ctx, LOG_TRACE,
-          "ConntrackLabel (Optimization OFF) Calling Chainforwarder %d",
+          "[_HOOK] [ConntrackLabel] (Optimization OFF) Calling Chainforwarder %d",
           _CHAINFORWARDER);
   call_bpf_program(ctx, _CHAINFORWARDER);
 
   pcn_log(ctx, LOG_TRACE,
-          "ConntrackLabel Calling Chainforwarder FAILED. Dropping");
+          "[_HOOK] [ConntrackLabel] Calling Chainforwarder FAILED. Dropping");
   return RX_DROP;
 
 ENABLED_MATCH:;
   // ON (Perform optimization for accept established)
   //  if established, forward directly
   pcn_log(ctx, LOG_TRACE,
-          "ConntrackLabel (Optimization ON) ESTABLISHED Connection found. "
+          "[_HOOK] [ConntrackLabel] (Optimization ON) ESTABLISHED Connection found. "
           "Calling ConntrackTableUpdate.");
   call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
 
-  pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] Something went wrong.");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] Something went wrong.");
   return RX_DROP;
 
 ENABLED_NOT_MATCH:;
   // ON (Perform optimization for accept established), but no match on
   // ESTABLISHED connection
   pcn_log(ctx, LOG_TRACE,
-          "ConntrackLabel (Optimization ON) no connection found. Calling "
+          "[_HOOK] [ConntrackLabel] (Optimization ON) no connection found. Calling "
           "ChainForwarder.");
   call_bpf_program(ctx, _CHAINFORWARDER);
 
-  pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] Something went wrong.");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] Something went wrong.");
 
   return RX_DROP;
 }
