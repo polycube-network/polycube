@@ -65,39 +65,6 @@ FdbJsonObject Fdb::toJsonObject() {
   return conf;
 }
 
-void Fdb::create(Simplebridge &parent, const FdbJsonObject &conf) {
-  // This method creates the actual Fdb object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of Fdb.
-  parent.fdb_ = std::make_shared<Fdb>(parent, conf);
-}
-
-std::shared_ptr<Fdb> Fdb::getEntry(Simplebridge &parent) {
-  // This method retrieves the pointer to Fdb object specified by its keys.
-  if (parent.fdb_ != nullptr) {
-    return parent.fdb_;
-  } else {
-    return std::make_shared<Fdb>(parent);
-  }
-}
-
-void Fdb::removeEntry(Simplebridge &parent) {
-  // This method removes the single Fdb object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of Fdb.
-  if (parent.fdb_ != nullptr) {
-    parent.fdb_->delEntryList();
-
-    // I don't want to delete the Filtering database. This is very strange
-    // I'll only reset the agingTime, if needed
-    parent.fdb_->setAgingTime(300);
-    // parent.fdb_.reset();
-    // parent.fdb_ = nullptr;
-  } else {
-    // This should never happen
-    throw std::runtime_error("There is not filtering database in the bridge");
-  }
-}
-
 uint32_t Fdb::getAgingTime() {
   // This method retrieves the agingTime value.
   return agingTime_;
@@ -122,7 +89,7 @@ void Fdb::setAgingTime(const uint32_t &value) {
 FdbFlushOutputJsonObject Fdb::flush() {
   FdbFlushOutputJsonObject result;
   try {
-    Fdb::removeEntry(parent_);
+    delEntryList();
   } catch (std::exception &e) {
     logger()->error("Error while flushing the filtering database. Reason: {0}",
                     e.what());
@@ -135,4 +102,149 @@ FdbFlushOutputJsonObject Fdb::flush() {
 
 std::shared_ptr<spdlog::logger> Fdb::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<FdbEntry> Fdb::getEntry(const std::string &address) {
+  logger()->debug("[FdbEntry] Received request to read map entry");
+  logger()->debug("[FdbEntry] mac: {0}", address);
+
+  auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
+  uint64_t key = utils::mac_string_to_be_uint(address);
+
+  try {
+    auto entry = FdbEntry::constructFromMap(*this, address, fwdtable.get(key));
+    if (!entry) {
+      throw std::runtime_error("Map entry not found");
+    }
+    return std::move(entry);
+  } catch (std::exception &e) {
+    logger()->error("[FdbEntry] Unable to read the map key. {0}", e.what());
+    throw std::runtime_error("Map entry not found");
+  }
+
+  logger()->debug("[FdbEntry] Filtering database entry read successfully");
+}
+
+std::vector<std::shared_ptr<FdbEntry>> Fdb::getEntryList() {
+  std::vector<std::shared_ptr<FdbEntry>> fdb_entry_list;
+
+  try {
+    auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
+    auto fdb = fwdtable.get_all();
+
+    for (auto &pair : fdb) {
+      auto map_key = pair.first;
+      auto map_entry = pair.second;
+
+      std::string mac_address = utils::be_uint_to_mac_string(map_key);
+      auto entry = FdbEntry::constructFromMap(*this, mac_address, map_entry);
+      if (!entry)
+        continue;
+      fdb_entry_list.push_back(std::move(entry));
+    }
+  } catch (std::exception &e) {
+    logger()->error(
+        "[FdbEntry] Error while trying to get the Filtering database table: "
+        "{0}",
+        e.what());
+    throw std::runtime_error("Unable to get filtering database");
+  }
+
+  return fdb_entry_list;
+}
+
+void Fdb::addEntry(const std::string &address, const FdbEntryJsonObject &conf) {
+  logger()->debug(
+      "[FdbEntry] Received request to create new filtering database entry");
+  logger()->debug("[FdbEntry] mac: {0}", address);
+
+  if (!conf.portIsSet()) {
+    logger()->error(
+        "[FdbEntry] You should specify the output port for a STATIC entry");
+    throw std::runtime_error(
+        "You should specify the output port for a STATIC entry");
+  }
+
+  uint32_t port_index;
+  try {
+    port_index = parent_.get_port(conf.getPort())->index();
+  } catch (...) {
+    throw std::runtime_error("Port " + conf.getPort() + " doesn't exist");
+  }
+
+  struct timespec now_timespec;
+  clock_gettime(CLOCK_MONOTONIC, &now_timespec);
+
+  uint64_t key = utils::mac_string_to_be_uint(address);
+  fwd_entry value{
+      .timestamp = (uint32_t)now_timespec.tv_sec, .port = port_index,
+  };
+
+  try {
+    auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
+    fwdtable.set(key, value);
+    logger()->debug("[FdbEntry] Entry inserted");
+  } catch (std::exception &e) {
+    logger()->error(
+        "[FdbEntry] Error while inserting entry in the table. Reason {0}",
+        e.what());
+    throw;
+  }
+}
+
+void Fdb::addEntryList(const std::vector<FdbEntryJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string address_ = i.getAddress();
+    addEntry(address_, i);
+  }
+}
+
+void Fdb::replaceEntry(const std::string &address,
+                       const FdbEntryJsonObject &conf) {
+  delEntry(address);
+  std::string address_ = conf.getAddress();
+  addEntry(address_, conf);
+}
+
+void Fdb::delEntry(const std::string &address) {
+  logger()->debug("[FdbEntry] Received request to read map entry");
+  logger()->debug("[FdbEntry] mac: {0}", address);
+
+  std::shared_ptr<FdbEntry> fdb_entry;
+
+  try {
+    fdb_entry = getEntry(address);
+  } catch (std::exception &e) {
+    logger()->error("[FdbEntry] Unable to read the map key. {0}", e.what());
+    throw std::runtime_error("Filtering database entry not found");
+  }
+
+  uint64_t key = utils::mac_string_to_be_uint(address);
+
+  try {
+    auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
+    fwdtable.remove(key);
+  } catch (...) {
+    throw std::runtime_error("[MapEntry] does not exist");
+  }
+}
+
+void Fdb::delEntryList() {
+  logger()->debug(
+      "[FdbEntry] Removing all entries from the filtering database table");
+
+  try {
+    auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
+    fwdtable.remove_all();
+  } catch (std::exception &e) {
+    logger()->error(
+        "[FdbEntry] Error while removing entries from filtering database "
+        "table: {0}",
+        e.what());
+    throw std::runtime_error(
+        "Error while removing all entries from filtering database table");
+  }
+
+  logger()->info(
+      "[MapEntry] All entries removed from the filtering database table");
 }

@@ -23,7 +23,7 @@ using namespace polycube::service;
 
 RuleSnatEntry::RuleSnatEntry(RuleSnat &parent,
                              const RuleSnatEntryJsonObject &conf)
-    : parent_(parent) {
+    : parent_(parent), id(conf.getId()) {
   logger()->info("Creating RuleSnatEntry instance: {0} -> {1}",
                  conf.getInternalNet(), conf.getExternalIp());
   update(conf);
@@ -49,87 +49,6 @@ RuleSnatEntryJsonObject RuleSnatEntry::toJsonObject() {
   conf.setInternalNet(getInternalNet());
   conf.setExternalIp(getExternalIp());
   return conf;
-}
-
-void RuleSnatEntry::create(RuleSnat &parent, const uint32_t &id,
-                           const RuleSnatEntryJsonObject &conf) {
-  // This method creates the actual RuleSnatEntry object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RuleSnatEntry.
-
-  auto newRule = new RuleSnatEntry(parent, conf);
-  if (newRule == nullptr) {
-    // Totally useless, but it is needed to avoid the compiler making wrong
-    // assumptions and reordering
-    throw std::runtime_error("I won't be thrown");
-  }
-
-  // Check for duplicates
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    auto rule = parent.rules_[i];
-    if (rule->getInternalNet() == newRule->getInternalNet()) {
-      throw std::runtime_error("Cannot insert duplicate mapping");
-    }
-  }
-
-  parent.rules_.resize(parent.rules_.size() + 1);
-  parent.rules_[parent.rules_.size() - 1].reset(newRule);
-  parent.rules_[parent.rules_.size() - 1]->id = id;
-
-  // Inject rule in the datapath table
-  newRule->injectToDatapath();
-}
-
-std::shared_ptr<RuleSnatEntry> RuleSnatEntry::getEntry(RuleSnat &parent,
-                                                       const uint32_t &id) {
-  // This method retrieves the pointer to NatRule object specified by its keys.
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    if (parent.rules_[i]->id == id) {
-      return parent.rules_[i];
-    }
-  }
-  throw std::runtime_error("There is no rule " + id);
-}
-
-void RuleSnatEntry::removeEntry(RuleSnat &parent, const uint32_t &id) {
-  // This method removes the single RuleSnatEntry object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RuleSnatEntry.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-  for (int i = 0; i < parent.rules_.size(); i++) {
-    if (parent.rules_[i]->id == id) {
-      // Remove rule from data path
-      parent.rules_[i]->removeFromDatapath();
-      break;
-    }
-  }
-  for (uint32_t i = id; i < parent.rules_.size() - 1; ++i) {
-    parent.rules_[i] = parent.rules_[i + 1];
-    parent.rules_[i]->id = i;
-  }
-  parent.rules_.resize(parent.rules_.size() - 1);
-  parent.logger()->info("Removed SNAT entry {0}", id);
-}
-
-std::vector<std::shared_ptr<RuleSnatEntry>> RuleSnatEntry::get(
-    RuleSnat &parent) {
-  // This methods get the pointers to all the NatRule objects in Nat.
-  std::vector<std::shared_ptr<RuleSnatEntry>> rules;
-  for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
-    if (*it) {
-      rules.push_back(*it);
-    }
-  }
-  return rules;
-}
-
-void RuleSnatEntry::remove(RuleSnat &parent) {
-  // This method removes all RuleSnatEntry objects in RuleSnat.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RuleSnatEntry.
-  RuleSnat::removeEntry(parent.parent_);
 }
 
 uint32_t RuleSnatEntry::getId() {

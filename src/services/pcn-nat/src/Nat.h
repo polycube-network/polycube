@@ -60,7 +60,6 @@ class Nat : public polycube::service::TransparentCube, public NatInterface {
   Nat(const std::string name, const NatJsonObject &conf);
   virtual ~Nat();
   std::string generate_code();
-  std::vector<std::string> generate_code_vector();
 
   void update(const NatJsonObject &conf) override;
   NatJsonObject toJsonObject() override;

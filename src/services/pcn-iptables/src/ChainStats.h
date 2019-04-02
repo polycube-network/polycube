@@ -26,18 +26,12 @@ using namespace io::swagger::server::model;
 
 class ChainStats : public ChainStatsInterface {
   friend class ChainRule;
+  friend class Chain;
 
  public:
   ChainStats(Chain &parent, const ChainStatsJsonObject &conf);
   virtual ~ChainStats();
 
-  static void create(Chain &parent, const uint32_t &id,
-                     const ChainStatsJsonObject &conf);
-  static std::shared_ptr<ChainStats> getEntry(Chain &parent,
-                                              const uint32_t &id);
-  static void removeEntry(Chain &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<ChainStats>> get(Chain &parent);
-  static void remove(Chain &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainStatsJsonObject &conf) override;
   ChainStatsJsonObject toJsonObject() override;

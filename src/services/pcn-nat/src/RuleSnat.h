@@ -34,9 +34,6 @@ class RuleSnat : public RuleSnatInterface {
   RuleSnat(Rule &parent, const RuleSnatJsonObject &conf);
   virtual ~RuleSnat();
 
-  static void create(Rule &parent, const RuleSnatJsonObject &conf);
-  static std::shared_ptr<RuleSnat> getEntry(Rule &parent);
-  static void removeEntry(Rule &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleSnatJsonObject &conf) override;
   RuleSnatJsonObject toJsonObject() override;

@@ -34,9 +34,6 @@ class RuleDnat : public RuleDnatInterface {
   RuleDnat(Rule &parent, const RuleDnatJsonObject &conf);
   virtual ~RuleDnat();
 
-  static void create(Rule &parent, const RuleDnatJsonObject &conf);
-  static std::shared_ptr<RuleDnat> getEntry(Rule &parent);
-  static void removeEntry(Rule &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleDnatJsonObject &conf) override;
   RuleDnatJsonObject toJsonObject() override;

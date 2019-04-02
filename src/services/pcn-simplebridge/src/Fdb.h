@@ -34,9 +34,6 @@ class Fdb : public FdbInterface {
   Fdb(Simplebridge &parent);
   virtual ~Fdb();
 
-  static void create(Simplebridge &parent, const FdbJsonObject &conf);
-  static std::shared_ptr<Fdb> getEntry(Simplebridge &parent);
-  static void removeEntry(Simplebridge &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const FdbJsonObject &conf) override;
   FdbJsonObject toJsonObject() override;

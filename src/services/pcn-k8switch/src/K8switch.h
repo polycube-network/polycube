@@ -66,8 +66,6 @@ class K8switch : public polycube::service::Cube<Ports>,
  public:
   K8switch(const std::string name, const K8switchJsonObject &conf);
   virtual ~K8switch();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

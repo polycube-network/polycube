@@ -35,8 +35,6 @@ class Ddosmitigator : public polycube::service::TransparentCube,
  public:
   Ddosmitigator(const std::string name, const DdosmitigatorJsonObject &conf);
   virtual ~Ddosmitigator();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
 
   void update(const DdosmitigatorJsonObject &conf) override;
   DdosmitigatorJsonObject toJsonObject() override;

@@ -25,7 +25,7 @@
 using namespace polycube::service;
 
 Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {helloworld_code_ingress}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [helloworld] [%n] [%l] %v");
   logger()->info("Creating helloworld instance");
 
@@ -84,14 +84,6 @@ HelloworldJsonObject Helloworld::toJsonObject() {
   return conf;
 }
 
-std::string Helloworld::generate_code() {
-  return helloworld_code_ingress;
-}
-
-std::vector<std::string> Helloworld::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
-}
-
 void Helloworld::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                            const std::vector<uint8_t> &packet) {
   logger()->info("packet arrived to the slowpath from port {0}", port.name());
@@ -105,4 +97,78 @@ HelloworldActionEnum Helloworld::getAction() {
 void Helloworld::setAction(const HelloworldActionEnum &value) {
   uint8_t action = static_cast<uint8_t>(value);
   get_array_table<uint8_t>("action_map").set(0x0, action);
+}
+
+std::shared_ptr<Ports> Helloworld::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Helloworld::getPortsList() {
+  return get_ports();
+}
+
+void Helloworld::addPorts(const std::string &name,
+                          const PortsJsonObject &conf) {
+  if (get_ports().size() == 2) {
+    throw std::runtime_error("maximum number of ports reached");
+  }
+
+  auto p = add_port<PortsJsonObject>(name, conf);
+  logger()->info("port {0} was connected", name);
+
+  auto ports_table = get_array_table<uint16_t>("ports_map");
+
+  uint32_t port_map_index;
+  try {
+    // Look for first free entry to save the port id
+    if (ports_table.get(0x0) == UINT16_MAX) {
+      port_map_index = 0x0;
+    } else if (ports_table.get(0x1) == UINT16_MAX) {
+      port_map_index = 0x1;
+    }
+  } catch (std::exception &e) {
+    logger()->error("port {0} does not exist", name);
+    // TODO: should Cube::remove_port be called?
+    throw std::runtime_error("Port does not exist");
+  }
+
+  ports_table.set(port_map_index, p->index());
+}
+
+void Helloworld::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Helloworld::replacePorts(const std::string &name,
+                              const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Helloworld::delPorts(const std::string &name) {
+  int index = get_port(name)->index();
+
+  auto ports_table = get_array_table<uint16_t>("ports_map");
+
+  uint32_t port_map_index;
+  if (ports_table.get(0x0) == index) {
+    port_map_index = 0x0;
+  } else if (ports_table.get(0x1) == index) {
+    port_map_index = 0x1;
+  }
+  // mark entry as free
+  ports_table.set(port_map_index, UINT16_MAX);
+  remove_port(name);
+  logger()->info("port {0} was removed", name);
+}
+
+void Helloworld::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
 }

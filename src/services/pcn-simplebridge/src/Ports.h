@@ -35,13 +35,6 @@ class Ports : public polycube::service::Port, public PortsInterface {
         const PortsJsonObject &conf);
   virtual ~Ports();
 
-  static void create(Simplebridge &parent, const std::string &name,
-                     const PortsJsonObject &conf);
-  static std::shared_ptr<Ports> getEntry(Simplebridge &parent,
-                                         const std::string &name);
-  static void removeEntry(Simplebridge &parent, const std::string &name);
-  static std::vector<std::shared_ptr<Ports>> get(Simplebridge &parent);
-  static void remove(Simplebridge &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsJsonObject &conf) override;
   PortsJsonObject toJsonObject() override;

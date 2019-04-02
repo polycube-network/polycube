@@ -321,7 +321,7 @@ bool Iptables::connectPort(const std::string &name) {
     PortsJsonObject conf;
     // TODO: is this right?
     conf.setName(name);
-    Ports::create(*this, name, conf);
+    addPorts(name, conf);
     auto port = get_port(name);
     port->set_peer(name);
   } catch (...) {
@@ -333,7 +333,7 @@ bool Iptables::connectPort(const std::string &name) {
 
 bool Iptables::disconnectPort(const std::string &name) {
   try {
-    Ports::removeEntry(*this, name);
+    delPorts(name);
   } catch (...) {
     return false;
   }
@@ -481,4 +481,175 @@ uint16_t Iptables::interfaceNameToIndex(const std::string &interface_string) {
   auto p = get_port(interface_string);
   int index = p->index();
   return index;
+}
+
+std::shared_ptr<Ports> Iptables::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Iptables::getPortsList() {
+  return get_ports();
+}
+
+void Iptables::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+}
+
+void Iptables::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Iptables::replacePorts(const std::string &name,
+                            const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Iptables::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void Iptables::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<SessionTable> Iptables::getSessionTable(
+    const std::string &src, const std::string &dst, const std::string &l4proto,
+    const uint16_t &sport, const uint16_t &dport) {
+  throw std::runtime_error("[SessionTable]: Method getEntry not allowed");
+}
+
+std::vector<std::shared_ptr<SessionTable>> Iptables::getSessionTableList() {
+  std::vector<std::pair<ct_k, ct_v>> connections =
+      std::dynamic_pointer_cast<Iptables::ConntrackLabel>(
+          programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
+                                   ChainNameEnum::INVALID_INGRESS)])
+          ->getMap();
+
+  std::vector<std::shared_ptr<SessionTable>> session_table;
+  SessionTableJsonObject conf;
+
+  for (auto connection : connections) {
+    auto key = connection.first;
+    auto value = connection.second;
+
+    if (value.ipRev) {
+      conf.setSrc(utils::be_uint_to_ip_string(key.dstIp));
+      conf.setDst(utils::be_uint_to_ip_string(key.srcIp));
+    } else {
+      conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
+      conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
+    }
+
+    conf.setL4proto(ChainRule::protocolFromIntToString(key.l4proto));
+
+    if (value.portRev) {
+      conf.setSport(ntohs(key.dstPort));
+      conf.setDport(ntohs(key.srcPort));
+    } else {
+      conf.setSport(ntohs(key.srcPort));
+      conf.setDport(ntohs(key.dstPort));
+    }
+
+    conf.setState(SessionTable::stateFromNumberToString(value.state));
+    // conf.setEta(from_ttl_to_eta(value.ttl, value.state, key.l4proto));
+
+    session_table.push_back(
+        std::shared_ptr<SessionTable>(new SessionTable(*this, conf)));
+  }
+  return session_table;
+}
+
+void Iptables::addSessionTable(const std::string &src, const std::string &dst,
+                               const std::string &l4proto,
+                               const uint16_t &sport, const uint16_t &dport,
+                               const SessionTableJsonObject &conf) {
+  throw std::runtime_error("[SessionTable]: Method create not allowed");
+}
+
+void Iptables::addSessionTableList(
+    const std::vector<SessionTableJsonObject> &conf) {
+  throw std::runtime_error("[SessionTable]: Method create not allowed");
+}
+
+void Iptables::replaceSessionTable(const std::string &src,
+                                   const std::string &dst,
+                                   const std::string &l4proto,
+                                   const uint16_t &sport, const uint16_t &dport,
+                                   const SessionTableJsonObject &conf) {
+  throw std::runtime_error("[SessionTable]: Method replace not allowed");
+}
+
+void Iptables::delSessionTable(const std::string &src, const std::string &dst,
+                               const std::string &l4proto,
+                               const uint16_t &sport, const uint16_t &dport) {
+  throw std::runtime_error("[SessionTable]: Method removeEntry not allowed");
+}
+
+void Iptables::delSessionTableList() {
+  throw std::runtime_error("[SessionTable]: Method remove not allowed");
+}
+
+std::shared_ptr<Chain> Iptables::getChain(const ChainNameEnum &name) {
+  // This method retrieves the pointer to Chain object specified by its keys.
+  if (chains_.count(name) == 0) {
+    throw std::runtime_error("There is no chain " +
+                             ChainJsonObject::ChainNameEnum_to_string(name));
+  }
+
+  return std::shared_ptr<Chain>(&chains_.at(name), [](Chain *) {});
+}
+
+std::vector<std::shared_ptr<Chain>> Iptables::getChainList() {
+  std::vector<std::shared_ptr<Chain>> chains;
+  for (auto &it : chains_) {
+    chains.push_back(getChain(it.first));
+  }
+  return chains;
+}
+
+void Iptables::addChain(const ChainNameEnum &name,
+                        const ChainJsonObject &conf) {
+  // This method creates the actual Chain object given thee key param.
+  // Please remember to call here the create static method for all sub-objects
+  // of Chain.
+
+  ChainJsonObject namedChain = conf;
+  namedChain.setName(name);
+  if (chains_.count(name) != 0) {
+    throw std::runtime_error("There is already a chain " +
+                             ChainJsonObject::ChainNameEnum_to_string(name));
+  }
+
+  chains_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                  std::forward_as_tuple(*this, namedChain));
+}
+
+void Iptables::addChainList(const std::vector<ChainJsonObject> &conf) {
+  for (auto &i : conf) {
+    ChainNameEnum name_ = i.getName();
+    addChain(name_, i);
+  }
+}
+
+void Iptables::replaceChain(const ChainNameEnum &name,
+                            const ChainJsonObject &conf) {
+  delChain(name);
+  ChainNameEnum name_ = conf.getName();
+  addChain(name_, conf);
+}
+
+void Iptables::delChain(const ChainNameEnum &name) {
+  throw std::runtime_error("[Chain]: Method removeEntry not supported");
+}
+
+void Iptables::delChainList() {
+  throw std::runtime_error("[Chain]: Method remove not supported");
 }

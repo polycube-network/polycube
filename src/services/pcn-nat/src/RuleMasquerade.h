@@ -30,9 +30,6 @@ class RuleMasquerade : public RuleMasqueradeInterface {
   RuleMasquerade(Rule &parent, const RuleMasqueradeJsonObject &conf);
   virtual ~RuleMasquerade();
 
-  static void create(Rule &parent, const RuleMasqueradeJsonObject &conf);
-  static std::shared_ptr<RuleMasquerade> getEntry(Rule &parent);
-  static void removeEntry(Rule &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RuleMasqueradeJsonObject &conf) override;
   RuleMasqueradeJsonObject toJsonObject() override;

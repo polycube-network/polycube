@@ -46,16 +46,6 @@ class Service : public ServiceInterface {
   Service(Lbrp &parent, const ServiceJsonObject &conf);
   virtual ~Service();
 
-  static void create(Lbrp &parent, const std::string &vip,
-                     const uint16_t &vport, const ServiceProtoEnum &proto,
-                     const ServiceJsonObject &conf);
-  static std::shared_ptr<Service> getEntry(Lbrp &parent, const std::string &vip,
-                                           const uint16_t &vport,
-                                           const ServiceProtoEnum &proto);
-  static void removeEntry(Lbrp &parent, const std::string &vip,
-                          const uint16_t &vport, const ServiceProtoEnum &proto);
-  static std::vector<std::shared_ptr<Service>> get(Lbrp &parent);
-  static void remove(Lbrp &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ServiceJsonObject &conf) override;
   ServiceJsonObject toJsonObject() override;
@@ -97,6 +87,13 @@ class Service : public ServiceInterface {
 
   typedef std::tuple<std::string, uint16_t, uint8_t> ServiceKey;
 
+  void removeServiceFromKernelMap();
+
+  static ServiceProtoEnum convertNumberToProto(const uint8_t proto);
+  static uint8_t convertProtoToNumber(const ServiceProtoEnum &proto);
+
+  static const uint16_t ICMP_EBPF_PORT;
+
  private:
   Lbrp &parent_;
   std::unordered_map<std::string, ServiceBackend> service_backends_;
@@ -106,7 +103,6 @@ class Service : public ServiceInterface {
   static const uint BACKEND_REPLICAS;
   static const std::string EBPF_SERVICE_MAP;
   static const std::string EBPF_BACKEND_TO_SERVICE_MAP;
-  static const uint16_t ICMP_EBPF_PORT;
 
   std::string service_name_;
   std::string vip_;
@@ -119,10 +115,7 @@ class Service : public ServiceInterface {
   void updateKernelServiceMap(const std::vector<std::string> consistent_array);
   void addBackendToServiceMatrix(std::string backend_ip);
   void removeBackendFromServiceMatrix(std::string backend_ip);
-  static ServiceProtoEnum convertNumberToProto(const uint8_t proto);
-  static uint8_t convertProtoToNumber(const ServiceProtoEnum &proto);
   std::vector<int> getRandomIntVector(int vect_size);
   std::vector<int> getEmptyIntVector(int vect_size);
-  void removeServiceFromKernelMap();
   std::map<std::string, int> get_weight_backend();
 };

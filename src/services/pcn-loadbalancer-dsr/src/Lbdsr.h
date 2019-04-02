@@ -38,8 +38,6 @@ class Lbdsr : public polycube::service::Cube<Ports>, public LbdsrInterface {
  public:
   Lbdsr(const std::string name, const LbdsrJsonObject &conf);
   virtual ~Lbdsr();
-  std::string generate_code(bool first);
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

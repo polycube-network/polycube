@@ -38,8 +38,6 @@ class Simpleforwarder : public polycube::service::Cube<Ports>,
   Simpleforwarder(const std::string name,
                   const SimpleforwarderJsonObject &conf);
   virtual ~Simpleforwarder();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

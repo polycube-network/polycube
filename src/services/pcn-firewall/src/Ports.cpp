@@ -37,51 +37,6 @@ PortsJsonObject Ports::toJsonObject() {
   return conf;
 }
 
-void Ports::create(Firewall &parent, const std::string &name,
-                   const PortsJsonObject &conf) {
-  // This method creates the actual Ports object given thee key param.
-
-  parent.add_port<PortsJsonObject>(name, conf);
-  auto ports = parent.get_ports();
-
-  if (ports.size() == 1) {
-    // First port inserted. By default this is the ingress port.
-    parent.setIngressPort(name);
-  } else if (ports.size() == 2) {
-    // Second port inserted. By default this is the egress port.
-    parent.setEgressPort(name);
-  }
-}
-
-std::shared_ptr<Ports> Ports::getEntry(Firewall &parent,
-                                       const std::string &name) {
-  // This method retrieves the pointer to Ports object specified by its keys.
-  // logger()->info("Called getEntry with name: {0}", name);
-  return parent.get_port(name);
-}
-
-void Ports::removeEntry(Firewall &parent, const std::string &name) {
-  // This method removes the single Ports object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-  parent.remove_port(name);
-}
-
-std::vector<std::shared_ptr<Ports>> Ports::get(Firewall &parent) {
-  // This methods get the pointers to all the Ports objects in Firewall.
-  return parent.get_ports();
-}
-
-void Ports::remove(Firewall &parent) {
-  // This method removes all Ports objects in Firewall.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-  auto ports = parent.get_ports();
-  for (auto it : ports) {
-    removeEntry(parent, it->name());
-  }
-}
-
 std::shared_ptr<spdlog::logger> Ports::logger() {
   return parent_.logger();
 }

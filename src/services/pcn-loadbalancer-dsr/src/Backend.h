@@ -39,9 +39,6 @@ class Backend : public BackendInterface {
   Backend(Lbdsr &parent);
   virtual ~Backend();
 
-  static void create(Lbdsr &parent, const BackendJsonObject &conf);
-  static std::shared_ptr<Backend> getEntry(Lbdsr &parent);
-  static void removeEntry(Lbdsr &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const BackendJsonObject &conf) override;
   BackendJsonObject toJsonObject() override;

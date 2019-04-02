@@ -34,13 +34,6 @@ class Actions : public ActionsInterface {
   Actions(Simpleforwarder &parent, const ActionsJsonObject &conf);
   virtual ~Actions();
 
-  static void create(Simpleforwarder &parent, const std::string &inport,
-                     const ActionsJsonObject &conf);
-  static std::shared_ptr<Actions> getEntry(Simpleforwarder &parent,
-                                           const std::string &inport);
-  static void removeEntry(Simpleforwarder &parent, const std::string &inport);
-  static std::vector<std::shared_ptr<Actions>> get(Simpleforwarder &parent);
-  static void remove(Simpleforwarder &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ActionsJsonObject &conf) override;
   ActionsJsonObject toJsonObject() override;
@@ -63,10 +56,10 @@ class Actions : public ActionsInterface {
   /// </summary>
   std::string getInport() override;
 
+  static ActionsActionEnum actionNumberToEnum(uint16_t action);
+  static uint16_t actionEnumToNumber(ActionsActionEnum action);
+
  private:
   Simpleforwarder &parent_;
   std::string inport;
-
-  static ActionsActionEnum actionNumberToEnum(uint16_t action);
-  static uint16_t actionEnumToNumber(ActionsActionEnum action);
 };

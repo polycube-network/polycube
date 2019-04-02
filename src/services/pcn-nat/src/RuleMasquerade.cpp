@@ -50,29 +50,6 @@ RuleMasqueradeJsonObject RuleMasquerade::toJsonObject() {
   return conf;
 }
 
-void RuleMasquerade::create(Rule &parent,
-                            const RuleMasqueradeJsonObject &conf) {
-  // This method creates the actual RuleMasquerade object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RuleMasquerade.
-  parent.masquerade_ = std::make_shared<RuleMasquerade>(parent, conf);
-}
-
-std::shared_ptr<RuleMasquerade> RuleMasquerade::getEntry(Rule &parent) {
-  // This method retrieves the pointer to RuleMasquerade object specified by its
-  // keys.
-  return parent.masquerade_;
-}
-
-void RuleMasquerade::removeEntry(Rule &parent) {
-  // This method removes the single RuleMasquerade object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RuleMasquerade.
-
-  // Treat deletion as disabling
-  parent.masquerade_->disable();
-}
-
 RuleMasqueradeEnableOutputJsonObject RuleMasquerade::enable() {
   RuleMasqueradeEnableOutputJsonObject output;
   if (enabled) {

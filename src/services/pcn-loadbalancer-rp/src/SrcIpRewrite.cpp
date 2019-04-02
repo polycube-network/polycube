@@ -114,24 +114,6 @@ SrcIpRewriteJsonObject SrcIpRewrite::toJsonObject() {
   return conf;
 }
 
-void SrcIpRewrite::create(Lbrp &parent, const SrcIpRewriteJsonObject &conf) {
-  parent.logger()->debug(
-      "[SrcIpRewrite] Received request to create SrcIpRewrite range {0} , new "
-      "ip range {1} ",
-      conf.getIpRange(), conf.getNewIpRange());
-
-  parent.src_ip_rewrite_ = std::make_shared<SrcIpRewrite>(parent, conf);
-  parent.src_ip_rewrite_->update(conf);
-}
-
-std::shared_ptr<SrcIpRewrite> SrcIpRewrite::getEntry(Lbrp &parent) {
-  return parent.src_ip_rewrite_;
-}
-
-void SrcIpRewrite::removeEntry(Lbrp &parent) {
-  // what the hell means to remove entry in this case?
-}
-
 std::string SrcIpRewrite::getNewIpRange() {
   // This method retrieves the newIpRange value.
   return new_ip_range;

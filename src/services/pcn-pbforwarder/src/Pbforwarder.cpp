@@ -112,3 +112,108 @@ void Pbforwarder::packet_in(Ports &port,
                             const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
 }
+
+std::shared_ptr<Ports> Pbforwarder::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Pbforwarder::getPortsList() {
+  return get_ports();
+}
+
+void Pbforwarder::addPorts(const std::string &name,
+                           const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+}
+
+void Pbforwarder::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Pbforwarder::replacePorts(const std::string &name,
+                               const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Pbforwarder::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void Pbforwarder::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<Rules> Pbforwarder::getRules(const uint32_t &id) {
+  return std::shared_ptr<Rules>(&rules_.at(id), [](Rules *) {});
+}
+
+std::vector<std::shared_ptr<Rules>> Pbforwarder::getRulesList() {
+  std::vector<std::shared_ptr<Rules>> rules_vect;
+
+  for (auto &it : rules_) {
+    rules_vect.push_back(getRules(it.first));
+  }
+
+  return rules_vect;
+}
+
+void Pbforwarder::addRules(const uint32_t &id, const RulesJsonObject &conf) {
+  if (!conf.actionIsSet()) {
+    throw std::runtime_error("Action is mandatory\n");
+  }
+
+  if (conf.getAction() == RulesActionEnum::FORWARD) {
+    if (!conf.outPortIsSet()) {
+      throw std::runtime_error("Port is mandatory to FORWARD\n");
+    }
+  }
+
+  Rules newRule(*this, conf);
+  // newRule.id = id;
+  newRule.update(conf);
+  // TODO: add this to the rule list?
+}
+
+void Pbforwarder::addRulesList(const std::vector<RulesJsonObject> &conf) {
+  for (auto &i : conf) {
+    uint32_t id_ = i.getId();
+    addRules(id_, i);
+  }
+}
+
+void Pbforwarder::replaceRules(const uint32_t &id,
+                               const RulesJsonObject &conf) {
+  delRules(id);
+  uint32_t id_ = conf.getId();
+  addRules(id_, conf);
+}
+
+void Pbforwarder::delRules(const uint32_t &id) {
+  rules_.erase(id);
+  auto rules_table = get_hash_table<uint32_t, rule>("rules", 1);
+  rules_table.remove(id);
+  if (nr_rules == id) {
+    nr_rules--;
+    reload(generate_code_parsing(), 1);
+    reload(generate_code_matching(), 1);
+  }
+}
+
+void Pbforwarder::delRulesList() {
+  rules_.clear();
+  auto rules_table = get_hash_table<uint32_t, rule>("rules", 1);
+  rules_table.remove_all();
+
+  match_level = 2;
+  nr_rules = 0;
+  reload(generate_code_parsing(), 1);
+  reload(generate_code_matching(), 1);
+}
