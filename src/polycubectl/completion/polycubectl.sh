@@ -23,7 +23,6 @@ parse_yaml() {
 [[ $PS1 && -f /usr/share/bash-completion/bash_completion ]] && \
     . /usr/share/bash-completion/bash_completion
 
-# TODO: Get this from configuration file and env variable
 BASE_URL_="http://localhost:9000/polycube/v1/"
 
 _polycubectl_completions() {
@@ -33,7 +32,7 @@ _polycubectl_completions() {
   fi
 
   BASE_URL=${POLYCUBECTL_URL:-$config_url}
-  BASE_URL=${BASE_URL:-BASE_URL_}
+  BASE_URL=${BASE_URL:-$BASE_URL_}
   local cur prev
   _get_comp_words_by_ref -n ":,=" cur prev
   local words
