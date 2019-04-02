@@ -86,8 +86,10 @@ Cube<PortType>::Cube(const nlohmann::json &conf,
     packet_in(p, md_, packet);
   };
 
-  cube_ = factory_->create_cube(conf, ingress_code, egress_code, handle_log_msg,
-                                handle_packet_in);
+  cube_ = factory_->create_cube(
+      conf, ingress_code, egress_code, handle_log_msg,
+      std::bind(&Cube::set_control_plane_log_level, this, std::placeholders::_1),
+      handle_packet_in);
   // TODO: where to keep this reference?, keep a double reference?
   BaseCube::cube_ = cube_;
 }

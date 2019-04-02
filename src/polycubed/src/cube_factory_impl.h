@@ -34,6 +34,7 @@ using service::TransparentCubeIface;
 using service::CubeFactory;
 using service::packet_in_cb;
 using service::log_msg_cb;
+using service::set_log_level_cb;
 using service::attach_cb;
 
 class CubeFactoryImpl : public CubeFactory {
@@ -44,12 +45,13 @@ class CubeFactoryImpl : public CubeFactory {
   std::shared_ptr<CubeIface> create_cube(
       const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const packet_in_cb &cb) override;
+      const set_log_level_cb &log_level_cb, const packet_in_cb &cb) override;
 
   std::shared_ptr<TransparentCubeIface> create_transparent_cube(
       const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const packet_in_cb &cb, const attach_cb &attach) override;
+      const set_log_level_cb &log_level_cb, const packet_in_cb &cb,
+      const attach_cb &attach) override;
 
   void destroy_cube(const std::string &name) override;
 

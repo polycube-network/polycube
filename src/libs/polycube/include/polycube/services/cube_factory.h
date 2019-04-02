@@ -63,17 +63,21 @@ typedef std::function<void(const LogMsg *msg)> log_msg_cb;
 
 typedef std::function<void(void)> attach_cb;
 
+typedef std::function<void(LogLevel level)> set_log_level_cb;
+
 class CubeFactory {
  public:
   virtual std::shared_ptr<CubeIface> create_cube(
       const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
+      const set_log_level_cb &log_level_cb,
       const packet_in_cb &cb = empty_packet_in_cb) = 0;
 
   virtual std::shared_ptr<TransparentCubeIface> create_transparent_cube(
       const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const packet_in_cb &cb, const attach_cb &attach) = 0;
+      const set_log_level_cb &log_level_cb, const packet_in_cb &cb,
+      const attach_cb &attach) = 0;
 
   virtual void destroy_cube(const std::string &name) = 0;
 };
