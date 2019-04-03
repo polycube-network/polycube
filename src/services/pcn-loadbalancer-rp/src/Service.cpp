@@ -87,168 +87,6 @@ ServiceJsonObject Service::toJsonObject() {
   return conf;
 }
 
-void Service::create(Lbrp &parent, const std::string &vip,
-                     const uint16_t &vport, const ServiceProtoEnum &proto,
-                     const ServiceJsonObject &conf) {
-  parent.logger()->debug(
-      "[Service] Received request to create new service entry");
-  parent.logger()->debug(
-      "[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}", vip, vport,
-      ServiceJsonObject::ServiceProtoEnum_to_string(proto));
-
-  if (proto == ServiceProtoEnum::ALL) {
-    // Let's create 3 different services for TCP, UDP and ICMP
-    // Let's start from TCP
-    ServiceJsonObject new_conf(conf);
-    new_conf.setProto(ServiceProtoEnum::TCP);
-    Service::create(parent, vip, vport, ServiceProtoEnum::TCP, new_conf);
-
-    // Now is the UDP turn
-    new_conf.setProto(ServiceProtoEnum::UDP);
-    Service::create(parent, vip, vport, ServiceProtoEnum::UDP, new_conf);
-
-    // Finally, is ICMP turn. For ICMP we use a "special" port since this field
-    // is useless
-    new_conf.setProto(ServiceProtoEnum::ICMP);
-    new_conf.setVport(ICMP_EBPF_PORT);
-    Service::create(parent, vip, ICMP_EBPF_PORT, ServiceProtoEnum::ICMP,
-                    new_conf);
-
-    // We completed all task, let's directly return since we do not have to
-    // execute the code below
-    return;
-  } else if (proto == ServiceProtoEnum::ICMP &&
-             conf.getVport() != ICMP_EBPF_PORT) {
-    throw std::runtime_error(
-        "ICMP Service requires 0 as virtual port. Since this parameter is "
-        "useless for ICMP services");
-  }
-
-  ServiceKey key = ServiceKey(vip, vport, Service::convertProtoToNumber(proto));
-  // The validation of Virtual IP and Port is performed automatically by the
-  // framework
-  if (parent.service_map_.count(key) != 0) {
-    parent.logger()->error(
-        "[Service] Key {0}, {1}, {2} already exists in the map", vip, vport,
-        ServiceJsonObject::ServiceProtoEnum_to_string(proto));
-    throw std::runtime_error("Key already exists in the service map");
-  }
-
-  try {
-    std::unordered_map<ServiceKey, Service>::iterator iter;
-    bool inserted;
-    std::tie(iter, inserted) = parent.service_map_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(
-            ServiceKey(conf.getVip(), conf.getVport(),
-                       Service::convertProtoToNumber(conf.getProto()))),
-        std::forward_as_tuple(parent, conf));
-
-    if (!inserted) {
-      throw std::runtime_error("Unable to create the service instance");
-    } else {
-      parent.logger()->debug("[Service] Service created successfully");
-    }
-  } catch (std::exception &e) {
-    parent.logger()->error("[Service] Error while creating the service");
-    // We probably do not need to remove the service from the map because the
-    // constructor raised an error
-    throw;
-  }
-}
-
-std::shared_ptr<Service> Service::getEntry(Lbrp &parent, const std::string &vip,
-                                           const uint16_t &vport,
-                                           const ServiceProtoEnum &proto) {
-  // This method retrieves the pointer to Service object specified by its keys.
-  parent.logger()->debug("[Service] Received request to read a service entry");
-  parent.logger()->debug(
-      "[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}", vip, vport,
-      ServiceJsonObject::ServiceProtoEnum_to_string(proto));
-
-  uint16_t vp = vport;
-  if (convertProtoToNumber(proto) == 1)
-    vp = vport;
-
-  ServiceKey key = ServiceKey(vip, vp, Service::convertProtoToNumber(proto));
-
-  if (parent.service_map_.count(key) == 0) {
-    parent.logger()->error(
-        "[Service] There are no entries associated with that key");
-    throw std::runtime_error("There are no entries associated with that key");
-  }
-
-  return std::shared_ptr<Service>(&parent.service_map_.at(key),
-                                  [](Service *) {});
-}
-
-void Service::removeEntry(Lbrp &parent, const std::string &vip,
-                          const uint16_t &vport,
-                          const ServiceProtoEnum &proto) {
-  if (proto == ServiceProtoEnum::ALL) {
-    // Let's create 3 different services for TCP, UDP and ICMP
-    // Let's start from TCP
-    Service::removeEntry(parent, vip, vport, ServiceProtoEnum::TCP);
-
-    // Now is the UDP turn
-    Service::removeEntry(parent, vip, vport, ServiceProtoEnum::UDP);
-
-    // Finally, is ICMP turn. For ICMP we use a "special" port since this field
-    // is useless
-    Service::removeEntry(parent, vip, ICMP_EBPF_PORT, ServiceProtoEnum::ICMP);
-
-    // We completed all task, let's directly return since we do not have to
-    // execute the code below
-    return;
-  } else if (proto == ServiceProtoEnum::ICMP && vport != ICMP_EBPF_PORT) {
-    throw std::runtime_error(
-        "ICMP Service requires 0 as virtual port. Since this parameter is "
-        "useless for ICMP services");
-  }
-
-  parent.logger()->debug(
-      "[Service] Received request to delete a service entry");
-  parent.logger()->debug(
-      "[Service] Virtual IP: {0}, virtual port: {1}, protocol: {2}", vip, vport,
-      ServiceJsonObject::ServiceProtoEnum_to_string(proto));
-
-  ServiceKey key = ServiceKey(vip, vport, Service::convertProtoToNumber(proto));
-
-  if (parent.service_map_.count(key) == 0) {
-    parent.logger()->error(
-        "[Service] There are no entries associated with that key");
-    throw std::runtime_error("There are no entries associated with that key");
-  }
-
-  auto service = Service::getEntry(parent, vip, vport, proto);
-
-  service->removeServiceFromKernelMap();
-  parent.service_map_.erase(key);
-}
-
-std::vector<std::shared_ptr<Service>> Service::get(Lbrp &parent) {
-  std::vector<std::shared_ptr<Service>> services_vect;
-
-  for (auto &it : parent.service_map_) {
-    ServiceKey key = it.first;
-    services_vect.push_back(
-        Service::getEntry(parent, std::get<0>(key), std::get<1>(key),
-                          Service::convertNumberToProto(std::get<2>(key))));
-  }
-
-  return services_vect;
-}
-
-void Service::remove(Lbrp &parent) {
-  for (auto it = parent.service_map_.begin();
-       it != parent.service_map_.end();) {
-    auto tmp = it;
-    it++;
-    Service::removeEntry(parent, tmp->second.getVip(), tmp->second.getVport(),
-                         tmp->second.getProto());
-  }
-}
-
 std::string Service::getVip() {
   // This method retrieves the vip value.
   return vip_;
@@ -358,7 +196,7 @@ void Service::updateKernelServiceMap(
   for (const auto &backend_ip : consistent_array) {
     index++;
 
-    auto bck = ServiceBackend::getEntry(*this, backend_ip);
+    auto bck = getBackend(backend_ip);
 
     vip key{
         .ip = utils::ip_string_to_be_uint(getVip()),
@@ -573,4 +411,127 @@ ServiceProtoEnum Service::convertNumberToProto(const uint8_t proto) {
 
 std::shared_ptr<spdlog::logger> Service::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<ServiceBackend> Service::getBackend(const std::string &ip) {
+  logger()->trace(
+      "[ServiceBackend] Received request to read new backend for service {0}, "
+      "{1}, {2}",
+      getVip(), getVport(),
+      ServiceJsonObject::ServiceProtoEnum_to_string(getProto()));
+  logger()->trace("[ServiceBackend] Backend IP: {0}", ip);
+
+  if (service_backends_.count(ip) == 0) {
+    logger()->error(
+        "[ServiceBackend] There are no entries associated with that key");
+    throw std::runtime_error("There are no entries associated with that key");
+  }
+
+  return std::shared_ptr<ServiceBackend>(&service_backends_.at(ip),
+                                         [](ServiceBackend *) {});
+}
+
+std::vector<std::shared_ptr<ServiceBackend>> Service::getBackendList() {
+  std::vector<std::shared_ptr<ServiceBackend>> backends_vect;
+  for (auto &it : service_backends_)
+    backends_vect.push_back(getBackend(it.first));
+
+  return backends_vect;
+}
+
+void Service::addBackend(const std::string &ip,
+                         const ServiceBackendJsonObject &conf) {
+  logger()->debug(
+      "[ServiceBackend] Received request to create new backend for service "
+      "{0}, {1}, {2}",
+      getVip(), getVport(),
+      ServiceJsonObject::ServiceProtoEnum_to_string(getProto()));
+  logger()->debug("[ServiceBackend] Backend IP: {0}", ip);
+
+  if (service_backends_.count(ip) != 0) {
+    logger()->error(
+        "[ServiceBackend] Key {0} already exists in the backends map", ip);
+    throw std::runtime_error("Backend " + ip +
+                             " already exists in the service map");
+  }
+
+  if (conf.weightIsSet()) {
+    if (conf.getWeight() < 1 && conf.getWeight() != 0) {
+      throw std::runtime_error(
+          "Variable weight is in a wrong range. Supported range is from 1 to "
+          "100");
+    }
+  }
+
+  try {
+    std::unordered_map<std::string, ServiceBackend>::iterator iter;
+    bool inserted;
+    std::tie(iter, inserted) = service_backends_.emplace(
+        std::piecewise_construct, std::forward_as_tuple(conf.getIp()),
+        std::forward_as_tuple(*this, conf));
+
+    if (!inserted) {
+      throw std::runtime_error("Unable to create the backend instance");
+    } else {
+      logger()->debug("[ServiceBackend] Backend {0} created successfully",
+                      conf.getIp());
+    }
+  } catch (const std::exception &e) {
+    logger()->error("[ServiceBackend] Error while creating the backend {0}",
+                    conf.getIp());
+    // We probably do not need to remove the service from the map because the
+    // constructor raised an error
+    throw;
+  }
+
+  addBackendToServiceMatrix(ip);
+  updateConsistentHashMap();
+}
+
+void Service::addBackendList(
+    const std::vector<ServiceBackendJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string ip_ = i.getIp();
+    addBackend(ip_, i);
+  }
+}
+
+void Service::replaceBackend(const std::string &ip,
+                             const ServiceBackendJsonObject &conf) {
+  delBackend(ip);
+  std::string ip_ = conf.getIp();
+  addBackend(ip_, conf);
+}
+
+void Service::delBackend(const std::string &ip) {
+  logger()->trace(
+      "[ServiceBackend] Received request to remove backend for service {0}, "
+      "{1}, {2}",
+      getVip(), getVport(),
+      ServiceJsonObject::ServiceProtoEnum_to_string(getProto()));
+  logger()->trace("[ServiceBackend] Backend IP: {0}", ip);
+
+  if (service_backends_.count(ip) == 0) {
+    logger()->error(
+        "[ServiceBackend] There are no entries associated with that key");
+    throw std::runtime_error("There are no entries associated with that key");
+  }
+
+  service_backends_.erase(ip);
+  removeBackendFromServiceMatrix(ip);
+
+  if (service_backends_.size() != 0)
+    updateConsistentHashMap();
+
+  if (service_backends_.size() == 0) {
+    // If there are no backends let's remove all entries from the eBPF map
+    backend_matrix_.clear();
+    removeServiceFromKernelMap();
+  }
+}
+
+void Service::delBackendList() {
+  service_backends_.clear();
+  backend_matrix_.clear();
+  removeServiceFromKernelMap();
 }

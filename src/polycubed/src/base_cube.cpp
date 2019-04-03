@@ -357,12 +357,19 @@ void BaseCube::set_log_level(LogLevel level) {
   if (level_ == level)
     return;
 
+  // change log level in dataplane
+  log_level_cb_(level);
+
   level_ = level;
   reload_all();
 }
 
 LogLevel BaseCube::get_log_level() const {
   return level_;
+}
+
+void BaseCube::set_log_level_cb(const polycube::service::set_log_level_cb &cb) {
+  log_level_cb_ = cb;
 }
 
 void BaseCube::set_conf(const nlohmann::json &conf) {

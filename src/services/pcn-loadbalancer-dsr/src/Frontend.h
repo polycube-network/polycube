@@ -35,9 +35,6 @@ class Frontend : public FrontendInterface {
   Frontend(Lbdsr &parent);
   virtual ~Frontend();
 
-  static void create(Lbdsr &parent, const FrontendJsonObject &conf);
-  static std::shared_ptr<Frontend> getEntry(Lbdsr &parent);
-  static void removeEntry(Lbdsr &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const FrontendJsonObject &conf) override;
   FrontendJsonObject toJsonObject() override;

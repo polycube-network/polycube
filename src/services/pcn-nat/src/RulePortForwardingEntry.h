@@ -26,19 +26,13 @@ class RulePortForwarding;
 using namespace io::swagger::server::model;
 
 class RulePortForwardingEntry : public RulePortForwardingEntryInterface {
+   friend class RulePortForwarding;
+
  public:
   RulePortForwardingEntry(RulePortForwarding &parent,
                           const RulePortForwardingEntryJsonObject &conf);
   virtual ~RulePortForwardingEntry();
 
-  static void create(RulePortForwarding &parent, const uint32_t &id,
-                     const RulePortForwardingEntryJsonObject &conf);
-  static std::shared_ptr<RulePortForwardingEntry> getEntry(
-      RulePortForwarding &parent, const uint32_t &id);
-  static void removeEntry(RulePortForwarding &parent, const uint32_t &id);
-  static std::vector<std::shared_ptr<RulePortForwardingEntry>> get(
-      RulePortForwarding &parent);
-  static void remove(RulePortForwarding &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulePortForwardingEntryJsonObject &conf) override;
   RulePortForwardingEntryJsonObject toJsonObject() override;

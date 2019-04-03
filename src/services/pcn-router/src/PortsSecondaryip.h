@@ -29,16 +29,6 @@ class PortsSecondaryip : public PortsSecondaryipInterface {
   PortsSecondaryip(Ports &parent, const PortsSecondaryipJsonObject &conf);
   virtual ~PortsSecondaryip();
 
-  static void create(Ports &parent, const std::string &ip,
-                     const std::string &netmask,
-                     const PortsSecondaryipJsonObject &conf);
-  static std::shared_ptr<PortsSecondaryip> getEntry(Ports &parent,
-                                                    const std::string &ip,
-                                                    const std::string &netmask);
-  static void removeEntry(Ports &parent, const std::string &ip,
-                          const std::string &netmask);
-  static std::vector<std::shared_ptr<PortsSecondaryip>> get(Ports &parent);
-  static void remove(Ports &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const PortsSecondaryipJsonObject &conf) override;
   PortsSecondaryipJsonObject toJsonObject() override;
@@ -46,12 +36,12 @@ class PortsSecondaryip : public PortsSecondaryipInterface {
   /// <summary>
   /// Seconadary IP address of the port
   /// </summary>
-  std::string getIp() override;
+  std::string getIp() const override;
 
   /// <summary>
   /// Secondary netmask of the port
   /// </summary>
-  std::string getNetmask() override;
+  std::string getNetmask() const override;
 
   // The following methods have been added manually
 
@@ -63,6 +53,8 @@ class PortsSecondaryip : public PortsSecondaryipInterface {
     return std::tie(ip_, netmask_) < std::tie(p.ip_, p.netmask_);
   }
 
+  static void updatePortInDataPath(Ports &parent);
+
  private:
   Ports &parent_;
 
@@ -71,5 +63,4 @@ class PortsSecondaryip : public PortsSecondaryipInterface {
   std::string netmask_;
 
   // The following methods have been added manually
-  static void updatePortInDataPath(Ports &parent);
 };

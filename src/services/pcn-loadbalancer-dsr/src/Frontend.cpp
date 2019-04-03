@@ -60,34 +60,6 @@ FrontendJsonObject Frontend::toJsonObject() {
   return conf;
 }
 
-void Frontend::create(Lbdsr &parent, const FrontendJsonObject &conf) {
-  // This method creates the actual Frontend object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of Frontend.
-  parent.logger()->debug("[Frontend] Received request to create new Frontend");
-  parent.frontend_ = std::make_shared<Frontend>(parent, conf);
-}
-
-std::shared_ptr<Frontend> Frontend::getEntry(Lbdsr &parent) {
-  // This method retrieves the pointer to Frontend object specified by its keys.
-  if (parent.frontend_ != nullptr) {
-    return parent.frontend_;
-  } else {
-    return std::make_shared<Frontend>(parent);
-  }
-}
-
-void Frontend::removeEntry(Lbdsr &parent) {
-  // This method removes the single Frontend object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Frontend.
-  if (parent.frontend_ != nullptr) {
-    parent.frontend_ = nullptr;
-  } else {
-    throw std::runtime_error("There is no frontend in this LBDSR");
-  }
-}
-
 std::string Frontend::getVip() {
   // This method retrieves the vip value.
   return this->vip_;

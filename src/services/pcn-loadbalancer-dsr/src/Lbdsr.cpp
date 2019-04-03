@@ -20,7 +20,7 @@
 #include "Lbdsr_dp.h"
 
 Lbdsr::Lbdsr(const std::string name, const LbdsrJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code(true)}, {}) {
+    : Cube(conf.getBase(), {getCode(true)}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbdsr] [%n] [%l] %v");
   logger()->info("Creating Lbdsr instance");
 
@@ -79,14 +79,6 @@ LbdsrJsonObject Lbdsr::toJsonObject() {
   conf.setBackend(getBackend()->toJsonObject());
 
   return conf;
-}
-
-std::string Lbdsr::generate_code(bool first = false) {
-  return getCode(first);
-}
-
-std::vector<std::string> Lbdsr::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void Lbdsr::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
@@ -228,5 +220,97 @@ void Lbdsr::setMacHexbe(std::string &value) {
     mac_hexbe_str_ = value;
     is_code_changed_ = true;
     reloadCode();
+  }
+}
+
+std::shared_ptr<Ports> Lbdsr::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> Lbdsr::getPortsList() {
+  return get_ports();
+}
+
+void Lbdsr::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+}
+
+void Lbdsr::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void Lbdsr::replacePorts(const std::string &name, const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void Lbdsr::delPorts(const std::string &name) {
+  // TODO: merge together those two functions?
+  rmPort(name);
+  remove_port(name);
+}
+
+void Lbdsr::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    delPorts(it->name());
+  }
+}
+
+std::shared_ptr<Frontend> Lbdsr::getFrontend() {
+  if (frontend_ != nullptr) {
+    return frontend_;
+  } else {
+    return std::make_shared<Frontend>(*this);
+  }
+}
+
+void Lbdsr::addFrontend(const FrontendJsonObject &value) {
+  logger()->debug("[Frontend] Received request to create new Frontend");
+  frontend_ = std::make_shared<Frontend>(*this, value);
+}
+
+void Lbdsr::replaceFrontend(const FrontendJsonObject &conf) {
+  delFrontend();
+  addFrontend(conf);
+}
+
+void Lbdsr::delFrontend() {
+  if (frontend_ != nullptr) {
+    frontend_ = nullptr;
+  } else {
+    throw std::runtime_error("There is no frontend in this LBDSR");
+  }
+}
+
+std::shared_ptr<Backend> Lbdsr::getBackend() {
+  // This method retrieves the pointer to Backend object specified by its keys.
+  if (backend_ != nullptr) {
+    return backend_;
+  } else {
+    return std::make_shared<Backend>(*this);
+  }
+}
+
+void Lbdsr::addBackend(const BackendJsonObject &value) {
+  logger()->debug("[Backend] Received request to create new Backend");
+  backend_ = std::make_shared<Backend>(*this, value);
+}
+
+void Lbdsr::replaceBackend(const BackendJsonObject &conf) {
+  delBackend();
+  addBackend(conf);
+}
+
+void Lbdsr::delBackend() {
+  if (backend_ != nullptr) {
+    backend_->delPoolList();
+    backend_ = nullptr;
+  } else {
+    throw std::runtime_error("There is no backend in this LBDSR");
   }
 }

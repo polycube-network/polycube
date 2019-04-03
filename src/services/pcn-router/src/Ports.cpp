@@ -134,69 +134,6 @@ PortsJsonObject Ports::toJsonObject() {
   return conf;
 }
 
-void Ports::create(Router &parent, const std::string &name,
-                   const PortsJsonObject &conf) {
-  // This method creates the actual Ports object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of Ports.
-
-  parent.add_port<PortsJsonObject>(name, conf);
-}
-
-std::shared_ptr<Ports> Ports::getEntry(Router &parent,
-                                       const std::string &name) {
-  // This method retrieves the pointer to Ports object specified by its keys.
-  parent.logger()->debug("Getting port: {0}", name);
-  return parent.get_port(name);
-}
-
-void Ports::removeEntry(Router &parent, const std::string &name) {
-  // This method removes the single Ports object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-
-  parent.logger()->info("Remove port {0}", name);
-
-  auto port = parent.get_port(name);
-
-  // remove the secondary addresses of the port (and the related routes in the
-  // routing table)
-  PortsSecondaryip::remove(*port);
-
-  parent.remove_local_route(port->getIp(), port->getNetmask(), name);
-
-  auto router_port = parent.get_hash_table<uint16_t, r_port>("router_port");
-
-  // remove the port from the datapath
-  uint16_t index = port->index();
-  router_port.remove(index);
-  parent.logger()->debug("Removed from 'router_port' - key: {0}",
-                         from_int_to_hex(index));
-
-  parent.remove_port(name);
-
-  parent.logger()->info("Port {0} was removed", name);
-}
-
-std::vector<std::shared_ptr<Ports>> Ports::get(Router &parent) {
-  // This methods get the pointers to all the Ports objects in Router.
-  parent.logger()->debug("Getting all the ports");
-  return parent.get_ports();
-}
-
-void Ports::remove(Router &parent) {
-  // This method removes all Ports objects in Router.
-  // Remember to call here the remove static method for all-sub-objects of
-  // Ports.
-
-  parent.logger()->info("Removing all the ports");
-
-  auto ports = parent.get_ports();
-  for (auto it : ports) {
-    removeEntry(parent, it->name());
-  }
-}
-
 std::string Ports::getIp() {
   // This method retrieves the ip value.
 
@@ -230,4 +167,96 @@ void Ports::setMac(const std::string &value) {
 
 std::shared_ptr<spdlog::logger> Ports::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<PortsSecondaryip> Ports::getSecondaryip(
+    const std::string &ip, const std::string &netmask) {
+  logger()->debug("Getting secondary ip [port: {0} - ip: {1} - netmask: {2}]",
+                  getName(), ip, netmask);
+
+  for (auto &p : secondary_ips_) {
+    if ((p.getIp() == ip) && (p.getNetmask() == netmask))
+      return std::make_shared<PortsSecondaryip>(p);
+  }
+}
+
+std::vector<std::shared_ptr<PortsSecondaryip>> Ports::getSecondaryipList() {
+  logger()->debug("Getting all the {1} secondary addresses of port: {0}",
+                  getName(), secondary_ips_.size());
+
+  std::vector<std::shared_ptr<PortsSecondaryip>> ips_vect;
+  for (auto &it : secondary_ips_) {
+    auto ip = it.getIp();
+    auto netmask = it.getNetmask();
+    ips_vect.push_back(getSecondaryip(ip, netmask));
+  }
+
+  return ips_vect;
+}
+
+void Ports::addSecondaryip(const std::string &ip, const std::string &netmask,
+                           const PortsSecondaryipJsonObject &conf) {
+  /*
+  * First create the port in the control plane
+  */
+  logger()->info(
+      "Adding secondary address [port: {0} - ip: {1} - netmask: {2}]",
+      getName(), ip, netmask);
+
+  auto ret = secondary_ips_.emplace(PortsSecondaryip(*this, conf));
+
+  /*
+  * Then update the port in the data path (this also adds the proper routes in
+  * the routing table)
+  */
+  PortsSecondaryip::updatePortInDataPath(*this);
+}
+
+void Ports::addSecondaryipList(
+    const std::vector<PortsSecondaryipJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string ip_ = i.getIp();
+    std::string netmask_ = i.getNetmask();
+    addSecondaryip(ip_, netmask_, i);
+  }
+}
+
+void Ports::replaceSecondaryip(const std::string &ip,
+                               const std::string &netmask,
+                               const PortsSecondaryipJsonObject &conf) {
+  delSecondaryip(ip, netmask);
+  std::string ip_ = conf.getIp();
+  std::string netmask_ = conf.getNetmask();
+  addSecondaryip(ip_, netmask_, conf);
+}
+
+void Ports::delSecondaryip(const std::string &ip, const std::string &netmask) {
+  // Check that the secondary address exists
+  bool found = false;
+  for (auto &addr : secondary_ips_) {
+    if ((addr.getIp() == ip) && (addr.getNetmask() == netmask)) {
+      found = true;
+      // remove the port from the data structure
+      secondary_ips_.erase(addr);
+      break;
+    }
+  }
+  if (!found)
+    throw std::runtime_error(
+        "Address does not exist (or it is not a secondary address)");
+
+  // change the port in the datapath
+  PortsSecondaryip::updatePortInDataPath(*this);
+
+  parent_.remove_local_route(ip, netmask, getName());
+}
+
+void Ports::delSecondaryipList() {
+  for (auto it = secondary_ips_.begin(); it != secondary_ips_.end();) {
+    auto tmp = it;
+    it++;
+    std::string ip = tmp->getIp();
+    std::string netmask = tmp->getNetmask();
+    delSecondaryip(ip, netmask);
+  }
 }

@@ -91,8 +91,12 @@ void BaseCube::datapath_log_msg(const LogMsg *msg) {
 }
 
 void BaseCube::set_log_level(LogLevel level) {
+  set_control_plane_log_level(level);
+  cube_->set_log_level(level);
+}
+
+void BaseCube::set_control_plane_log_level(LogLevel level) {
   logger()->set_level(logLevelToSPDLog(level));
-  return cube_->set_log_level(level);
 }
 
 LogLevel BaseCube::get_log_level() const {

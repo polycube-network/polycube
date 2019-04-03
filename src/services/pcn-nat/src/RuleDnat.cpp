@@ -28,7 +28,10 @@ RuleDnat::RuleDnat(Rule &parent, const RuleDnatJsonObject &conf)
   update(conf);
 }
 
-RuleDnat::~RuleDnat() {}
+RuleDnat::~RuleDnat() {
+  delEntryList();
+  logger()->info("Removed all DNAT rules");
+}
 
 void RuleDnat::update(const RuleDnatJsonObject &conf) {
   // This method updates all the object/parameter in RuleDnat object specified
@@ -51,39 +54,6 @@ RuleDnatJsonObject RuleDnat::toJsonObject() {
   return conf;
 }
 
-void RuleDnat::create(Rule &parent, const RuleDnatJsonObject &conf) {
-  // This method creates the actual RuleDnat object given thee key param.
-  // Please remember to call here the create static method for all sub-objects
-  // of RuleDnat.
-  parent.dnat_ = std::make_shared<RuleDnat>(parent, conf);
-}
-
-std::shared_ptr<RuleDnat> RuleDnat::getEntry(Rule &parent) {
-  // This method retrieves the pointer to RuleDnat object specified by its keys.
-  return parent.dnat_;
-}
-
-void RuleDnat::removeEntry(Rule &parent) {
-  // This method removes the single RuleDnat object specified by its keys.
-  // Remember to call here the remove static method for all-sub-objects of
-  // RuleDnat.
-
-  if (parent.dnat_->rules_.size() == 0) {
-    // No rules to delete
-    parent.logger()->info("No DNAT rules to remove");
-    return;
-  }
-
-  for (int i = 0; i < parent.dnat_->rules_.size(); i++) {
-    auto rule = parent.dnat_->rules_[i];
-    rule->removeFromDatapath();
-  }
-
-  parent.dnat_->rules_.clear();
-
-  parent.logger()->info("Removed all DNAT rules");
-}
-
 RuleDnatAppendOutputJsonObject RuleDnat::append(
     RuleDnatAppendInputJsonObject input) {
   RuleDnatEntryJsonObject conf;
@@ -91,7 +61,7 @@ RuleDnatAppendOutputJsonObject RuleDnat::append(
   conf.setInternalIp(input.getInternalIp());
   uint32_t id = rules_.size();
   conf.setId(id);
-  RuleDnatEntry::create(*this, id, conf);
+  addEntry(id, conf);
 
   RuleDnatAppendOutputJsonObject output;
   output.setId(id);
@@ -100,4 +70,85 @@ RuleDnatAppendOutputJsonObject RuleDnat::append(
 
 std::shared_ptr<spdlog::logger> RuleDnat::logger() {
   return parent_.logger();
+}
+
+std::shared_ptr<RuleDnatEntry> RuleDnat::getEntry(const uint32_t &id) {
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      return it;
+    }
+  }
+  throw std::runtime_error("There is no rule " + id);
+}
+
+std::vector<std::shared_ptr<RuleDnatEntry>> RuleDnat::getEntryList() {
+  return rules_;
+}
+
+void RuleDnat::addEntry(const uint32_t &id,
+                        const RuleDnatEntryJsonObject &conf) {
+  auto newRule = std::make_shared<RuleDnatEntry>(*this, conf);
+  if (newRule == nullptr) {
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
+    throw std::runtime_error("I won't be thrown");
+  }
+
+  // Check for duplicates
+  // TODO: should id also be checked?
+  for (auto &it : rules_) {
+    if (it->getExternalIp() == newRule->getExternalIp()) {
+      throw std::runtime_error("Cannot insert duplicate mapping");
+    }
+  }
+
+  rules_.push_back(
+      newRule);  // cannot use std::move() because rule is used below
+
+  // Inject rule in the datapath table
+  newRule->injectToDatapath();
+}
+
+void RuleDnat::addEntryList(const std::vector<RuleDnatEntryJsonObject> &conf) {
+  for (auto &i : conf) {
+    uint32_t id_ = i.getId();
+    addEntry(id_, i);
+  }
+}
+
+void RuleDnat::replaceEntry(const uint32_t &id,
+                            const RuleDnatEntryJsonObject &conf) {
+  // TODO: what about calling the update() method on that rule?
+  delEntry(id);
+  uint32_t id_ = conf.getId();
+  addEntry(id_, conf);
+}
+
+void RuleDnat::delEntry(const uint32_t &id) {
+  if (rules_.size() < id) {
+    throw std::runtime_error("There is no rule " + id);
+  }
+  for (auto &it : rules_) {
+    if (it->getId() == id) {
+      it->removeFromDatapath();
+      break;
+    }
+  }
+  // reallocate vector
+  for (uint32_t i = id; i < rules_.size() - 1; ++i) {
+    rules_[i] = rules_[i + 1];
+    // TODO: should the id be changed?
+    rules_[i]->id = i;
+  }
+  rules_.resize(rules_.size() - 1);
+  logger()->info("Removed DNAT entry {0}", id);
+}
+
+void RuleDnat::delEntryList() {
+  for (int i = 0; i < rules_.size(); i++) {
+    rules_[i]->removeFromDatapath();
+    rules_[i] = nullptr;
+  }
+
+  rules_.clear();
 }

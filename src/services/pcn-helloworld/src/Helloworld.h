@@ -27,7 +27,6 @@
 #include "Ports.h"
 
 using namespace io::swagger::server::model;
-using polycube::service::CubeType;
 
 class Helloworld : public polycube::service::Cube<Ports>,
                    public HelloworldInterface {
@@ -36,8 +35,6 @@ class Helloworld : public polycube::service::Cube<Ports>,
  public:
   Helloworld(const std::string name, const HelloworldJsonObject &conf);
   virtual ~Helloworld();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

@@ -31,13 +31,6 @@ class BlacklistSrc : public BlacklistSrcInterface {
   BlacklistSrc(Ddosmitigator &parent, const BlacklistSrcJsonObject &conf);
   virtual ~BlacklistSrc();
 
-  static void create(Ddosmitigator &parent, const std::string &ip,
-                     const BlacklistSrcJsonObject &conf);
-  static std::shared_ptr<BlacklistSrc> getEntry(Ddosmitigator &parent,
-                                                const std::string &ip);
-  static void removeEntry(Ddosmitigator &parent, const std::string &ip);
-  static std::vector<std::shared_ptr<BlacklistSrc>> get(Ddosmitigator &parent);
-  static void remove(Ddosmitigator &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const BlacklistSrcJsonObject &conf) override;
   BlacklistSrcJsonObject toJsonObject() override;

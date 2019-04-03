@@ -66,8 +66,6 @@ class Firewall : public polycube::service::Cube<Ports>,
  public:
   Firewall(const std::string name, const FirewallJsonObject &conf);
   virtual ~Firewall();
-  std::string generate_code();
-  std::vector<std::string> generate_code_vector();
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

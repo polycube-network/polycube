@@ -31,9 +31,6 @@ class Stats : public StatsInterface {
   Stats(Ddosmitigator &parent, const StatsJsonObject &conf);
   virtual ~Stats();
 
-  static void create(Ddosmitigator &parent, const StatsJsonObject &conf);
-  static std::shared_ptr<Stats> getEntry(Ddosmitigator &parent);
-  static void removeEntry(Ddosmitigator &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const StatsJsonObject &conf) override;
   StatsJsonObject toJsonObject() override;

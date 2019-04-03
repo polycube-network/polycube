@@ -22,7 +22,7 @@
 #include <cinttypes>
 
 K8sfilter::K8sfilter(const std::string name, const K8sfilterJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {k8sfilter_code}, {}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [K8sfilter] [%n] [%l] %v");
   logger()->info("Creating K8sfilter instance");
 
@@ -61,14 +61,6 @@ K8sfilterJsonObject K8sfilter::toJsonObject() {
   conf.setNodeportRange(getNodeportRange());
 
   return conf;
-}
-
-std::string K8sfilter::generate_code() {
-  return k8sfilter_code;
-}
-
-std::vector<std::string> K8sfilter::generate_code_vector() {
-  throw std::runtime_error("Method not implemented");
 }
 
 void K8sfilter::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
@@ -130,4 +122,43 @@ void K8sfilter::reloadConfig() {
   reload(flags + k8sfilter_code);
 
   logger()->trace("New lbrp code loaded");
+}
+
+std::shared_ptr<Ports> K8sfilter::getPorts(const std::string &name) {
+  return get_port(name);
+}
+
+std::vector<std::shared_ptr<Ports>> K8sfilter::getPortsList() {
+  return get_ports();
+}
+
+void K8sfilter::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  add_port<PortsJsonObject>(name, conf);
+  logger()->info("Reloading code because of the new port");
+  reloadConfig();
+}
+
+void K8sfilter::addPortsList(const std::vector<PortsJsonObject> &conf) {
+  for (auto &i : conf) {
+    std::string name_ = i.getName();
+    addPorts(name_, i);
+  }
+}
+
+void K8sfilter::replacePorts(const std::string &name,
+                             const PortsJsonObject &conf) {
+  delPorts(name);
+  std::string name_ = conf.getName();
+  addPorts(name_, conf);
+}
+
+void K8sfilter::delPorts(const std::string &name) {
+  remove_port(name);
+}
+
+void K8sfilter::delPortsList() {
+  auto ports = get_ports();
+  for (auto it : ports) {
+    remove_port(it->name());
+  }
 }

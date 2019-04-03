@@ -54,18 +54,6 @@ class SessionTable : public SessionTableInterface {
   SessionTable(Firewall &parent, const SessionTableJsonObject &conf);
   virtual ~SessionTable();
 
-  static void create(Firewall &parent, const std::string &src,
-                     const std::string &dst, const std::string &l4proto,
-                     const uint16_t &sport, const uint16_t &dport,
-                     const SessionTableJsonObject &conf);
-  static std::shared_ptr<SessionTable> getEntry(
-      Firewall &parent, const std::string &src, const std::string &dst,
-      const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
-  static void removeEntry(Firewall &parent, const std::string &src,
-                          const std::string &dst, const std::string &l4proto,
-                          const uint16_t &sport, const uint16_t &dport);
-  static std::vector<std::shared_ptr<SessionTable>> get(Firewall &parent);
-  static void remove(Firewall &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const SessionTableJsonObject &conf) override;
   SessionTableJsonObject toJsonObject() override;
@@ -105,13 +93,13 @@ class SessionTable : public SessionTableInterface {
   /// </summary>
   uint16_t getSport() override;
 
- private:
-  Firewall &parent_;
-
-  SessionTableJsonObject fields;
-
   static std::string state_from_number_to_string(int state);
   static uint32_t from_ttl_to_eta(uint64_t ttl, uint16_t state,
                                   uint16_t l4proto);
   static uint64_t hex_string_to_uint64(const std::string &str);
+
+ private:
+  Firewall &parent_;
+
+  SessionTableJsonObject fields;
 };

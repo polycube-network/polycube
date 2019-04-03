@@ -19,7 +19,7 @@
 #include "Firewall.h"
 
 ChainRule::ChainRule(Chain &parent, const ChainRuleJsonObject &conf)
-    : parent_(parent) {
+    : parent_(parent), id(conf.getId()) {
   update(conf);
 }
 
@@ -118,91 +118,6 @@ ChainRuleJsonObject ChainRule::toJsonObject() {
   } catch (...) {
   }
   return conf;
-}
-
-void ChainRule::create(Chain &parent, const uint32_t &id,
-                       const ChainRuleJsonObject &conf) {
-  // This method creates the actual ChainRule object given thee key param.
-  auto newRule = new ChainRule(parent, conf);
-
-  // Forcing counters update
-  ChainStats::get(parent);
-
-  if (newRule == nullptr) {
-    // Totally useless, but it is needed to avoid the compiler making wrong
-    // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
-
-  } else if (parent.rules_.size() <= id && newRule != nullptr) {
-    parent.rules_.resize(id + 1);
-  }
-  if (parent.rules_[id]) {
-    parent.logger()->info("Rule {0} overwritten!", id);
-  }
-
-  parent.rules_[id].reset(newRule);
-  parent.rules_[id]->id = id;
-
-  if (parent.parent_.interactive_) {
-    parent.updateChain();
-  }
-}
-
-std::shared_ptr<ChainRule> ChainRule::getEntry(Chain &parent,
-                                               const uint32_t &id) {
-  // This method retrieves the pointer to ChainRule object specified by its
-  // keys.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-  return parent.rules_[id];
-}
-
-void ChainRule::removeEntry(Chain &parent, const uint32_t &id) {
-  // This method removes the single ChainRule object specified by its keys.
-  if (parent.rules_.size() < id || !parent.rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
-  }
-
-  // Forcing counters update
-  ChainStats::get(parent);
-
-  for (uint32_t i = id; i < parent.rules_.size() - 1; ++i) {
-    parent.rules_[i] = parent.rules_[i + 1];
-    parent.rules_[i]->id = i;
-  }
-
-  parent.rules_.resize(parent.rules_.size() - 1);
-
-  for (uint32_t i = id; i < parent.counters_.size() - 1; ++i) {
-    parent.counters_[i] = parent.counters_[i + 1];
-    parent.counters_[i]->counter.setId(i);
-  }
-  parent.rules_.resize(parent.counters_.size() - 1);
-
-  if (parent.parent_.interactive_) {
-    parent.applyRules();
-  }
-}
-
-std::vector<std::shared_ptr<ChainRule>> ChainRule::get(Chain &parent) {
-  // This methods get the pointers to all the ChainRule objects in Chain.
-  std::vector<std::shared_ptr<ChainRule>> rules;
-  for (auto it = parent.rules_.begin(); it != parent.rules_.end(); ++it) {
-    if (*it) {
-      rules.push_back(*it);
-    }
-  }
-  return rules;
-}
-
-void ChainRule::remove(Chain &parent) {
-  // This method removes all ChainRule objects in Chain.
-  parent.rules_.clear();
-  parent.counters_.clear();
-  if (parent.parent_.interactive_) {
-    parent.applyRules();
-  }
 }
 
 std::string ChainRule::getDescription() {

@@ -39,13 +39,15 @@ CubeFactoryImpl::CubeFactoryImpl(const std::string &service_name)
 std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
     const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
     const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-    const packet_in_cb &cb) {
+    const set_log_level_cb &log_level_cb, const packet_in_cb &cb) {
   auto name = conf.at("name").get<std::string>();
   auto type = string_to_cube_type(conf.at("type").get<std::string>());
   auto level = stringLogLevel(conf.at("loglevel").get<std::string>());
 
   auto cube =
       create_cube(name, ingress_code, egress_code, log_msg, type, cb, level);
+  auto base = std::dynamic_pointer_cast<BaseCube>(cube);
+  base->set_log_level_cb(log_level_cb);
   return std::move(cube);
 }
 
@@ -96,13 +98,16 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
 std::shared_ptr<TransparentCubeIface> CubeFactoryImpl::create_transparent_cube(
     const nlohmann::json &conf, const std::vector<std::string> &ingress_code,
     const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-    const packet_in_cb &cb, const attach_cb &attach) {
+    const set_log_level_cb &log_level_cb, const packet_in_cb &cb,
+    const attach_cb &attach) {
   auto name = conf.at("name").get<std::string>();
   auto type = string_to_cube_type(conf.at("type").get<std::string>());
   auto level = stringLogLevel(conf.at("loglevel").get<std::string>());
 
   auto cube = create_transparent_cube(name, ingress_code, egress_code, log_msg,
                                       type, cb, attach, level);
+  auto base = std::dynamic_pointer_cast<BaseCube>(cube);
+  base->set_log_level_cb(log_level_cb);
   return std::move(cube);
 }
 

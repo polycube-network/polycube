@@ -39,13 +39,6 @@ class Chain : public ChainInterface {
   Chain(Firewall &parent, const ChainJsonObject &conf);
   virtual ~Chain();
 
-  static void create(Firewall &parent, const ChainNameEnum &name,
-                     const ChainJsonObject &conf);
-  static std::shared_ptr<Chain> getEntry(Firewall &parent,
-                                         const ChainNameEnum &name);
-  static void removeEntry(Firewall &parent, const ChainNameEnum &name);
-  static std::vector<std::shared_ptr<Chain>> get(Firewall &parent);
-  static void remove(Firewall &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
   ChainJsonObject toJsonObject() override;

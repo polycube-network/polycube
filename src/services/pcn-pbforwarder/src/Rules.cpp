@@ -22,7 +22,7 @@
 using namespace polycube::service;
 
 Rules::Rules(Pbforwarder &parent, const RulesJsonObject &conf)
-    : parent_(parent) {
+    : parent_(parent), id(conf.getId()) {
   logger()->info("Creating Rules instance");
 }
 
@@ -150,64 +150,6 @@ RulesJsonObject Rules::toJsonObject() {
   }
 
   return conf;
-}
-
-void Rules::create(Pbforwarder &parent, const uint32_t &id,
-                   const RulesJsonObject &conf) {
-  if (!conf.actionIsSet()) {
-    throw std::runtime_error("Action is mandatory\n");
-  }
-
-  if (conf.getAction() == RulesActionEnum::FORWARD) {
-    if (!conf.outPortIsSet()) {
-      throw std::runtime_error("Port is mandatory to FORWARD\n");
-    }
-  }
-
-  Rules newRule(parent, conf);
-  newRule.id = id;
-  newRule.update(conf);
-}
-
-std::shared_ptr<Rules> Rules::getEntry(Pbforwarder &parent,
-                                       const uint32_t &id) {
-  // This method retrieves the pointer to Rules object specified by its keys.
-  return std::shared_ptr<Rules>(&parent.rules_.at(id), [](Rules *) {});
-}
-
-void Rules::removeEntry(Pbforwarder &parent, const uint32_t &id) {
-  // This method removes the single Rules object specified by its keys.
-  parent.rules_.erase(id);
-  auto rules_table = parent.get_hash_table<uint32_t, rule>("rules", 1);
-  rules_table.remove(id);
-  if (parent.nr_rules == id) {
-    parent.nr_rules--;
-    parent.reload(parent.generate_code_parsing(), 1);
-    parent.reload(parent.generate_code_matching(), 1);
-  }
-}
-
-std::vector<std::shared_ptr<Rules>> Rules::get(Pbforwarder &parent) {
-  // This methods get the pointers to all the Rules objects in Pbforwarder.
-  std::vector<std::shared_ptr<Rules>> rules_vect;
-
-  for (auto &it : parent.rules_) {
-    rules_vect.push_back(Rules::getEntry(parent, it.first));
-  }
-
-  return rules_vect;
-}
-
-void Rules::remove(Pbforwarder &parent) {
-  // This method removes all Rules objects in Pbforwarder.
-  parent.rules_.clear();
-  auto rules_table = parent.get_hash_table<uint32_t, rule>("rules", 1);
-  rules_table.remove_all();
-
-  parent.match_level = 2;
-  parent.nr_rules = 0;
-  parent.reload(parent.generate_code_parsing(), 1);
-  parent.reload(parent.generate_code_matching(), 1);
 }
 
 std::string Rules::getDstMac() {

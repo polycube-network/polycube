@@ -34,9 +34,6 @@ class RulePortForwarding : public RulePortForwardingInterface {
   RulePortForwarding(Rule &parent, const RulePortForwardingJsonObject &conf);
   virtual ~RulePortForwarding();
 
-  static void create(Rule &parent, const RulePortForwardingJsonObject &conf);
-  static std::shared_ptr<RulePortForwarding> getEntry(Rule &parent);
-  static void removeEntry(Rule &parent);
   std::shared_ptr<spdlog::logger> logger();
   void update(const RulePortForwardingJsonObject &conf) override;
   RulePortForwardingJsonObject toJsonObject() override;

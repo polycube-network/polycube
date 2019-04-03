@@ -19,6 +19,7 @@
 #include "bcc_mutex.h"
 #include "id_generator.h"
 #include "patchpanel.h"
+#include "polycube/services/cube_factory.h"
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
@@ -82,6 +83,8 @@ class BaseCube : virtual public BaseCubeIface {
   void set_conf(const nlohmann::json &conf);
   virtual nlohmann::json to_json() const;
 
+  void set_log_level_cb(const polycube::service::set_log_level_cb &cb);
+
  protected:
   static const int _POLYCUBE_MAX_BPF_PROGRAMS = 64;
   static const int _POLYCUBE_MAX_PORTS = 128;
@@ -136,6 +139,8 @@ class BaseCube : virtual public BaseCubeIface {
 
   void do_reload(const std::string &code, int index, ProgramType type);
   static IDGenerator id_generator_;
+
+  polycube::service::set_log_level_cb log_level_cb_;
 };
 
 }  // namespace polycubed

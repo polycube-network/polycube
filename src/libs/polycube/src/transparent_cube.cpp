@@ -43,8 +43,10 @@ TransparentCube::TransparentCube(const nlohmann::json &conf,
   };
 
   cube_ = factory_->create_transparent_cube(
-      conf, ingress_code, egress_code, handle_log_msg, handle_packet_in,
-      std::bind(&TransparentCube::attach, this));
+      conf, ingress_code, egress_code, handle_log_msg,
+      std::bind(&TransparentCube::set_control_plane_log_level, this,
+                std::placeholders::_1),
+      handle_packet_in, std::bind(&TransparentCube::attach, this));
   // TODO: where to keep this reference?, keep a double reference?
   BaseCube::cube_ = cube_;
 }
