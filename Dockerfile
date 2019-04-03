@@ -13,7 +13,7 @@ if [ "$MODE" = "pcn-k8s" ] ; then \
     go get golang.org/x/oauth2 && \
     #   TODO-ON-MERGE: remove the following lines
     go get github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/controllers && \
-    go get github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types/events && \
+    go get github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/types && \
     go get github.com/SunSince90/polycube/src/components/k8s/pcn_k8s/networkpolicies && \
     #  /TODO-ON-MERGE
     cd /tmp && mkdir -p tmp && cd tmp && \

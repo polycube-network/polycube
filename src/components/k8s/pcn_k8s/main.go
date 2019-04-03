@@ -273,7 +273,7 @@ func main() {
 	go podController.Run()
 
 	//	Start the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(defaultnpc, podController, nodeName)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(basePath, defaultnpc, podController, nodeName)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
