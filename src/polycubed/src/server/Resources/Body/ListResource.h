@@ -48,6 +48,16 @@ class ListResource : public virtual ParentResource {
   void SetDefaultIfMissing(nlohmann::json &body,
                            bool initialization) const final;
 
+  /*
+   * This function takes the keys (parsed from the url in "keys") and save
+   * them in the body of the request
+   */
+  void FillKeys(nlohmann::json &body, const ListKeyValues &keys);
+
+  std::vector<Response> BodyValidateMultiple(
+      const std::string &cube_name, const ListKeyValues &keys,
+      nlohmann::json &body, bool initialization) const;
+
   const std::vector<ListKey> keys_;
 
   nlohmann::json ToHelpJson() const override;

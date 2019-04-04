@@ -61,11 +61,6 @@ std::vector<Response> ParentResource::BodyValidate(const std::string &cube_name,
   for (auto &child : children_) {
     const auto &child_name = child->Name();
 
-    // TODO: what are the implications of it?
-    if (child->IsKey()) {
-      continue;
-    }
-
     // Choices are a special case
     if (std::dynamic_pointer_cast<ChoiceResource>(child) != nullptr) {
       choices.push_back(child);
@@ -86,9 +81,18 @@ std::vector<Response> ParentResource::BodyValidate(const std::string &cube_name,
           errors.push_back(
               {ErrorTag::kInvalidValue, ::strdup(child_name.data())});
         } else {
-          auto child_errors = child->BodyValidate(
-              cube_name, keys, body_copy[child_name], initialization);
+          std::vector<Response> child_errors;
+          // if the child is a list, perform the check over all elements
+          if (auto list = std::dynamic_pointer_cast<ListResource>(child)) {
+            child_errors = list->BodyValidateMultiple(
+                cube_name, keys, body_copy[child_name], initialization);
+          } else {
+            child_errors = child->BodyValidate(
+                cube_name, keys, body_copy[child_name], initialization);
+          }
+
           errors.reserve(errors.size() + child_errors.size());
+
           // remove current parsed element from the body so that in the
           // eventuality of choices, they will operate only on unparsed
           // elements. moreover, this is required for detecting unparsed

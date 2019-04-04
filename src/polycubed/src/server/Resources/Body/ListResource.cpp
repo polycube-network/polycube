@@ -105,6 +105,46 @@ void ListResource::SetDefaultIfMissing(nlohmann::json &body,
   }
 }
 
+void ListResource::FillKeys(nlohmann::json &body, const ListKeyValues &keys) {
+  // TODO: is there a more efficient implementation of this?
+  for (auto &key: keys_) {
+    for (auto &kv : keys) {
+      if (key.Name() == kv.name) {
+        // TODO: check if the key is present in the body and compare the data
+        body[key.OriginalName()] = kv.value;
+        break;
+      }
+    }
+  }
+}
+
+std::vector<Response> ListResource::BodyValidateMultiple(
+    const std::string &cube_name, const ListKeyValues &keys,
+    nlohmann::json &body, bool initialization) const {
+  std::vector<Response> errors;
+
+  nlohmann::json jbody;
+  if (body.empty()) {
+    jbody = nlohmann::json::parse("[]");
+  } else {
+    jbody = body;
+  }
+
+  if (!body.is_array()) {
+    errors.push_back({ErrorTag::kInvalidValue, nullptr});
+    return errors;
+  }
+
+  for (auto &elem : jbody) {
+    SetDefaultIfMissing(elem, initialization);
+    auto body = BodyValidate(cube_name, keys, elem, initialization);
+    errors.reserve(errors.size() + body.size());
+    std::copy(std::begin(body), std::end(body), std::back_inserter(errors));
+  }
+
+  return errors;
+}
+
 bool ListResource::IsMandatory() const {
   return false;
 }
