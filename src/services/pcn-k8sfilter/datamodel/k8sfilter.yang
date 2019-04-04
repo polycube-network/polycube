@@ -22,7 +22,8 @@ module k8sfilter {
           enum INTERNAL { description "Connected to LBRP"; }
         }
         mandatory true;
-        config false;
+        config true;
+        polycube-base:init-only-config;
         description "...";
       }
     }
