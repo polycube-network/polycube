@@ -18,7 +18,11 @@
    LABEL the packet with the connection status
    =========================================== */
 
+/* INCLUDE */
+
 #include <uapi/linux/ip.h>
+
+/* DEFINE */
 
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
@@ -33,10 +37,81 @@
 #define ICMP_ADDRESS 17        /* Address Mask Request		*/
 #define ICMP_ADDRESSREPLY 18   /* Address Mask Reply		*/
 
+#define UDP_ESTABLISHED_TIMEOUT 180000000000
+#define UDP_NEW_TIMEOUT 30000000000
+#define ICMP_TIMEOUT 30000000000
+#define TCP_ESTABLISHED 432000000000000
+#define TCP_SYN_SENT 120000000000
+#define TCP_SYN_RECV 60000000000
+#define TCP_LAST_ACK 30000000000
+#define TCP_FIN_WAIT 120000000000
+#define TCP_TIME_WAIT 120000000000
+
 #define TCPHDR_FIN 0x01
 #define TCPHDR_SYN 0x02
 #define TCPHDR_RST 0x04
 #define TCPHDR_ACK 0x10
+
+#define HEX_BE_ONE 0x1000000
+
+#define SESSION_DIM 2048
+
+#define AF_INET 2 /* Internet IP Protocol 	*/
+
+/* MACRO */
+
+#define BIT_SET(y, mask) (y |= (mask))
+#define BIT_CLEAR(y, mask) (y &= ~(mask))
+
+#define CHECK_MASK_IS_SET(y, mask) (y & mask)
+
+/* ENUM */
+
+enum {
+  INPUT_LABELING,    // goto input chain and label packet
+  FORWARD_LABELING,  // goto forward chain and label packet
+  OUTPUT_LABELING,   // goto output chain and label packet
+  PASS_LABELING,     // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is accept. Label packet and let it pass.
+  PASS_NO_LABELING,  // OUTPUT chain is not hit, let the packet pass without
+                     // labeling //NEVER HIT
+  DROP_NO_LABELING   // one chain is hit (IN/PUT/FWD) but there are no rules and
+                     // default action is DROP. //NEVER HIT
+};
+
+// connection tracking states
+enum {
+  NEW,
+  ESTABLISHED,
+  RELATED,
+  INVALID,
+  SYN_SENT,
+  SYN_RECV,
+  FIN_WAIT_1,
+  FIN_WAIT_2,
+  LAST_ACK,
+  TIME_WAIT
+};
+
+// bit used in session->setMask
+enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV };
+
+// bit used in commit->mask
+enum {
+  BIT_CT_SET_MASK,
+  BIT_CT_CLEAR_MASK,
+  BIT_CT_SET_TTL,
+  BIT_CT_SET_STATE,
+  BIT_CT_SET_SEQUENCE
+};
+
+// session table direction
+enum {
+  DIRECTION_FORWARD,  // Forward direction in session table
+  DIRECTION_REVERSE   // Reverse direction in session table
+};
+
+/* STRUCT */
 
 struct icmphdr {
   u_int8_t type; /* message type */
@@ -55,31 +130,16 @@ struct icmphdr {
   } un;
 };
 
-enum {
-  INPUT_LABELING,    // goto input chain and label packet
-  FORWARD_LABELING,  // goto forward chain and label packet
-  OUTPUT_LABELING,   // goto output chain and label packet
-  PASS_LABELING,     // one chain is hit (IN/PUT/FWD) but there are no rules and
-                     // default action is accept. Label packet and let it pass.
-  PASS_NO_LABELING,  // OUTPUT chain is not hit, let the packet pass without
-                     // labeling //NEVER HIT
-  DROP_NO_LABELING   // one chain is hit (IN/PUT/FWD) but there are no rules and
-                     // default action is DROP. //NEVER HIT
-};
+struct conntrackCommit {
+  uint8_t mask;
+  uint8_t setMask;
+  uint8_t clearMask;
+  uint8_t state;
+  uint32_t sequence;
+  uint64_t ttl;
+} __attribute__((packed));
 
-enum {
-  NEW,
-  ESTABLISHED,
-  RELATED,
-  INVALID,
-  SYN_SENT,
-  SYN_RECV,
-  FIN_WAIT_1,
-  FIN_WAIT_2,
-  LAST_ACK,
-  TIME_WAIT
-};
-
+// packet metadata
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -94,73 +154,40 @@ struct packetHeaders {
   uint8_t direction;
 } __attribute__((packed));
 
-enum {
-    DIRECTION_FORWARD,  // Forward direction in session table
-    DIRECTION_REVERSE   // Reverse direction in session table
-};
-
+// session table value
 struct session_v {
-    uint8_t setMask;     // bitmask for set fields
-    uint8_t actionMask;  // bitmask for actions to be applied or not
+  uint8_t setMask;     // bitmask for set fields
+  uint8_t actionMask;  // bitmask for actions to be applied or not
 
-    uint64_t ttl;
-    uint8_t state;
-    uint32_t sequence;
+  uint64_t ttl;
+  uint8_t state;
+  uint32_t sequence;
 
-    uint32_t dnatFwdToIp;
-    uint16_t dnatFwdToPort;
+  uint32_t dnatFwdToIp;
+  uint16_t dnatFwdToPort;
 
-    uint32_t snatFwdToIp;
-    uint16_t snatFwdToPort;
+  uint32_t snatFwdToIp;
+  uint16_t snatFwdToPort;
 
-    uint32_t dnatRevToIp;
-    uint16_t dnatRevToPort;
+  uint32_t dnatRevToIp;
+  uint16_t dnatRevToPort;
 
-    uint32_t snatRevToIp;
-    uint16_t snatRevToPort;
+  uint32_t snatRevToIp;
+  uint16_t snatRevToPort;
 
 } __attribute__((packed));
 
-#define SESSION_DIM 2048
-BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
-
-//struct ct_k {
-//  uint32_t srcIp;
-//  uint32_t dstIp;
-//  uint8_t l4proto;
-//  uint16_t srcPort;
-//  uint16_t dstPort;
-//} __attribute__((packed));
-//
-//struct ct_v {
-//  uint64_t ttl;
-//  uint8_t state;
-//  uint8_t ipRev;
-//  uint8_t portRev;
-//  uint32_t sequence;
-//} __attribute__((packed));
-
-//#if _INGRESS_LOGIC
-////BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
-//#endif
-//
-//#if _EGRESS_LOGIC
-////BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
-//#endif
+/* BPF MAPS DECLARATION */
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
-// BPF_TABLE("extern", int, struct packetHeaders, packetEgress, 1);
-
-// This is the percpu array containing the forwarding decision. ChainForwarder
-// just lookup this value.
 BPF_TABLE("extern", int, int, forwardingDecision, 1);
-
-static __always_inline int *getForwardingDecision() {
-  int key = 0;
-  return forwardingDecision.lookup(&key);
-}
+BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
 
 #if _INGRESS_LOGIC
+BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
+
+BPF_TABLE_SHARED("percpu_array", int, struct conntrackCommit, ctcommit, 1);
+
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Input, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Input, 1);
 
@@ -169,9 +196,25 @@ BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Forward, 1);
 #endif
 
 #if _EGRESS_LOGIC
+BPF_TABLE("extern", int, uint64_t, timestamp, 1);
+
+BPF_TABLE("extern", int, struct conntrackCommit, ctcommit, 1);
+
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Output, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Output, 1);
 #endif
+
+/* INLINE FUNCTIONS */
+
+static __always_inline int *getForwardingDecision() {
+  int key = 0;
+  return forwardingDecision.lookup(&key);
+}
+
+static __always_inline uint64_t *time_get_ns() {
+  int key = 0;
+  return timestamp.lookup(&key);
+}
 
 #if _INGRESS_LOGIC
 static __always_inline void incrementAcceptEstablishedInput(u32 bytes) {
@@ -219,20 +262,7 @@ static __always_inline void incrementAcceptEstablishedOutput(u32 bytes) {
 }
 #endif
 
-enum {
-  BIT_CONNTRACK,
-  BIT_DNAT_FWD,
-  BIT_DNAT_REV,
-  BIT_SNAT_FWD,
-  BIT_SNAT_REV
-};
-
-//#define BIT(n)                      ( 1<<(n) )
-
-#define BIT_SET(y, mask)            ( y |=  (mask) )
-#define BIT_CLEAR(y, mask)          ( y &= ~(mask) )
-
-#define CHECK_MASK_IS_SET(y, mask)  ( y &=  mask )
+/* BPF PROGRAM */
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] received packet");
@@ -245,210 +275,513 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  struct session_v * session_value_p = 0;
+  struct conntrackCommit *commit;
+  k = 0;
+  commit = ctcommit.lookup(&k);
+
+  if (commit == NULL) {
+    // Not possible
+    return RX_DROP;
+  }
+
+  struct session_v *session_value_p = 0;
   uint32_t sessionId = pkt->sessionId;
 
   session_value_p = session.lookup(&sessionId);
   if (session_value_p == NULL) {
-    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] lookup sessionId: %d FAILED ", sessionId);
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ConntrackLabel] lookup sessionId: %d FAILED ", sessionId);
     return RX_DROP;
   }
 
-//  struct ct_k key = {0, 0, 0, 0, 0};
-//  uint8_t ipRev = 0;
-//  uint8_t portRev = 0;
-//
-//  if (pkt->srcIp <= pkt->dstIp) {
-//    key.srcIp = pkt->srcIp;
-//    key.dstIp = pkt->dstIp;
-//    ipRev = 0;
-//  } else {
-//    key.srcIp = pkt->dstIp;
-//    key.dstIp = pkt->srcIp;
-//    ipRev = 1;
-//  }
-//
-//  key.l4proto = pkt->l4proto;
-//
-//  if (pkt->srcPort < pkt->dstPort) {
-//    key.srcPort = pkt->srcPort;
-//    key.dstPort = pkt->dstPort;
-//    portRev = 0;
-//  } else if (pkt->srcPort > pkt->dstPort) {
-//    key.srcPort = pkt->dstPort;
-//    key.dstPort = pkt->srcPort;
-//    portRev = 1;
-//  } else {
-//    key.srcPort = pkt->srcPort;
-//    key.dstPort = pkt->dstPort;
-//    portRev = ipRev;
-//  }
-//
-//  struct ct_v *value;
-//  struct ct_v newEntry = {0, 0, 0, 0, 0};
+  uint64_t *timestamp;
+  timestamp = time_get_ns();
+
+  if (timestamp == NULL) {
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ConntrackTableUpdate] timestamp NULL. ret DROP ");
+    return RX_DROP;
+  }
+
+  commit->mask = 0;
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
-    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] PROTO TCP setMask: 0x%x direction %d ", session_value_p->setMask, pkt->direction);
+    pcn_log(
+        ctx, LOG_DEBUG,
+        "[_HOOK] [ConntrackLabel] [TCP] session->setMask: 0x%x direction %d ",
+        session_value_p->setMask, pkt->direction);
     if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
       if (pkt->direction == DIRECTION_FORWARD) {
         goto TCP_FORWARD;
       } else if (pkt->direction == DIRECTION_REVERSE) {
         goto TCP_REVERSE;
-      } else {
-        goto TCP_MISS;
       }
+    } else {
+      goto TCP_MISS;
+    }
 
-//
-//    value = connections.lookup(&key);
-//    if (value != NULL) {
-//      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
-//        goto TCP_FORWARD;
-//      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
-//        goto TCP_REVERSE;
-//      } else {
-//        goto TCP_MISS;
-//      }
+  TCP_FORWARD:;
 
-    TCP_FORWARD:;
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] [TCP] [FWD] ");
 
-      pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] TCP FORWARD ");
-
-      // If it is a RST, label it as established.
-      if ((pkt->flags & TCPHDR_RST) != 0) {
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
-
-      if (session_value_p->state == SYN_SENT) {
-        // Still haven't received a SYN,ACK To the SYN
-        if ((pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-          // Another SYN. It is valid, probably a retransmission.
-          // connections.delete(&key);
-          pkt->connStatus = NEW;
-          goto action;
-        } else {
-          // Receiving packets outside the 3-Way handshake without completing
-          // the handshake
-          // TODO: Drop it?
-          pkt->connStatus = INVALID;
-          goto action;
-        }
-      }
-      if (session_value_p->state == SYN_RECV) {
-        // Expecting an ACK here
-        if ((pkt->flags & TCPHDR_ACK) != 0 &&
-            (pkt->flags | TCPHDR_ACK) == TCPHDR_ACK &&
-            (pkt->ackN == session_value_p->sequence)) {
-          // Valid ACK to the SYN, ACK
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        } else {
-          // Validation failed, either ACK is not the only flag set or the ack
-          // number is wrong
-          // TODO: drop it?
-          pkt->connStatus = INVALID;
-          goto action;
-        }
-      }
-
-      if (session_value_p->state == ESTABLISHED || session_value_p->state == FIN_WAIT_1 ||
-          session_value_p->state == FIN_WAIT_2 || session_value_p->state == LAST_ACK) {
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
-
-      if (session_value_p->state == TIME_WAIT) {
-        // If the state is TIME_WAIT but we receive a new SYN the connection is
-        // considered NEW
-        if ((pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-          pkt->connStatus = NEW;
-          goto action;
-        }
-      }
-
-      // Unexpected situation
+    // If it is a RST, label it as established.
+    if ((pkt->flags & TCPHDR_RST) != 0) {
+      pkt->connStatus = ESTABLISHED;
       pcn_log(ctx, LOG_DEBUG,
-              "[_HOOK] [ConntrackLabel] Should not get here. Flags: %d. State: %d. ",
-              pkt->flags, session_value_p->state);
-      pkt->connStatus = INVALID;
-      goto action;
-
-    TCP_REVERSE:;
-
-      // If it is a RST, label it as established.
-      if ((pkt->flags & TCPHDR_RST) != 0) {
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
-
-      if (session_value_p->state == SYN_SENT) {
-        // This should be a SYN, ACK answer
-        if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
-                (TCPHDR_SYN | TCPHDR_ACK) &&
-            pkt->ackN == session_value_p->sequence) {
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        }
-        // Here is an unexpected packet, only a SYN, ACK is acepted as an answer
-        // to a SYN
-        // TODO: Drop it?
-        pkt->connStatus = INVALID;
-        goto action;
-      }
-
-      if (session_value_p->state == SYN_RECV) {
-        // The only acceptable packet in SYN_RECV here is a SYN,ACK
-        // retransmission
-        if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
-                (TCPHDR_SYN | TCPHDR_ACK) &&
-            pkt->ackN == session_value_p->sequence) {
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        }
-        pkt->connStatus = INVALID;
-        goto action;
-      }
-
-      if (session_value_p->state == ESTABLISHED || session_value_p->state == FIN_WAIT_1 ||
-          session_value_p->state == FIN_WAIT_2 || session_value_p->state == LAST_ACK) {
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
-
-      if (session_value_p->state == TIME_WAIT) {
-        // If the state is TIME_WAIT but we receive a new SYN the connection is
-        // considered NEW
-        if ((pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-          pkt->connStatus = NEW;
-          goto action;
-        }
-      }
-
-      pcn_log(ctx, LOG_DEBUG,
-              "[_HOOK] [ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: "
-              "%d. State: %d. ",
-              pkt->flags, session_value_p->state);
-      pkt->connStatus = INVALID;
+              "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+              "[%d] RST -> keep ESTABLISHED ",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
       goto action;
     }
 
+    if (session_value_p->state == SYN_SENT) {
+      // Still haven't received a SYN,ACK To the SYN
+      if ((pkt->flags & TCPHDR_SYN) != 0 &&
+          (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
+        // Another SYN. It is valid, probably a retransmission.
+        // connections.delete(&key);
+        pkt->connStatus = NEW;
+        commit->ttl = *timestamp + TCP_SYN_SENT;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [SYN] -> keep NEW ",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      } else {
+        // Receiving packets outside the 3-Way handshake without completing
+        // the handshake
+        // TODO: Drop it?
+        pkt->connStatus = INVALID;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [!SYN] INVALID",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+    if (session_value_p->state == SYN_RECV) {
+      // Expecting an ACK here
+      if ((pkt->flags & TCPHDR_ACK) != 0 &&
+          (pkt->flags | TCPHDR_ACK) == TCPHDR_ACK &&
+          (pkt->ackN == session_value_p->sequence)) {
+        // Valid ACK to the SYN, ACK
+        pkt->connStatus = ESTABLISHED;
+        commit->state = ESTABLISHED;
+        commit->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [ACK && valid reply to SYN,ACK] ",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      } else {
+        // Validation failed, either ACK is not the only flag set or the ack
+        // number is wrong
+        // TODO: drop it?
+        pkt->connStatus = INVALID;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] ![ACK || valid reply to SYN,ACK] INVALID",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == ESTABLISHED) {
+      pkt->connStatus = ESTABLISHED;
+
+      if ((pkt->flags & TCPHDR_FIN) != 0) {
+        // Received first FIN from "original" direction.
+        // Changing state to FIN_WAIT_1
+        commit->state = FIN_WAIT_1;
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        commit->sequence = pkt->ackN;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                  BIT(BIT_CT_SET_SEQUENCE));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [FIN]",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      } else {
+        commit->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] ![FIN]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == FIN_WAIT_1) {
+      pkt->connStatus = ESTABLISHED;
+      // Received FIN in reverse direction, waiting for ack from this side
+      if ((pkt->flags & TCPHDR_ACK) != 0 &&
+          (pkt->seqN == session_value_p->sequence)) {
+        // Received ACK
+        commit->state = FIN_WAIT_2;
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [ACK && seq]",
+                session_value_p->state, commit->state, pkt->connStatus);
+
+      } else {
+        // Validation failed, either ACK is not the only flag set or the ack
+        // number is wrong
+        // TODO: drop it?
+        pkt->connStatus = INVALID;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] ![ACK || seq] INVALID",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == FIN_WAIT_2) {
+      pkt->connStatus = ESTABLISHED;
+      // Already received and acked FIN in rev direction, waiting the FIN from
+      // the
+      // this side
+      if ((pkt->flags & TCPHDR_FIN) != 0) {
+        // FIN received. Let's wait for it to be acknowledged.
+        commit->state = LAST_ACK;
+        commit->ttl = *timestamp + TCP_LAST_ACK;
+        commit->sequence = pkt->ackN;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                  BIT(BIT_CT_SET_SEQUENCE));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [FIN]",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      } else {
+        // Still receiving packets
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [!FIN]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == LAST_ACK) {
+      pkt->connStatus = ESTABLISHED;
+      if ((pkt->flags & TCPHDR_ACK && pkt->seqN == session_value_p->sequence) !=
+          0) {
+        // Ack to the last FIN.
+        commit->state = TIME_WAIT;
+        commit->ttl = *timestamp + TCP_LAST_ACK;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] ",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      }
+      // Still receiving packets
+      commit->ttl = *timestamp + TCP_LAST_ACK;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pcn_log(
+          ctx, LOG_DEBUG,
+          "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label [%d] ",
+          session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    }
+
+    if (session_value_p->state == TIME_WAIT) {
+      // If the state is TIME_WAIT but we receive a new SYN the connection is
+      // considered NEW
+      if ((pkt->flags & TCPHDR_SYN) != 0 &&
+          (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
+        pkt->connStatus = NEW;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [TIME_WAIT] [SYN] GOTO TCP_MISS",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto TCP_MISS;
+      } else {
+        pkt->connStatus = INVALID;  // ADDED
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+                "[%d] [TIME_WAIT] [!SYN] ",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    pkt->connStatus = INVALID;
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
+            "[%d] Unexpected ",
+            session_value_p->state, session_value_p->state, pkt->connStatus);
+
+    goto action;
+
+  TCP_REVERSE:;
+
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] [TCP] [REV] ");
+
+    // If it is a RST, label it as established.
+    if ((pkt->flags & TCPHDR_RST) != 0) {
+      pkt->connStatus = ESTABLISHED;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+              "[%d] RST",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    }
+
+    if (session_value_p->state == SYN_SENT) {
+      // This should be a SYN, ACK answer
+      if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
+          (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
+              (TCPHDR_SYN | TCPHDR_ACK) &&
+          pkt->ackN == session_value_p->sequence) {
+        commit->state = SYN_RECV;
+        commit->ttl = *timestamp + TCP_SYN_RECV;
+        commit->sequence = pkt->seqN + HEX_BE_ONE;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                  BIT(BIT_CT_SET_SEQUENCE));
+        pkt->connStatus = ESTABLISHED;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [SYN,ACK in sequence Answer]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+      // Here is an unexpected packet, only a SYN, ACK is acepted as an answer
+      // to a SYN
+      // TODO: Drop it?
+      pkt->connStatus = INVALID;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+              "[%d] ![SYN,ACK in sequence]",
+              session_value_p->state, commit->state, pkt->connStatus);
+      goto action;
+    }
+
+    if (session_value_p->state == SYN_RECV) {
+      // The only acceptable packet in SYN_RECV here is a SYN,ACK
+      // retransmission
+      if ((pkt->flags & TCPHDR_ACK) != 0 && (pkt->flags & TCPHDR_SYN) != 0 &&
+          (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
+              (TCPHDR_SYN | TCPHDR_ACK) &&
+          pkt->ackN == session_value_p->sequence) {
+        commit->ttl = *timestamp + TCP_SYN_RECV;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->connStatus = ESTABLISHED;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [SYN,ACK retransmission]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+      pkt->connStatus = INVALID;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+              "[%d] ![SYN,ACK retransmission]",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    }
+
+    if (session_value_p->state == ESTABLISHED) {
+      pkt->connStatus = ESTABLISHED;
+
+      if ((pkt->flags & TCPHDR_FIN) != 0) {
+        // Initiating closing sequence
+        commit->state = FIN_WAIT_1;
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        commit->sequence = pkt->ackN;
+
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                  BIT(BIT_CT_SET_SEQUENCE));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [FIN]",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      } else {
+        commit->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] ![FIN]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == FIN_WAIT_1) {
+      pkt->connStatus = ESTABLISHED;
+
+      // Received FIN in reverse direction, waiting for ack from this side
+      if ((pkt->flags & TCPHDR_ACK) != 0 &&
+          (pkt->seqN == session_value_p->sequence)) {
+        // Received ACK
+        commit->state = FIN_WAIT_2;
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [ACK (response to FIN)]",
+                session_value_p->state, commit->state, pkt->connStatus);
+
+        // Don't forward packet, we can continue performing the check in case
+        // the current packet is a ACK,FIN. In this case we match the next if
+        // statement
+      } else {
+        // Validation failed, either ACK is not the only flag set or the ack
+        // number is wrong
+        pkt->connStatus = INVALID;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] ![ACK (response to FIN)]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == FIN_WAIT_2) {
+      pkt->connStatus = ESTABLISHED;
+
+      // Already received and acked FIN in "original" direction, waiting the
+      // FIN from
+      // this side
+      if ((pkt->flags & TCPHDR_FIN) != 0) {
+        // FIN received. Let's wait for it to be acknowledged.
+        commit->state = LAST_ACK;
+        commit->ttl = *timestamp + TCP_LAST_ACK;
+        commit->sequence = pkt->ackN;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                  BIT(BIT_CT_SET_SEQUENCE));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [FIN]",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      } else {
+        // Still receiving packets
+        commit->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] ![FIN]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    if (session_value_p->state == LAST_ACK) {
+      pkt->connStatus = ESTABLISHED;
+
+      if ((pkt->flags & TCPHDR_ACK && pkt->seqN == session_value_p->sequence) !=
+          0) {
+        // Ack to the last FIN.
+        commit->state = TIME_WAIT;
+        commit->ttl = *timestamp + TCP_LAST_ACK;
+        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [ACK in seq]",
+                session_value_p->state, commit->state, pkt->connStatus);
+        goto action;
+      }
+      // Still receiving packets
+      commit->ttl = *timestamp + TCP_LAST_ACK;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+              "[%d] ![ACK in seq]",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    }
+
+    if (session_value_p->state == TIME_WAIT) {
+      // If the state is TIME_WAIT but we receive a new SYN the connection is
+      // considered NEW
+      if ((pkt->flags & TCPHDR_SYN) != 0 &&
+          (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
+        pkt->connStatus = NEW;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] [SYN] goto TCP_MISS",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        // TODO this is not working, we should exchange forward and reverse keys
+        // in tupletosession table.
+        goto TCP_MISS;
+      } else {
+        pkt->connStatus = INVALID;
+        pcn_log(ctx, LOG_DEBUG,
+                "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+                "[%d] ![SYN]",
+                session_value_p->state, session_value_p->state,
+                pkt->connStatus);
+        goto action;
+      }
+    }
+
+    pkt->connStatus = INVALID;
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
+            "[%d] Exception invalid",
+            session_value_p->state, session_value_p->state, pkt->connStatus);
+    goto action;
+
   TCP_MISS:;
+
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] [TCP] [MISS] ");
 
     // New entry. It has to be a SYN.
     if ((pkt->flags & TCPHDR_SYN) != 0 &&
         (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
       pkt->connStatus = NEW;
+
+      commit->state = SYN_SENT;
+      commit->ttl = *timestamp + TCP_SYN_SENT;
+      commit->sequence = pkt->seqN + HEX_BE_ONE;
+      // TODO
+      commit->setMask = BIT(BIT_CONNTRACK);
+      //      BIT_SET(commit->setMask, BIT(BIT_CONNTRACK));
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                                BIT(BIT_CT_SET_SEQUENCE) |
+                                BIT(BIT_CT_SET_MASK));
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [MISS] state [%d] -> [%d] label "
+              "[%d] [SYN]",
+              session_value_p->state, commit->state, pkt->connStatus);
+
       goto action;
     } else {
       // Validation failed
       // TODO: drop it?
       pkt->connStatus = INVALID;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [TCP] [MISS] state [%d] -> [%d] label "
+              "[%d] ![SYN]",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
       goto action;
     }
   }
@@ -458,56 +791,81 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
       if (pkt->direction == DIRECTION_FORWARD) {
         goto UDP_FORWARD;
-      } else if (pkt->direction == DIRECTION_REVERSE) {
+      }
+      if (pkt->direction == DIRECTION_REVERSE) {
         goto UDP_REVERSE;
-      } else {
-        goto UDP_MISS;
       }
-//
-//    value = connections.lookup(&key);
-//    if (value != NULL) {
-//      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
-//        goto UDP_FORWARD;
-//      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
-//        goto UDP_REVERSE;
-//      } else {
-//        goto UDP_MISS;
-//      }
+    } else {
+      goto UDP_MISS;
+    }
 
-    UDP_FORWARD:;
+  UDP_FORWARD:;
 
-      // Valid entry
-      if (session_value_p->state == NEW) {
-        // An entry was already present with the NEW state. This means that
-        // there has been no answer, from the other side. Connection is still
-        // NEW.
-        pkt->connStatus = NEW;
-        goto action;
-      } else {
-        // value->state == ESTABLISHED
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
+    // Valid entry
+    if (session_value_p->state == NEW) {
+      // An entry was already present with the NEW state. This means that
+      // there has been no answer, from the other side. Connection is still
+      // NEW.
+      pkt->connStatus = NEW;
+      commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [UDP] [FWD] state [%d] -> [%d] label "
+              "[%d] [NEW] ",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    } else {
+      commit->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->connStatus = ESTABLISHED;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [UDP] [FWD] state [%d] -> [%d] label "
+              "[%d] ![NEW]",
+              session_value_p->state, session_value_p->state, pkt->connStatus);
+      goto action;
+    }
 
-    UDP_REVERSE:;
+  UDP_REVERSE:;
 
-      if (session_value_p->state == NEW) {
-        // An entry was present in the rev direction with the NEW state. This
-        // means that this is an answer, from the other side. Connection is
-        // now ESTABLISHED.
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      } else {
-        // value->state == ESTABLISHED
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      }
+    if (session_value_p->state == NEW) {
+      // An entry was present in the rev direction with the NEW state. This
+      // means that this is an answer, from the other side. Connection is
+      // now ESTABLISHED.
+      commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
+      commit->state = *timestamp + ESTABLISHED;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
+      pkt->connStatus = ESTABLISHED;
+      pcn_log(
+          ctx, LOG_DEBUG,
+          "[_HOOK] [ConntrackLabel] [UDP] [REV] state [%d] -> [%d] label [%d] ",
+          session_value_p->state, commit->state, pkt->connStatus);
+      goto action;
+    } else {
+      commit->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
+      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->connStatus = ESTABLISHED;
+      pcn_log(
+          ctx, LOG_DEBUG,
+          "[_HOOK] [ConntrackLabel] [UDP] [REV] state [%d] -> [%d] label [%d] ",
+          session_value_p->state, commit->state, pkt->connStatus);
+      goto action;
     }
 
   UDP_MISS:;
 
     // No entry found in both directions. Create one.
+    commit->state = NEW;
+    commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
+    commit->sequence = 0;
+    //    BIT_SET(commit->setMask, BIT(BIT_CONNTRACK));
+    commit->setMask = BIT(BIT_CONNTRACK);
+    BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+                              BIT(BIT_CT_SET_SEQUENCE) | BIT(BIT_CT_SET_MASK));
     pkt->connStatus = NEW;
+    pcn_log(
+        ctx, LOG_DEBUG,
+        "[_HOOK] [ConntrackLabel] [UDP] [MISS] state [%d] -> [%d] label [%d] ",
+        session_value_p->state, commit->state, pkt->connStatus);
     goto action;
   }
 
@@ -520,111 +878,81 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     struct icmphdr *icmp = data + 34;
-    if (icmp->type == ICMP_ECHO) {
-      // Echo request is always treated as the first of the connection
-      pkt->connStatus = NEW;
-      goto action;
-    }
 
-    if (icmp->type == ICMP_ECHOREPLY) {
+    if ((icmp->type == ICMP_ECHO) || (icmp->type == ICMP_ECHOREPLY)) {
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [ICMP] [ECHO/ECHOREPLY]");
 
       if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
-        if (pkt->direction == DIRECTION_REVERSE) {
-          goto ICMP_REVERSE;
-        } else {
-          goto ICMP_MISS;
+        // hit, entry already present
+        if (pkt->direction ==
+            DIRECTION_FORWARD) {  //} /*&& (icmp->type == ICMP_ECHO)*/) {
+          pkt->connStatus = session_value_p->state;
+          commit->ttl = *timestamp + ICMP_TIMEOUT;
+          commit->sequence = icmp->un.echo.sequence;
+          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE));
+          pcn_log(ctx, LOG_DEBUG,
+                  "[_HOOK] [ConntrackLabel] [ICMP] [FWD] & [ECHO] state [%d] "
+                  "-> [%d] label [%d] ",
+                  session_value_p->state, session_value_p->state,
+                  pkt->connStatus);
+          goto action;
         }
-
-//    if (icmp->type == ICMP_ECHOREPLY) {
-//      value = connections.lookup(&key);
-//      if (value != NULL) {
-//        if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
-//          goto ICMP_REVERSE;
-//        } else {
-//          goto ICMP_MISS;
-//        }
-
-          ICMP_REVERSE:;
-
-        pkt->connStatus = ESTABLISHED;
-        goto action;
+        if (pkt->direction ==
+            DIRECTION_REVERSE) {  //&& (icmp->type == ICMP_ECHOREPLY)) {
+          if (session_value_p->state == NEW) {
+            commit->state = ESTABLISHED;
+            commit->sequence = icmp->un.echo.sequence;
+            BIT_SET(commit->mask,
+                    BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_SEQUENCE));
+            pcn_log(ctx, LOG_DEBUG,
+                    "[_HOOK] [ConntrackLabel] [ICMP] [REV] & [REPLY] state "
+                    "[%d] -> [%d] label [%d] ",
+                    session_value_p->state, commit->state, pkt->connStatus);
+          }
+          pkt->connStatus = ESTABLISHED;
+          commit->ttl = *timestamp + ICMP_TIMEOUT;
+          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+          pcn_log(ctx, LOG_DEBUG,
+                  "[_HOOK] [ConntrackLabel] [ICMP] [REV] & [REPLY] state [%d] "
+                  "-> [%d] label [%d] ",
+                  session_value_p->state, session_value_p->state,
+                  pkt->connStatus);
+          goto action;
+        }
+        pcn_log(
+            ctx, LOG_DEBUG,
+            "[_HOOK] [ConntrackLabel] [ICMP] !FWD !REV should not get here ");
       } else {
-        // A reply without a request
-        // TODO drop it?
-        pkt->connStatus = INVALID;
-        goto action;
+        // miss, no entry in table
+        if ((pkt->direction == DIRECTION_FORWARD) &&
+            (icmp->type == ICMP_ECHO)) {
+          pkt->connStatus = NEW;
+          commit->state = NEW;
+          commit->ttl = *timestamp + ICMP_TIMEOUT;
+          commit->sequence = icmp->un.echo.sequence;
+          commit->setMask = BIT(BIT_CONNTRACK);
+          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE) |
+                                    BIT(BIT_CT_SET_STATE) |
+                                    BIT(BIT_CT_SET_MASK));
+          pcn_log(ctx, LOG_DEBUG,
+                  "[_HOOK] [ConntrackLabel] [ICMP] [MISS]  state [%d] -> [%d] "
+                  "label [%d] ",
+                  session_value_p->state, commit->state, pkt->connStatus);
+          goto action;
+        }
       }
+    } else {
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackLabel] [ICMP] ![ECHO/ECHOREPLY] ");
     }
 
-  ICMP_MISS:;
-
-    if (icmp->type == ICMP_TIMESTAMP || icmp->type == ICMP_TIMESTAMPREPLY ||
-        icmp->type == ICMP_INFO_REQUEST || icmp->type == ICMP_INFO_REPLY ||
-        icmp->type == ICMP_ADDRESS || icmp->type == ICMP_ADDRESSREPLY) {
-      // Not yet supported
-      pkt->connStatus = INVALID;
-      goto action;
-    }
-
-//    // Here there are only ICMP errors
-//    // Error messages always include a copy of the offending IP header and up to
-//    // 8 bytes of the data that caused the host or gateway to send the error
-//    // message.
-//    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) > data_end) {
-//      return RX_DROP;
-//    }
-//    struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
-//    if (encapsulatedIp->saddr <= encapsulatedIp->daddr) {
-//      key.srcIp = encapsulatedIp->saddr;
-//      key.dstIp = encapsulatedIp->daddr;
-//      ipRev = 0;
-//    } else {
-//      key.srcIp = encapsulatedIp->daddr;
-//      key.dstIp = encapsulatedIp->saddr;
-//      ipRev = 1;
-//    }
-//
-//    key.l4proto = encapsulatedIp->protocol;
-//
-//    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8 >
-//        data_end) {
-//      return RX_DROP;
-//    }
-//    uint16_t *temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr);
-//    key.srcPort = *temp;
-//    temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
-//    key.dstPort = *temp;
-//
-//    if (key.srcPort <= key.dstPort) {
-//      portRev = 0;
-//    } else {
-//      *temp = key.srcPort;
-//      key.srcPort = key.dstPort;
-//      key.dstPort = *temp;
-//      portRev = 1;
-//    }
-
-//    value = connections.lookup(&key);
-//    if (value != NULL) {
-//      pkt->connStatus = RELATED;
-//      goto action;
-//    }
-
-    if (CHECK_MASK_IS_SET(session_value_p->setMask, BIT(BIT_CONNTRACK))) {
-//    value = connections.lookup(&key);
-//    if (value != NULL) {
-      pkt->connStatus = RELATED;
-      goto action;
-    }
-
-    // If it gets here, this error is an answer to a packet not known or to an
-    // expired connection.
-    // TODO: drop it?
     pkt->connStatus = INVALID;
     goto action;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] does not support the l4proto= %d",
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ConntrackLabel] [l4proto = %d] not supported ",
           pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
@@ -632,6 +960,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   goto action;
 
 action:;
+
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ConntrackLabel] [action] commit->mask: 0x%x "
+          "pkt->connStatus: %d ",
+          commit->mask, pkt->connStatus);
+
   // TODO possible optimization, inject it if needed
   int *decision = getForwardingDecision();
 
@@ -717,9 +1051,10 @@ action:;
 #endif
 
 DISABLED:;
-  pcn_log(ctx, LOG_TRACE,
-          "[_HOOK] [ConntrackLabel] (Optimization OFF) Calling Chainforwarder %d",
-          _CHAINFORWARDER);
+  pcn_log(
+      ctx, LOG_TRACE,
+      "[_HOOK] [ConntrackLabel] (Optimization OFF) Calling Chainforwarder %d",
+      _CHAINFORWARDER);
   call_bpf_program(ctx, _CHAINFORWARDER);
 
   pcn_log(ctx, LOG_TRACE,
@@ -730,7 +1065,8 @@ ENABLED_MATCH:;
   // ON (Perform optimization for accept established)
   //  if established, forward directly
   pcn_log(ctx, LOG_TRACE,
-          "[_HOOK] [ConntrackLabel] (Optimization ON) ESTABLISHED Connection found. "
+          "[_HOOK] [ConntrackLabel] (Optimization ON) ESTABLISHED Connection "
+          "found. "
           "Calling ConntrackTableUpdate.");
   call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
 
@@ -740,9 +1076,10 @@ ENABLED_MATCH:;
 ENABLED_NOT_MATCH:;
   // ON (Perform optimization for accept established), but no match on
   // ESTABLISHED connection
-  pcn_log(ctx, LOG_TRACE,
-          "[_HOOK] [ConntrackLabel] (Optimization ON) no connection found. Calling "
-          "ChainForwarder.");
+  pcn_log(
+      ctx, LOG_TRACE,
+      "[_HOOK] [ConntrackLabel] (Optimization ON) no connection found. Calling "
+      "ChainForwarder.");
   call_bpf_program(ctx, _CHAINFORWARDER);
 
   pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ConntrackLabel] Something went wrong.");

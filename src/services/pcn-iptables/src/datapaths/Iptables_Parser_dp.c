@@ -25,6 +25,9 @@
 #define IPPROTO_UDP 17
 #define IPPROTO_ICMP 1
 
+#define ICMP_ECHOREPLY 0 /* Echo Reply			*/
+#define ICMP_ECHO 8      /* Echo Request			*/
+
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -94,6 +97,23 @@ struct tcp_hdr {
   __be16 urg_ptr;
 } __attribute__((packed));
 
+struct icmphdr {
+  u_int8_t type; /* message type */
+  u_int8_t code; /* type sub-code */
+  u_int16_t checksum;
+  union {
+    struct {
+      u_int16_t id;
+      u_int16_t sequence;
+    } echo;            /* echo datagram */
+    u_int32_t gateway; /* gateway address */
+    struct {
+      u_int16_t __unused;
+      u_int16_t mtu;
+    } frag; /* path mtu discovery */
+  } un;
+};
+
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] receiving packet.");
 
@@ -104,7 +124,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   if (ethernet->proto != bpf_htons(ETH_P_IP)) {
     /*Let everything that is not IP pass. */
-    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] Packet not IP. Let this traffic pass by default.");
+    pcn_log(
+        ctx, LOG_DEBUG,
+        "[_HOOK] [Parser] Packet not IP. Let this traffic pass by default.");
     return RX_OK;
   }
 
@@ -144,7 +166,14 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->srcPort = udp->source;
     pkt->dstPort = udp->dest;
   } else if (ip->protocol == IPPROTO_ICMP) {
-    pkt->srcPort = 0;
+    if (data + 34 + sizeof(struct icmphdr) > data_end)
+      return RX_DROP;
+    struct icmphdr *icmp = data + 34;
+    if (icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY) {
+      pkt->srcPort = icmp->un.echo.id;
+    } else {
+      pkt->srcPort = 0;
+    }
     pkt->dstPort = 0;
   }
 

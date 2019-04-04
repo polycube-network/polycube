@@ -18,6 +18,8 @@
    Action Cache Module
    ======================= */
 
+#define IPPROTO_ICMP 1
+
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -173,8 +175,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
     tuple.srcIp = pkt->dstIp;
     tuple.dstIp = pkt->srcIp;
-    tuple.srcPort = pkt->dstPort;
-    tuple.dstPort = pkt->srcPort;
+    if (pkt->l4proto != IPPROTO_ICMP) {
+      tuple.srcPort = pkt->dstPort;
+      tuple.dstPort = pkt->srcPort;
+    }
 
     tupletosession.update(&tuple, &tts_v_new);
 
