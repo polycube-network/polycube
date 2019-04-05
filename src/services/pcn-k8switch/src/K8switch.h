@@ -143,6 +143,7 @@ class K8switch : public polycube::service::Cube<Ports>,
   void cleanupSessionTable();
   uint32_t timestampToAge(const uint64_t timestamp);
   void tick();
+  std::string getFlags();
 
   std::unique_ptr<std::thread> tick_thread;
   bool stop_;

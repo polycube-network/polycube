@@ -34,7 +34,7 @@ K8switch::K8switch(const std::string name, const K8switchJsonObject &conf)
   doSetVirtualClientSubnet(conf.getVirtualClientSubnet());
 
   // reload code a single time
-  reloadConfig();
+  add_program(getFlags() + k8switch_code, 0);
 
   addServiceList(conf.getService());
   addPortsList(conf.getPorts());
@@ -170,7 +170,7 @@ void K8switch::doSetVirtualClientSubnet(const std::string &value) {
   virtual_client_cidr_ = value;
 }
 
-void K8switch::reloadConfig() {
+std::string K8switch::getFlags() {
   std::string flags;
 
   // ports
@@ -197,6 +197,13 @@ void K8switch::reloadConfig() {
       "#define CLIENT_SUBNET " + std::to_string(htonl(client_subnet_)) + "\n";
   flags += "#define VIRTUAL_CLIENT_SUBNET " +
            std::to_string(htonl(virtual_client_subnet_)) + "\n";
+  logger()->debug("flags is {}", flags);
+
+  return flags;
+}
+
+void K8switch::reloadConfig() {
+  std::string flags(getFlags());
 
   logger()->debug("Reloading code with flags port: {}", flags);
 
