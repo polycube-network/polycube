@@ -105,6 +105,12 @@ void ParentResource::CreateReplaceUpdate(
   const auto &cube_name = Service::Cube(request);
   ListKeyValues keys{};
   Keys(request, keys);
+
+  // fill keys if they are missing
+  if (auto list = dynamic_cast<ListResource*>(this)) {
+    list->FillKeys(jbody, keys);
+  }
+
   auto body_errors = BodyValidate(cube_name, keys, jbody, initialization);
   errors.reserve(errors.size() + body_errors.size());
   std::move(std::begin(body_errors), std::end(body_errors),
