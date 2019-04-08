@@ -53,7 +53,7 @@ do
     sudo ip netns exec ns${i} sudo ip route add default via 10.0.${i}.254
 done
 
-test_udp
+#test_udp
 
 $IPTABLES -A $CHAIN -m conntrack --ctstate ESTABLISHED -j ACCEPT
 $IPTABLES -A $CHAIN -m conntrack --ctstate NEW -s 10.0.2.1 -j ACCEPT
