@@ -115,33 +115,33 @@ struct icmphdr {
 };
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] receiving packet.");
+  pcn_log(ctx, LOG_TRACE, "[_HOOK] [Parser] ");
 
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
   struct eth_hdr *ethernet = data;
   if (data + sizeof(*ethernet) > data_end)
-    return RX_DROP;
+    goto drop;
   if (ethernet->proto != bpf_htons(ETH_P_IP)) {
     /*Let everything that is not IP pass. */
-    pcn_log(
-        ctx, LOG_DEBUG,
-        "[_HOOK] [Parser] Packet not IP. Let this traffic pass by default.");
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [Parser] [eht->proto: 0x%x] pkt not IP. Let this traffic "
+            "pass.",
+            ethernet->proto);
     return RX_OK;
   }
 
   struct iphdr *ip = NULL;
   ip = data + sizeof(struct eth_hdr);
   if (data + sizeof(struct eth_hdr) + sizeof(*ip) > data_end)
-    return RX_DROP;
+    goto drop;
 
   int key = 0;
   struct packetHeaders *pkt;
 
   pkt = packet.lookup(&key);
   if (pkt == NULL) {
-    // Not possible
-    return RX_DROP;
+    goto drop;
   }
 
   pkt->srcIp = ip->saddr;
@@ -152,7 +152,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     struct tcp_hdr *tcp = NULL;
     tcp = data + sizeof(struct eth_hdr) + sizeof(*ip);
     if (data + sizeof(struct eth_hdr) + sizeof(*ip) + sizeof(*tcp) > data_end)
-      return RX_DROP;
+      goto drop;
     pkt->srcPort = tcp->source;
     pkt->dstPort = tcp->dest;
     pkt->seqN = tcp->seq;
@@ -162,12 +162,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     struct udphdr *udp = NULL;
     udp = data + sizeof(struct eth_hdr) + sizeof(*ip);
     if (data + sizeof(struct eth_hdr) + sizeof(*ip) + sizeof(*udp) > data_end)
-      return RX_DROP;
+      goto drop;
     pkt->srcPort = udp->source;
     pkt->dstPort = udp->dest;
   } else if (ip->protocol == IPPROTO_ICMP) {
     if (data + 34 + sizeof(struct icmphdr) > data_end)
-      return RX_DROP;
+      goto drop;
     struct icmphdr *icmp = data + 34;
     if (icmp->type == ICMP_ECHO || icmp->type == ICMP_ECHOREPLY) {
       pkt->srcPort = icmp->un.echo.id;
@@ -177,6 +177,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pkt->dstPort = 0;
   }
 
+  pcn_log(ctx, LOG_TRACE, "[_HOOK] [Parser] srcIp: %I dstIp: %I l4proto:0x%x ",
+          pkt->srcIp, pkt->dstIp, pkt->l4proto);
+  pcn_log(ctx, LOG_TRACE, "[_HOOK] [Parser] sPort: %P dPort: %P ", pkt->srcPort,
+          pkt->dstPort);
+
 #if _HORUS_ENABLED
   call_bpf_program(ctx, _HORUS);
 #endif
@@ -184,5 +189,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // or INGRESS or EGRESS
   call_bpf_program(ctx, _CHAINSELECTOR);
 
+drop:;
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Parser] drop pkt ");
   return RX_DROP;
 }

@@ -84,7 +84,8 @@ static __always_inline struct packetHeaders *getPacket() {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [IpLookup] [_TYPE] [_DIRECTION] receiving packet. ");
 
 /*The struct elements and the lookup table are defined only if NR_ELEMENTS>0, so
  * this code has to be used only in those cases.*/
@@ -99,7 +100,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct lpm_k lpm_key = {32, pkt->_TYPEIp};
   struct elements *ele = getBitVect(&lpm_key);
   if (ele == NULL) {
-    pcn_log(ctx, LOG_DEBUG, "No match. (pkt->_TYPEIp: %u) ", pkt->_TYPEIp);
+    pcn_log(
+        ctx, LOG_TRACE,
+        "[_HOOK] [IpLookup] [_TYPE] [_DIRECTION] no match (pkt->_TYPEIp: %u) ",
+        pkt->_TYPEIp);
     incrementDefaultCounters_DIRECTION(md->packet_len);
     _DEFAULTACTION
   } else {
@@ -127,8 +131,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 #endif
       if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG,
-                "Bitvector is all zero. Break pipeline for Ip_TYPE_DIRECTION");
+        pcn_log(ctx, LOG_TRACE,
+                "[_HOOK] [IpLookup] [_TYPE] [_DIRECTION] bitvector is all "
+                "zero. break pipeline ");
         incrementDefaultCounters_DIRECTION(md->packet_len);
         _DEFAULTACTION
       }

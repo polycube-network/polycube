@@ -68,7 +68,8 @@ static __always_inline void incrementCounters(int *action, u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet.");
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ActionLookup] [_DIRECTION] receiving packet.");
 
 // _NR_ELEMENTS = int (number of rules / 64)
 // because of a bug in bcc, 63 bits are used
@@ -80,7 +81,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Rule matched: %d ", (int)(ruleMatched->bits)[0]);
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ActionLookup] [_DIRECTION] rule matched: %d ",
+          (int)(ruleMatched->bits)[0]);
 
   // first element of the bitvector is the matched rule!
   key = (int)(ruleMatched->bits)[0];
@@ -93,17 +96,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   incrementCounters(&key, md->packet_len);
   switch (*action) {
   case 0:
-    pcn_log(ctx, LOG_DEBUG, "Action taken: DROP ");
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ActionLookup] [_DIRECTION] Action taken: DROP");
     return RX_DROP;
 
   case 1:
     pcn_log(ctx, LOG_DEBUG,
-            "Action taken: ACCEPT (call CONNTRACKTABLEUPDATE) ");
+            "[_HOOK] [ActionLookup] [_DIRECTION] action taken: ACCEPT (call "
+            "CONNTRACKTABLEUPDATE)");
     call_bpf_program(ctx, _CONNTRACKTABLEUPDATE);
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "Something went wrong. ");
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [ActionLookup] [_DIRECTION] something went wrong ");
     return RX_DROP;
   }
 

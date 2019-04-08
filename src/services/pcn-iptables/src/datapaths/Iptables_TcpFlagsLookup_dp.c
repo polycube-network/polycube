@@ -83,6 +83,8 @@ static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
+  pcn_log(ctx, LOG_TRACE, "[_HOOK] [TCPFlags] [_DIRECTION] receiving packet. ");
+
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so this code has to be used only in this case.*/
 #if _NR_ELEMENTS > 0
@@ -93,11 +95,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
   if (pkt->l4proto != IPPROTO_TCP) {
-    pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION ignoring packet. ");
+    pcn_log(ctx, LOG_TRACE, "[_HOOK] [TCPFlags] [_DIRECTION] ignoring pkt ");
     call_bpf_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
   }
-  pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION receiving packet. ");
 
   int flags = 0;
   flags = pkt->flags;
@@ -121,10 +122,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
       if (result->bits[0])
         isAllZero = false;
-      pcn_log(
-          ctx, LOG_DEBUG,
-          "Code TcpFlags_DIRECTION  Match found. Bitvec: %llu, result %llu. ",
-          (ele->bits)[0], (result->bits)[0]);
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [TCPFlags] [_DIRECTION] match found. bitvector: %llu, "
+              "result %llu. ",
+              (ele->bits)[0], (result->bits)[0]);
 #else
       int i = 0;
 #pragma unroll
@@ -137,8 +138,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 #endif
       if (isAllZero) {
-        pcn_log(ctx, LOG_DEBUG,
-                "Bitvector is all zero. Break pipeline for TcpFlags_DIRECTION");
+        pcn_log(ctx, LOG_TRACE,
+                "[_HOOK] [TCPFlags] [_DIRECTION] bitvector is all zero. break "
+                "pipeline ");
         incrementDefaultCounters_DIRECTION(md->packet_len);
         _DEFAULTACTION
       }

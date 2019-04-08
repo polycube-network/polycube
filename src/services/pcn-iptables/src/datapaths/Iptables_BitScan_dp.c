@@ -56,8 +56,9 @@ static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-// since pragma unroll is not working with N=1
-// this case is managed as separated case
+  // since pragma unroll is not working with N=1
+  // this case is managed as separated case
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Bitscan] [_DIRECTION] receiving packet.");
 
 #if _NR_ELEMENTS > 0
   int key = 0;
@@ -79,7 +80,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     (ele->bits)[0] = *matchingResult;
-    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ",
+    pcn_log(ctx, LOG_DEBUG,
+            "[_HOOK] [Bitscan] [_DIRECTION] Matching element 0 offset %d.",
             *matchingResult);
     call_bpf_program(ctx, _NEXT_HOP_1);
   }
@@ -100,8 +102,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       int globalBit = *matchingResult + i * 63;
       pcn_log(ctx, LOG_DEBUG,
-              "Bitscan _DIRECTION Matching element %d offset %d. ", i,
-              *matchingResult);
+              "[_HOOK] [Bitscan] [_DIRECTION] Matching element %d offset %d. ",
+              i, *matchingResult);
       (ele->bits)[0] = globalBit;
       call_bpf_program(ctx, _NEXT_HOP_1);
 
@@ -111,7 +113,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 #endif
   // DEFAULT ACTION (?)
-  pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
+  pcn_log(ctx, LOG_DEBUG, "[_HOOK] [Bitscan] [_DIRECTION] no bit set to 1 ");
+
   incrementDefaultCounters_DIRECTION(md->packet_len);
   _DEFAULTACTION;
 }

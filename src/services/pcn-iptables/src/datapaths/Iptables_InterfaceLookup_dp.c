@@ -81,6 +81,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   u64 wildcard_ele[_MAXRULES] = _WILDCARD_BITVECTOR;
 #endif
 
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [Interface] [_TYPE] [_DIRECTION] receiving packet. ");
+
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
  * this code has to be used only in this case.*/
@@ -94,7 +97,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   // TODO check if we should not use htons here.
   uint16_t _TYPEInterface = md->in_port;
-  pcn_log(ctx, LOG_DEBUG, "_TYPEInterface _DIRECTION - current index: %d ",
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [interface] [_TYPE] [_DIRECTION] current index: %d ",
           _TYPEInterface);
 
   // Interfaces are stored in an hashmap
@@ -121,10 +125,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 // b. if so, use to bitvector from wildcard key
 
 #if _WILDCARD_RULE
-      pcn_log(ctx, LOG_DEBUG, "+WILDCARD RULE+");
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [Interface] [_TYPE] [_DIRECTION] wildcard rule ");
       goto WILDCARD;
 #else
-      pcn_log(ctx, LOG_DEBUG, "No match. ");
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [Interface] [_TYPE] [_DIRECTION] no match ");
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
 #endif
@@ -167,9 +173,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 NEXT:;
   if (isAllZero) {
-    pcn_log(
-        ctx, LOG_DEBUG,
-        "Bitvector is all zero. Break pipeline for _TYPEInterface _DIRECTION");
+    pcn_log(ctx, LOG_TRACE,
+            "[_HOOK] [Interface] [_TYPE] [_DIRECTION] bitvector is all zero. "
+            "break pipeline ");
     incrementDefaultCounters_DIRECTION(md->packet_len);
     _DEFAULTACTION
   }

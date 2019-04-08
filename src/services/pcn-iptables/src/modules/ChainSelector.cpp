@@ -55,11 +55,13 @@ std::string Iptables::ChainSelector::defaultActionString(
   try {
     auto chain = iptables_.getChain(direction);
     if (chain->getDefault() == ActionEnum::DROP) {
-      return "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] DROP_NO_LABELING\"); \n "
+      return "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] "
+             "DROP_NO_LABELING\"); \n "
              "return RX_DROP;";
     } else if (chain->getDefault() == ActionEnum::ACCEPT) {
       std::string ret =
-          "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] PASS_LABELING\"); \n "
+          "pcn_log(ctx, LOG_TRACE, \"[_HOOK] [ChainSelector] PASS_LABELING\"); "
+          "\n "
           "updateForwardingDecision(PASS_LABELING);";
       return ret;
     }

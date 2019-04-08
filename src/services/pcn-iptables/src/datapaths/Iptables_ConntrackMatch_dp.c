@@ -90,7 +90,8 @@ static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [ConntrackMatch] [_DIRECTION] receiving packet ");
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so this code has to be used only in this case.*/
 #if _NR_ELEMENTS > 0
@@ -103,15 +104,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   uint8_t connStatus = pkt->connStatus;
   uint32_t ct = connStatus;
-  pcn_log(ctx, LOG_DEBUG,
-          "Conntrack_DIRECTIONMatching received a packet with state %d",
-          pkt->connStatus);
+  pcn_log(
+      ctx, LOG_TRACE,
+      "[_HOOK] [ConntrackMatch] [_DIRECTION] receiving packet with state %d ",
+      pkt->connStatus);
 
   struct elements *ele = getBitVect(&ct);
 
   if (ele == NULL) {
-    pcn_log(ctx, LOG_DEBUG,
-            "[ConntrackMatch] Array Lookup miss. this should never happen.");
+    pcn_log(ctx, LOG_TRACE,
+            "[_HOOK] [ConntrackMatch] [_DIRECTION] btv array lookup miss. this "
+            "should never happen ");
     return RX_DROP;
   }
   struct elements *result = getShared();
@@ -138,9 +141,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 #endif
     if (isAllZero) {
-      pcn_log(
-          ctx, LOG_DEBUG,
-          "Bitvector is all zero. Break pipeline for ConntrackMatch_DIRECTION");
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [ConntrackMatch] [_DIRECTION] bitvector is all zero. "
+              "break pipeline ");
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
     }

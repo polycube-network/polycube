@@ -137,7 +137,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 // let all the traffic to be labeled and pass.
 #if _INGRESS_ALLOWLOGIC
   pcn_log(ctx, LOG_DEBUG,
-          "[_HOOK] [ChainSelector] INGRESS LOGIC PASS. No rules for INPUT and FORWARD, and default is "
+          "[_HOOK] [ChainSelector] INGRESS LOGIC PASS. No rules for INPUT and "
+          "FORWARD, and default is "
           "ACCEPT. ");
   updateForwardingDecision(PASS_LABELING);
   call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
@@ -195,9 +196,9 @@ INPUT:;
   call_bpf_program(ctx, _ACTIONCACHE_INGRESS);
 
 #endif
-  pcn_log(
-      ctx, LOG_DEBUG,
-      "[_HOOK] [ChainSelector] No INPUT chain instantiated. Apply default action for INPUT chain. ");
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ChainSelector] No INPUT chain instantiated. Apply default "
+          "action for INPUT chain. ");
   // PASS_LABELING if ACCEPT
   // DROP_NO_LABELING if DROP
   incrementDefaultCountersInput(md->packet_len);
@@ -231,7 +232,8 @@ FORWARD:;
 
 #endif
   pcn_log(ctx, LOG_DEBUG,
-          "[_HOOK] [ChainSelector] No FORWARD chain instantiated. Apply default action for FORWARD "
+          "[_HOOK] [ChainSelector] No FORWARD chain instantiated. Apply "
+          "default action for FORWARD "
           "chain. ");
 
   // PASS_LABELING if ACCEPT
@@ -282,9 +284,9 @@ OUTPUT:;
   // call chain label INGRESS
   call_bpf_program(ctx, _ACTIONCACHE_EGRESS);
 #endif
-  pcn_log(
-      ctx, LOG_DEBUG,
-      "[_HOOK] [ChainSelector] No OUTPUT chain instantiated. Apply default action for OUTPUT chain. ");
+  pcn_log(ctx, LOG_DEBUG,
+          "[_HOOK] [ChainSelector] No OUTPUT chain instantiated. Apply default "
+          "action for OUTPUT chain. ");
 
   // PASS_LABELING if ACCEPT
   // DROP_NO_LABELING if DROP
@@ -294,7 +296,8 @@ OUTPUT:;
 
 PASS:;
   pcn_log(ctx, LOG_DEBUG,
-          "[_HOOK] [ChainSelector] No hit for OUTPUT chain. Let the packet PASS_NO_LABELING. ");
+          "[_HOOK] [ChainSelector] No hit for OUTPUT chain. Let the packet "
+          "PASS_NO_LABELING. ");
   return RX_OK;
 
 #endif

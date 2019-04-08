@@ -78,7 +78,8 @@ static __always_inline void incrementDefaultCounters_DIRECTION(u32 bytes) {
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code l4proto_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [L4Protocol] [_DIRECTION] receiving packet. ");
 
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
@@ -98,7 +99,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     proto = 0;
     ele = getBitVect(&proto);
     if (ele == NULL) {
-      pcn_log(ctx, LOG_DEBUG, "No match, dropping. proto %d .", proto);
+      pcn_log(
+          ctx, LOG_TRACE,
+          "[_HOOK] [L4Protocol] [_DIRECTION] no match. dropping proto 0x%x ",
+          proto);
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
     }
@@ -128,8 +132,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 #endif
     if (isAllZero) {
-      pcn_log(ctx, LOG_DEBUG,
-              "Bitvector is all zero. Break pipeline for l4proto_DIRECTION");
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [L4Protocol] [_DIRECTION] bitvector is all zero. break "
+              "pipeline ");
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
     }

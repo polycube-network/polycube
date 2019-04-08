@@ -86,6 +86,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   u64 wildcard_ele[_MAXRULES] = _WILDCARD_BITVECTOR;
 #endif
 
+  pcn_log(ctx, LOG_TRACE,
+          "[_HOOK] [Port] [_TYPE] [_DIRECTION] receiving packet. ");
+
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
  * this code has to be used only in this case.*/
@@ -99,11 +102,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   uint16_t _TYPEPort = 0;
   if (pkt->l4proto != IPPROTO_TCP && pkt->l4proto != IPPROTO_UDP) {
-    pcn_log(ctx, LOG_DEBUG, "Code _TYPEPort _DIRECTION ignoring packet. ");
+    pcn_log(ctx, LOG_TRACE,
+            "[_HOOK] [Port] [_TYPE] [_DIRECTION] ignoring packet. ");
     call_bpf_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
   } else {
-    pcn_log(ctx, LOG_DEBUG, "Code _TYPEPort _DIRECTION receiving packet. ");
     // var containing the port, locally stored
     _TYPEPort = pkt->_TYPEPort;
   }
@@ -132,10 +135,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 // b. if so, use to bitvector from wildcard key
 
 #if _WILDCARD_RULE
-      pcn_log(ctx, LOG_DEBUG, "+WILDCARD RULE+");
+      pcn_log(ctx, LOG_TRACE,
+              "[_HOOK] [Port] [_TYPE] [_DIRECTION] +wildcard rule+ ");
       goto WILDCARD;
 #else
-      pcn_log(ctx, LOG_DEBUG, "No match. ");
+      pcn_log(ctx, LOG_TRACE, "[_HOOK] [Port] [_TYPE] [_DIRECTION] no match ");
       incrementDefaultCounters_DIRECTION(md->packet_len);
       _DEFAULTACTION
 #endif
@@ -178,8 +182,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 NEXT:;
   if (isAllZero) {
-    pcn_log(ctx, LOG_DEBUG,
-            "Bitvector is all zero. Break pipeline for _TYPEPort _DIRECTION");
+    pcn_log(ctx, LOG_TRACE,
+            "[_HOOK] [Port] [_TYPE] [_DIRECTION] bitvector is all zero. break "
+            "pipeline  ");
     incrementDefaultCounters_DIRECTION(md->packet_len);
     _DEFAULTACTION
   }
