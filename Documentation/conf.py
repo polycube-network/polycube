@@ -180,19 +180,23 @@ epub_exclude_files = ['search.html']
 
 
 # taken from cilium
-# TODO: how to actually get the branch
-branch = 'master'
-githubusercontent = 'https://raw.githubusercontent.com/polycube-network/polycube/'
-scm_web = githubusercontent + branch
+branch = os.environ.get('READTHEDOCS_VERSION')
+if branch == None or branch == 'latest':
+    branch = 'master'
+
+scm_raw_web = 'https://raw.githubusercontent.com/polycube-network/polycube/' + branch
+scm_web = 'https://github.com/polycube-network/polycube/blob/' + branch
 
 # Store variables in the epilogue so they are globally available.
 rst_epilog = """
 .. |SCM_WEB| replace:: \{s}
+.. |SCM_RAW_WEB| replace:: \{sr}
 .. |SCM_BRANCH| replace:: \{b}
-""".format(s = scm_web, b = branch)
+""".format(s = scm_web, sr = scm_raw_web, b = branch)
 
 # used to have links to repo files
-extlinks = {'scm_web_file': (scm_web + '/%s', 'scm_web_file ')}
+extlinks = {'scm_raw_web': (scm_raw_web + '/%s', 'scm_raw_web'),
+            'scm_web': (scm_web + '/%s', 'scm_web')}
 
 # spell configuration
 spelling_lang='en_US'

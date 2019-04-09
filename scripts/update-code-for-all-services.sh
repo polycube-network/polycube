@@ -8,6 +8,8 @@ if [ -z ${POLYCUBE_HOME+x} ]; then
     exit 1
 fi
 
+POLYCUBE_BASE_DATAMODELS_FOLDER=$POLYCUBE_HOME/src/services/datamodel-common
+
 SERVICES=(#bridge
           ddosmitigator
           firewall
@@ -27,7 +29,7 @@ SERVICES=(#bridge
 for SERVICE in "${SERVICES[@]}"
 do
     echo $SERVICE
-    ./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE/datamodel/$SERVICE.yang \
+    polycube-codegen -i $POLYCUBE_HOME/src/services/pcn-$SERVICE/datamodel/$SERVICE.yang \
         -o $POLYCUBE_HOME/src/services/pcn-$SERVICE
 done
 
@@ -36,11 +38,11 @@ done
 SERVICE=lbrp
 SERVICE_PATH=loadbalancer-rp
 echo $SERVICE
-./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
+polycube-codegen -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
     -o $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH
 
 SERVICE=lbdsr
 SERVICE_PATH=loadbalancer-dsr
 echo $SERVICE
-./polycube-codegen.sh -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
+polycube-codegen -i $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH/datamodel/$SERVICE.yang \
     -o $POLYCUBE_HOME/src/services/pcn-$SERVICE_PATH

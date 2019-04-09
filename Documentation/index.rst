@@ -19,7 +19,7 @@ Welcome to Polycube's documentation!
    components/index
    services/index
    tutorials/index
-   developers
+   developers/index
 
 
 .. Indices and tables
