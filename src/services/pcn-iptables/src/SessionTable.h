@@ -57,14 +57,14 @@ class SessionTable : public SessionTableInterface {
   std::string getDst() override;
 
   /// <summary>
-  /// Connection state.
-  /// </summary>
-  std::string getState() override;
-
-  /// <summary>
   /// Level 4 Protocol.
   /// </summary>
   std::string getL4proto() override;
+
+  /// <summary>
+  /// Source Port
+  /// </summary>
+  uint16_t getSport() override;
 
   /// <summary>
   /// Destination
@@ -72,9 +72,49 @@ class SessionTable : public SessionTableInterface {
   uint16_t getDport() override;
 
   /// <summary>
-  /// Source Port
+  /// Entry direction (forward/reverse)
   /// </summary>
-  uint16_t getSport() override;
+  std::string getDirection() override;
+
+  /// <summary>
+  /// Session ID
+  /// </summary>
+  uint32_t getId() override;
+
+  /// <summary>
+  /// Connection state
+  /// </summary>
+  std::string getState() override;
+
+  /// <summary>
+  /// Expire TTL
+  /// </summary>
+  uint64_t getTtl() override;
+
+  /// <summary>
+  /// Sequence
+  /// </summary>
+  uint32_t getSequence() override;
+
+  /// <summary>
+  /// Dnat new ip
+  /// </summary>
+  std::string getDnatip() override;
+
+  /// <summary>
+  /// Dnat new port
+  /// </summary>
+  uint16_t getDnatport() override;
+
+  /// <summary>
+  /// Snat new ip
+  /// </summary>
+  std::string getSnatip() override;
+
+  /// <summary>
+  /// Snat new port
+  /// </summary>
+  uint16_t getSnatport() override;
 
   static std::string stateFromNumberToString(int state);
 

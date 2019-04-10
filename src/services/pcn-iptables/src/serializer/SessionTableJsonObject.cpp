@@ -28,7 +28,15 @@ SessionTableJsonObject::SessionTableJsonObject() {
   m_l4protoIsSet = false;
   m_sportIsSet = false;
   m_dportIsSet = false;
+  m_directionIsSet = false;
+  m_idIsSet = false;
   m_stateIsSet = false;
+  m_ttlIsSet = false;
+  m_sequenceIsSet = false;
+  m_dnatipIsSet = false;
+  m_dnatportIsSet = false;
+  m_snatipIsSet = false;
+  m_snatportIsSet = false;
 }
 
 SessionTableJsonObject::SessionTableJsonObject(const nlohmann::json &val) :
@@ -38,7 +46,15 @@ SessionTableJsonObject::SessionTableJsonObject(const nlohmann::json &val) :
   m_l4protoIsSet = false;
   m_sportIsSet = false;
   m_dportIsSet = false;
+  m_directionIsSet = false;
+  m_idIsSet = false;
   m_stateIsSet = false;
+  m_ttlIsSet = false;
+  m_sequenceIsSet = false;
+  m_dnatipIsSet = false;
+  m_dnatportIsSet = false;
+  m_snatipIsSet = false;
+  m_snatportIsSet = false;
 
 
   if (val.count("src")) {
@@ -61,8 +77,40 @@ SessionTableJsonObject::SessionTableJsonObject(const nlohmann::json &val) :
     setDport(val.at("dport").get<uint16_t>());
   }
 
+  if (val.count("direction")) {
+    setDirection(val.at("direction").get<std::string>());
+  }
+
+  if (val.count("id")) {
+    setId(val.at("id").get<uint32_t>());
+  }
+
   if (val.count("state")) {
     setState(val.at("state").get<std::string>());
+  }
+
+  if (val.count("ttl")) {
+    setTtl(val.at("ttl").get<uint64_t>());
+  }
+
+  if (val.count("sequence")) {
+    setSequence(val.at("sequence").get<uint32_t>());
+  }
+
+  if (val.count("dnatip")) {
+    setDnatip(val.at("dnatip").get<std::string>());
+  }
+
+  if (val.count("dnatport")) {
+    setDnatport(val.at("dnatport").get<uint16_t>());
+  }
+
+  if (val.count("snatip")) {
+    setSnatip(val.at("snatip").get<std::string>());
+  }
+
+  if (val.count("snatport")) {
+    setSnatport(val.at("snatport").get<uint16_t>());
   }
 }
 
@@ -92,8 +140,40 @@ nlohmann::json SessionTableJsonObject::toJson() const {
     val["dport"] = m_dport;
   }
 
+  if (m_directionIsSet) {
+    val["direction"] = m_direction;
+  }
+
+  if (m_idIsSet) {
+    val["id"] = m_id;
+  }
+
   if (m_stateIsSet) {
     val["state"] = m_state;
+  }
+
+  if (m_ttlIsSet) {
+    val["ttl"] = m_ttl;
+  }
+
+  if (m_sequenceIsSet) {
+    val["sequence"] = m_sequence;
+  }
+
+  if (m_dnatipIsSet) {
+    val["dnatip"] = m_dnatip;
+  }
+
+  if (m_dnatportIsSet) {
+    val["dnatport"] = m_dnatport;
+  }
+
+  if (m_snatipIsSet) {
+    val["snatip"] = m_snatip;
+  }
+
+  if (m_snatportIsSet) {
+    val["snatport"] = m_snatport;
   }
 
   return val;
@@ -174,6 +254,40 @@ bool SessionTableJsonObject::dportIsSet() const {
 
 
 
+std::string SessionTableJsonObject::getDirection() const {
+  return m_direction;
+}
+
+void SessionTableJsonObject::setDirection(std::string value) {
+  m_direction = value;
+  m_directionIsSet = true;
+}
+
+bool SessionTableJsonObject::directionIsSet() const {
+  return m_directionIsSet;
+}
+
+void SessionTableJsonObject::unsetDirection() {
+  m_directionIsSet = false;
+}
+
+uint32_t SessionTableJsonObject::getId() const {
+  return m_id;
+}
+
+void SessionTableJsonObject::setId(uint32_t value) {
+  m_id = value;
+  m_idIsSet = true;
+}
+
+bool SessionTableJsonObject::idIsSet() const {
+  return m_idIsSet;
+}
+
+void SessionTableJsonObject::unsetId() {
+  m_idIsSet = false;
+}
+
 std::string SessionTableJsonObject::getState() const {
   return m_state;
 }
@@ -189,6 +303,108 @@ bool SessionTableJsonObject::stateIsSet() const {
 
 void SessionTableJsonObject::unsetState() {
   m_stateIsSet = false;
+}
+
+uint64_t SessionTableJsonObject::getTtl() const {
+  return m_ttl;
+}
+
+void SessionTableJsonObject::setTtl(uint64_t value) {
+  m_ttl = value;
+  m_ttlIsSet = true;
+}
+
+bool SessionTableJsonObject::ttlIsSet() const {
+  return m_ttlIsSet;
+}
+
+void SessionTableJsonObject::unsetTtl() {
+  m_ttlIsSet = false;
+}
+
+uint32_t SessionTableJsonObject::getSequence() const {
+  return m_sequence;
+}
+
+void SessionTableJsonObject::setSequence(uint32_t value) {
+  m_sequence = value;
+  m_sequenceIsSet = true;
+}
+
+bool SessionTableJsonObject::sequenceIsSet() const {
+  return m_sequenceIsSet;
+}
+
+void SessionTableJsonObject::unsetSequence() {
+  m_sequenceIsSet = false;
+}
+
+std::string SessionTableJsonObject::getDnatip() const {
+  return m_dnatip;
+}
+
+void SessionTableJsonObject::setDnatip(std::string value) {
+  m_dnatip = value;
+  m_dnatipIsSet = true;
+}
+
+bool SessionTableJsonObject::dnatipIsSet() const {
+  return m_dnatipIsSet;
+}
+
+void SessionTableJsonObject::unsetDnatip() {
+  m_dnatipIsSet = false;
+}
+
+uint16_t SessionTableJsonObject::getDnatport() const {
+  return m_dnatport;
+}
+
+void SessionTableJsonObject::setDnatport(uint16_t value) {
+  m_dnatport = value;
+  m_dnatportIsSet = true;
+}
+
+bool SessionTableJsonObject::dnatportIsSet() const {
+  return m_dnatportIsSet;
+}
+
+void SessionTableJsonObject::unsetDnatport() {
+  m_dnatportIsSet = false;
+}
+
+std::string SessionTableJsonObject::getSnatip() const {
+  return m_snatip;
+}
+
+void SessionTableJsonObject::setSnatip(std::string value) {
+  m_snatip = value;
+  m_snatipIsSet = true;
+}
+
+bool SessionTableJsonObject::snatipIsSet() const {
+  return m_snatipIsSet;
+}
+
+void SessionTableJsonObject::unsetSnatip() {
+  m_snatipIsSet = false;
+}
+
+uint16_t SessionTableJsonObject::getSnatport() const {
+  return m_snatport;
+}
+
+void SessionTableJsonObject::setSnatport(uint16_t value) {
+  m_snatport = value;
+  m_snatportIsSet = true;
+}
+
+bool SessionTableJsonObject::snatportIsSet() const {
+  return m_snatportIsSet;
+}
+
+void SessionTableJsonObject::unsetSnatport() {
+  m_snatportIsSet = false;
 }
 
 

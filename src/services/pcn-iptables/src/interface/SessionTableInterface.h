@@ -57,8 +57,48 @@ public:
   virtual uint16_t getDport() = 0;
 
   /// <summary>
-  /// Connection state.
+  /// Entry direction (forward/reverse)
+  /// </summary>
+  virtual std::string getDirection() = 0;
+
+  /// <summary>
+  /// Session ID
+  /// </summary>
+  virtual uint32_t getId() = 0;
+
+  /// <summary>
+  /// Connection state
   /// </summary>
   virtual std::string getState() = 0;
+
+  /// <summary>
+  /// Expire TTL
+  /// </summary>
+  virtual uint64_t getTtl() = 0;
+
+  /// <summary>
+  /// Sequence
+  /// </summary>
+  virtual uint32_t getSequence() = 0;
+
+  /// <summary>
+  /// Dnat new ip
+  /// </summary>
+  virtual std::string getDnatip() = 0;
+
+  /// <summary>
+  /// Dnat new port
+  /// </summary>
+  virtual uint16_t getDnatport() = 0;
+
+  /// <summary>
+  /// Snat new ip
+  /// </summary>
+  virtual std::string getSnatip() = 0;
+
+  /// <summary>
+  /// Snat new port
+  /// </summary>
+  virtual uint16_t getSnatport() = 0;
 };
 

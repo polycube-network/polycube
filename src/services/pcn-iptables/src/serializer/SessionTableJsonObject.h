@@ -77,12 +77,76 @@ public:
   bool dportIsSet() const;
 
   /// <summary>
-  /// Connection state.
+  /// Entry direction (forward/reverse)
+  /// </summary>
+  std::string getDirection() const;
+  void setDirection(std::string value);
+  bool directionIsSet() const;
+  void unsetDirection();
+
+  /// <summary>
+  /// Session ID
+  /// </summary>
+  uint32_t getId() const;
+  void setId(uint32_t value);
+  bool idIsSet() const;
+  void unsetId();
+
+  /// <summary>
+  /// Connection state
   /// </summary>
   std::string getState() const;
   void setState(std::string value);
   bool stateIsSet() const;
   void unsetState();
+
+  /// <summary>
+  /// Expire TTL
+  /// </summary>
+  uint64_t getTtl() const;
+  void setTtl(uint64_t value);
+  bool ttlIsSet() const;
+  void unsetTtl();
+
+  /// <summary>
+  /// Sequence
+  /// </summary>
+  uint32_t getSequence() const;
+  void setSequence(uint32_t value);
+  bool sequenceIsSet() const;
+  void unsetSequence();
+
+  /// <summary>
+  /// Dnat new ip
+  /// </summary>
+  std::string getDnatip() const;
+  void setDnatip(std::string value);
+  bool dnatipIsSet() const;
+  void unsetDnatip();
+
+  /// <summary>
+  /// Dnat new port
+  /// </summary>
+  uint16_t getDnatport() const;
+  void setDnatport(uint16_t value);
+  bool dnatportIsSet() const;
+  void unsetDnatport();
+
+  /// <summary>
+  /// Snat new ip
+  /// </summary>
+  std::string getSnatip() const;
+  void setSnatip(std::string value);
+  bool snatipIsSet() const;
+  void unsetSnatip();
+
+  /// <summary>
+  /// Snat new port
+  /// </summary>
+  uint16_t getSnatport() const;
+  void setSnatport(uint16_t value);
+  bool snatportIsSet() const;
+  void unsetSnatport();
 
 private:
   std::string m_src;
@@ -95,8 +159,24 @@ private:
   bool m_sportIsSet;
   uint16_t m_dport;
   bool m_dportIsSet;
+  std::string m_direction;
+  bool m_directionIsSet;
+  uint32_t m_id;
+  bool m_idIsSet;
   std::string m_state;
   bool m_stateIsSet;
+  uint64_t m_ttl;
+  bool m_ttlIsSet;
+  uint32_t m_sequence;
+  bool m_sequenceIsSet;
+  std::string m_dnatip;
+  bool m_dnatipIsSet;
+  uint16_t m_dnatport;
+  bool m_dnatportIsSet;
+  std::string m_snatip;
+  bool m_snatipIsSet;
+  uint16_t m_snatport;
+  bool m_snatportIsSet;
 };
 
 }

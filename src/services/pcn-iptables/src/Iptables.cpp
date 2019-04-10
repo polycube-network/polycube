@@ -543,40 +543,95 @@ std::shared_ptr<SessionTable> Iptables::getSessionTable(
 }
 
 std::vector<std::shared_ptr<SessionTable>> Iptables::getSessionTableList() {
-  std::vector<std::pair<ct_k, ct_v>> connections =
-      std::dynamic_pointer_cast<Iptables::ConntrackLabel>(
-          programs_[std::make_pair(ModulesConstants::CONNTRACKLABEL_INGRESS,
+  std::vector<std::pair<tts_k, tts_v>> tupletosession =
+      std::dynamic_pointer_cast<Iptables::ActionCache>(
+          programs_[std::make_pair(ModulesConstants::ACTIONCACHE_INGRESS,
                                    ChainNameEnum::INVALID_INGRESS)])
-          ->getMap();
+          ->getTupleToSessionMap();
+
+  std::vector<session_v> session =
+      std::dynamic_pointer_cast<Iptables::ActionCache>(
+          programs_[std::make_pair(ModulesConstants::ACTIONCACHE_INGRESS,
+                                   ChainNameEnum::INVALID_INGRESS)])
+          ->getSessionMap();
 
   std::vector<std::shared_ptr<SessionTable>> session_table;
   SessionTableJsonObject conf;
 
-  for (auto connection : connections) {
-    auto key = connection.first;
-    auto value = connection.second;
+  for (auto tts : tupletosession) {
+    auto key = tts.first;
+    auto value = tts.second;
 
-    if (value.ipRev) {
-      conf.setSrc(utils::be_uint_to_ip_string(key.dstIp));
-      conf.setDst(utils::be_uint_to_ip_string(key.srcIp));
-    } else {
-      conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
-      conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
-    }
-
+    conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
+    conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
     conf.setL4proto(ChainRule::protocolFromIntToString(key.l4proto));
+    conf.setSport(ntohs(key.srcPort));
+    conf.setDport(ntohs(key.dstPort));
 
-    if (value.portRev) {
-      conf.setSport(ntohs(key.dstPort));
-      conf.setDport(ntohs(key.srcPort));
+    conf.setId(value.sessionId);
+    if (value.direction == DIRECTION_FORWARD) {
+      conf.setDirection("forward");
     } else {
-      conf.setSport(ntohs(key.srcPort));
-      conf.setDport(ntohs(key.dstPort));
+      conf.setDirection("reverse");
     }
 
-    conf.setState(SessionTable::stateFromNumberToString(value.state));
-    // conf.setEta(from_ttl_to_eta(value.ttl, value.state, key.l4proto));
+    if (CHECK_MASK_IS_SET(session[value.sessionId].setMask,
+                          BIT(BIT_CONNTRACK))) {
+      conf.setState(SessionTable::stateFromNumberToString(
+          session[value.sessionId].state));
+      conf.setTtl(session[value.sessionId].ttl / 1000000000);
+      conf.setSequence(session[value.sessionId].sequence);
+    } else {
+      conf.setState("notset");
+      conf.setTtl(0);
+      conf.setSequence(0);
+    }
 
+    if (value.direction == DIRECTION_FORWARD) {
+      if (CHECK_MASK_IS_SET(session[value.sessionId].setMask,
+                            BIT(BIT_DNAT_FWD))) {
+        conf.setDnatip(
+            utils::be_uint_to_ip_string(session[value.sessionId].dnatFwdToIp));
+        conf.setDnatport(ntohs(session[value.sessionId].dnatFwdToPort));
+      } else {
+        conf.setDnatip("notset");
+        conf.setDnatport(0);
+      }
+
+      if (CHECK_MASK_IS_SET(session[value.sessionId].setMask,
+                            BIT(BIT_SNAT_FWD))) {
+        conf.setSnatip(
+            utils::be_uint_to_ip_string(session[value.sessionId].snatFwdToIp));
+        conf.setSnatport(ntohs(session[value.sessionId].snatFwdToPort));
+      } else {
+        conf.setSnatip("notset");
+        conf.setSnatport(0);
+      }
+    }
+
+    if (value.direction == DIRECTION_REVERSE) {
+      if (CHECK_MASK_IS_SET(session[value.sessionId].setMask,
+                            BIT(BIT_DNAT_REV))) {
+        conf.setDnatip(
+            utils::be_uint_to_ip_string(session[value.sessionId].dnatRevToIp));
+        conf.setDnatport(ntohs(session[value.sessionId].dnatRevToPort));
+      } else {
+        conf.setDnatip("notset");
+        conf.setDnatport(0);
+      }
+
+      if (CHECK_MASK_IS_SET(session[value.sessionId].setMask,
+                            BIT(BIT_SNAT_REV))) {
+        conf.setSnatip(
+            utils::be_uint_to_ip_string(session[value.sessionId].snatRevToIp));
+        conf.setSnatport(ntohs(session[value.sessionId].snatRevToPort));
+      } else {
+        conf.setSnatip("notset");
+        conf.setSnatport(0);
+      }
+    }
+
+    SessionTable(*this, conf);
     session_table.push_back(
         std::shared_ptr<SessionTable>(new SessionTable(*this, conf)));
   }

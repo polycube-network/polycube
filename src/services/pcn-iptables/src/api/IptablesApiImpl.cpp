@@ -948,6 +948,98 @@ read_iptables_session_table_by_id(const std::string &name, const std::string &sr
 }
 
 /**
+* @brief   Read direction by ID
+*
+* Read operation of resource: direction*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* std::string
+*/
+std::string
+read_iptables_session_table_direction_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getDirection();
+
+}
+
+/**
+* @brief   Read dnatip by ID
+*
+* Read operation of resource: dnatip*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* std::string
+*/
+std::string
+read_iptables_session_table_dnatip_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getDnatip();
+
+}
+
+/**
+* @brief   Read dnatport by ID
+*
+* Read operation of resource: dnatport*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* uint16_t
+*/
+uint16_t
+read_iptables_session_table_dnatport_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getDnatport();
+
+}
+
+/**
+* @brief   Read id by ID
+*
+* Read operation of resource: id*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* uint32_t
+*/
+uint32_t
+read_iptables_session_table_id_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getId();
+
+}
+
+/**
 * @brief   Read session-table by ID
 *
 * Read operation of resource: session-table*
@@ -965,6 +1057,75 @@ read_iptables_session_table_list_by_id(const std::string &name) {
   for(auto &i : sessionTable)
     m.push_back(i->toJsonObject());
   return m;
+}
+
+/**
+* @brief   Read sequence by ID
+*
+* Read operation of resource: sequence*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* uint32_t
+*/
+uint32_t
+read_iptables_session_table_sequence_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getSequence();
+
+}
+
+/**
+* @brief   Read snatip by ID
+*
+* Read operation of resource: snatip*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* std::string
+*/
+std::string
+read_iptables_session_table_snatip_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getSnatip();
+
+}
+
+/**
+* @brief   Read snatport by ID
+*
+* Read operation of resource: snatport*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* uint16_t
+*/
+uint16_t
+read_iptables_session_table_snatport_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getSnatport();
+
 }
 
 /**
@@ -987,6 +1148,29 @@ read_iptables_session_table_state_by_id(const std::string &name, const std::stri
   auto iptables = get_cube(name);
   auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
   return sessionTable->getState();
+
+}
+
+/**
+* @brief   Read ttl by ID
+*
+* Read operation of resource: ttl*
+*
+* @param[in] name ID of name
+* @param[in] src ID of src
+* @param[in] dst ID of dst
+* @param[in] l4proto ID of l4proto
+* @param[in] sport ID of sport
+* @param[in] dport ID of dport
+*
+* Responses:
+* uint64_t
+*/
+uint64_t
+read_iptables_session_table_ttl_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) {
+  auto iptables = get_cube(name);
+  auto sessionTable = iptables->getSessionTable(src, dst, l4proto, sport, dport);
+  return sessionTable->getTtl();
 
 }
 

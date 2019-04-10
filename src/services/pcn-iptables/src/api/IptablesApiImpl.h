@@ -96,8 +96,16 @@ namespace IptablesApiImpl {
   PortsJsonObject read_iptables_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_iptables_ports_list_by_id(const std::string &name);
   SessionTableJsonObject read_iptables_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  std::string read_iptables_session_table_direction_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  std::string read_iptables_session_table_dnatip_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  uint16_t read_iptables_session_table_dnatport_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  uint32_t read_iptables_session_table_id_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   std::vector<SessionTableJsonObject> read_iptables_session_table_list_by_id(const std::string &name);
+  uint32_t read_iptables_session_table_sequence_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  std::string read_iptables_session_table_snatip_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  uint16_t read_iptables_session_table_snatport_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   std::string read_iptables_session_table_state_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
+  uint64_t read_iptables_session_table_ttl_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   void replace_iptables_by_id(const std::string &name, const IptablesJsonObject &value);
   void replace_iptables_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value);
   void replace_iptables_chain_list_by_id(const std::string &name, const std::vector<ChainJsonObject> &value);

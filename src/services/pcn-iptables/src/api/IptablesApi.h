@@ -92,8 +92,16 @@ Response read_iptables_list_by_id_handler(const char *name, const Key *keys, siz
 Response read_iptables_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_direction_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_dnatip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_dnatport_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_id_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_sequence_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_snatip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_snatport_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_iptables_session_table_state_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_iptables_session_table_ttl_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_iptables_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_iptables_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_iptables_chain_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);

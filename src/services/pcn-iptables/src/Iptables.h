@@ -41,9 +41,18 @@
 
 #define REQUIRED_FIB_LOOKUP_KERNEL ("4.19.0")
 
+#define SESSION_DIM 2048
+
+#define BIT(n) (1 << (n))
+
+#define BIT_SET(y, mask) (y |= (mask))
+#define BIT_CLEAR(y, mask) (y &= ~(mask))
+
+#define CHECK_MASK_IS_SET(y, mask) (y & mask)
+
 using namespace io::swagger::server::model;
 
-struct ct_k {
+struct tts_k {
   uint32_t srcIp;
   uint32_t dstIp;
   uint8_t l4proto;
@@ -51,13 +60,40 @@ struct ct_k {
   uint16_t dstPort;
 } __attribute__((packed));
 
-struct ct_v {
+struct tts_v {
+  uint32_t sessionId;
+  uint8_t direction;
+} __attribute__((packed));
+
+struct session_v {
+  uint8_t setMask;     // bitmask for set fields
+  uint8_t actionMask;  // bitmask for actions to be applied or not
+
   uint64_t ttl;
   uint8_t state;
-  uint8_t ipRev;
-  uint8_t portRev;
   uint32_t sequence;
+
+  uint32_t dnatFwdToIp;
+  uint16_t dnatFwdToPort;
+
+  uint32_t snatFwdToIp;
+  uint16_t snatFwdToPort;
+
+  uint32_t dnatRevToIp;
+  uint16_t dnatRevToPort;
+
+  uint32_t snatRevToIp;
+  uint16_t snatRevToPort;
+
 } __attribute__((packed));
+
+enum {
+  DIRECTION_FORWARD,  // Forward direction in session table
+  DIRECTION_REVERSE   // Reverse direction in session table
+};
+
+// bit used in session->setMask
+enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV };
 
 class Ports;
 class Chain;
@@ -340,6 +376,9 @@ class Iptables : public polycube::service::Cube<Ports>,
     ~ActionCache();
 
     std::string getCode();
+
+    std::vector<std::pair<tts_k, tts_v>> getTupleToSessionMap();
+    std::vector<session_v> getSessionMap();
   };
 
   class ConntrackLabel : public Program {
@@ -354,7 +393,6 @@ class Iptables : public polycube::service::Cube<Ports>,
     uint64_t getAcceptEstablishedBytesCount(ChainNameEnum chain);
 
     void flushCounters(ChainNameEnum chain, int rule_number);
-    std::vector<std::pair<ct_k, ct_v>> getMap();
   };
 
   class ConntrackMatch : public Program {

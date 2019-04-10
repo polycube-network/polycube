@@ -28,6 +28,29 @@ Iptables::ActionCache::ActionCache(const int &index, Iptables &outer,
   load();
 }
 
+std::vector<std::pair<tts_k, tts_v>>
+Iptables::ActionCache::getTupleToSessionMap() {
+  auto table = iptables_.get_hash_table<tts_k, tts_v>("tupletosession", index_,
+                                                      program_type_);
+  return table.get_all();
+}
+
+std::vector<session_v> Iptables::ActionCache::getSessionMap() {
+  auto table =
+      iptables_.get_array_table<session_v>("session", index_, program_type_);
+  std::vector<session_v> ret;
+  ret.reserve(SESSION_DIM + 1);
+
+  auto vec = table.get_all();
+
+  for (std::vector<std::pair<uint32_t, session_v>>::iterator it = vec.begin();
+       it != vec.end(); ++it) {
+    ret[it->first] = it->second;
+  }
+
+  return ret;
+}
+
 Iptables::ActionCache::~ActionCache() {}
 
 std::string Iptables::ActionCache::getCode() {

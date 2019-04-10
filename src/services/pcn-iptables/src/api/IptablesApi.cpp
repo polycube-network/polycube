@@ -1325,6 +1325,234 @@ Response read_iptables_session_table_by_id_handler(
   }
 }
 
+Response read_iptables_session_table_direction_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_direction_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_dnatip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_dnatip_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_dnatport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_dnatport_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_id_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_id_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
 Response read_iptables_session_table_list_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ) {
@@ -1338,6 +1566,177 @@ Response read_iptables_session_table_list_by_id_handler(
     for (auto &i : x) {
       response_body += i.toJson();
     }
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_sequence_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_sequence_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_snatip_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_snatip_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_snatport_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_snatport_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
     return { kOk, ::strdup(response_body.dump().c_str()) };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };
@@ -1393,6 +1792,63 @@ Response read_iptables_session_table_state_by_id_handler(
   try {
 
     auto x = read_iptables_session_table_state_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
+    nlohmann::json response_body;
+    response_body = x;
+    return { kOk, ::strdup(response_body.dump().c_str()) };
+  } catch(const std::exception &e) {
+    return { kGenericError, ::strdup(e.what()) };
+  }
+}
+
+Response read_iptables_session_table_ttl_by_id_handler(
+  const char *name, const Key *keys,
+  size_t num_keys ) {
+  // Getting the path params
+  std::string unique_name { name };
+  std::string unique_src;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "src")) {
+      unique_src = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_dst;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dst")) {
+      unique_dst = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  std::string unique_l4proto;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "l4proto")) {
+      unique_l4proto = std::string { keys[i].value.string };
+      break;
+    }
+  }
+
+  uint16_t unique_sport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "sport")) {
+      unique_sport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+  uint16_t unique_dport;
+  for (size_t i = 0; i < num_keys; ++i) {
+    if (!strcmp(keys[i].name, "dport")) {
+      unique_dport = keys[i].value.uint16;
+      break;
+    }
+  }
+
+
+  try {
+
+    auto x = read_iptables_session_table_ttl_by_id(unique_name, unique_src, unique_dst, unique_l4proto, unique_sport, unique_dport);
     nlohmann::json response_body;
     response_body = x;
     return { kOk, ::strdup(response_body.dump().c_str()) };

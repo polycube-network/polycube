@@ -29,12 +29,6 @@ Iptables::ConntrackLabel::ConntrackLabel(const int &index, Iptables &outer,
 
 Iptables::ConntrackLabel::~ConntrackLabel() {}
 
-std::vector<std::pair<ct_k, ct_v>> Iptables::ConntrackLabel::getMap() {
-  auto table = iptables_.get_hash_table<ct_k, ct_v>("connections", index_,
-                                                    program_type_);
-  return table.get_all();
-}
-
 uint64_t Iptables::ConntrackLabel::getAcceptEstablishedPktsCount(
     ChainNameEnum chain) {
   std::string table_name = "pkts_acceptestablished_";

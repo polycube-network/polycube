@@ -114,6 +114,7 @@ module iptables {
   list session-table {
     key "src dst l4proto sport dport";
     config false;
+
     leaf src {
       type string;
       config false;
@@ -132,7 +133,6 @@ module iptables {
       description "Level 4 Protocol.";
     }
 
-
     leaf sport {
       type uint16;
       description "Source Port";
@@ -145,11 +145,60 @@ module iptables {
       config false;
     }
 
+    leaf direction {
+      type string;
+      description "Entry direction (forward/reverse)";
+      config false;
+    }
+
+    leaf id {
+      type uint32;
+      description "Session ID";
+      config false;
+    }
+
     leaf state {
       type string;
+      description "Connection state";
       config false;
-      description "Connection state.";
     }
+
+    leaf ttl {
+      type uint64;
+      description "Expire TTL";
+      config false;
+    }
+
+    leaf sequence {
+      type uint32;
+      description "Sequence";
+      config false;
+    }
+
+    leaf dnatip {
+      type string;
+      config false;
+      description "Dnat new ip";
+    }
+
+    leaf dnatport {
+      type uint16;
+      description "Dnat new port";
+      config false;
+    }
+
+    leaf snatip {
+      type string;
+      config false;
+      description "Snat new ip";
+    }
+
+    leaf snatport {
+      type uint16;
+      description "Snat new port";
+      config false;
+    }
+
   }
 
   list chain {

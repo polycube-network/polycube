@@ -35,16 +35,19 @@ SessionTableJsonObject SessionTable::toJsonObject() {
   SessionTableJsonObject conf;
 
   conf.setSrc(getSrc());
-
   conf.setDst(getDst());
-
-  conf.setState(getState());
-
   conf.setL4proto(getL4proto());
-
-  conf.setDport(getDport());
-
   conf.setSport(getSport());
+  conf.setDport(getDport());
+  conf.setDirection(getDirection());
+  conf.setId(getId());
+  conf.setState(getState());
+  conf.setTtl(getTtl());
+  conf.setSequence(getSequence());
+  conf.setDnatip(getDnatip());
+  conf.setDnatport(getDnatport());
+  conf.setSnatip(getSnatip());
+  conf.setSnatport(getSnatport());
 
   return conf;
 }
@@ -73,6 +76,38 @@ uint16_t SessionTable::getSport() {
   return fields.getSport();
 }
 
+std::string SessionTable::getDirection() {
+  return fields.getDirection();
+}
+
+uint32_t SessionTable::getId() {
+  return fields.getId();
+}
+
+uint64_t SessionTable::getTtl() {
+  return fields.getTtl();
+}
+
+uint32_t SessionTable::getSequence() {
+  return fields.getSequence();
+}
+
+std::string SessionTable::getDnatip() {
+  return fields.getDnatip();
+}
+
+uint16_t SessionTable::getDnatport() {
+  return fields.getDnatport();
+}
+
+std::string SessionTable::getSnatip() {
+  return fields.getSnatip();
+}
+
+uint16_t SessionTable::getSnatport() {
+  return fields.getSnatport();
+}
+
 std::shared_ptr<spdlog::logger> SessionTable::logger() {
   return parent_.logger();
 }
@@ -96,5 +131,6 @@ std::string SessionTable::stateFromNumberToString(int state) {
   case (TIME_WAIT):
     return "TIME_WAIT";
   }
-  throw std::runtime_error("[SessionTable]: Error!");
+  return "";
+  //  throw std::runtime_error("[SessionTable]: Error!");
 }
