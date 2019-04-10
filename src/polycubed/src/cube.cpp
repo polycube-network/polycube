@@ -117,9 +117,14 @@ std::shared_ptr<PortIface> Cube::add_port(const std::string &name,
 
   // TODO: is this valid?
   cube_mutex_.unlock();
-
-  if (conf.count("peer")) {
-    port->set_peer(conf.at("peer").get<std::string>());
+  try {
+    if (conf.count("peer")) {
+      port->set_peer(conf.at("peer").get<std::string>());
+    }
+  } catch(...) {
+    ports_by_name_.erase(name);
+    ports_by_index_.erase(id);
+    throw;
   }
 
   return std::move(port);
