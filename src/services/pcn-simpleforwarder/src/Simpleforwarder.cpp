@@ -21,99 +21,21 @@
 
 Simpleforwarder::Simpleforwarder(const std::string name,
                                  const SimpleforwarderJsonObject &conf)
-    : Cube(conf.getBase(), {simpleforwarder_code}, {}) {
-  logger()->set_pattern(
-      "[%Y-%m-%d %H:%M:%S.%e] [Simpleforwarder] [%n] [%l] %v");
+    : Cube(conf.getBase(), {simpleforwarder_code}, {}),
+      SimpleforwarderBase(name) {
   logger()->info("Creating Simpleforwarder instance");
-
-  addActionsList(conf.getActions());
-
   addPortsList(conf.getPorts());
+  addActionsList(conf.getActions());
 }
 
-Simpleforwarder::~Simpleforwarder() {}
-
-void Simpleforwarder::update(const SimpleforwarderJsonObject &conf) {
-  // This method updates all the object/parameter in Simpleforwarder object
-  // specified in the conf JsonObject.
-  // You can modify this implementation.
-  Cube::set_conf(conf.getBase());
-
-  if (conf.actionsIsSet()) {
-    for (auto &i : conf.getActions()) {
-      auto inport = i.getInport();
-      auto m = getActions(inport);
-      m->update(i);
-    }
-  }
-
-  if (conf.portsIsSet()) {
-    for (auto &i : conf.getPorts()) {
-      auto name = i.getName();
-      auto m = getPorts(name);
-      m->update(i);
-    }
-  }
-}
-
-SimpleforwarderJsonObject Simpleforwarder::toJsonObject() {
-  SimpleforwarderJsonObject conf;
-  conf.setBase(Cube::to_json());
-
-  // Remove comments when you implement all sub-methods
-  for (auto &i : getActionsList()) {
-    conf.addActions(i->toJsonObject());
-  }
-
-  for (auto &i : getPortsList()) {
-    conf.addPorts(i->toJsonObject());
-  }
-
-  return conf;
+Simpleforwarder::~Simpleforwarder() {
+  logger()->info("Destroying Simpleforwarder instance");
 }
 
 void Simpleforwarder::packet_in(Ports &port,
                                 polycube::service::PacketInMetadata &md,
                                 const std::vector<uint8_t> &packet) {
   logger()->info("Packet received from port {0}", port.name());
-}
-
-std::shared_ptr<Ports> Simpleforwarder::getPorts(const std::string &name) {
-  return get_port(name);
-}
-
-std::vector<std::shared_ptr<Ports>> Simpleforwarder::getPortsList() {
-  return get_ports();
-}
-
-void Simpleforwarder::addPorts(const std::string &name,
-                               const PortsJsonObject &conf) {
-  add_port<PortsJsonObject>(name, conf);
-}
-
-void Simpleforwarder::addPortsList(const std::vector<PortsJsonObject> &conf) {
-  for (auto &i : conf) {
-    std::string name_ = i.getName();
-    addPorts(name_, i);
-  }
-}
-
-void Simpleforwarder::replacePorts(const std::string &name,
-                                   const PortsJsonObject &conf) {
-  delPorts(name);
-  std::string name_ = conf.getName();
-  addPorts(name_, conf);
-}
-
-void Simpleforwarder::delPorts(const std::string &name) {
-  remove_port(name);
-}
-
-void Simpleforwarder::delPortsList() {
-  auto ports = get_ports();
-  for (auto it : ports) {
-    delPorts(it->name());
-  }
 }
 
 std::shared_ptr<Actions> Simpleforwarder::getActions(
@@ -194,21 +116,6 @@ void Simpleforwarder::addActions(const std::string &inport,
 
   auto actions_table = get_hash_table<uint16_t, action>("actions");
   actions_table.set(inPortId, map_value);
-}
-
-void Simpleforwarder::addActionsList(
-    const std::vector<ActionsJsonObject> &conf) {
-  for (auto &i : conf) {
-    std::string inport_ = i.getInport();
-    addActions(inport_, i);
-  }
-}
-
-void Simpleforwarder::replaceActions(const std::string &inport,
-                                     const ActionsJsonObject &conf) {
-  delActions(inport);
-  std::string inport_ = conf.getInport();
-  addActions(inport_, conf);
 }
 
 void Simpleforwarder::delActions(const std::string &inport) {

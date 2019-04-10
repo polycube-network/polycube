@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// Modify these methods with your own implementation
-
 #include "Ports.h"
 #include "Helloworld.h"
 
@@ -24,26 +22,6 @@ using namespace polycube::service;
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
-    : Port(port), parent_(static_cast<Helloworld &>(parent)) {
-  logger()->info("Creating Ports instance");
-}
+    : PortsBase(parent, port) {}
 
 Ports::~Ports() {}
-
-void Ports::update(const PortsJsonObject &conf) {
-  Port::set_conf(conf.getBase());
-  // This method updates all the object/parameter in Ports object specified in
-  // the conf JsonObject.
-  // You can modify this implementation.
-}
-
-PortsJsonObject Ports::toJsonObject() {
-  PortsJsonObject conf;
-  conf.setBase(Port::to_json());
-
-  return conf;
-}
-
-std::shared_ptr<spdlog::logger> Ports::logger() {
-  return parent_.logger();
-}

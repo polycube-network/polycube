@@ -24,13 +24,11 @@
 using namespace polycube::service;
 
 FdbEntry::FdbEntry(Fdb &parent, const FdbEntryJsonObject &conf)
-    : parent_(parent) {
-  logger()->info("Creating FdbEntry instance");
-}
+    : FdbEntryBase(parent) {}
 
 FdbEntry::FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age,
                    uint32_t out_port)
-    : parent_(parent),
+    : FdbEntryBase(parent),
       address_(address),
       entry_age_(entry_age),
       port_no_(out_port) {
@@ -39,25 +37,6 @@ FdbEntry::FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age,
 }
 
 FdbEntry::~FdbEntry() {}
-
-void FdbEntry::update(const FdbEntryJsonObject &conf) {
-  // This method updates all the object/parameter in FdbEntry object specified
-  // in the conf JsonObject.
-  // You can modify this implementation.
-  if (conf.portIsSet()) {
-    setPort(conf.getPort());
-  }
-}
-
-FdbEntryJsonObject FdbEntry::toJsonObject() {
-  FdbEntryJsonObject conf;
-
-  conf.setAge(getAge());
-  conf.setPort(getPort());
-  conf.setAddress(getAddress());
-
-  return conf;
-}
 
 std::shared_ptr<FdbEntry> FdbEntry::constructFromMap(Fdb &parent,
                                                      const std::string &address,
@@ -112,9 +91,9 @@ void FdbEntry::setPort(const std::string &value) {
     auto fwdtable =
         parent_.parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
     fwdtable.set(map_key, map_value);
-    parent_.logger()->debug("[FdbEntry] Port updated");
+    logger()->debug("[FdbEntry] Port updated");
   } catch (std::exception &e) {
-    parent_.logger()->error(
+    logger()->error(
         "[FdbEntry] Error while inserting entry in the table. Reason {0}",
         e.what());
     throw;
@@ -124,8 +103,4 @@ void FdbEntry::setPort(const std::string &value) {
 std::string FdbEntry::getAddress() {
   // This method retrieves the address value.
   return address_;
-}
-
-std::shared_ptr<spdlog::logger> FdbEntry::logger() {
-  return parent_.logger();
 }

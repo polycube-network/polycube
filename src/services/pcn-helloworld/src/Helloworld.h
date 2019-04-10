@@ -16,47 +16,29 @@
 
 #pragma once
 
-#include "../interface/HelloworldInterface.h"
-
-#include "polycube/services/cube.h"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/HelloworldBase.h"
 
 #include "Ports.h"
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Helloworld : public polycube::service::Cube<Ports>,
-                   public HelloworldInterface {
-  friend class Ports;
-
+class Helloworld : public HelloworldBase {
  public:
   Helloworld(const std::string name, const HelloworldJsonObject &conf);
   virtual ~Helloworld();
+
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
-
-  void update(const HelloworldJsonObject &conf) override;
-  HelloworldJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Action performed on the received packet (i.e., DROP, SLOWPATH, or FORWARD;
-  /// default: DROP)
-  /// </summary>
-  HelloworldActionEnum getAction() override;
-  void setAction(const HelloworldActionEnum &value) override;
 
   /// <summary>
   /// Entry of the ports table
   /// </summary>
-  std::shared_ptr<Ports> getPorts(const std::string &name) override;
-  std::vector<std::shared_ptr<Ports>> getPortsList() override;
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
-  void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name,
-                    const PortsJsonObject &conf) override;
   void delPorts(const std::string &name) override;
-  void delPortsList() override;
+
+  /// <summary>
+  /// Action performed on the received packet (i.e., DROP, SLOWPATH, or FORWARD; default: DROP)
+  /// </summary>
+  HelloworldActionEnum getAction() override;
+  void setAction(const HelloworldActionEnum &value) override;
 };

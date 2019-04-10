@@ -20,37 +20,11 @@
 #include "Simpleforwarder.h"
 
 Actions::Actions(Simpleforwarder &parent, const ActionsJsonObject &conf)
-    : parent_(parent) {
-  logger()->info("Creating Actions instance");
+    : ActionsBase(parent) {
   inport = conf.getInport();
 }
 
 Actions::~Actions() {}
-
-void Actions::update(const ActionsJsonObject &conf) {
-  // This method updates all the object/parameter in Actions object specified in
-  // the conf JsonObject.
-
-  if (conf.actionIsSet()) {
-    setAction(conf.getAction());
-  }
-
-  if (conf.outportIsSet()) {
-    setOutport(conf.getOutport());
-  }
-}
-
-ActionsJsonObject Actions::toJsonObject() {
-  ActionsJsonObject conf;
-
-  conf.setAction(getAction());
-
-  conf.setOutport(getOutport());
-
-  conf.setInport(getInport());
-
-  return conf;
-}
 
 ActionsActionEnum Actions::getAction() {
   uint16_t inPortId;
@@ -145,10 +119,6 @@ void Actions::setOutport(const std::string &value) {
 
 std::string Actions::getInport() {
   return inport;
-}
-
-std::shared_ptr<spdlog::logger> Actions::logger() {
-  return parent_.logger();
 }
 
 ActionsActionEnum Actions::actionNumberToEnum(uint16_t action) {

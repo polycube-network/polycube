@@ -16,22 +16,14 @@
 
 #pragma once
 
-#include "../interface/SimpleforwarderInterface.h"
-
-#include "polycube/services/cube.h"
-#include "polycube/services/fifo_map.hpp"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/SimpleforwarderBase.h"
 
 #include "Actions.h"
 #include "Ports.h"
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Simpleforwarder : public polycube::service::Cube<Ports>,
-                        public SimpleforwarderInterface {
+class Simpleforwarder : public SimpleforwarderBase {
   friend class Ports;
 
  public:
@@ -41,21 +33,6 @@ class Simpleforwarder : public polycube::service::Cube<Ports>,
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
-  void update(const SimpleforwarderJsonObject &conf) override;
-  SimpleforwarderJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  std::shared_ptr<Ports> getPorts(const std::string &name) override;
-  std::vector<std::shared_ptr<Ports>> getPortsList() override;
-  void addPorts(const std::string &name, const PortsJsonObject &conf) override;
-  void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name,
-                    const PortsJsonObject &conf) override;
-  void delPorts(const std::string &name) override;
-  void delPortsList() override;
-
   /// <summary>
   /// Entry of the Actions table
   /// </summary>
@@ -63,9 +40,6 @@ class Simpleforwarder : public polycube::service::Cube<Ports>,
   std::vector<std::shared_ptr<Actions>> getActionsList() override;
   void addActions(const std::string &inport,
                   const ActionsJsonObject &conf) override;
-  void addActionsList(const std::vector<ActionsJsonObject> &conf) override;
-  void replaceActions(const std::string &inport,
-                      const ActionsJsonObject &conf) override;
   void delActions(const std::string &inport) override;
   void delActionsList() override;
 };

@@ -14,34 +14,19 @@
  * limitations under the License.
  */
 
+
 #pragma once
 
-#include "../interface/PortsInterface.h"
-
-#include "polycube/services/cube.h"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
-
-#include <spdlog/spdlog.h>
-
-#include <memory>
+#include "../base/PortsBase.h"
 
 class Helloworld;
-// class PortIface;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Ports : public polycube::service::Port, public PortsInterface {
+class Ports : public PortsBase {
  public:
   Ports(polycube::service::Cube<Ports> &parent,
-        std::shared_ptr<polycube::service::PortIface> port,
-        const PortsJsonObject &conf);
+      std::shared_ptr<polycube::service::PortIface> port,
+      const PortsJsonObject &conf);
   virtual ~Ports();
-
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const PortsJsonObject &conf) override;
-  PortsJsonObject toJsonObject() override;
-
- private:
-  Helloworld &parent_;
 };

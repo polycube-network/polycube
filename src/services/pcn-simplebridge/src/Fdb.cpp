@@ -19,7 +19,8 @@
 #include "Fdb.h"
 #include "Simplebridge.h"
 
-Fdb::Fdb(Simplebridge &parent, const FdbJsonObject &conf) : parent_(parent) {
+Fdb::Fdb(Simplebridge &parent, const FdbJsonObject &conf)
+    : FdbBase(parent) {
   logger()->info("Creating Fdb instance");
 
   if (conf.agingTimeIsSet()) {
@@ -32,38 +33,9 @@ Fdb::Fdb(Simplebridge &parent, const FdbJsonObject &conf) : parent_(parent) {
   }
 }
 
-Fdb::Fdb(Simplebridge &parent) : parent_(parent), agingTime_(0) {}
+Fdb::Fdb(Simplebridge &parent) : FdbBase(parent), agingTime_(0) {}
 
 Fdb::~Fdb() {}
-
-void Fdb::update(const FdbJsonObject &conf) {
-  // This method updates all the object/parameter in Fdb object specified in the
-  // conf JsonObject.
-  // You can modify this implementation.
-  if (conf.entryIsSet()) {
-    for (auto &i : conf.getEntry()) {
-      auto address = i.getAddress();
-      auto m = getEntry(address);
-      m->update(i);
-    }
-  }
-
-  if (conf.agingTimeIsSet()) {
-    setAgingTime(conf.getAgingTime());
-  }
-}
-
-FdbJsonObject Fdb::toJsonObject() {
-  FdbJsonObject conf;
-
-  for (auto &i : getEntryList()) {
-    conf.addFdbEntry(i->toJsonObject());
-  }
-
-  conf.setAgingTime(getAgingTime());
-
-  return conf;
-}
 
 uint32_t Fdb::getAgingTime() {
   // This method retrieves the agingTime value.
@@ -98,10 +70,6 @@ FdbFlushOutputJsonObject Fdb::flush() {
   }
   result.setFlushed(true);
   return result;
-}
-
-std::shared_ptr<spdlog::logger> Fdb::logger() {
-  return parent_.logger();
 }
 
 std::shared_ptr<FdbEntry> Fdb::getEntry(const std::string &address) {
@@ -193,17 +161,12 @@ void Fdb::addEntry(const std::string &address, const FdbEntryJsonObject &conf) {
 }
 
 void Fdb::addEntryList(const std::vector<FdbEntryJsonObject> &conf) {
-  for (auto &i : conf) {
-    std::string address_ = i.getAddress();
-    addEntry(address_, i);
-  }
+  FdbBase::addEntryList(conf);
 }
 
 void Fdb::replaceEntry(const std::string &address,
                        const FdbEntryJsonObject &conf) {
-  delEntry(address);
-  std::string address_ = conf.getAddress();
-  addEntry(address_, conf);
+  FdbBase::replaceEntry(address, conf);
 }
 
 void Fdb::delEntry(const std::string &address) {

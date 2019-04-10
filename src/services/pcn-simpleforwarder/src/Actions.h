@@ -16,27 +16,21 @@
 
 #pragma once
 
-#include "../interface/ActionsInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/ActionsBase.h"
 
 class Simpleforwarder;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
 struct action {
   uint16_t action;  // which action? see above enum
   uint16_t port;    // in case of redirect, to what port?
 } __attribute__((packed));
 
-class Actions : public ActionsInterface {
+class Actions : public ActionsBase {
  public:
   Actions(Simpleforwarder &parent, const ActionsJsonObject &conf);
   virtual ~Actions();
-
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const ActionsJsonObject &conf) override;
-  ActionsJsonObject toJsonObject() override;
 
   /// <summary>
   /// Action associated to the current table entry (i.e., DROP, SLOWPATH, or
@@ -60,6 +54,5 @@ class Actions : public ActionsInterface {
   static uint16_t actionEnumToNumber(ActionsActionEnum action);
 
  private:
-  Simpleforwarder &parent_;
   std::string inport;
 };

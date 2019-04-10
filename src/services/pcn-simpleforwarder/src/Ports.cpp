@@ -22,25 +22,6 @@
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
-    : Port(port), parent_(static_cast<Simpleforwarder &>(parent)) {
-  logger()->info("Creating Ports instance");
-}
+    : PortsBase(parent, port) {}
 
 Ports::~Ports() {}
-
-void Ports::update(const PortsJsonObject &conf) {
-  // This method updates all the object/parameter in Ports object specified in
-  // the conf JsonObject.
-  // You can modify this implementation.
-  Port::set_conf(conf.getBase());
-}
-
-PortsJsonObject Ports::toJsonObject() {
-  PortsJsonObject conf;
-  conf.setBase(Port::to_json());
-  return conf;
-}
-
-std::shared_ptr<spdlog::logger> Ports::logger() {
-  return parent_.logger();
-}
