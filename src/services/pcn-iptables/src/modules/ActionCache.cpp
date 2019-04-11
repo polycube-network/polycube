@@ -31,6 +31,8 @@ Iptables::ActionCache::ActionCache(const int &index, Iptables &outer,
 
   quit_thread_ = false;
 
+  initSessions();
+
   if (program_type_ == ProgramType::INGRESS) {
     garbage_collecotor_thread_ =
         std::thread(&ActionCache::garbageCollectorTimer, this);
@@ -39,6 +41,29 @@ Iptables::ActionCache::ActionCache(const int &index, Iptables &outer,
 
 Iptables::ActionCache::~ActionCache() {
   quitAndJoin();
+}
+
+void Iptables::ActionCache::initSessions() {
+  std::lock_guard<std::mutex> guard(program_mutex_);
+
+  // iterate over sessions array
+  auto session_table =
+      iptables_.get_array_table<session_v>("session", index_, program_type_);
+
+  auto session_table_offline = session_table.get_all();
+
+  struct session_v clean_session;
+  clean_session.setMask = 0;
+  clean_session.actionMask = 0;
+
+  for (std::vector<std::pair<uint32_t, session_v>>::iterator it =
+           session_table_offline.begin();
+       it != session_table_offline.end(); ++it) {
+    // invalidate all entries
+    iptables_.logger()->trace(
+        "[ControlPlane] [garbageCollector] init sessionId: {0} ", it->first);
+    session_table.set(it->first, clean_session);
+  }
 }
 
 // Update timestamp every second

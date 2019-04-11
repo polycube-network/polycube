@@ -74,8 +74,10 @@ struct session_v {
 
 } __attribute__((packed));
 
-#define TUPLETOSESSION_DIM 1024
 #define SESSION_DIM 2048
+#define TUPLETOSESSION_DIM SESSION_DIM * 2
+
+#define RANDOM_INDEX_RETRY 8
 
 #if _INGRESS_LOGIC
 BPF_TABLE_SHARED("lru_hash", struct tts_k, struct tts_v, tupletosession,
@@ -97,17 +99,8 @@ BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
-// TODO Use a stackmap or random approach. This is a first implementation
-BPF_TABLE("array", uint32_t, uint32_t, first_free_index, 1);
 static inline uint32_t get_free_index() {
-  uint32_t i = 0;
-  uint32_t *new_index_p = first_free_index.lookup(&i);
-  if (!new_index_p)
-    return 0;
-  if (*new_index_p >= SESSION_DIM)
-    *new_index_p = 0;
-  *new_index_p = *new_index_p + 1;
-  return *new_index_p;
+  return (bpf_get_prandom_u32() % (SESSION_DIM));
 }
 
 // TODO use a userspace cleanup thread to free exipred entries
@@ -134,8 +127,26 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
     // get new index
     uint32_t new_index = 0;
-    new_index = get_free_index();
 
+    struct session_v *session_v_p = NULL;
+
+#pragma unroll
+    for (int k = 0; k < RANDOM_INDEX_RETRY; k++) {
+      new_index = get_free_index();
+      session_v_p = session.lookup(&new_index);
+      if (session_v_p == NULL) {
+        goto drop;
+      }
+      if (session_v_p->setMask == 0) {
+        goto new_index_found;
+      }
+    }
+
+  drop:;
+    pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] drop ");
+    return RX_DROP;
+
+  new_index_found:;
     pcn_log(ctx, LOG_DEBUG,
             "[_HOOK] [ActionCache] tuple src:%I dst:%I sport:%P ", tuple.srcIp,
             tuple.dstIp, tuple.srcPort);
@@ -150,13 +161,6 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pcn_log(ctx, LOG_DEBUG, "[_HOOK] [ActionCache] sessionId:%d direction:%d ",
             pkt->sessionId, pkt->direction);
 
-    // init current session to not set
-    struct session_v *session_v_p = session.lookup(&new_index);
-    if (session_v_p == NULL) {
-      pcn_log(ctx, LOG_DEBUG,
-              "[_HOOK] [ActionCache] not able to access session id ");
-      return RX_DROP;
-    }
     session_v_p->setMask = 0;
     session_v_p->actionMask = 0;
 
