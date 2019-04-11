@@ -379,6 +379,14 @@ class Iptables : public polycube::service::Cube<Ports>,
 
     std::vector<std::pair<tts_k, tts_v>> getTupleToSessionMap();
     std::vector<session_v> getSessionMap();
+
+    void garbageCollector();
+    void garbageCollectorTimer();
+    void quitAndJoin();
+
+    std::thread garbage_collecotor_thread_;
+    //    std::atomic<bool> quit_garbage_collector_thread_;
+    std::atomic<bool> quit_thread_;
   };
 
   class ConntrackLabel : public Program {
