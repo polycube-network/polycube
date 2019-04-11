@@ -30,11 +30,8 @@ Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf)
   logger()->info("Creating Helloworld instance");
   setAction(conf.getAction());
 
-  // set an initial state before doing any change to the configuration
-  // UINT16_MAX means that the port is not connected
-  auto ports_map = get_array_table<uint16_t>("ports_map");
-  ports_map.set(0, UINT16_MAX);
-  ports_map.set(1, UINT16_MAX);
+  // initialize ports map (at this point there are not ports)
+  update_ports_map();
 
   addPortsList(conf.getPorts());
 }
@@ -64,41 +61,30 @@ void Helloworld::addPorts(const std::string &name,
     throw std::runtime_error("maximum number of ports reached");
   }
 
-  auto p = add_port<PortsJsonObject>(name, conf);
+  add_port<PortsJsonObject>(name, conf);
   logger()->info("port {0} was connected", name);
-
-  auto ports_table = get_array_table<uint16_t>("ports_map");
-
-  uint32_t port_map_index;
-  try {
-    // Look for first free entry to save the port id
-    if (ports_table.get(0x0) == UINT16_MAX) {
-      port_map_index = 0x0;
-    } else if (ports_table.get(0x1) == UINT16_MAX) {
-      port_map_index = 0x1;
-    }
-  } catch (std::exception &e) {
-    logger()->error("port {0} does not exist", name);
-    // TODO: should Cube::remove_port be called?
-    throw std::runtime_error("Port does not exist");
-  }
-
-  ports_table.set(port_map_index, p->index());
+  update_ports_map();
 }
 
 void Helloworld::delPorts(const std::string &name) {
-  int index = get_port(name)->index();
-
-  auto ports_table = get_array_table<uint16_t>("ports_map");
-
-  uint32_t port_map_index;
-  if (ports_table.get(0x0) == index) {
-    port_map_index = 0x0;
-  } else if (ports_table.get(0x1) == index) {
-    port_map_index = 0x1;
-  }
-  // mark entry as free
-  ports_table.set(port_map_index, UINT16_MAX);
   remove_port(name);
   logger()->info("port {0} was removed", name);
+  update_ports_map();
+}
+
+void Helloworld::update_ports_map() {
+  auto ports_table = get_array_table<uint16_t>("ports_map");
+  auto ports = get_ports();
+  uint32_t i = 0;
+
+  for (auto &port: ports) {
+    ports_table.set(i, port->index());
+    i++;
+  }
+
+  // mark other ports as empty (UINT16_MAX means empty)
+  while (i < 2) {
+    ports_table.set(i, UINT16_MAX);
+    i++;
+  }
 }
