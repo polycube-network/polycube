@@ -27,10 +27,9 @@ using namespace Tins;
 
 Simplebridge::Simplebridge(const std::string name,
                            const SimplebridgeJsonObject &conf)
-    : Cube(conf.getBase(), {simplebridge_code}, {}), quit_thread_(false) {
-  logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Simplebridge] [%n] [%l] %v");
+    : Cube(conf.getBase(), {simplebridge_code}, {}), quit_thread_(false),
+      SimplebridgeBase(name) {
   logger()->info("Creating Simplebridge instance");
-
   addFdb(conf.getFdb());
   addPortsList(conf.getPorts());
 
@@ -39,9 +38,9 @@ Simplebridge::Simplebridge(const std::string name,
 }
 
 Simplebridge::~Simplebridge() {
+  logger()->info("Destroying Simplebridge instance");
   // we are destroying this service, prepare for it.
   quitAndJoin();
-  Cube::dismount();
 }
 
 void Simplebridge::quitAndJoin() {
@@ -71,41 +70,6 @@ void Simplebridge::updateTimestamp() {
   } catch (...) {
     logger()->error("Error while updating the timestamp table");
   }
-}
-
-void Simplebridge::update(const SimplebridgeJsonObject &conf) {
-  // This method updates all the object/parameter in Simplebridge object
-  // specified in the conf JsonObject.
-  // You can modify this implementation.
-
-  // update base cube implementation
-  Cube::set_conf(conf.getBase());
-
-  if (conf.fdbIsSet()) {
-    auto m = getFdb();
-    m->update(conf.getFdb());
-  }
-
-  if (conf.portsIsSet()) {
-    for (auto &i : conf.getPorts()) {
-      auto name = i.getName();
-      auto m = getPorts(name);
-      m->update(i);
-    }
-  }
-}
-
-SimplebridgeJsonObject Simplebridge::toJsonObject() {
-  SimplebridgeJsonObject conf;
-  conf.setBase(Cube::to_json());
-
-  conf.setFdb(getFdb()->toJsonObject());
-
-  for (auto &i : getPortsList()) {
-    conf.addPorts(i->toJsonObject());
-  }
-
-  return conf;
 }
 
 void Simplebridge::packet_in(Ports &port,
@@ -159,46 +123,6 @@ void Simplebridge::reloadCodeWithAgingtime(uint32_t aging_time) {
   logger()->trace("New bridge code reloaded");
 }
 
-std::shared_ptr<Ports> Simplebridge::getPorts(const std::string &name) {
-  return get_port(name);
-}
-
-std::vector<std::shared_ptr<Ports>> Simplebridge::getPortsList() {
-  return get_ports();
-}
-
-void Simplebridge::addPorts(const std::string &name,
-                            const PortsJsonObject &conf) {
-  add_port<PortsJsonObject>(name, conf);
-
-  logger()->info("New port created with name {0}", name);
-}
-
-void Simplebridge::addPortsList(const std::vector<PortsJsonObject> &conf) {
-  for (auto &i : conf) {
-    std::string name_ = i.getName();
-    addPorts(name_, i);
-  }
-}
-
-void Simplebridge::replacePorts(const std::string &name,
-                                const PortsJsonObject &conf) {
-  delPorts(name);
-  std::string name_ = conf.getName();
-  addPorts(name_, conf);
-}
-
-void Simplebridge::delPorts(const std::string &name) {
-  remove_port(name);
-}
-
-void Simplebridge::delPortsList() {
-  auto ports = get_ports();
-  for (auto it : ports) {
-    delPorts(it->name());
-  }
-}
-
 std::shared_ptr<Fdb> Simplebridge::getFdb() {
   if (fdb_ != nullptr) {
     return fdb_;
@@ -212,8 +136,7 @@ void Simplebridge::addFdb(const FdbJsonObject &value) {
 }
 
 void Simplebridge::replaceFdb(const FdbJsonObject &conf) {
-  delFdb();
-  addFdb(conf);
+  SimplebridgeBase::replaceFdb(conf);
 }
 
 void Simplebridge::delFdb() {

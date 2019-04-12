@@ -2,7 +2,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/LoadFileAsVariable.cmake)
 
 aux_source_directory(serializer SERIALIZER_SOURCES)
 aux_source_directory(api API_SOURCES)
-aux_source_directory(default-src SRC_SOURCES)
+aux_source_directory(base BASE_SOURCES)
 
 include_directories(serializer)
 include_directories(interface)
@@ -14,7 +14,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(pcn-helloworld SHARED
   ${SERIALIZER_SOURCES}
   ${API_SOURCES}
-  ${SRC_SOURCES}
+  ${BASE_SOURCES}
   Helloworld.cpp
   Ports.cpp
   Helloworld-lib.cpp)

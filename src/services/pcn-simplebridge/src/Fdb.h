@@ -16,17 +16,15 @@
 
 #pragma once
 
-#include "../interface/FdbInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/FdbBase.h"
 
 #include "FdbEntry.h"
 
 class Simplebridge;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Fdb : public FdbInterface {
+class Fdb : public FdbBase {
   friend class FdbEntry;
 
  public:
@@ -34,33 +32,26 @@ class Fdb : public FdbInterface {
   Fdb(Simplebridge &parent);
   virtual ~Fdb();
 
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const FdbJsonObject &conf) override;
-  FdbJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Entry associated with the filtering database
-  /// </summary>
-  std::shared_ptr<FdbEntry> getEntry(const std::string &address) override;
-  std::vector<std::shared_ptr<FdbEntry>> getEntryList() override;
-  void addEntry(const std::string &address,
-                const FdbEntryJsonObject &conf) override;
-  void addEntryList(const std::vector<FdbEntryJsonObject> &conf) override;
-  void replaceEntry(const std::string &address,
-                    const FdbEntryJsonObject &conf) override;
-  void delEntry(const std::string &address) override;
-  void delEntryList() override;
-
   /// <summary>
   /// Aging time of the filtering database (in seconds)
   /// </summary>
   uint32_t getAgingTime() override;
   void setAgingTime(const uint32_t &value) override;
 
+  /// <summary>
+  /// Entry associated with the filtering database
+  /// </summary>
+  std::shared_ptr<FdbEntry> getEntry(const std::string &address) override;
+  std::vector<std::shared_ptr<FdbEntry>> getEntryList() override;
+  void addEntry(const std::string &address, const FdbEntryJsonObject &conf) override;
+  void addEntryList(const std::vector<FdbEntryJsonObject> &conf) override;
+  void replaceEntry(const std::string &address, const FdbEntryJsonObject &conf) override;
+  void delEntry(const std::string &address) override;
+  void delEntryList() override;
+
   FdbFlushOutputJsonObject flush() override;
 
  private:
-  Simplebridge &parent_;
   // Default value for agingTime
   uint32_t agingTime_ = 300;
 };

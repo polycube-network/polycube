@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../interface/SimplebridgeInterface.h"
+#include "../base/SimplebridgeBase.h"
 
 #include "polycube/services/cube.h"
 #include "polycube/services/port.h"
@@ -28,13 +28,12 @@
 #include "Fdb.h"
 #include "Ports.h"
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 using namespace polycube::service;
 
 enum class SlowPathReason { FLOODING = 1 };
 
-class Simplebridge : public polycube::service::Cube<Ports>,
-                     public SimplebridgeInterface {
+class Simplebridge : public SimplebridgeBase {
   friend class Ports;
   friend class Fdb;
   friend class FdbEntry;
@@ -42,11 +41,10 @@ class Simplebridge : public polycube::service::Cube<Ports>,
  public:
   Simplebridge(const std::string name, const SimplebridgeJsonObject &conf);
   virtual ~Simplebridge();
-  void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
-                 const std::vector<uint8_t> &packet) override;
 
-  void update(const SimplebridgeJsonObject &conf) override;
-  SimplebridgeJsonObject toJsonObject() override;
+  void packet_in(Ports &port,
+      polycube::service::PacketInMetadata &md,
+      const std::vector<uint8_t> &packet) override;
 
   /// <summary>
   ///
@@ -55,18 +53,6 @@ class Simplebridge : public polycube::service::Cube<Ports>,
   void addFdb(const FdbJsonObject &value) override;
   void replaceFdb(const FdbJsonObject &conf) override;
   void delFdb() override;
-
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  std::shared_ptr<Ports> getPorts(const std::string &name) override;
-  std::vector<std::shared_ptr<Ports>> getPortsList() override;
-  void addPorts(const std::string &name, const PortsJsonObject &conf) override;
-  void addPortsList(const std::vector<PortsJsonObject> &conf) override;
-  void replacePorts(const std::string &name,
-                    const PortsJsonObject &conf) override;
-  void delPorts(const std::string &name) override;
-  void delPortsList() override;
 
   void reloadCodeWithAgingtime(uint32_t value);
 

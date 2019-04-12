@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include "../interface/FdbEntryInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/FdbEntryBase.h"
 
 class Fdb;
 
@@ -28,23 +26,19 @@ struct fwd_entry {
   uint32_t port;
 } __attribute__((packed));
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class FdbEntry : public FdbEntryInterface {
+class FdbEntry : public FdbEntryBase {
  public:
   FdbEntry(Fdb &parent, const FdbEntryJsonObject &conf);
   FdbEntry(Fdb &parent, const std::string &address, uint32_t entry_age,
            uint32_t out_port);
   virtual ~FdbEntry();
 
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const FdbEntryJsonObject &conf) override;
-  FdbEntryJsonObject toJsonObject() override;
-
   /// <summary>
-  /// Age of the current filtering database entry
+  /// Address of the filtering database entry
   /// </summary>
-  uint32_t getAge() override;
+  std::string getAddress() override;
 
   /// <summary>
   /// Output port name
@@ -53,9 +47,9 @@ class FdbEntry : public FdbEntryInterface {
   void setPort(const std::string &value) override;
 
   /// <summary>
-  /// Address of the filtering database entry
+  /// Age of the current filtering database entry
   /// </summary>
-  std::string getAddress() override;
+  uint32_t getAge() override;
 
   /*
    * tries to construct a FdbEntry from map data, it checks the age of the
@@ -66,8 +60,6 @@ class FdbEntry : public FdbEntryInterface {
                                                     const fwd_entry &value);
 
  private:
-  Fdb &parent_;
-
   std::string address_;
   std::string port_name_;
   uint32_t entry_age_;
