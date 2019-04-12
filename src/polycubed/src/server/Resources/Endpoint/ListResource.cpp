@@ -327,6 +327,7 @@ Response ListResource::Completion(const std::string &cube_name, HelpType type,
 
   auto size_keys = list_keys.size();
   std::string keyname = keys_[size_keys].Name();
+  std::string original_keyname = keys_[size_keys].OriginalName();
 
   nlohmann::json val = nlohmann::json::array();
 
@@ -349,7 +350,7 @@ Response ListResource::Completion(const std::string &cube_name, HelpType type,
     }
 
     if (found) {
-      val += item.at(keyname);
+      val += item.at(original_keyname);
     }
   }
 
@@ -359,11 +360,14 @@ Response ListResource::Completion(const std::string &cube_name, HelpType type,
   case HelpType::DEL:
     break;
   case HelpType::NONE:
-    if (configuration_) {
-      val += "add";
-      val += "del";
+    // suggest these commands only if we are not in the middle of a list
+    if (list_keys.size() == 0) {
+      if (configuration_) {
+        val += "add";
+        val += "del";
+      }
+      val += "show";
     }
-    val += "show";
     break;
   default:
     return {kBadRequest, nullptr};
