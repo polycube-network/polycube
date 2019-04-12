@@ -23,6 +23,8 @@
 #include <bcc/helpers.h>
 #include <bcc/proto.h>
 
+const uint16_t UINT16_MAX = 0xffff;
+
 enum {
   SLOWPATH_REASON = 1,
 };
@@ -56,21 +58,12 @@ BPF_ARRAY(ports_map, uint16_t, 2);
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_DEBUG, "Receiving packet from port %d", md->in_port);
   pcn_pkt_log(ctx, LOG_DEBUG);
+
   unsigned int zero = 0;
   unsigned int one = 1;
+
   uint8_t *action = action_map.lookup(&zero);
   if (!action) {
-    return RX_DROP;
-  }
-
-  // Get ports ids
-  uint16_t *p1 = ports_map.lookup(&zero);
-  if (!p1) {
-    return RX_DROP;
-  }
-
-  uint16_t *p2 = ports_map.lookup(&one);
-  if (!p2) {
     return RX_DROP;
   }
 
@@ -82,17 +75,24 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   case SLOWPATH:
     pcn_log(ctx, LOG_DEBUG, "Sending packet to slow path");
     return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
-  case FORWARD:
-    pcn_log(ctx, LOG_DEBUG, "Forwarding packet");
-    if (md->in_port == *p1)
-      return pcn_pkt_redirect(ctx, md, *p2);
-    else if (md->in_port == *p2)
-      return pcn_pkt_redirect(ctx, md, *p1);
-    else {
-      pcn_log(ctx, LOG_ERR, "bad in_port: %d", md->in_port);
+  case FORWARD: ;
+    // Get ports ids
+    uint16_t *p1 = ports_map.lookup(&zero);
+    if (!p1 || *p1 == UINT16_MAX) {
       return RX_DROP;
     }
+
+    uint16_t *p2 = ports_map.lookup(&one);
+    if (!p2 || *p2 == UINT16_MAX) {
+      return RX_DROP;
+    }
+
+    pcn_log(ctx, LOG_DEBUG, "Forwarding packet");
+
+    uint16_t outport = md->in_port == *p1 ? *p2 : *p1;
+    return pcn_pkt_redirect(ctx, md, outport);
   default:
+    // if control plane is well implemented this will never happen
     pcn_log(ctx, LOG_ERR, "bad action %d", *action);
     return RX_DROP;
   }
