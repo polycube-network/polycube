@@ -97,7 +97,6 @@ class BaseCube {
 
   std::shared_ptr<BaseCubeIface> cube_;  // pointer to the cube in polycubed
   log_msg_cb handle_log_msg;
-  CubeType type_;
   std::shared_ptr<spdlog::logger> logger_;
   std::atomic<bool> dismounted_;
 

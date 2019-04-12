@@ -116,7 +116,7 @@ const std::string BaseCube::getName() const {
 }
 
 CubeType BaseCube::get_type() const {
-  return type_;
+  return cube_->get_type();
 }
 
 std::shared_ptr<spdlog::logger> BaseCube::logger() {
