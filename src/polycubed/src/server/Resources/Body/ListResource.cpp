@@ -25,6 +25,8 @@
 #include "JsonNodeField.h"
 #include "ListKey.h"
 
+#include "../../Types/lexical_cast.h"
+
 namespace polycube::polycubed::Rest::Resources::Body {
 ListResource::ListResource(const std::string &name,
                            const std::string &description,
@@ -107,11 +109,41 @@ void ListResource::SetDefaultIfMissing(nlohmann::json &body,
 
 void ListResource::FillKeys(nlohmann::json &body, const ListKeyValues &keys) {
   // TODO: is there a more efficient implementation of this?
-  for (auto &key: keys_) {
+  for (auto &key : keys_) {
     for (auto &kv : keys) {
       if (key.Name() == kv.name) {
         // TODO: check if the key is present in the body and compare the data
-        body[key.OriginalName()] = kv.value;
+        switch (key.Type()) {
+        case ListType::kBool:
+          body[key.OriginalName()] = Types::lexical_cast<bool>(kv.value);
+          break;
+        case ListType::kInt8:
+          body[key.OriginalName()] = Types::lexical_cast<int8_t>(kv.value);
+          break;
+        case ListType::kInt16:
+          body[key.OriginalName()] = Types::lexical_cast<int16_t>(kv.value);
+          break;
+        case ListType::kInt32:
+          body[key.OriginalName()] = Types::lexical_cast<int32_t>(kv.value);
+          break;
+        case ListType::kInt64:
+          body[key.OriginalName()] = Types::lexical_cast<int64_t>(kv.value);
+          break;
+        case ListType::kUint8:
+          body[key.OriginalName()] = Types::lexical_cast<uint8_t>(kv.value);
+          break;
+        case ListType::kUint16:
+          body[key.OriginalName()] = Types::lexical_cast<uint16_t>(kv.value);
+          break;
+        case ListType::kUint32:
+          body[key.OriginalName()] = Types::lexical_cast<uint32_t>(kv.value);
+          break;
+        case ListType::kUint64:
+          body[key.OriginalName()] = Types::lexical_cast<uint64_t>(kv.value);
+          break;
+        default:
+          body[key.OriginalName()] = kv.value;
+        }
         break;
       }
     }

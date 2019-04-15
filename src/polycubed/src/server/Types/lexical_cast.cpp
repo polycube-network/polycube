@@ -15,7 +15,30 @@
  */
 #include "lexical_cast.h"
 
+#include <algorithm>
+#include <string>
+
 namespace polycube::polycubed::Rest::Types {
+template <>
+bool lexical_cast<bool>(const std::string &value) {
+  try {
+    std::string lower;
+    lower.reserve(value.length());
+    std::transform(std::begin(value), std::end(value),
+                   std::back_inserter(lower),
+                   static_cast<int (*)(int)>(std::tolower));
+    if (lower == "false") {
+      return false;
+    } else if (lower == "true") {
+      return true;
+    } else {
+      throw bad_lexical_cast();
+    }
+  } catch (...) {
+    throw bad_lexical_cast();
+  }
+}
+
 template <>
 int8_t lexical_cast<int8_t>(const std::string &value) {
   try {

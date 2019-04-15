@@ -73,7 +73,7 @@ class ListResource : public ParentResource, public Body::ListResource {
  private:
   // try to get as much as possible Keys
   void GetListKeys(const Pistache::Rest::Request &request,
-                  ListKeyValues &parsed) const;
+                   ListKeyValues &parsed) const;
 
   std::vector<PathParamField> key_params_;
   std::string multiple_endpoint_;
