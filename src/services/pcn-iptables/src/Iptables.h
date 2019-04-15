@@ -41,7 +41,7 @@
 
 #define REQUIRED_FIB_LOOKUP_KERNEL ("4.19.0")
 
-#define SESSION_DIM 2048
+#define SESSION_DIM 32768
 
 #define BIT(n) (1 << (n))
 

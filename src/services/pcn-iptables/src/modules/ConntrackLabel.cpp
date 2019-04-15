@@ -166,5 +166,7 @@ std::string Iptables::ConntrackLabel::getCode() {
     replaceAll(no_macro_code, "_HOOK", "EGRESS");
   }
 
+  replaceAll(no_macro_code, "_SESSION_DIM", std::to_string(SESSION_DIM));
+
   return no_macro_code;
 }

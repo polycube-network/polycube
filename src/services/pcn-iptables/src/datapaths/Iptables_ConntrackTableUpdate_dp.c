@@ -26,7 +26,7 @@
 
 #define AF_INET 2 /* Internet IP Protocol 	*/
 
-#define SESSION_DIM 2048
+#define SESSION_DIM _SESSION_DIM
 
 /* MACRO */
 

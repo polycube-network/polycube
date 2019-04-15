@@ -74,7 +74,7 @@ struct session_v {
 
 } __attribute__((packed));
 
-#define SESSION_DIM 2048
+#define SESSION_DIM _SESSION_DIM
 #define TUPLETOSESSION_DIM SESSION_DIM * 2
 
 #define RANDOM_INDEX_RETRY 8

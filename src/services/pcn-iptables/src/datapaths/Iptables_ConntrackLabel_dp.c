@@ -54,7 +54,7 @@
 
 #define HEX_BE_ONE 0x1000000
 
-#define SESSION_DIM 2048
+#define SESSION_DIM _SESSION_DIM
 
 #define AF_INET 2 /* Internet IP Protocol 	*/
 
