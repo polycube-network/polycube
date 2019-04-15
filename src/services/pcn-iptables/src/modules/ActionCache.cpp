@@ -60,8 +60,8 @@ void Iptables::ActionCache::initSessions() {
            session_table_offline.begin();
        it != session_table_offline.end(); ++it) {
     // invalidate all entries
-    iptables_.logger()->trace(
-        "[ControlPlane] [garbageCollector] init sessionId: {0} ", it->first);
+//    iptables_.logger()->trace(
+//        "[ControlPlane] [garbageCollector] init sessionId: {0} ", it->first);
     session_table.set(it->first, clean_session);
   }
 }
@@ -72,7 +72,14 @@ void Iptables::ActionCache::garbageCollectorTimer() {
     sleep(GARBAGE_COLLECTOR_INTERVAL);
     if (quit_thread_)
       break;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     garbageCollector();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    iptables_.logger()->info("[ControlPlane] [garbageCollector] thread took {0}s ", elapsed_seconds.count());
   }
 }
 
@@ -115,9 +122,9 @@ void Iptables::ActionCache::garbageCollector() {
       if (it->second.setMask != 0) {
         if (it->second.ttl < current_time_nano) {
           // invalidate expired entries
-          iptables_.logger()->trace(
-              "[ControlPlane] [garbageCollector] clean sessionId: {0} ",
-              it->first);
+//          iptables_.logger()->trace(
+//              "[ControlPlane] [garbageCollector] clean sessionId: {0} ",
+//              it->first);
           session_table.set(it->first, clean_session);
         }
       }
@@ -149,12 +156,12 @@ void Iptables::ActionCache::garbageCollector() {
         // if pointing to an expired session, the setMask should be already set
         // to 0
         // then remove the key pointing to expired entry
-        iptables_.logger()->trace(
-            "[ControlPlane] [garbageCollector] clean srcIp {0} dstIp {1} "
-            "l4proto {2} sport {3} dport {4} ",
-            utils::be_uint_to_ip_string(it->first.srcIp),
-            utils::be_uint_to_ip_string(it->first.dstIp), it->first.l4proto,
-            it->first.srcPort, it->first.dstPort);
+//        iptables_.logger()->trace(
+//            "[ControlPlane] [garbageCollector] clean srcIp {0} dstIp {1} "
+//            "l4proto {2} sport {3} dport {4} ",
+//            utils::be_uint_to_ip_string(it->first.srcIp),
+//            utils::be_uint_to_ip_string(it->first.dstIp), it->first.l4proto,
+//            it->first.srcPort, it->first.dstPort);
         tupletosession_table.remove(it->first);
       }
     }
