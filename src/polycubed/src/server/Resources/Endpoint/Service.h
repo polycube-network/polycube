@@ -58,17 +58,13 @@ class Service : public ParentResource, public Body::Service {
 
  private:
   const std::string body_rest_endpoint_;
-  Validators::InSetValidator path_param_;
+  Validators::InSetValidator cube_names_;
 
   void CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
                            ResponseWriter response, bool replace,
                            bool initialization);
 
   nlohmann::json getServiceKeys() const;
-
-  std::vector<Response> RequestValidate(
-      const Pistache::Rest::Request &request,
-      const std::string &caller_name) const final;
 
   void post(const Request &request, ResponseWriter response) final;
 

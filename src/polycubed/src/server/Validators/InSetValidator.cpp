@@ -20,7 +20,7 @@ namespace polycube::polycubed::Rest::Validators {
 InSetValidator::InSetValidator() : invalid_values_() {}
 
 bool InSetValidator::Validate(const std::string &value) const {
-  return invalid_values_.count(value) == 1;
+  return invalid_values_.count(value) == 0;
 }
 
 void InSetValidator::AddValue(const std::string &value) {
