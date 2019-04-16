@@ -37,7 +37,7 @@ pcn-iptables -A FORWARD -s 10.0.2.1 -p icmp -j ACCEPT
 echo "UDP Conntrack Test"
 
 echo "(1) Sending NOT allowed NEW UDP packet"
-npingOutput="$(sudo ip netns exec ns1 nping --udp -c 1 -p 50020 -g 50010 10.0.2.1)"
+npingOutput="$(sudo ip netns exec ns1 nping --udp -c 1 -p 50002 -g 50001 10.0.2.1)"
 polycubectl pcn-iptables session-table show
 
 if [[ $npingOutput == *"Rcvd: 1"* ]]; then
