@@ -107,7 +107,7 @@ void ParentResource::CreateReplaceUpdate(
   Keys(request, keys);
 
   // fill keys if they are missing
-  if (auto list = dynamic_cast<ListResource*>(this)) {
+  if (auto list = dynamic_cast<ListResource *>(this)) {
     list->FillKeys(jbody, keys);
   }
 

@@ -26,6 +26,9 @@ template <class T>
 T lexical_cast(const std::string &value) = delete;
 
 template <>
+bool lexical_cast<bool>(const std::string &value);
+
+template <>
 int8_t lexical_cast<int8_t>(const std::string &value);
 
 template <>
