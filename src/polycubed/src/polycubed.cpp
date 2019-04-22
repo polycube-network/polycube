@@ -60,10 +60,13 @@ void shutdown() {
     return;
   // Service controllers depend on Rest Server. It is required to remove them
   // before clearing the rest server in order to avoid segmentation faults.
-  core->clear_servicectrl_list();
-  restserver->shutdown();
-  logger->debug("rest was shutdown");
-  delete core;
+  if (core && restserver) {
+    core->clear_servicectrl_list();
+    restserver->shutdown();
+    logger->debug("rest was shutdown");
+    delete core;
+    delete restserver;
+  }
   logger->info("polycubed is shutting down. Bye!");
   done = true;
 }
