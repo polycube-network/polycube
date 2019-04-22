@@ -1,1 +1,1 @@
-install(DIRECTORY spdlog DESTINATION include/polycube)
+install(DIRECTORY spdlog DESTINATION /usr/include/polycube)

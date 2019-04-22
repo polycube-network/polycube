@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=/usr/include
+
+Name: libpolycube
+Version: @REVISION@
+Description: Polycube library
+Requires:
+Requires.private: libtins
+Libs: -L${libdir} -lpolycube -luuid -ltins
+Cflags: -I${includedir} -I${includedir}/polycube

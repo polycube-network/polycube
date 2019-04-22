@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 #include <string>
 
 namespace polycube {
