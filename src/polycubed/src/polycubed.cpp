@@ -63,7 +63,7 @@ void shutdown() {
   if (core && restserver) {
     core->clear_servicectrl_list();
     restserver->shutdown();
-    logger->debug("rest was shutdown");
+    logger->debug("rest server shutdown");
     delete core;
     delete restserver;
   }
