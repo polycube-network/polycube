@@ -45,8 +45,7 @@ class ListResource : public virtual ParentResource {
 
   bool IsMandatory() const override;
 
-  void SetDefaultIfMissing(nlohmann::json &body,
-                           bool initialization) const final;
+  void SetDefaultIfMissing(nlohmann::json &body) const final;
 
   /*
    * This function takes the keys (parsed from the url in "keys") and save

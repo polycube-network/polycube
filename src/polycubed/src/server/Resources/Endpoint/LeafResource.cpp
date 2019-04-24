@@ -98,7 +98,7 @@ void LeafResource::CreateReplaceUpdate(const Pistache::Rest::Request &request,
   // This method can be reached only as direct call on the update method
   // of this LeafResource. It is possible only for configuration
   // nodes not marked as init-only-config.
-  SetDefaultIfMissing(jbody, false);
+  SetDefaultIfMissing(jbody);
 
   const auto cube_name = Service::Cube(request);
   ListKeyValues keys{};

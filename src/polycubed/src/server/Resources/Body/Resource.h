@@ -87,8 +87,7 @@ class Resource {
                                              nlohmann::json &body,
                                              bool initialization) const = 0;
 
-  virtual void SetDefaultIfMissing(nlohmann::json &body,
-                                   bool initialization) const = 0;
+  virtual void SetDefaultIfMissing(nlohmann::json &body) const = 0;
 
   inline const Body::ParentResource *const Parent() const {
     return parent_;

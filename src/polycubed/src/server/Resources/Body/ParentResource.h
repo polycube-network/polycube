@@ -47,8 +47,7 @@ class ParentResource : public Resource {
 
   bool IsConfiguration() const final;
 
-  void SetDefaultIfMissing(nlohmann::json &body,
-                           bool initialization) const override;
+  void SetDefaultIfMissing(nlohmann::json &body) const override;
 
   std::shared_ptr<Resource> Child(const std::string &child_name) const;
 
