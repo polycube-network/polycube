@@ -89,6 +89,17 @@ Response BaseModel::get_parent(const std::string &cube_name) const {
   return Response{kOk, ::strdup(parent_name.data())};
 }
 
+Response BaseModel::get_service(const std::string &cube_name) const {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  auto service_name = "\"" + cube_->get_service_name() + "\"";
+
+  return Response{kOk, ::strdup(service_name.data())};
+}
+
 Response BaseModel::get_port_uuid(const std::string &cube_name,
                                   const std::string &port_name) const {
   auto cube_ = ServiceController::get_cube(cube_name);

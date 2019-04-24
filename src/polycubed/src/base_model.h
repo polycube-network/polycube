@@ -34,6 +34,8 @@ class BaseModel {
 
   Response get_parent(const std::string &cube_name) const;
 
+  Response get_service(const std::string &cube_name) const;
+
   // polycube-standard-base module
   Response get_port_uuid(const std::string &cube_name,
                          const std::string &port_name) const;

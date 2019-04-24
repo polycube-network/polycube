@@ -45,7 +45,7 @@ bool ConcreteFactory::IsBaseModel(
   if (tree_names_.size() == 1) {
     auto leaf = tree_names_.front();
     if (leaf == "type" || leaf == "uuid" || leaf == "loglevel" ||
-        leaf == "parent") {
+        leaf == "parent" || leaf == "service-name") {
       return true;
     }
   } else if (tree_names_.size() == 2) {
@@ -151,8 +151,13 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
                                    const ListKeyValues &keys) -> Response {
         return local_core->base_model()->get_parent(cube_name);
       };
+    } else if (leaf == "service-name") {
+      read_handler_ = [local_core](const std::string &cube_name,
+                                   const ListKeyValues &keys) -> Response {
+        return local_core->base_model()->get_service(cube_name);
+      };
     } else {
-      throw std::runtime_error("unkown element found in base datamodel");
+      throw std::runtime_error("unkown element found in base datamodel:" + leaf);
     }
   } else if (tree_names_.size() == 2) {
     if (tree_names_.front() != "ports") {

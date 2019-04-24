@@ -72,6 +72,13 @@ module polycube-base {
       polycube-base:cli-example "TC";
     }
 
+    leaf service-name {
+      type string;
+      config true;
+      polycube-base:init-only-config;
+      polycube-base:cli-example "helloworld";
+    }
+
     leaf loglevel {
       type enumeration {
         enum TRACE;

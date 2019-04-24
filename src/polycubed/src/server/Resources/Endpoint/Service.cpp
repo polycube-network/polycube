@@ -37,7 +37,7 @@ Service::Service(const std::string &name, const std::string &description,
                      false),
       Body::Service(name, description, cli_example, version, nullptr),
       body_rest_endpoint_(base_address + name + '/'),
-      path_param_{} {
+      cube_names_{} {
   using Pistache::Rest::Routes::bind;
   auto router = core_->get_rest_server()->get_router();
 
@@ -62,19 +62,9 @@ const std::string Service::Cube(const Pistache::Rest::Request &request) {
 
 void Service::ClearCubes() {
   auto k = ListKeyValues{};
-  for (const auto &cube_name : path_param_.Values()) {
+  for (const auto &cube_name : cube_names_.Values()) {
     DeleteValue(cube_name, k);
   }
-}
-
-std::vector<Response> Service::RequestValidate(
-    const Request &request,
-    [[maybe_unused]] const std::string &caller_name) const {
-  std::vector<Response> errors;
-  if (!path_param_.Validate(request.param(":name").as<std::string>())) {
-    errors.push_back({ErrorTag::kBadElement, ::strdup(":name")});
-  }
-  return errors;
 }
 
 void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
@@ -99,7 +89,7 @@ void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
     if (!update && (resp.error_tag == ErrorTag::kOk ||
                     resp.error_tag == ErrorTag::kCreated ||
                     resp.error_tag == ErrorTag::kNoContent)) {
-      path_param_.AddValue(name);
+      cube_names_.AddValue(name);
     }
     Server::ResponseGenerator::Generate(std::vector<Response>{resp},
                                         std::move(response));
@@ -136,6 +126,7 @@ void Service::post_body(const Request &request, ResponseWriter response) {
         std::move(response));
     return;
   }
+
   CreateReplaceUpdate(body["name"].get<std::string>(), body,
                       std::move(response), false, true);
 }
@@ -149,6 +140,15 @@ void Service::post(const Request &request, ResponseWriter response) {
     body = nlohmann::json::parse(request.body());
   }
   body["name"] = name;
+
+  if (body.count("service-name")) {
+    if (body["service-name"] != Name()) {
+      Server::ResponseGenerator::Generate({{kInvalidValue, nullptr}},
+                                          std::move(response));
+      return;
+    }
+  }
+
   CreateReplaceUpdate(name, body, std::move(response), false, true);
 }
 
@@ -179,10 +179,13 @@ void Service::patch(const Request &request, ResponseWriter response) {
 void Service::del(const Pistache::Rest::Request &request,
                   Pistache::Http::ResponseWriter response) {
   auto name = request.param(":name").as<std::string>();
-  if (ServiceController::exists_cube(name)) {
-    path_param_.RemoveValue(name);
+  if (!ServiceController::exists_cube(name)) {
+      Server::ResponseGenerator::Generate({{kDataMissing, nullptr}},
+                                          std::move(response));
+      return;
   }
 
+  cube_names_.RemoveValue(name);
   auto k = ListKeyValues{};
   auto res = DeleteValue(name, k);
   Server::ResponseGenerator::Generate(std::vector<Response>{res},
