@@ -40,8 +40,7 @@ class ChoiceResource : public virtual ParentResource {
 
   bool IsMandatory() const final;
 
-  void SetDefaultIfMissing(nlohmann::json &body,
-                           bool initialization) const final;
+  void SetDefaultIfMissing(nlohmann::json &body) const final;
 
  private:
   const bool mandatory_;

@@ -40,8 +40,7 @@ class LeafListResource : public virtual LeafResource {
                                      nlohmann::json &body,
                                      bool initialization) const final;
 
-  void SetDefaultIfMissing(nlohmann::json &body,
-                           bool initialization) const final;
+  void SetDefaultIfMissing(nlohmann::json &body) const final;
 
  private:
   const std::vector<std::string> default_;

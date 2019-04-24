@@ -54,8 +54,7 @@ class LeafResource : public Resource {
     return configuration_;
   }
 
-  void SetDefaultIfMissing(nlohmann::json &body,
-                           bool initialization) const override;
+  void SetDefaultIfMissing(nlohmann::json &body) const override;
 
   nlohmann::json ToHelpJson() const override;
 

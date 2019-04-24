@@ -100,7 +100,9 @@ void ParentResource::CreateReplaceUpdate(
 
   // Mandatory value is checked only during POST and PUT, both
   // considered as initialization operations.
-  SetDefaultIfMissing(jbody, initialization);
+  if (initialization) {
+    SetDefaultIfMissing(jbody);
+  }
 
   const auto &cube_name = Service::Cube(request);
   ListKeyValues keys{};

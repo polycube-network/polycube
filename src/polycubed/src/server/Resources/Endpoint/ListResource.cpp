@@ -160,7 +160,9 @@ void ListResource::CreateReplaceUpdateWhole(
   ListKeyValues keys{};
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
   for (auto &elem : jbody) {
-    SetDefaultIfMissing(elem, initialization);
+    if (initialization) {
+      SetDefaultIfMissing(elem);
+    }
     auto body = BodyValidate(cube_name, keys, elem, initialization);
     errors.reserve(errors.size() + body.size());
     std::copy(std::begin(body), std::end(body), std::back_inserter(errors));

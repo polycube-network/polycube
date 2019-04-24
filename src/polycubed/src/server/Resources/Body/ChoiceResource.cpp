@@ -88,14 +88,13 @@ bool ChoiceResource::IsMandatory() const {
          dynamic_cast<const CaseResource *const>(parent_) != nullptr;
 }
 
-void ChoiceResource::SetDefaultIfMissing(nlohmann::json &body,
-                                         bool initialization) const {
+void ChoiceResource::SetDefaultIfMissing(nlohmann::json &body) const {
   if (default_case_ != nullptr) {
     auto def = std::find_if(
         std::begin(children_), std::end(children_),
         [this](const auto &child) { return child->Name() == *default_case_; });
     // no check if def is end because it ensured by YANG validation process
-    (*def)->SetDefaultIfMissing(body, initialization);
+    (*def)->SetDefaultIfMissing(body);
   }
 }
 }  // namespace polycube::polycubed::Rest::Resources::Body
