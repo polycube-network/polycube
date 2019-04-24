@@ -1080,26 +1080,6 @@ update_k8switch_ports_list_by_id(const std::string &name, const std::vector<Port
 }
 
 /**
-* @brief   Update type by ID
-*
-* Update operation of resource: type*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-* @param[in] value Type of the LB port (e.g. NODEPORT or DEFAULT)
-*
-* Responses:
-*
-*/
-void
-update_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value) {
-  auto k8switch = get_cube(name);
-  auto ports = k8switch->getPorts(portsName);
-
-  ports->setType(value);
-}
-
-/**
 * @brief   Update backend by ID
 *
 * Update operation of resource: backend*

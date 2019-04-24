@@ -1673,30 +1673,6 @@ Response update_k8switch_ports_list_by_id_handler(
   }
 }
 
-Response update_k8switch_ports_type_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    PortsTypeEnum unique_value_ = PortsJsonObject::string_to_PortsTypeEnum(request_body);
-    update_k8switch_ports_type_by_id(unique_name, unique_portsName, unique_value_);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
 
 Response update_k8switch_service_backend_by_id_handler(
   const char *name, const Key *keys,

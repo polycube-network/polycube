@@ -34,10 +34,6 @@ void Ports::update(const PortsJsonObject &conf) {
   // the conf JsonObject.
   // You can modify this implementation.
   Port::set_conf(conf.getBase());
-
-  if (conf.typeIsSet()) {
-    setType(conf.getType());
-  }
 }
 
 PortsJsonObject Ports::toJsonObject() {
@@ -52,11 +48,6 @@ PortsJsonObject Ports::toJsonObject() {
 PortsTypeEnum Ports::getType() {
   // This method retrieves the type value.
   return port_type_;
-}
-
-void Ports::setType(const PortsTypeEnum &value) {
-  // This method set the type value.
-  throw std::runtime_error("Error: Port type cannot be changed at runtime.");
 }
 
 std::shared_ptr<spdlog::logger> Ports::logger() {

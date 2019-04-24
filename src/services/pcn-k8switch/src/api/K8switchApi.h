@@ -93,7 +93,6 @@ Response update_k8switch_fwd_table_port_by_id_handler(const char *name, const Ke
 Response update_k8switch_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_k8switch_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_service_backend_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_k8switch_service_backend_name_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
