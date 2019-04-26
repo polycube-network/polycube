@@ -25,6 +25,7 @@ module k8switch {
         }
         mandatory false;
         default DEFAULT;
+        polycube-base:init-only-config;
         description "Type of the LB port (e.g. NODEPORT or DEFAULT)";
       }
     }

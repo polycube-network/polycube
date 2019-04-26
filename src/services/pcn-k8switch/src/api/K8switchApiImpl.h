@@ -97,7 +97,6 @@ namespace K8switchApiImpl {
   void update_k8switch_list_by_id(const std::vector<K8switchJsonObject> &value);
   void update_k8switch_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
   void update_k8switch_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
-  void update_k8switch_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value);
   void update_k8switch_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const ServiceBackendJsonObject &value);
   void update_k8switch_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value);
   void update_k8switch_service_backend_name_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const uint16_t &port, const std::string &value);

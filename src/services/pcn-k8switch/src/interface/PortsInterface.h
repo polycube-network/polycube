@@ -35,6 +35,5 @@ public:
   /// Type of the LB port (e.g. NODEPORT or DEFAULT)
   /// </summary>
   virtual PortsTypeEnum getType() = 0;
-  virtual void setType(const PortsTypeEnum &value) = 0;
 };
 

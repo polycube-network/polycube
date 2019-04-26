@@ -43,7 +43,6 @@ class Ports : public polycube::service::Port, public PortsInterface {
   /// Type of the LB port (e.g. FRONTEND or BACKEND)
   /// </summary>
   PortsTypeEnum getType() override;
-  void setType(const PortsTypeEnum &value) override;
 
  private:
   K8switch &parent_;
