@@ -85,27 +85,6 @@ const Response ListResource::ReadWhole(const std::string &cube_name,
   return ParentResource::ReadValue(cube_name, keys);
 }
 
-void ListResource::SetDefaultIfMissing(nlohmann::json &body) const {
-  // keys default values must be ignored (RFC7950#7.8.2)
-  std::set<std::string> key_names;
-  for (const auto &key : keys_) {
-    key_names.emplace(key.Name());
-  }
-
-  for (const auto &child : children_) {
-    // Set default only for configuration nodes. During initialization
-    // all non-keys can be defaulted, otherwise only the ones that are not
-    // marked as init-only-config.
-    if (key_names.count(child->Name()) == 0 && child->IsConfiguration() &&
-        !child->IsInitOnlyConfig()) {
-      child->SetDefaultIfMissing(body[child->Name()]);
-      if (body[child->Name()].empty()) {
-        body.erase(child->Name());
-      }
-    }
-  }
-}
-
 void ListResource::FillKeys(nlohmann::json &body, const ListKeyValues &keys) {
   // TODO: is there a more efficient implementation of this?
   for (auto &key : keys_) {
@@ -167,9 +146,6 @@ std::vector<Response> ListResource::BodyValidateMultiple(
   }
 
   for (auto &elem : jbody) {
-    if (initialization) {
-      SetDefaultIfMissing(elem);
-    }
     auto body = BodyValidate(cube_name, keys, elem, initialization);
     errors.reserve(errors.size() + body.size());
     std::copy(std::begin(body), std::end(body), std::back_inserter(errors));

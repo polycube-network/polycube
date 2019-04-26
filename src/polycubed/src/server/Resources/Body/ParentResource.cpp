@@ -157,13 +157,21 @@ bool ParentResource::IsConfiguration() const {
 
 void ParentResource::SetDefaultIfMissing(nlohmann::json &body) const {
   for (const auto &child : children_) {
+    // keys default values must be ignored (RFC7950#7.8.2)
+    if (child->IsKey()) {
+      continue;
+    }
+
     auto &child_body = body[child->Name()];
-    // Lists can't be defaulted. The only possible this is if a list
+    // Lists can't be defaulted. The only possible case is if a list
     // (as json array) is provided in request body. In this situation
     // each element of the array can be defaulted.
     if (std::dynamic_pointer_cast<ListResource>(child) != nullptr) {
-      if (!child_body.empty()) {
+      if (child_body.is_array()) {
         for (auto &entry : child_body) {
+          if (child->IsKey()) {
+            continue;
+          }
           child->SetDefaultIfMissing(entry);
         }
       }
