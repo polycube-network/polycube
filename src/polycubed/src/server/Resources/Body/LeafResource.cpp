@@ -61,8 +61,7 @@ std::vector<Response> LeafResource::BodyValidate(const std::string &cube_name,
   return errors;
 }
 
-void LeafResource::SetDefaultIfMissing(nlohmann::json &body,
-                                       bool initialization) const {
+void LeafResource::SetDefaultIfMissing(nlohmann::json &body) const {
   if (body.empty() && default_ != nullptr) {
     switch (type_) {
     case Types::Scalar::Integer:

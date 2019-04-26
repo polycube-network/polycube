@@ -73,7 +73,9 @@ void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
   if (update || !ServiceController::exists_cube(name)) {
     auto op = OperationType(update, initialization);
     auto k = ListKeyValues{};
-    SetDefaultIfMissing(body, initialization);
+    if (initialization) {
+      SetDefaultIfMissing(body);
+    }
 
     auto jbody = body;
     jbody.erase("name");

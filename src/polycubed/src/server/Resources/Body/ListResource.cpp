@@ -85,8 +85,7 @@ const Response ListResource::ReadWhole(const std::string &cube_name,
   return ParentResource::ReadValue(cube_name, keys);
 }
 
-void ListResource::SetDefaultIfMissing(nlohmann::json &body,
-                                       bool initialization) const {
+void ListResource::SetDefaultIfMissing(nlohmann::json &body) const {
   // keys default values must be ignored (RFC7950#7.8.2)
   std::set<std::string> key_names;
   for (const auto &key : keys_) {
@@ -98,8 +97,8 @@ void ListResource::SetDefaultIfMissing(nlohmann::json &body,
     // all non-keys can be defaulted, otherwise only the ones that are not
     // marked as init-only-config.
     if (key_names.count(child->Name()) == 0 && child->IsConfiguration() &&
-        (initialization || !child->IsInitOnlyConfig())) {
-      child->SetDefaultIfMissing(body[child->Name()], initialization);
+        !child->IsInitOnlyConfig()) {
+      child->SetDefaultIfMissing(body[child->Name()]);
       if (body[child->Name()].empty()) {
         body.erase(child->Name());
       }
@@ -168,7 +167,9 @@ std::vector<Response> ListResource::BodyValidateMultiple(
   }
 
   for (auto &elem : jbody) {
-    SetDefaultIfMissing(elem, initialization);
+    if (initialization) {
+      SetDefaultIfMissing(elem);
+    }
     auto body = BodyValidate(cube_name, keys, elem, initialization);
     errors.reserve(errors.size() + body.size());
     std::copy(std::begin(body), std::end(body), std::back_inserter(errors));

@@ -65,8 +65,7 @@ std::vector<Response> LeafListResource::BodyValidate(
   return errors;
 }
 
-void LeafListResource::SetDefaultIfMissing(nlohmann::json &body,
-                                           bool initialization) const {
+void LeafListResource::SetDefaultIfMissing(nlohmann::json &body) const {
   if (body.empty() && !default_.empty()) {
     for (const auto &element : default_) {
       body.push_back(element);

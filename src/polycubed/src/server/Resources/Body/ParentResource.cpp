@@ -155,8 +155,7 @@ bool ParentResource::IsConfiguration() const {
                           });
 }
 
-void ParentResource::SetDefaultIfMissing(nlohmann::json &body,
-                                         bool initialization) const {
+void ParentResource::SetDefaultIfMissing(nlohmann::json &body) const {
   for (const auto &child : children_) {
     auto &child_body = body[child->Name()];
     // Lists can't be defaulted. The only possible this is if a list
@@ -165,16 +164,13 @@ void ParentResource::SetDefaultIfMissing(nlohmann::json &body,
     if (std::dynamic_pointer_cast<ListResource>(child) != nullptr) {
       if (!child_body.empty()) {
         for (auto &entry : child_body) {
-          child->SetDefaultIfMissing(entry, initialization);
+          child->SetDefaultIfMissing(entry);
         }
       }
     } else {
-      // Set default only for configuration nodes. During initialization
-      // all can be defaulted, otherwise only the ones that are not marked
-      // as init-only-config
-      if (child->IsConfiguration() &&
-          (initialization || !child->IsInitOnlyConfig())) {
-        child->SetDefaultIfMissing(child_body, initialization);
+      // Set default only for configuration nodes.
+      if (child->IsConfiguration()) {
+        child->SetDefaultIfMissing(child_body);
       }
     }
     if (child_body.empty()) {
