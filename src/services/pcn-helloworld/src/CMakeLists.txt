@@ -8,6 +8,12 @@ include_directories(serializer)
 include_directories(interface)
 include_directories(default-src)
 
+if (POLYCUBE_STANDALONE_SERVICE)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(POLYCUBE libpolycube)
+  include_directories(${POLYCUBE_INCLUDE_DIRS})
+endif(POLYCUBE_STANDALONE_SERVICE)
+
 # Needed to load files as variables
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -26,9 +32,7 @@ load_file_as_variable(pcn-helloworld Helloworld_dp_egress.c helloworld_code_egre
 # load datamodel in a variable
 load_file_as_variable(pcn-helloworld ../datamodel/helloworld.yang helloworld_datamodel)
 
-target_link_libraries(pcn-helloworld
-  polycube
-  uuid)
+target_link_libraries(pcn-helloworld ${POLYCUBE_LIBRARIES})
 
 # Specify shared library install directory
 

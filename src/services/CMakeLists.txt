@@ -1,6 +1,9 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/polycube/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/spdlog)
 
+set(POLYCUBE_STANDALONE_SERVICE false)
+set(POLYCUBE_LIBRARIES polycube uuid tins)
+
 set(LOAD_SERVICES "" PARENT_SCOPE)
 
 macro(add_service servicename servicefolder)
