@@ -23,6 +23,7 @@
 
 // #include <bcc/helpers.h>
 
+// packet metadata
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -35,6 +36,14 @@ struct packetHeaders {
   uint8_t connStatus;
   uint32_t sessionId;
   uint8_t direction;
+
+  // conntrackCommit attributes
+  uint8_t mask;
+  uint8_t setMask;
+  uint8_t clearMask;
+  uint8_t state;
+  uint32_t sequence;
+  uint64_t ttl;
 } __attribute__((packed));
 
 #if _NR_ELEMENTS > 0

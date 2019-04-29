@@ -29,6 +29,7 @@
 
 #define IPPROTO_TCP 6
 
+// packet metadata
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -41,6 +42,14 @@ struct packetHeaders {
   uint8_t connStatus;
   uint32_t sessionId;
   uint8_t direction;
+
+  // conntrackCommit attributes
+  uint8_t mask;
+  uint8_t setMask;
+  uint8_t clearMask;
+  uint8_t state;
+  uint32_t sequence;
+  uint64_t ttl;
 } __attribute__((packed));
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);

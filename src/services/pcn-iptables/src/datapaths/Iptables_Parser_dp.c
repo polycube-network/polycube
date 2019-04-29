@@ -28,6 +28,7 @@
 #define ICMP_ECHOREPLY 0 /* Echo Reply			*/
 #define ICMP_ECHO 8      /* Echo Request			*/
 
+// packet metadata
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -40,6 +41,14 @@ struct packetHeaders {
   uint8_t connStatus;
   uint32_t sessionId;
   uint8_t direction;
+
+  // conntrackCommit attributes
+  uint8_t mask;
+  uint8_t setMask;
+  uint8_t clearMask;
+  uint8_t state;
+  uint32_t sequence;
+  uint64_t ttl;
 } __attribute__((packed));
 
 // Following macro INGRESS/EGRESS Logic, are used in order to distinguish

@@ -130,15 +130,6 @@ struct icmphdr {
   } un;
 };
 
-struct conntrackCommit {
-  uint8_t mask;
-  uint8_t setMask;
-  uint8_t clearMask;
-  uint8_t state;
-  uint32_t sequence;
-  uint64_t ttl;
-} __attribute__((packed));
-
 // packet metadata
 struct packetHeaders {
   uint32_t srcIp;
@@ -152,6 +143,14 @@ struct packetHeaders {
   uint8_t connStatus;
   uint32_t sessionId;
   uint8_t direction;
+
+  // conntrackCommit attributes
+  uint8_t mask;
+  uint8_t setMask;
+  uint8_t clearMask;
+  uint8_t state;
+  uint32_t sequence;
+  uint64_t ttl;
 } __attribute__((packed));
 
 // session table value
@@ -186,8 +185,6 @@ BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
 #if _INGRESS_LOGIC
 BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
 
-BPF_TABLE_SHARED("percpu_array", int, struct conntrackCommit, ctcommit, 1);
-
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Input, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Input, 1);
 
@@ -197,8 +194,6 @@ BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Forward, 1);
 
 #if _EGRESS_LOGIC
 BPF_TABLE("extern", int, uint64_t, timestamp, 1);
-
-BPF_TABLE("extern", int, struct conntrackCommit, ctcommit, 1);
 
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Output, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Output, 1);
@@ -275,15 +270,6 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  struct conntrackCommit *commit;
-  k = 0;
-  commit = ctcommit.lookup(&k);
-
-  if (commit == NULL) {
-    // Not possible
-    return RX_DROP;
-  }
-
   struct session_v *session_value_p = 0;
   uint32_t sessionId = pkt->sessionId;
 
@@ -303,7 +289,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  commit->mask = 0;
+  pkt->mask = 0;
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
@@ -342,8 +328,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         // Another SYN. It is valid, probably a retransmission.
         // connections.delete(&key);
         pkt->connStatus = NEW;
-        commit->ttl = *timestamp + TCP_SYN_SENT;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_SYN_SENT;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [SYN] -> keep NEW ",
@@ -370,13 +356,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           (pkt->ackN == session_value_p->sequence)) {
         // Valid ACK to the SYN, ACK
         pkt->connStatus = ESTABLISHED;
-        commit->state = ESTABLISHED;
-        commit->ttl = *timestamp + TCP_ESTABLISHED;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
+        pkt->state = ESTABLISHED;
+        pkt->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [ACK && valid reply to SYN,ACK] ",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       } else {
         // Validation failed, either ACK is not the only flag set or the ack
@@ -398,19 +384,19 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if ((pkt->flags & TCPHDR_FIN) != 0) {
         // Received first FIN from "original" direction.
         // Changing state to FIN_WAIT_1
-        commit->state = FIN_WAIT_1;
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        commit->sequence = pkt->ackN;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+        pkt->state = FIN_WAIT_1;
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        pkt->sequence = pkt->ackN;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                   BIT(BIT_CT_SET_SEQUENCE));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [FIN]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       } else {
-        commit->ttl = *timestamp + TCP_ESTABLISHED;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] ![FIN]",
@@ -426,13 +412,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if ((pkt->flags & TCPHDR_ACK) != 0 &&
           (pkt->seqN == session_value_p->sequence)) {
         // Received ACK
-        commit->state = FIN_WAIT_2;
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pkt->state = FIN_WAIT_2;
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [ACK && seq]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
 
       } else {
         // Validation failed, either ACK is not the only flag set or the ack
@@ -455,20 +441,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       // this side
       if ((pkt->flags & TCPHDR_FIN) != 0) {
         // FIN received. Let's wait for it to be acknowledged.
-        commit->state = LAST_ACK;
-        commit->ttl = *timestamp + TCP_LAST_ACK;
-        commit->sequence = pkt->ackN;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+        pkt->state = LAST_ACK;
+        pkt->ttl = *timestamp + TCP_LAST_ACK;
+        pkt->sequence = pkt->ackN;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                   BIT(BIT_CT_SET_SEQUENCE));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [FIN]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       } else {
         // Still receiving packets
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] [!FIN]",
@@ -483,18 +469,18 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if ((pkt->flags & TCPHDR_ACK && pkt->seqN == session_value_p->sequence) !=
           0) {
         // Ack to the last FIN.
-        commit->state = TIME_WAIT;
-        commit->ttl = *timestamp + TCP_LAST_ACK;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pkt->state = TIME_WAIT;
+        pkt->ttl = *timestamp + TCP_LAST_ACK;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label "
                 "[%d] ",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       }
       // Still receiving packets
-      commit->ttl = *timestamp + TCP_LAST_ACK;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->ttl = *timestamp + TCP_LAST_ACK;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
       pcn_log(
           ctx, LOG_DEBUG,
           "[_HOOK] [ConntrackLabel] [TCP] [FWD] state [%d] -> [%d] label [%d] ",
@@ -553,10 +539,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
               (TCPHDR_SYN | TCPHDR_ACK) &&
           pkt->ackN == session_value_p->sequence) {
-        commit->state = SYN_RECV;
-        commit->ttl = *timestamp + TCP_SYN_RECV;
-        commit->sequence = pkt->seqN + HEX_BE_ONE;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+        pkt->state = SYN_RECV;
+        pkt->ttl = *timestamp + TCP_SYN_RECV;
+        pkt->sequence = pkt->seqN + HEX_BE_ONE;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                   BIT(BIT_CT_SET_SEQUENCE));
         pkt->connStatus = ESTABLISHED;
         pcn_log(ctx, LOG_DEBUG,
@@ -573,7 +559,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       pcn_log(ctx, LOG_DEBUG,
               "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
               "[%d] ![SYN,ACK in sequence]",
-              session_value_p->state, commit->state, pkt->connStatus);
+              session_value_p->state, pkt->state, pkt->connStatus);
       goto action;
     }
 
@@ -584,8 +570,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
           (pkt->flags | (TCPHDR_SYN | TCPHDR_ACK)) ==
               (TCPHDR_SYN | TCPHDR_ACK) &&
           pkt->ackN == session_value_p->sequence) {
-        commit->ttl = *timestamp + TCP_SYN_RECV;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_SYN_RECV;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pkt->connStatus = ESTABLISHED;
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
@@ -607,20 +593,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       if ((pkt->flags & TCPHDR_FIN) != 0) {
         // Initiating closing sequence
-        commit->state = FIN_WAIT_1;
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        commit->sequence = pkt->ackN;
+        pkt->state = FIN_WAIT_1;
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        pkt->sequence = pkt->ackN;
 
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                   BIT(BIT_CT_SET_SEQUENCE));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] [FIN]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       } else {
-        commit->ttl = *timestamp + TCP_ESTABLISHED;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_ESTABLISHED;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] ![FIN]",
@@ -637,13 +623,13 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if ((pkt->flags & TCPHDR_ACK) != 0 &&
           (pkt->seqN == session_value_p->sequence)) {
         // Received ACK
-        commit->state = FIN_WAIT_2;
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pkt->state = FIN_WAIT_2;
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] [ACK (response to FIN)]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
 
         // Don't forward packet, we can continue performing the check in case
         // the current packet is a ACK,FIN. In this case we match the next if
@@ -670,20 +656,20 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       // this side
       if ((pkt->flags & TCPHDR_FIN) != 0) {
         // FIN received. Let's wait for it to be acknowledged.
-        commit->state = LAST_ACK;
-        commit->ttl = *timestamp + TCP_LAST_ACK;
-        commit->sequence = pkt->ackN;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+        pkt->state = LAST_ACK;
+        pkt->ttl = *timestamp + TCP_LAST_ACK;
+        pkt->sequence = pkt->ackN;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                   BIT(BIT_CT_SET_SEQUENCE));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] [FIN]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       } else {
         // Still receiving packets
-        commit->ttl = *timestamp + TCP_FIN_WAIT;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+        pkt->ttl = *timestamp + TCP_FIN_WAIT;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] ![FIN]",
@@ -699,18 +685,18 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if ((pkt->flags & TCPHDR_ACK && pkt->seqN == session_value_p->sequence) !=
           0) {
         // Ack to the last FIN.
-        commit->state = TIME_WAIT;
-        commit->ttl = *timestamp + TCP_LAST_ACK;
-        BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
+        pkt->state = TIME_WAIT;
+        pkt->ttl = *timestamp + TCP_LAST_ACK;
+        BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL));
         pcn_log(ctx, LOG_DEBUG,
                 "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
                 "[%d] [ACK in seq]",
-                session_value_p->state, commit->state, pkt->connStatus);
+                session_value_p->state, pkt->state, pkt->connStatus);
         goto action;
       }
       // Still receiving packets
-      commit->ttl = *timestamp + TCP_LAST_ACK;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->ttl = *timestamp + TCP_LAST_ACK;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
       pcn_log(ctx, LOG_DEBUG,
               "[_HOOK] [ConntrackLabel] [TCP] [REV] state [%d] -> [%d] label "
               "[%d] ![ACK in seq]",
@@ -759,19 +745,19 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
       pkt->connStatus = NEW;
 
-      commit->state = SYN_SENT;
-      commit->ttl = *timestamp + TCP_SYN_SENT;
-      commit->sequence = pkt->seqN + HEX_BE_ONE;
+      pkt->state = SYN_SENT;
+      pkt->ttl = *timestamp + TCP_SYN_SENT;
+      pkt->sequence = pkt->seqN + HEX_BE_ONE;
       // TODO
-      commit->setMask = BIT(BIT_CONNTRACK);
-      //      BIT_SET(commit->setMask, BIT(BIT_CONNTRACK));
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+      pkt->setMask = BIT(BIT_CONNTRACK);
+      //      BIT_SET(pkt->setMask, BIT(BIT_CONNTRACK));
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                                 BIT(BIT_CT_SET_SEQUENCE) |
                                 BIT(BIT_CT_SET_MASK));
       pcn_log(ctx, LOG_DEBUG,
               "[_HOOK] [ConntrackLabel] [TCP] [MISS] state [%d] -> [%d] label "
               "[%d] [SYN]",
-              session_value_p->state, commit->state, pkt->connStatus);
+              session_value_p->state, pkt->state, pkt->connStatus);
 
       goto action;
     } else {
@@ -807,16 +793,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       // there has been no answer, from the other side. Connection is still
       // NEW.
       pkt->connStatus = NEW;
-      commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->ttl = *timestamp + UDP_NEW_TIMEOUT;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
       pcn_log(ctx, LOG_DEBUG,
               "[_HOOK] [ConntrackLabel] [UDP] [FWD] state [%d] -> [%d] label "
               "[%d] [NEW] ",
               session_value_p->state, session_value_p->state, pkt->connStatus);
       goto action;
     } else {
-      commit->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
       pkt->connStatus = ESTABLISHED;
       pcn_log(ctx, LOG_DEBUG,
               "[_HOOK] [ConntrackLabel] [UDP] [FWD] state [%d] -> [%d] label "
@@ -831,41 +817,41 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       // An entry was present in the rev direction with the NEW state. This
       // means that this is an answer, from the other side. Connection is
       // now ESTABLISHED.
-      commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
-      commit->state = *timestamp + ESTABLISHED;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
+      pkt->ttl = *timestamp + UDP_NEW_TIMEOUT;
+      pkt->state = *timestamp + ESTABLISHED;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_STATE));
       pkt->connStatus = ESTABLISHED;
       pcn_log(
           ctx, LOG_DEBUG,
           "[_HOOK] [ConntrackLabel] [UDP] [REV] state [%d] -> [%d] label [%d] ",
-          session_value_p->state, commit->state, pkt->connStatus);
+          session_value_p->state, pkt->state, pkt->connStatus);
       goto action;
     } else {
-      commit->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
-      BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+      pkt->ttl = *timestamp + UDP_ESTABLISHED_TIMEOUT;
+      BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
       pkt->connStatus = ESTABLISHED;
       pcn_log(
           ctx, LOG_DEBUG,
           "[_HOOK] [ConntrackLabel] [UDP] [REV] state [%d] -> [%d] label [%d] ",
-          session_value_p->state, commit->state, pkt->connStatus);
+          session_value_p->state, pkt->state, pkt->connStatus);
       goto action;
     }
 
   UDP_MISS:;
 
     // No entry found in both directions. Create one.
-    commit->state = NEW;
-    commit->ttl = *timestamp + UDP_NEW_TIMEOUT;
-    commit->sequence = 0;
-    //    BIT_SET(commit->setMask, BIT(BIT_CONNTRACK));
-    commit->setMask = BIT(BIT_CONNTRACK);
-    BIT_SET(commit->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
+    pkt->state = NEW;
+    pkt->ttl = *timestamp + UDP_NEW_TIMEOUT;
+    pkt->sequence = 0;
+    //    BIT_SET(pkt->setMask, BIT(BIT_CONNTRACK));
+    pkt->setMask = BIT(BIT_CONNTRACK);
+    BIT_SET(pkt->mask, BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_TTL) |
                               BIT(BIT_CT_SET_SEQUENCE) | BIT(BIT_CT_SET_MASK));
     pkt->connStatus = NEW;
     pcn_log(
         ctx, LOG_DEBUG,
         "[_HOOK] [ConntrackLabel] [UDP] [MISS] state [%d] -> [%d] label [%d] ",
-        session_value_p->state, commit->state, pkt->connStatus);
+        session_value_p->state, pkt->state, pkt->connStatus);
     goto action;
   }
 
@@ -888,9 +874,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         if (pkt->direction ==
             DIRECTION_FORWARD) {  //} /*&& (icmp->type == ICMP_ECHO)*/) {
           pkt->connStatus = session_value_p->state;
-          commit->ttl = *timestamp + ICMP_TIMEOUT;
-          commit->sequence = icmp->un.echo.sequence;
-          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE));
+          pkt->ttl = *timestamp + ICMP_TIMEOUT;
+          pkt->sequence = icmp->un.echo.sequence;
+          BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE));
           pcn_log(ctx, LOG_DEBUG,
                   "[_HOOK] [ConntrackLabel] [ICMP] [FWD] & [ECHO] state [%d] "
                   "-> [%d] label [%d] ",
@@ -901,18 +887,18 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         if (pkt->direction ==
             DIRECTION_REVERSE) {  //&& (icmp->type == ICMP_ECHOREPLY)) {
           if (session_value_p->state == NEW) {
-            commit->state = ESTABLISHED;
-            commit->sequence = icmp->un.echo.sequence;
-            BIT_SET(commit->mask,
+            pkt->state = ESTABLISHED;
+            pkt->sequence = icmp->un.echo.sequence;
+            BIT_SET(pkt->mask,
                     BIT(BIT_CT_SET_STATE) | BIT(BIT_CT_SET_SEQUENCE));
             pcn_log(ctx, LOG_DEBUG,
                     "[_HOOK] [ConntrackLabel] [ICMP] [REV] & [REPLY] state "
                     "[%d] -> [%d] label [%d] ",
-                    session_value_p->state, commit->state, pkt->connStatus);
+                    session_value_p->state, pkt->state, pkt->connStatus);
           }
           pkt->connStatus = ESTABLISHED;
-          commit->ttl = *timestamp + ICMP_TIMEOUT;
-          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL));
+          pkt->ttl = *timestamp + ICMP_TIMEOUT;
+          BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL));
           pcn_log(ctx, LOG_DEBUG,
                   "[_HOOK] [ConntrackLabel] [ICMP] [REV] & [REPLY] state [%d] "
                   "-> [%d] label [%d] ",
@@ -928,17 +914,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         if ((pkt->direction == DIRECTION_FORWARD) &&
             (icmp->type == ICMP_ECHO)) {
           pkt->connStatus = NEW;
-          commit->state = NEW;
-          commit->ttl = *timestamp + ICMP_TIMEOUT;
-          commit->sequence = icmp->un.echo.sequence;
-          commit->setMask = BIT(BIT_CONNTRACK);
-          BIT_SET(commit->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE) |
+          pkt->state = NEW;
+          pkt->ttl = *timestamp + ICMP_TIMEOUT;
+          pkt->sequence = icmp->un.echo.sequence;
+          pkt->setMask = BIT(BIT_CONNTRACK);
+          BIT_SET(pkt->mask, BIT(BIT_CT_SET_TTL) | BIT(BIT_CT_SET_SEQUENCE) |
                                     BIT(BIT_CT_SET_STATE) |
                                     BIT(BIT_CT_SET_MASK));
           pcn_log(ctx, LOG_DEBUG,
                   "[_HOOK] [ConntrackLabel] [ICMP] [MISS]  state [%d] -> [%d] "
                   "label [%d] ",
-                  session_value_p->state, commit->state, pkt->connStatus);
+                  session_value_p->state, pkt->state, pkt->connStatus);
           goto action;
         }
       }
@@ -962,9 +948,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 action:;
 
   pcn_log(ctx, LOG_DEBUG,
-          "[_HOOK] [ConntrackLabel] [action] commit->mask: 0x%x "
+          "[_HOOK] [ConntrackLabel] [action] pkt->mask: 0x%x "
           "pkt->connStatus: %d ",
-          commit->mask, pkt->connStatus);
+          pkt->mask, pkt->connStatus);
 
   // TODO possible optimization, inject it if needed
   int *decision = getForwardingDecision();
