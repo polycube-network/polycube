@@ -76,8 +76,6 @@ class Port : public polycube::service::PortIface, public PeerIface {
   virtual void set_conf(const nlohmann::json &conf);
   virtual nlohmann::json to_json() const;
 
-  void netlink_notification(int ifindex, const std::string &ifname);
-
   static void connect(PeerIface &p1, PeerIface &p2);
   static void unconnect(PeerIface &p1, PeerIface &p2);
 
@@ -93,7 +91,6 @@ class Port : public polycube::service::PortIface, public PeerIface {
   uint16_t index_;
   Guid uuid_;
   std::string peer_;
-  int netlink_notification_index;
 
   // TODO: I know, a better name is needed
   PeerIface *peer_port_;

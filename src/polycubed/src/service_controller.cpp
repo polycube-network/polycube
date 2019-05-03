@@ -284,5 +284,26 @@ bool ServiceController::parse_peer_name(const std::string &peer,
   return true;
 }
 
+void ServiceController::netlink_notification(int ifindex,
+                                             const std::string &ifname) {
+  std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
+  if (ports_to_ifaces.count(ifname) == 0) {
+    return; // nothing to do here
+  }
+
+  auto iface = ports_to_ifaces.at(ifname);
+
+  auto peer = iface->get_peer_iface();
+  if (peer) {
+    auto port = dynamic_cast<Port*>(peer);
+    if (port) {
+      port->set_peer("");
+    }
+  }
+
+  // try to remove it if existed
+  ports_to_ifaces.erase(ifname);
+}
+
 }  // namespace polycubed
 }  // namespace polycube

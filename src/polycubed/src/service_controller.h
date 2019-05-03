@@ -88,6 +88,8 @@ class ServiceController {
   static std::unordered_map<std::string, std::shared_ptr<ExtIface>>
       ports_to_ifaces;
 
+  static void netlink_notification(int ifindex, const std::string &ifname);
+
  private:
   std::shared_ptr<spdlog::logger> l;
   std::shared_ptr<ManagementInterface> management_interface_;
