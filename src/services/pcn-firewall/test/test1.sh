@@ -5,7 +5,7 @@ source "${BASH_SOURCE%/*}/helpers.bash"
 function fwcleanup {
   set +e
   polycubectl firewall del fw
-  delete_veth 2
+  delete_veth_pair
 }
 trap fwcleanup EXIT
 
@@ -13,14 +13,10 @@ echo -e '\nTest 1 \n'
 set -e
 set -x
 
-create_veth 2
+setup_veth_pair
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=DEBUG
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=DEBUG
+polycubectl attach fw veth1
 
 #matched rules
 polycubectl firewall fw chain INGRESS rule add 0 src=10.0.0.1 dst=10.0.0.2 l4proto=ICMP action=FORWARD

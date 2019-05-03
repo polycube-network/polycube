@@ -224,41 +224,6 @@ create_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEn
   chain->addRuleList(value);
 }
 
-/**
-* @brief   Create ports by ID
-*
-* Create operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-create_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
-  auto firewall = get_cube(name);
-
-  firewall->addPorts(portsName, value);
-}
-
-/**
-* @brief   Create ports by ID
-*
-* Create operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-create_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  auto firewall = get_cube(name);
-  firewall->addPortsList(value);
-}
 
 /**
 * @brief   Delete chain by ID
@@ -332,39 +297,6 @@ delete_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEn
   chain->delRuleList();
 }
 
-/**
-* @brief   Delete ports by ID
-*
-* Delete operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-*
-* Responses:
-*
-*/
-void
-delete_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto firewall = get_cube(name);
-
-  firewall->delPorts(portsName);
-}
-
-/**
-* @brief   Delete ports by ID
-*
-* Delete operation of resource: ports*
-*
-* @param[in] name ID of name
-*
-* Responses:
-*
-*/
-void
-delete_firewall_ports_list_by_id(const std::string &name) {
-  auto firewall = get_cube(name);
-  firewall->delPortsList();
-}
 
 /**
 * @brief   Read accept-established by ID
@@ -977,39 +909,6 @@ read_firewall_conntrack_by_id(const std::string &name) {
 
 }
 
-/**
-* @brief   Read egress-port by ID
-*
-* Read operation of resource: egress-port*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-read_firewall_egress_port_by_id(const std::string &name) {
-  auto firewall = get_cube(name);
-  return firewall->getEgressPort();
-
-}
-
-/**
-* @brief   Read ingress-port by ID
-*
-* Read operation of resource: ingress-port*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-read_firewall_ingress_port_by_id(const std::string &name) {
-  auto firewall = get_cube(name);
-  return firewall->getIngressPort();
-
-}
 
 /**
 * @brief   Read interactive by ID
@@ -1028,43 +927,6 @@ read_firewall_interactive_by_id(const std::string &name) {
 
 }
 
-/**
-* @brief   Read ports by ID
-*
-* Read operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-*
-* Responses:
-* PortsJsonObject
-*/
-PortsJsonObject
-read_firewall_ports_by_id(const std::string &name, const std::string &portsName) {
-  auto firewall = get_cube(name);
-  return firewall->getPorts(portsName)->toJsonObject();
-
-}
-
-/**
-* @brief   Read ports by ID
-*
-* Read operation of resource: ports*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::vector<PortsJsonObject>
-*/
-std::vector<PortsJsonObject>
-read_firewall_ports_list_by_id(const std::string &name) {
-  auto firewall = get_cube(name);
-  auto &&ports = firewall->getPortsList();
-  std::vector<PortsJsonObject> m;
-  for(auto &i : ports)
-    m.push_back(i->toJsonObject());
-  return m;
-}
 
 /**
 * @brief   Read session-table by ID
@@ -1227,40 +1089,6 @@ replace_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameE
   throw std::runtime_error("Method not supported");
 }
 
-/**
-* @brief   Replace ports by ID
-*
-* Replace operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-replace_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
-  auto firewall = get_cube(name);
-
-  firewall->replacePorts(portsName, value);
-}
-
-/**
-* @brief   Replace ports by ID
-*
-* Replace operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-replace_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  throw std::runtime_error("Method not supported");
-}
 
 /**
 * @brief   Update accept-established by ID
@@ -1411,41 +1239,6 @@ update_firewall_conntrack_by_id(const std::string &name, const FirewallConntrack
   firewall->setConntrack(value);
 }
 
-/**
-* @brief   Update egress-port by ID
-*
-* Update operation of resource: egress-port*
-*
-* @param[in] name ID of name
-* @param[in] value Name for the egress port, from which arrives traffic processed by EGRESS chain (by default it&#39;s the second port of the cube)
-*
-* Responses:
-*
-*/
-void
-update_firewall_egress_port_by_id(const std::string &name, const std::string &value) {
-  auto firewall = get_cube(name);
-
-  firewall->setEgressPort(value);
-}
-
-/**
-* @brief   Update ingress-port by ID
-*
-* Update operation of resource: ingress-port*
-*
-* @param[in] name ID of name
-* @param[in] value Name for the ingress port, from which arrives traffic processed by INGRESS chain (by default it&#39;s the first port of the cube)
-*
-* Responses:
-*
-*/
-void
-update_firewall_ingress_port_by_id(const std::string &name, const std::string &value) {
-  auto firewall = get_cube(name);
-
-  firewall->setIngressPort(value);
-}
 
 /**
 * @brief   Update interactive by ID
@@ -1479,43 +1272,6 @@ void
 update_firewall_list_by_id(const std::vector<FirewallJsonObject> &value) {
   throw std::runtime_error("Method not supported");
 }
-
-/**
-* @brief   Update ports by ID
-*
-* Update operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-update_firewall_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value) {
-  auto firewall = get_cube(name);
-  auto ports = firewall->getPorts(portsName);
-
-  ports->update(value);
-}
-
-/**
-* @brief   Update ports by ID
-*
-* Update operation of resource: ports*
-*
-* @param[in] name ID of name
-* @param[in] value portsbody object
-*
-* Responses:
-*
-*/
-void
-update_firewall_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value) {
-  throw std::runtime_error("Method not supported");
-}
-
 
 
 /*
@@ -1563,21 +1319,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_chain_st
     nlohmann::fifo_map<std::string, std::string> keys;
 
     keys["id"] = std::to_string(i->getId());
-
-    r.push_back(keys);
-  }
-  return r;
-}
-
-std::vector<nlohmann::fifo_map<std::string, std::string>> read_firewall_ports_list_by_id_get_list(const std::string &name) {
-  std::vector<nlohmann::fifo_map<std::string, std::string>> r;
-  auto &&firewall = get_cube(name);
-
-  auto &&ports = firewall->getPortsList();
-  for(auto &i : ports) {
-    nlohmann::fifo_map<std::string, std::string> keys;
-
-    keys["name"] = i->getName();
 
     r.push_back(keys);
   }

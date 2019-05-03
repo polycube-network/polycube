@@ -18,9 +18,9 @@
 #include "datapaths/Firewall_ConntrackTableUpdate_dp.h"
 
 Firewall::ConntrackTableUpdate::ConntrackTableUpdate(const int &index,
-                                                     Firewall &outer)
+    const ChainNameEnum &direction, Firewall &outer)
     : Firewall::Program(firewall_code_conntracktableupdate, index,
-                        ChainNameEnum::INVALID, outer) {
+                        direction, outer) {
   load();
 }
 
@@ -34,12 +34,6 @@ std::string Firewall::ConntrackTableUpdate::getCode() {
 
   /*Replacing hops*/
   replaceAll(noMacroCode, "_NEXT_HOP_1", std::to_string(index + 1));
-
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
 
   replaceAll(noMacroCode, "_CONNTRACK_MODE",
              std::to_string(firewall.conntrackMode));

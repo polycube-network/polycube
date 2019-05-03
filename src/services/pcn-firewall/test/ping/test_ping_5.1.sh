@@ -17,10 +17,7 @@ set -x
 create_veth 2
 
 polycubectl firewall add fw
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl attach fw veth1
 polycubectl firewall fw set interactive=false
 
 #INGRESS CHAIN
@@ -62,4 +59,4 @@ polycubectl firewall fw chain EGRESS apply-rules
 
 #pings
 sudo ip netns exec ns1 ping 10.0.0.2 -c 2 -i 0.5 -w 1
-sudo ip netns exec ns2 ping 10.0.0.1 -c 2 -i 0.5 -w 1
+sudo ping 10.0.0.1 -c 2 -i 0.5 -w 1

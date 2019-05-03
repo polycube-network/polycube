@@ -18,8 +18,6 @@
    Match on Connection Tracking Status.
    =================================== */
 
-#define TRACE _TRACE
-
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
 
@@ -37,10 +35,10 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
-  return packet_DIRECTION.lookup(&key);
+  return packet.lookup(&key);
 }
 
 #if _NR_ELEMENTS > 0
@@ -48,20 +46,20 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 
-BPF_HASH(Conntrack_DIRECTION, uint8_t, struct elements);
+BPF_HASH(Conntrack, uint8_t, struct elements);
 static __always_inline struct elements *getBitVect(uint8_t *key) {
-  return Conntrack_DIRECTION.lookup(key);
+  return Conntrack.lookup(key);
 }
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Conntrack_DIRECTIONMatching receiving packet");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackMatch]: Receiving packet");
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so this code has to be used only in this case.*/
 #if _NR_ELEMENTS > 0
@@ -74,7 +72,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   uint8_t connStatus = pkt->connStatus;
   pcn_log(ctx, LOG_DEBUG,
-          "Conntrack_DIRECTIONMatching received a packet with state %d",
+          "[_CHAIN_NAME][ConntrackMatch]: received a packet with state %d",
           pkt->connStatus);
 
   struct elements *ele = getBitVect(&connStatus);
@@ -83,7 +81,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     connStatus = CONNTRACK_INVALID;
     ele = getBitVect(&connStatus);
     if (ele == NULL) {
-      pcn_log(ctx, LOG_DEBUG, "[Conntrack] No match. ");
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackMatch]: No match");
       _DEFAULTACTION
     }
   }
@@ -106,7 +104,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #endif
   }  // if result == NULL
 
-  call_ingress_program(ctx, _NEXT_HOP_1);
+  call_next_program(ctx, _NEXT_HOP_1);
 #else
   return RX_DROP;
 #endif

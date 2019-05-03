@@ -148,11 +148,11 @@ uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl, uint16_t state,
   }
 }
 
-uint64_t SessionTable::hex_string_to_uint64(const std::string &str) {
-  uint64_t x;
-  std::stringstream ss;
-  ss << std::hex << str;
-  ss >> x;
-
-  return x;
-}
+//uint64_t SessionTable::hex_string_to_uint64(const std::string &str) {
+//  uint64_t x;
+//  std::stringstream ss;
+//  ss << std::hex << str;
+//  ss >> x;
+//
+//  return x;
+//}

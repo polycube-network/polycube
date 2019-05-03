@@ -23,7 +23,6 @@
 #include "../serializer/FirewallJsonObject.h"
 
 #include "../Chain.h"
-#include "../Ports.h"
 #include "../SessionTable.h"
 
 using namespace io::swagger::server::model;
@@ -33,29 +32,6 @@ public:
 
   virtual void update(const FirewallJsonObject &conf) = 0;
   virtual FirewallJsonObject toJsonObject() = 0;
-
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  virtual std::shared_ptr<Ports> getPorts(const std::string &name) = 0;
-  virtual std::vector<std::shared_ptr<Ports>> getPortsList() = 0;
-  virtual void addPorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void addPortsList(const std::vector<PortsJsonObject> &conf) = 0;
-  virtual void replacePorts(const std::string &name, const PortsJsonObject &conf) = 0;
-  virtual void delPorts(const std::string &name) = 0;
-  virtual void delPortsList() = 0;
-
-  /// <summary>
-  /// Name for the ingress port, from which arrives traffic processed by INGRESS chain (by default it&#39;s the first port of the cube)
-  /// </summary>
-  virtual std::string getIngressPort() = 0;
-  virtual void setIngressPort(const std::string &value) = 0;
-
-  /// <summary>
-  /// Name for the egress port, from which arrives traffic processed by EGRESS chain (by default it&#39;s the second port of the cube)
-  /// </summary>
-  virtual std::string getEgressPort() = 0;
-  virtual void setEgressPort(const std::string &value) = 0;
 
   /// <summary>
   /// Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.

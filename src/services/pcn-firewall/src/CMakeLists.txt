@@ -23,7 +23,6 @@ add_library(pcn-firewall SHARED
   ChainStats.cpp
   SessionTable.cpp
   Firewall.cpp
-  Ports.cpp
   Firewall-lib.cpp
   Utils.cpp)
 

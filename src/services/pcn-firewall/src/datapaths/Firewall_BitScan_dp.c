@@ -18,9 +18,6 @@
    First Bit Search Search
    ======================= */
 
-#define TRACE _TRACE
-//#include <bcc/helpers.h>
-
 BPF_ARRAY(index64, uint16_t, 64);
 
 #if _NR_ELEMENTS > 0
@@ -28,10 +25,10 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 #endif
 
@@ -56,9 +53,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       return RX_DROP;
     }
     (ele->bits)[0] = *matchingResult;
-    pcn_log(ctx, LOG_DEBUG, "Bitscan _DIRECTION Matching element 0 offset %d. ",
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Bitscan]: Matching element 0 offset %d",
             *matchingResult);
-    call_ingress_program(ctx, _NEXT_HOP_1);
+    call_next_program(ctx, _NEXT_HOP_1);
   }
 
 #else
@@ -77,16 +74,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       int globalBit = *matchingResult + i * 63;
       pcn_log(ctx, LOG_DEBUG,
-              "Bitscan _DIRECTION Matching element %d offset %d. ", i,
+              "[_CHAIN_NAME][Bitscan]: Matching element %d offset %d", i,
               *matchingResult);
       (ele->bits)[0] = globalBit;
-      call_ingress_program(ctx, _NEXT_HOP_1);
+      call_next_program(ctx, _NEXT_HOP_1);
 
     }  // ele->bits[i] != 0
   }    // end loop
 #endif
 
 #endif
-  pcn_log(ctx, LOG_DEBUG, "No bit set to 1. ");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Bitscan]: No bit set to 1");
   _DEFAULTACTION;
 }

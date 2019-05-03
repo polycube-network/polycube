@@ -17,9 +17,9 @@
 #include "../Firewall.h"
 #include "datapaths/Firewall_Parser_dp.h"
 
-Firewall::Parser::Parser(const int &index, Firewall &outer)
-    : Firewall::Program(firewall_code_parser, index, ChainNameEnum::INVALID,
-                        outer) {
+Firewall::Parser::Parser(const int &index, const ChainNameEnum &direction,
+                         Firewall &outer)
+    : Firewall::Program(firewall_code_parser, index, direction, outer) {
   reload();
 }
 
@@ -38,36 +38,17 @@ std::string Firewall::Parser::getCode() {
     replaceAll(noMacroCode, "_NEXT_HOP", std::to_string(index + 1));
   }
 
-  /*Replacing the default action*/
-  replaceAll(noMacroCode, "_DEFAULTACTION_INGRESS",
-             this->defaultActionString());
-  replaceAll(noMacroCode, "_DEFAULTACTION_EGRESS", this->defaultActionString());
+  replaceAll(noMacroCode, "_DEFAULTACTION", this->defaultActionString());
 
-  /*Replacing nrElements*/
   try {
-    replaceAll(noMacroCode, "_NR_ELEMENTS_INGRESS",
-               std::to_string(FROM_NRULES_TO_NELEMENTS(
-                   firewall.getChain(ChainNameEnum::INGRESS)->getNrRules())));
+    replaceAll(noMacroCode, "_NR_ELEMENTS",
+             std::to_string(FROM_NRULES_TO_NELEMENTS(
+                 firewall.getChain(direction)->getNrRules())));
   } catch (...) {
-    // Ingress chain not active.
-    replaceAll(noMacroCode, "_NR_ELEMENTS_INGRESS",
+    // chain not active.
+    replaceAll(noMacroCode, "_NR_ELEMENTS",
                std::to_string(FROM_NRULES_TO_NELEMENTS(0)));
   }
 
-  try {
-    replaceAll(noMacroCode, "_NR_ELEMENTS_EGRESS",
-               std::to_string(FROM_NRULES_TO_NELEMENTS(
-                   firewall.getChain(ChainNameEnum::EGRESS)->getNrRules())));
-  } catch (...) {
-    // Egress chain not active.
-    replaceAll(noMacroCode, "_NR_ELEMENTS_EGRESS",
-               std::to_string(FROM_NRULES_TO_NELEMENTS(0)));
-  }
-
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
   return noMacroCode;
 }

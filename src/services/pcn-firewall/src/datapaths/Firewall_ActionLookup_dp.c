@@ -18,42 +18,40 @@
    Action on matched rule
    ======================= */
 
-#define TRACE _TRACE
-
 #if _NR_ELEMENTS > 0
 struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_ARRAY(actions_DIRECTION, int, 10000);
+BPF_ARRAY(actions, int, 10000);
 static __always_inline int *getAction(int *key) {
-  return actions_DIRECTION.lookup(key);
+  return actions.lookup(key);
 }
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 #endif
 
-BPF_TABLE("percpu_array", int, u64, pkts_DIRECTION, 8000);
-BPF_TABLE("percpu_array", int, u64, bytes_DIRECTION, 8000);
+BPF_TABLE("percpu_array", int, u64, pktsCounter, 8000);
+BPF_TABLE("percpu_array", int, u64, bytesCounter, 8000);
 
 static __always_inline void incrementCounters(int *action, u32 bytes) {
   u64 *value;
-  value = pkts_DIRECTION.lookup(action);
+  value = pktsCounter.lookup(action);
   if (value) {
     *value += 1;
   }
-  value = bytes_DIRECTION.lookup(action);
+  value = bytesCounter.lookup(action);
   if (value) {
     *value += bytes;
   }
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code action _DIRECTION receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Action]: receiving packet");
 
 #if _NR_ELEMENTS > 0
   int key = 0;
@@ -63,7 +61,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Rule matched: %d ", (int)(ruleMatched->bits)[0]);
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Action]: Rule matched: %d", (int)(ruleMatched->bits)[0]);
 
   key = (int)(ruleMatched->bits)[0];
   int *action = getAction(&key);
@@ -75,16 +73,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   incrementCounters(&key, md->packet_len);
   switch (*action) {
   case 0:
-    pcn_log(ctx, LOG_DEBUG, "[_DIRECTION] Action taken: DROP ");
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Action]: Action taken: DROP");
     return RX_DROP;
 
   case 1:
-    pcn_log(ctx, LOG_DEBUG, "[_DIRECTION] Action taken: FORWARD ");
-    call_ingress_program(ctx, _CONNTRACKTABLEUPDATE);
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Action]: Action taken: FORWARD");
+    call_next_program(ctx, _CONNTRACKTABLEUPDATE);
     return RX_DROP;
 
   default:
-    pcn_log(ctx, LOG_ERR, "[_DIRECTION] Something went wrong. ");
+    pcn_log(ctx, LOG_ERR, "[_CHAIN_NAME][Action]: Something went wrong");
     return RX_DROP;
   }
 

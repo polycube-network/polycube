@@ -33,7 +33,8 @@ void Firewall::BitScan::loadIndex64() {
       46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43, 31, 22, 10, 45,
       25, 39, 14, 33, 19, 30, 9,  24, 13, 18, 8,  12, 7,  6,  5,  63};
 
-  auto table = firewall.get_array_table<uint16_t>("index64", index);
+  auto table = firewall.get_array_table<uint16_t>("index64", index,
+                                                  getProgramType());
 
   for (uint32_t i = 0; i < 64; ++i) {
     table.set(i, index64[i]);
@@ -56,18 +57,6 @@ std::string Firewall::BitScan::getCode() {
   replaceAll(noMacroCode, "_NR_ELEMENTS",
              std::to_string(FROM_NRULES_TO_NELEMENTS(
                  firewall.getChain(direction)->getNrRules())));
-
-  /*Replacing tracing flag*/
-  if (firewall.trace)
-    replaceAll(noMacroCode, "_TRACE", std::to_string(1));
-  else
-    replaceAll(noMacroCode, "_TRACE", std::to_string(0));
-
-  /*Replacing direction suffix*/
-  if (direction == ChainNameEnum::INGRESS)
-    replaceAll(noMacroCode, "_DIRECTION", "Ingress");
-  else
-    replaceAll(noMacroCode, "_DIRECTION", "Egress");
 
   /*Replacing the default action*/
   replaceAll(noMacroCode, "_DEFAULTACTION", defaultActionString());

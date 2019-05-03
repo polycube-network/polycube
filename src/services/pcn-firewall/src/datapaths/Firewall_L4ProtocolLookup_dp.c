@@ -18,11 +18,6 @@
    Match on Transport Protocol.
    ======================= */
 
-#define TRACE _TRACE
-
-//#include <bcc/helpers.h>
-//#include <uapi/linux/in.h>
-
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -35,10 +30,10 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
-  return packet_DIRECTION.lookup(&key);
+  return packet.lookup(&key);
 }
 
 #if _NR_ELEMENTS > 0
@@ -46,20 +41,20 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_HASH(transportProto_DIRECTION, uint8_t, struct elements);
+BPF_HASH(transportProto, uint8_t, struct elements);
 static __always_inline struct elements *getBitVect(uint8_t *key) {
-  return transportProto_DIRECTION.lookup(key);
+  return transportProto.lookup(key);
 }
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code l4proto_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4ProtoLookup]: Receiving packet");
 
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
@@ -79,7 +74,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     proto = 0;
     ele = getBitVect(&proto);
     if (ele == NULL) {
-      pcn_log(ctx, LOG_DEBUG, "No match, dropping. proto %d .", proto);
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4ProtoLookup]: No match, dropping. proto %d .", proto);
       _DEFAULTACTION
     }
   }
@@ -103,7 +98,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #endif
   }  // if result == NULL
 
-  call_ingress_program(ctx, _NEXT_HOP_1);
+  call_next_program(ctx, _NEXT_HOP_1);
 #else
   return RX_DROP;
 #endif

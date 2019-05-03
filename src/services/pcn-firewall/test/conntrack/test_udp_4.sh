@@ -1,4 +1,4 @@
-source "${BASH_SOURCE%/*}/helpers.bash"
+source "${BASH_SOURCE%/*}/../helpers.bash"
 
 function fwcleanup {
   set +e
@@ -12,12 +12,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=DEBUG
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=DEBUG
+polycubectl attach fw veth1
 
 polycubectl firewall fw set accept-established=ON
 
@@ -38,7 +34,7 @@ if [[ $npingOutput == *"Rcvd: 1"* ]]; then
 fi
 
 echo "(2) Sending allowed UDP packet"
-npingOutput="$(sudo ip netns exec ns2 nping --udp -c 1 -p 50000 --source-port 50000 10.0.0.1)"
+npingOutput="$(sudo nping --udp -c 1 -p 50000 --source-port 50000 10.0.0.1)"
 if [[ $npingOutput != *"Rcvd: 1"* ]]; then
   echo "Test failed (2)"
   exit 1

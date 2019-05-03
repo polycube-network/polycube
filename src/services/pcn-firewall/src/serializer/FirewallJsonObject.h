@@ -25,7 +25,6 @@
 
 #include "ChainJsonObject.h"
 #include "SessionTableJsonObject.h"
-#include "PortsJsonObject.h"
 #include <vector>
 #include "polycube/services/cube.h"
 
@@ -58,30 +57,6 @@ public:
   std::string getName() const;
   void setName(std::string value);
   bool nameIsSet() const;
-
-  /// <summary>
-  /// Entry of the ports table
-  /// </summary>
-  const std::vector<PortsJsonObject>& getPorts() const;
-  void addPorts(PortsJsonObject value);
-  bool portsIsSet() const;
-  void unsetPorts();
-
-  /// <summary>
-  /// Name for the ingress port, from which arrives traffic processed by INGRESS chain (by default it&#39;s the first port of the cube)
-  /// </summary>
-  std::string getIngressPort() const;
-  void setIngressPort(std::string value);
-  bool ingressPortIsSet() const;
-  void unsetIngressPort();
-
-  /// <summary>
-  /// Name for the egress port, from which arrives traffic processed by EGRESS chain (by default it&#39;s the second port of the cube)
-  /// </summary>
-  std::string getEgressPort() const;
-  void setEgressPort(std::string value);
-  bool egressPortIsSet() const;
-  void unsetEgressPort();
 
   /// <summary>
   /// Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.
@@ -130,12 +105,6 @@ public:
 private:
   std::string m_name;
   bool m_nameIsSet;
-  std::vector<PortsJsonObject> m_ports;
-  bool m_portsIsSet;
-  std::string m_ingressPort;
-  bool m_ingressPortIsSet;
-  std::string m_egressPort;
-  bool m_egressPortIsSet;
   FirewallConntrackEnum m_conntrack;
   bool m_conntrackIsSet;
   FirewallAcceptEstablishedEnum m_acceptEstablished;

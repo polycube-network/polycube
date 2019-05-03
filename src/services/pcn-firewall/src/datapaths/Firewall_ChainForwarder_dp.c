@@ -18,24 +18,23 @@
    Parse packet
    ======================= */
 
-#define TRACE _TRACE
-
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code ChainForwarder receiving packet.");
-  if (md->in_port == _INGRESSPORT) {
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: Receiving packet");
+#if defined(_INGRESS_LOGIC)
 #if _NR_ELEMENTS_INGRESS > 0
     call_ingress_program(ctx, _NEXT_HOP_INGRESS_1);
 #endif
-    pcn_log(ctx, LOG_DEBUG, "No ingress chain. ");
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: No ingress chain");
     _DEFAULTACTION_INGRESS
-  }
-
-  if (md->in_port == _EGRESSPORT) {
-#if _NR_ELEMENTS_EGRESS > 0
-    call_ingress_program(ctx, _NEXT_HOP_EGRESS_1);
 #endif
-    pcn_log(ctx, LOG_DEBUG, "No egress chain. ");
+
+#if defined(_EGRESS_LOGIC)
+#if _NR_ELEMENTS_EGRESS > 0
+    call_egress_program(ctx, _NEXT_HOP_EGRESS_1);
+#endif
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: No egress chain");
     _DEFAULTACTION_EGRESS
-  }
+#endif
+  pcn_log(ctx, LOG_ERR, "[_CHAIN_NAME][ChainForwarder]: miss");
   return RX_DROP;
 }

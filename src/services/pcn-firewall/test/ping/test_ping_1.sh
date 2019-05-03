@@ -21,13 +21,8 @@ fi
 
 create_veth 2
 
-polycubectl firewall add fw type=$TYPE
-polycubectl firewall fw set loglevel=OFF
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
-
+polycubectl firewall add fw type=$TYPE loglevel=OFF
+polycubectl attach fw veth1
 polycubectl firewall fw set interactive=false
 
 #INGRESS CHAIN

@@ -18,8 +18,6 @@
    Parse packet
    ======================= */
 
-#define TRACE _TRACE
-
 #include <uapi/linux/ip.h>
 #include <uapi/linux/udp.h>
 
@@ -38,14 +36,19 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-BPF_TABLE_SHARED("percpu_array", int, struct packetHeaders, packetIngress, 1);
-BPF_TABLE_SHARED("percpu_array", int, struct packetHeaders, packetEgress, 1);
-
 struct elements {
   uint64_t bits[_MAXRULES];
 };
-BPF_TABLE_SHARED("percpu_array", int, struct elements, sharedEleIngress, 1);
-BPF_TABLE_SHARED("percpu_array", int, struct elements, sharedEleEgress, 1);
+
+#if defined(_INGRESS_LOGIC)
+BPF_TABLE_SHARED("percpu_array", int, struct packetHeaders, packet, 1);
+BPF_TABLE_SHARED("percpu_array", int, struct elements, sharedEle, 1);
+#elif defined(_EGRESS_LOGIC)
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
+#else
+#error "_INGRESS_LOGIC or _EGRESS_LOGIC should be defined"
+#endif
 
 struct eth_hdr {
   __be64 dst : 48;
@@ -68,7 +71,7 @@ struct tcp_hdr {
 } __attribute__((packed));
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code Parse receiving packet.");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Parser]: Receiving packet");
 
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
@@ -77,14 +80,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   if (ethernet->proto != bpf_htons(ETH_P_IP)) {
     /*Let everything that is not IP pass. */
-    pcn_log(ctx, LOG_DEBUG, "Packet not IP. ");
-    if (md->in_port == _INGRESSPORT) {
-      pcn_pkt_redirect(ctx, md, _EGRESSPORT);
-      return RX_REDIRECT;
-    } else {
-      pcn_pkt_redirect(ctx, md, _INGRESSPORT);
-      return RX_REDIRECT;
-    }
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][Parser]: Packet not IP");
+    return RX_OK;
   }
 
   struct iphdr *ip = NULL;
@@ -93,12 +90,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
 
   int key = 0;
-  struct packetHeaders *pkt;
-  if (md->in_port == _INGRESSPORT) {
-    pkt = packetIngress.lookup(&key);
-  } else {
-    pkt = packetEgress.lookup(&key);
-  }
+  struct packetHeaders *pkt = packet.lookup(&key);
   if (pkt == NULL) {
     // Not possible
     return RX_DROP;
@@ -129,47 +121,23 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   key = 0;
   struct elements *result;
-
-  if (md->in_port == _INGRESSPORT) {
-#if _NR_ELEMENTS_INGRESS > 0
-    result = sharedEleIngress.lookup(&key);
+#if _NR_ELEMENTS > 0
+    result = sharedEle.lookup(&key);
     if (result == NULL) {
       // Not possible
       return RX_DROP;
     }
-#if _NR_ELEMENTS_INGRESS == 1
+#if _NR_ELEMENTS == 1
     (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
 #else
 #pragma unroll
-    for (int i = 0; i < _NR_ELEMENTS_INGRESS; ++i) {
+    for (int i = 0; i < _NR_ELEMENTS; ++i) {
       /*This is the first module, it initializes the percpu*/
       (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
     }
 
 #endif
 #endif
-  }
-
-  if (md->in_port == _EGRESSPORT) {
-#if _NR_ELEMENTS_EGRESS > 0
-    result = sharedEleEgress.lookup(&key);
-    if (result == NULL) {
-      // Not possible
-      return RX_DROP;
-    }
-#if _NR_ELEMENTS_EGRESS == 1
-    (result->bits)[0] = 0x7FFFFFFFFFFFFFFF;
-#else
-#pragma unroll
-    for (int i = 0; i < _NR_ELEMENTS_EGRESS; ++i) {
-      /*This is the first module, it initializes the percpu*/
-      (result->bits)[i] = 0x7FFFFFFFFFFFFFFF;
-    }
-
-#endif
-#endif
-  }
-
-  call_ingress_program(ctx, _NEXT_HOP);
+  call_next_program(ctx, _NEXT_HOP);
   return RX_DROP;
 }
