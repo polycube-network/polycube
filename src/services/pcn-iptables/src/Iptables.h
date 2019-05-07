@@ -66,8 +66,9 @@ struct tts_v {
 } __attribute__((packed));
 
 struct session_v {
-  uint8_t setMask;     // bitmask for set fields
-  uint8_t actionMask;  // bitmask for actions to be applied or not
+  uint8_t setMask;       // bitmask for set fields
+  uint8_t actionMask;    // bitmask for actions to be applied or not
+  uint8_t holdSessionId; // avoid other threads to pick same session ID, also if not yet committed
 
   uint64_t ttl;
   uint8_t state;
@@ -94,6 +95,12 @@ enum {
 
 // bit used in session->setMask
 enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV };
+
+enum {
+  HOLD_SESSION_OFF,               // SessionId is free to pick
+  HOLD_SESSION_DATAPLANE,         // SessionId is taken by a thread in dataplane, not yet committed
+  HOLD_SESSION_GARBAGE_COLLECTOR  // SessionId is marked invalid by garbage collector, not yet avail. for new sessions
+};
 
 class Ports;
 class Chain;

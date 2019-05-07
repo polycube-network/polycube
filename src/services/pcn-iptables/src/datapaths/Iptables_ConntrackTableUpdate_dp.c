@@ -38,7 +38,7 @@
 /* ENUM */
 
 // bit used in session->setMask
-enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV };
+enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV, BIT_HOLD_SESSION_ID };
 
 // bit used in commit->mask
 enum {
@@ -46,7 +46,14 @@ enum {
   BIT_CT_CLEAR_MASK,
   BIT_CT_SET_TTL,
   BIT_CT_SET_STATE,
-  BIT_CT_SET_SEQUENCE
+  BIT_CT_SET_SEQUENCE,
+  BIT_CT_SET_HOLD
+};
+
+enum {
+    HOLD_SESSION_OFF,               // SessionId is free to pick
+    HOLD_SESSION_DATAPLANE,         // SessionId is taken by a thread in dataplane, not yet committed
+    HOLD_SESSION_GARBAGE_COLLECTOR  // SessionId is marked invalid by garbage collector, not yet avail. for new sessions
 };
 
 /* STRUCT */
@@ -92,8 +99,9 @@ struct packetHeaders {
 } __attribute__((packed));
 
 struct session_v {
-  uint8_t setMask;     // bitmask for set fields
-  uint8_t actionMask;  // bitmask for actions to be applied or not
+  uint8_t setMask;       // bitmask for set fields
+  uint8_t actionMask;    // bitmask for actions to be applied or not
+  uint8_t holdSessionId; // avoid other threads to pick same session ID, also if not yet committed
 
   uint64_t ttl;
   uint8_t state;
@@ -183,6 +191,15 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
               "[_HOOK] [ConntrackTableUpdate] lookup sessionId: %d FAILED ",
               sessionId);
       return RX_DROP;
+    }
+
+    if (CHECK_MASK_IS_SET(pkt->mask, BIT(BIT_CT_SET_HOLD))) {
+      session_value_p->holdSessionId = HOLD_SESSION_OFF;
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackTableUpdate] Committing session_value_p->holdSessionId OFF");
+    } else {
+      pcn_log(ctx, LOG_DEBUG,
+              "[_HOOK] [ConntrackTableUpdate] NOT Committing session_value_p->holdSessionId");
     }
 
     if (CHECK_MASK_IS_SET(pkt->mask, BIT(BIT_CT_SET_STATE))) {

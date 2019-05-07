@@ -19,6 +19,7 @@
 //#include "polycube/common.h"
 
 #define GARBAGE_COLLECTOR_INTERVAL 10
+#define HOLD_TIMEOUT 1 // seconds each session could be holded by dataplane
 
 Iptables::ActionCache::ActionCache(const int &index, Iptables &outer,
                                    const ProgramType t)
@@ -55,6 +56,7 @@ void Iptables::ActionCache::initSessions() {
   struct session_v clean_session;
   clean_session.setMask = 0;
   clean_session.actionMask = 0;
+  clean_session.holdSessionId = HOLD_SESSION_OFF;
 
   for (std::vector<std::pair<uint32_t, session_v>>::iterator it =
            session_table_offline.begin();
@@ -115,11 +117,12 @@ void Iptables::ActionCache::garbageCollector() {
     struct session_v clean_session;
     clean_session.setMask = 0;
     clean_session.actionMask = 0;
+    clean_session.holdSessionId = HOLD_SESSION_GARBAGE_COLLECTOR;
 
     for (std::vector<std::pair<uint32_t, session_v>>::iterator it =
              session_table_offline.begin();
          it != session_table_offline.end(); ++it) {
-      if (it->second.setMask != 0) {
+      if ((it->second.setMask != 0) && (it->second.holdSessionId == HOLD_SESSION_OFF)) {
         if (it->second.ttl < current_time_nano) {
           // invalidate expired entries
 //          iptables_.logger()->trace(
@@ -152,7 +155,7 @@ void Iptables::ActionCache::garbageCollector() {
     for (std::vector<std::pair<tts_k, tts_v>>::iterator it =
              tupletosession_table_offline.begin();
          it != tupletosession_table_offline.end(); ++it) {
-      if (session_table_vector[it->second.sessionId].setMask == 0) {
+      if ((session_table_vector[it->second.sessionId].setMask == 0) && ((session_table_vector[it->second.sessionId].holdSessionId == HOLD_SESSION_GARBAGE_COLLECTOR))) {
         // if pointing to an expired session, the setMask should be already set
         // to 0
         // then remove the key pointing to expired entry
@@ -163,6 +166,39 @@ void Iptables::ActionCache::garbageCollector() {
 //            utils::be_uint_to_ip_string(it->first.dstIp), it->first.l4proto,
 //            it->first.srcPort, it->first.dstPort);
         tupletosession_table.remove(it->first);
+      }
+    }
+
+    clean_session.setMask = 0;
+    clean_session.actionMask = 0;
+    clean_session.holdSessionId = HOLD_SESSION_OFF;
+
+    session_table_offline = session_table.get_all();
+
+    for (std::vector<std::pair<uint32_t, session_v>>::iterator it =
+            session_table_offline.begin();
+         it != session_table_offline.end(); ++it) {
+      if (it->second.holdSessionId == HOLD_SESSION_GARBAGE_COLLECTOR) {
+        session_table.set(it->first, clean_session);
+      }
+    }
+
+    // get timestamp from system
+    ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::system_clock::now().time_since_epoch());
+    current_time_nano = ns.count();
+
+    // cleanup expired hold dataplane
+    session_table_offline = session_table.get_all();
+
+    for (std::vector<std::pair<uint32_t, session_v>>::iterator it =
+            session_table_offline.begin();
+         it != session_table_offline.end(); ++it) {
+      if (it->second.holdSessionId == HOLD_SESSION_DATAPLANE) {
+        if ((it->second.ttl + HOLD_TIMEOUT) < current_time_nano) {
+          // invalidate expired hold entries
+          session_table.set(it->first, clean_session);
+        }
       }
     }
   } catch (...) {

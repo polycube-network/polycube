@@ -94,7 +94,7 @@ enum {
 };
 
 // bit used in session->setMask
-enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV };
+enum { BIT_CONNTRACK, BIT_DNAT_FWD, BIT_DNAT_REV, BIT_SNAT_FWD, BIT_SNAT_REV, BIT_HOLD_SESSION_ID };
 
 // bit used in commit->mask
 enum {
@@ -102,13 +102,20 @@ enum {
   BIT_CT_CLEAR_MASK,
   BIT_CT_SET_TTL,
   BIT_CT_SET_STATE,
-  BIT_CT_SET_SEQUENCE
+  BIT_CT_SET_SEQUENCE,
+  BIT_CT_SET_HOLD
 };
 
 // session table direction
 enum {
   DIRECTION_FORWARD,  // Forward direction in session table
   DIRECTION_REVERSE   // Reverse direction in session table
+};
+
+enum {
+    HOLD_SESSION_OFF,               // SessionId is free to pick
+    HOLD_SESSION_DATAPLANE,         // SessionId is taken by a thread in dataplane, not yet committed
+    HOLD_SESSION_GARBAGE_COLLECTOR  // SessionId is marked invalid by garbage collector, not yet avail. for new sessions
 };
 
 /* STRUCT */
@@ -155,8 +162,9 @@ struct packetHeaders {
 
 // session table value
 struct session_v {
-  uint8_t setMask;     // bitmask for set fields
-  uint8_t actionMask;  // bitmask for actions to be applied or not
+  uint8_t setMask;       // bitmask for set fields
+  uint8_t actionMask;    // bitmask for actions to be applied or not
+  uint8_t holdSessionId; // avoid other threads to pick same session ID, also if not yet committed
 
   uint64_t ttl;
   uint8_t state;
@@ -183,8 +191,6 @@ BPF_TABLE("extern", int, int, forwardingDecision, 1);
 BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
 
 #if _INGRESS_LOGIC
-BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
-
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Input, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Input, 1);
 
@@ -193,11 +199,11 @@ BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Forward, 1);
 #endif
 
 #if _EGRESS_LOGIC
-BPF_TABLE("extern", int, uint64_t, timestamp, 1);
-
 BPF_TABLE_SHARED("percpu_array", int, u64, pkts_acceptestablished_Output, 1);
 BPF_TABLE_SHARED("percpu_array", int, u64, bytes_acceptestablished_Output, 1);
 #endif
+
+BPF_TABLE("extern", int, uint64_t, timestamp, 1);
 
 /* INLINE FUNCTIONS */
 
@@ -290,6 +296,10 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   pkt->mask = 0;
+
+  if (session_value_p->holdSessionId == HOLD_SESSION_DATAPLANE) {
+    BIT_SET(pkt->mask, BIT(BIT_CT_SET_HOLD));
+  }
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {

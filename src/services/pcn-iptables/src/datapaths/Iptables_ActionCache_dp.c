@@ -48,6 +48,12 @@ enum {
   DIRECTION_REVERSE   // Reverse direction in session table
 };
 
+enum {
+  HOLD_SESSION_OFF,               // SessionId is free to pick
+  HOLD_SESSION_DATAPLANE,         // SessionId is taken by a thread in dataplane, not yet committed
+  HOLD_SESSION_GARBAGE_COLLECTOR  // SessionId is marked invalid by garbage collector, not yet avail. for new sessions
+};
+
 struct tts_k {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -62,8 +68,9 @@ struct tts_v {
 } __attribute__((packed));
 
 struct session_v {
-  uint8_t setMask;     // bitmask for set fields
-  uint8_t actionMask;  // bitmask for actions to be applied or not
+  uint8_t setMask;       // bitmask for set fields
+  uint8_t actionMask;    // bitmask for actions to be applied or not
+  uint8_t holdSessionId; // avoid other threads to pick same session ID, also if not yet committed
 
   uint64_t ttl;
   uint8_t state;
@@ -91,25 +98,26 @@ struct session_v {
 #if _INGRESS_LOGIC
 BPF_TABLE_SHARED("lru_hash", struct tts_k, struct tts_v, tupletosession,
                  TUPLETOSESSION_DIM);
+BPF_TABLE_SHARED("array", uint32_t, struct session_v, session, SESSION_DIM);
+BPF_TABLE_SHARED("percpu_array", int, uint64_t, timestamp, 1);
 #endif
 
 #if _EGRESS_LOGIC
 BPF_TABLE("extern", struct tts_k, struct tts_v, tupletosession,
           TUPLETOSESSION_DIM);
-#endif
-
-#if _INGRESS_LOGIC
-BPF_TABLE_SHARED("array", uint32_t, struct session_v, session, SESSION_DIM);
-#endif
-
-#if _EGRESS_LOGIC
 BPF_TABLE("extern", uint32_t, struct session_v, session, SESSION_DIM);
+BPF_TABLE("extern", int, uint64_t, timestamp, 1);
 #endif
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
 static inline uint32_t get_free_index() {
   return (bpf_get_prandom_u32() % (SESSION_DIM));
+}
+
+static __always_inline uint64_t *time_get_ns() {
+  int key = 0;
+  return timestamp.lookup(&key);
 }
 
 // TODO use a userspace cleanup thread to free exipred entries
@@ -146,7 +154,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if (session_v_p == NULL) {
         goto drop;
       }
-      if (session_v_p->setMask == 0) {
+      if ((session_v_p->setMask == 0) && (session_v_p->holdSessionId == HOLD_SESSION_OFF)) {
         goto new_index_found;
       }
     }
@@ -172,6 +180,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
     session_v_p->setMask = 0;
     session_v_p->actionMask = 0;
+    session_v_p->holdSessionId = HOLD_SESSION_DATAPLANE;
+
+    uint64_t *timestamp;
+    timestamp = time_get_ns();
+
+    if (timestamp == NULL) {
+      return RX_DROP;
+    }
+
+    session_v_p->ttl = *timestamp;
 
     // TODO when nat module will be added, this module will not be in charge of
     // pushing both fwd and rev keys
