@@ -20,7 +20,8 @@
 #include "Iptables_dp.h"
 
 Iptables::Iptables(const std::string name, const IptablesJsonObject &conf)
-    : Cube(conf.getBase(), {iptables_code_ingress}, {iptables_code_egress}) {
+    : Cube(conf.getBase(), {iptables_code_ingress}, {iptables_code_egress}),
+    netlink_instance_iptables_(polycube::polycubed::Netlink::getInstance()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Iptables] [%n] [%l] %v");
   logger()->info("Creating Iptables instance");
 

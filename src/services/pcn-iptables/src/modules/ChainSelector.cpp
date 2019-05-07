@@ -24,7 +24,9 @@ Iptables::ChainSelector::ChainSelector(const int &index, Iptables &outer,
                         (t == ProgramType::INGRESS)
                             ? ChainNameEnum::INVALID_INGRESS
                             : ChainNameEnum::INVALID_EGRESS,
-                        outer, t) {
+                        outer, t) ,
+    netlink_instance_chainselector_(
+        polycube::polycubed::Netlink::getInstance()) {
   load();
 
   updateLocalIps();

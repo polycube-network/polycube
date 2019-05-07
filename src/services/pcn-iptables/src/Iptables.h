@@ -175,7 +175,7 @@ class Iptables : public polycube::service::Cube<Ports>,
   std::mutex mutex_iptables_;
 
   int netlink_notification_index_;
-  polycube::polycubed::Netlink netlink_instance_iptables_;
+  polycube::polycubed::Netlink &netlink_instance_iptables_;
 
   // interactive mode
   bool interactive_ = true;
@@ -319,7 +319,7 @@ class Iptables : public polycube::service::Cube<Ports>,
 
     // use a new instance of netlink for each chainselector
     // prevent deadlocks with main instance present in polycubed
-    polycube::polycubed::Netlink netlink_instance_chainselector_;
+    polycube::polycubed::Netlink &netlink_instance_chainselector_;
     int netlink_notification_index_chainselector_;
   };
 
