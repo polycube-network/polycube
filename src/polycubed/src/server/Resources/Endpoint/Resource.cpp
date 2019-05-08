@@ -16,6 +16,9 @@
 #include "Resource.h"
 
 #include <string>
+#include <fstream>
+#include <rest_server.h>
+#include "../../config.h"
 
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 
@@ -33,4 +36,11 @@ Operation Resource::OperationType(bool update, bool initialization) {
     }
   }
 }
+
+bool Resource::isOperationSuccessful(ErrorTag errorTag) {
+  return errorTag == ErrorTag::kOk ||
+         errorTag == ErrorTag::kCreated ||
+         errorTag == ErrorTag::kNoContent;
+}
+
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint
