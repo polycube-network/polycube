@@ -18,6 +18,8 @@
 #include "polycube/services/cube_factory.h"
 #include "polycubed_core.h"
 #include "rest_server.h"
+#include "../../config.h"
+#include "cubes_dump.h"
 
 #include "../../Server/ResponseGenerator.h"
 #include "../Body/JsonNodeField.h"
@@ -70,7 +72,8 @@ void Service::ClearCubes() {
 }
 
 std::vector<Response>
-Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool update, bool initialization) {
+Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
+                             bool update, bool initialization) {
   if (update || !ServiceController::exists_cube(name)) {
     auto op = OperationType(update, initialization);
     auto k = ListKeyValues{};
@@ -97,10 +100,15 @@ Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool
    auto cubes_list = utils::strip_port_tcubes(body);
 
     auto resp = WriteValue(name, body, k, op);
-    if (!update && (resp.error_tag == ErrorTag::kOk ||
-                    resp.error_tag == ErrorTag::kCreated ||
-                    resp.error_tag == ErrorTag::kNoContent)) {
-      cube_names_.AddValue(name);
+    // check if the operation completed successfully and in case update the configuration
+    if (isOperationSuccessful(resp.error_tag)) {
+      if (!update) {
+        cube_names_.AddValue(name);
+      }
+      if (auto d = core_->get_cubes_dump()) {
+        d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
+                body, k, op, ResourceType::Service);
+      }
     }
 
     // use  previously calculated list to update ports' transparent cubes
@@ -143,7 +151,8 @@ void Service::post_body(const Request &request, ResponseWriter response) {
     return;
   }
 
-  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, false, true);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body,
+          false, true);
   Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
@@ -209,6 +218,10 @@ void Service::del(const Pistache::Rest::Request &request,
   auto res = DeleteValue(name, k);
   Server::ResponseGenerator::Generate(std::vector<Response>{res},
                                       std::move(response));
+  if (auto d = core_->get_cubes_dump()) {
+    d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
+            nullptr, k, Operation::kDelete, ResourceType::Service);
+  }
 }
 
 void Service::patch_body(const Request &request, ResponseWriter response) {
@@ -220,7 +233,8 @@ void Service::patch_body(const Request &request, ResponseWriter response) {
         std::move(response));
     return;
   }
-  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, true, false);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body,
+          true, false);
   Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
@@ -252,7 +266,8 @@ void Service::options_body(const Request &request, ResponseWriter response) {
   if (!query_param.has("completion")) {
     Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
   } else {
-    Server::ResponseGenerator::Generate({CompletionService(type)}, std::move(response));
+    Server::ResponseGenerator::Generate({CompletionService(type)},
+            std::move(response));
   }
   //Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
 }

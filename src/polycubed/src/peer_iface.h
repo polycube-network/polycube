@@ -48,8 +48,8 @@ class PeerIface {
   virtual void set_parameter(const std::string &param_name,
                              const std::string &value) = 0;
 
-  void add_cube(TransparentCube *cube, const std::string &position,
-                const std::string &other);
+  int add_cube(TransparentCube *cube, const std::string &position,
+               const std::string &other);
   void remove_cube(const std::string &type);
   std::vector<std::string> get_cubes_names() const;
 
