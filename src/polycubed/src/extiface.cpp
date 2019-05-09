@@ -251,5 +251,9 @@ bool ExtIface::is_used() const {
   return cubes_.size() > 0 || peer_ != nullptr;
 }
 
+std::string ExtIface::get_iface_name() const {
+  return iface_;
+}
+
 }  // namespace polycubed
 }  // namespace polycube
