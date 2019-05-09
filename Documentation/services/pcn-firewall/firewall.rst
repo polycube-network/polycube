@@ -1,7 +1,9 @@
 Firewall
 ========
 
-This service is a transparent firewall, it can be connected between two interfaces, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags. Policy rules can include one or more of the above fields; if a given field is missing, its content is influent for the matching. *Packets that are not ip are forwarded without any check*.
+This service is a transparent firewall, it can be attached to a port or a netdev, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags.
+Policy rules can include one or more of the above fields; if a given field is missing, its content is influent for the matching.
+*Packets that are not ip are forwarded without any check*.
 
 Features
 --------
@@ -24,13 +26,10 @@ Supported features:
 How to use
 ----------
 
-Ingress ad egress chains and ports
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Ingress ad egress chains
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service is based on the ingress and egress chains and ports idea.
-The ``ingress port`` is by default the first port created, the ``egress port`` is by default the second port created. They can be changed respectively by issuing the commands ``polycubectl firewall fwname set ingress-port=portname`` and ``polycubectl firewall fwname set egress-port=portname``.
-The ``ingress chain`` processes all the traffic coming from the ingress port, and either drops it or forwards it to the egress port.
-The ``egress chain`` processes all the traffic coming from the egress port, and either drops it or forwards it to the ingress port.
+The service is based on the ingress and egress chains.
 Ingress and egress chains are independent and have two different policy sets.
 
 Rule insertion
