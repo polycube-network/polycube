@@ -24,9 +24,6 @@ namespace model {
 
 FirewallJsonObject::FirewallJsonObject() {
   m_nameIsSet = false;
-  m_portsIsSet = false;
-  m_ingressPortIsSet = false;
-  m_egressPortIsSet = false;
   m_conntrackIsSet = false;
   m_acceptEstablishedIsSet = false;
   m_interactive = true;
@@ -38,9 +35,6 @@ FirewallJsonObject::FirewallJsonObject() {
 FirewallJsonObject::FirewallJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_nameIsSet = false;
-  m_portsIsSet = false;
-  m_ingressPortIsSet = false;
-  m_egressPortIsSet = false;
   m_conntrackIsSet = false;
   m_acceptEstablishedIsSet = false;
   m_interactiveIsSet = false;
@@ -50,23 +44,6 @@ FirewallJsonObject::FirewallJsonObject(const nlohmann::json &val) :
 
   if (val.count("name")) {
     setName(val.at("name").get<std::string>());
-  }
-
-  if (val.count("ports")) {
-    for (auto& item : val["ports"]) {
-      PortsJsonObject newItem{ item };
-      m_ports.push_back(newItem);
-    }
-
-    m_portsIsSet = true;
-  }
-
-  if (val.count("ingress-port")) {
-    setIngressPort(val.at("ingress-port").get<std::string>());
-  }
-
-  if (val.count("egress-port")) {
-    setEgressPort(val.at("egress-port").get<std::string>());
   }
 
   if (val.count("conntrack")) {
@@ -108,25 +85,6 @@ nlohmann::json FirewallJsonObject::toJson() const {
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  {
-    nlohmann::json jsonArray;
-    for (auto& item : m_ports) {
-      jsonArray.push_back(JsonObjectBase::toJson(item));
-    }
-
-    if (jsonArray.size() > 0) {
-      val["ports"] = jsonArray;
-    }
-  }
-
-  if (m_ingressPortIsSet) {
-    val["ingress-port"] = m_ingressPort;
-  }
-
-  if (m_egressPortIsSet) {
-    val["egress-port"] = m_egressPort;
   }
 
   if (m_conntrackIsSet) {
@@ -179,59 +137,6 @@ bool FirewallJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-
-
-const std::vector<PortsJsonObject>& FirewallJsonObject::getPorts() const{
-  return m_ports;
-}
-
-void FirewallJsonObject::addPorts(PortsJsonObject value) {
-  m_ports.push_back(value);
-  m_portsIsSet = true;
-}
-
-
-bool FirewallJsonObject::portsIsSet() const {
-  return m_portsIsSet;
-}
-
-void FirewallJsonObject::unsetPorts() {
-  m_portsIsSet = false;
-}
-
-std::string FirewallJsonObject::getIngressPort() const {
-  return m_ingressPort;
-}
-
-void FirewallJsonObject::setIngressPort(std::string value) {
-  m_ingressPort = value;
-  m_ingressPortIsSet = true;
-}
-
-bool FirewallJsonObject::ingressPortIsSet() const {
-  return m_ingressPortIsSet;
-}
-
-void FirewallJsonObject::unsetIngressPort() {
-  m_ingressPortIsSet = false;
-}
-
-std::string FirewallJsonObject::getEgressPort() const {
-  return m_egressPort;
-}
-
-void FirewallJsonObject::setEgressPort(std::string value) {
-  m_egressPort = value;
-  m_egressPortIsSet = true;
-}
-
-bool FirewallJsonObject::egressPortIsSet() const {
-  return m_egressPortIsSet;
-}
-
-void FirewallJsonObject::unsetEgressPort() {
-  m_egressPortIsSet = false;
-}
 
 FirewallConntrackEnum FirewallJsonObject::getConntrack() const {
   return m_conntrack;

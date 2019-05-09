@@ -18,9 +18,6 @@
    Match on IP Source
    ======================= */
 
-#define TRACE _TRACE
-//#include <bcc/helpers.h>
-
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -43,29 +40,29 @@ struct lpm_k {
   __be32 ip;
 };
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 
-BPF_F_TABLE("lpm_trie", struct lpm_k, struct elements, ip_TYPETrie_DIRECTION,
+BPF_F_TABLE("lpm_trie", struct lpm_k, struct elements, ip_TYPETrie,
             1024, BPF_F_NO_PREALLOC);
 
 static __always_inline struct elements *getBitVect(struct lpm_k *key) {
-  return ip_TYPETrie_DIRECTION.lookup(key);
+  return ip_TYPETrie.lookup(key);
 }
 
 #endif
 
-BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
-  return packet_DIRECTION.lookup(&key);
+  return packet.lookup(&key);
 }
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Code Ip_TYPE_DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][IP_TYPE]: Receiving packet");
 
 /*The struct elements and the lookup table are defined only if NR_ELEMENTS>0, so
  * this code has to be used only in those cases.*/
@@ -80,7 +77,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct lpm_k lpm_key = {32, pkt->_TYPEIp};
   struct elements *ele = getBitVect(&lpm_key);
   if (ele == NULL) {
-    pcn_log(ctx, LOG_DEBUG, "No match. (pkt->_TYPEIp: %u) ", pkt->_TYPEIp);
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][IP_TYPE]: No match. (pkt->_TYPEIp: %u) ", pkt->_TYPEIp);
     _DEFAULTACTION
   } else {
     struct elements *result = getShared();
@@ -102,8 +99,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #endif
     }  // if result == NULL
   }    // if ele==NULL
-  call_ingress_program(ctx, _NEXT_HOP_1);
-
+  call_next_program(ctx, _NEXT_HOP_1);
 #else
   return RX_DROP;
 #endif

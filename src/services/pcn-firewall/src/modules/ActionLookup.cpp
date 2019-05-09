@@ -40,34 +40,17 @@ std::string Firewall::ActionLookup::getCode() {
 
   /*Pointing to the module in charge of updating the conn table and forwarding*/
   replaceAll(noMacroCode, "_CONNTRACKTABLEUPDATE",
-             std::to_string(3 + ModulesConstants::NR_MODULES * 4 + 1));
-
-  /*Replacing direction suffix*/
-  if (direction == ChainNameEnum::INGRESS)
-    replaceAll(noMacroCode, "_DIRECTION", "Ingress");
-  else
-    replaceAll(noMacroCode, "_DIRECTION", "Egress");
-
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
+             std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1));
 
   return noMacroCode;
 }
 
 uint64_t Firewall::ActionLookup::getPktsCount(int ruleNumber) {
-  std::string tableName = "pkts";
-
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-
+  std::string tableName = "pktsCounter";
   try {
     uint64_t pkts = 0;
-    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(tableName, index);
+    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(tableName, index,
+                                                              getProgramType());
     auto values = pktsTable.get(ruleNumber);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -77,17 +60,13 @@ uint64_t Firewall::ActionLookup::getPktsCount(int ruleNumber) {
 }
 
 uint64_t Firewall::ActionLookup::getBytesCount(int ruleNumber) {
-  std::string tableName = "bytes";
-
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
+  std::string tableName = "bytesCounter";
 
   try {
     uint64_t bytes = 0;
     auto bytesTable =
-        firewall.get_percpuarray_table<uint64_t>(tableName, index);
+        firewall.get_percpuarray_table<uint64_t>(tableName, index,
+                                                 getProgramType());
     auto values = bytesTable.get(ruleNumber);
 
     return std::accumulate(values.begin(), values.end(), bytes);
@@ -97,22 +76,16 @@ uint64_t Firewall::ActionLookup::getBytesCount(int ruleNumber) {
 }
 
 void Firewall::ActionLookup::flushCounters(int ruleNumber) {
-  std::string pktsTableName = "pkts";
-  std::string bytesTableName = "bytes";
-
-  if (direction == ChainNameEnum::INGRESS) {
-    pktsTableName += "Ingress";
-    bytesTableName += "Ingress";
-  } else if (direction == ChainNameEnum::EGRESS) {
-    pktsTableName += "Egress";
-    bytesTableName += "Egress";
-  }
+  std::string pktsTableName = "pktsCounter";
+  std::string bytesTableName = "bytesCounter";
 
   try {
     auto pktsTable =
-        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
+        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index,
+                                                 getProgramType());
     auto bytesTable =
-        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
+        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index,
+                                                 getProgramType());
 
     pktsTable.set(ruleNumber, 0);
     bytesTable.set(ruleNumber, 0);
@@ -124,15 +97,9 @@ void Firewall::ActionLookup::flushCounters(int ruleNumber) {
 
 bool Firewall::ActionLookup::updateTableValue(int ruleNumber, int action) {
   std::string tableName = "actions";
-
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-  else
-    return false;
   try {
-    auto actionsTable = firewall.get_array_table<int>(tableName, index);
+    auto actionsTable = firewall.get_array_table<int>(tableName, index,
+                                                      getProgramType());
     actionsTable.set(ruleNumber, action);
   } catch (...) {
     return false;

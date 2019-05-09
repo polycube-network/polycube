@@ -1,4 +1,4 @@
-source "${BASH_SOURCE%/*}/helpers.bash"
+source "${BASH_SOURCE%/*}/../helpers.bash"
 
 function fwcleanup {
   set +e
@@ -12,12 +12,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=DEBUG
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=DEBUG
+polycubectl attach fw veth1
 
 # Allowing only ICMP errors to be freely forwarded
 polycubectl firewall fw chain INGRESS append l4proto=UDP action=FORWARD
@@ -48,15 +44,15 @@ if [[ $npingOutput != *"Rcvd: 1"* ]]; then
 fi
 
 set +e
-echo "(3) Trying to ping (ns1->ns2) (not allowed)"
+echo "(3) Trying to ping (ns1->host) (not allowed)"
 sudo ip netns exec ns1 ping -c 2 -i 0.5 10.0.0.2
 if [[ $? == 0 ]]; then
   echo "Test failed (3)"
   exit 1
 fi
 
-echo "(4) Trying to ping (ns2->ns1) (not allowed)"
-sudo ip netns exec ns2 ping -c 2 -i 0.5 10.0.0.1
+echo "(4) Trying to ping (host->ns1) (not allowed)"
+sudo ping -c 2 -i 0.5 10.0.0.1
 if [[ $? == 0 ]]; then
   echo "Test failed (4)"
   exit 1

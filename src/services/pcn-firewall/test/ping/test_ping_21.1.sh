@@ -15,11 +15,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=OFF
+polycubectl attach fw veth1
 
 #INGRESS CHAIN
 #dumb rules

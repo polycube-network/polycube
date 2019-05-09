@@ -18,10 +18,6 @@
    Match on Transport Destination Port.
    ======================= */
 
-#define TRACE _TRACE
-
-//#include <bcc/helpers.h>
-//#include <uapi/linux/in.h>
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
 
@@ -37,10 +33,10 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
-  return packet_DIRECTION.lookup(&key);
+  return packet.lookup(&key);
 }
 
 #if _NR_ELEMENTS > 0
@@ -48,15 +44,15 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 
-BPF_HASH(_TYPEPorts_DIRECTION, uint16_t, struct elements);
+BPF_HASH(_TYPEPorts, uint16_t, struct elements);
 static __always_inline struct elements *getBitVect(uint16_t *key) {
-  return _TYPEPorts_DIRECTION.lookup(key);
+  return _TYPEPorts.lookup(key);
 }
 #endif
 
@@ -74,11 +70,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   uint16_t _TYPEPort = 0;
   if (pkt->l4proto != IPPROTO_TCP && pkt->l4proto != IPPROTO_UDP) {
-    pcn_log(ctx, LOG_DEBUG, "Code _TYPEPort _DIRECTION ignoring packet. ");
-    call_ingress_program(ctx, _NEXT_HOP_1);
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: Ignoring packet");
+    call_next_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
   } else {
-    pcn_log(ctx, LOG_DEBUG, "Code _TYPEPort _DIRECTION receiving packet. ");
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: Receiving packet");
     _TYPEPort = pkt->_TYPEPort;
   }
 
@@ -88,7 +84,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     _TYPEPort = 0;
     ele = getBitVect(&_TYPEPort);
     if (ele == NULL) {
-      pcn_log(ctx, LOG_DEBUG, "No match. ");
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: No match");
       _DEFAULTACTION
     }
   }
@@ -111,7 +107,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #endif
   }  // if result == NULL
 
-  call_ingress_program(ctx, _NEXT_HOP_1);
+  call_next_program(ctx, _NEXT_HOP_1);
 #else
   return RX_DROP;
 #endif

@@ -14,12 +14,8 @@ echo "TCP Conntrack Test (ns2->ns1) [No automatic forward][Interactive mode]"
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=TRACE
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=DEBUG
+polycubectl attach fw veth1
 
 # Allowing connections to be started only from NS2 to NS1
 polycubectl firewall fw chain INGRESS append l4proto=TCP conntrack=ESTABLISHED action=FORWARD > /dev/null
@@ -37,7 +33,7 @@ sudo ip netns exec ns1 netcat -l 60123&
 sleep 3
 
 echo "Starting netcat client"
-sudo ip netns exec ns2 nc -w 3 -nvz 10.0.0.1 60123
+sudo nc -w 3 -nvz 10.0.0.1 60123
 
 echo "(1) Checking that netcat client performed the connection."
 if [[ $? != 0 ]]; then

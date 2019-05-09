@@ -93,20 +93,21 @@ struct ct_v {
   uint8_t state;
   uint32_t sequence;
 };
-BPF_TABLE_SHARED("hash", struct ct_k, struct ct_v, connections, 10240);
 
-BPF_TABLE("extern", int, struct packetHeaders, packetIngress, 1);
-BPF_TABLE("extern", int, struct packetHeaders, packetEgress, 1);
+#if defined(_INGRESS_LOGIC)
+BPF_TABLE_SHARED("hash", struct ct_k, struct ct_v, connections, 10240);
+#elif defined(_EGRESS_LOGIC)
+BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 10240);
+#else
+#error "_INGRESS_LOGIC or _EGRESS_LOGIC should be defined"
+#endif
+
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Conntrack label received packet");
-  struct packetHeaders *pkt;
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Receiving packet");
   int k = 0;
-  if (md->in_port == _INGRESSPORT) {
-    pkt = packetIngress.lookup(&k);
-  } else {
-    pkt = packetEgress.lookup(&k);
-  }
+  struct packetHeaders *pkt = packet.lookup(&k);
   if (pkt == NULL) {
     // Not possible
     return RX_DROP;
@@ -337,7 +338,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
       // Unexpected situation
       pcn_log(ctx, LOG_DEBUG,
-              "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              "[_CHAIN_NAME][ConntrackLabel]: Should not get here. Flags: %d. State: %d",
               pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
@@ -424,7 +425,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }
   }
 
-  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d",
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack does not support the l4proto= %d",
           pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
@@ -434,16 +435,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 action:
 #if _CONNTRACK_MODE == 1
   // Manual mode
-  call_ingress_program(ctx, _NEXT_HOP_1);
+  call_next_program(ctx, _NEXT_HOP_1);
   return RX_DROP;
 #elif _CONNTRACK_MODE == 2
   // Automatic mode: if established, forward directly
   if (pkt->connStatus == ESTABLISHED) {
-    call_ingress_program(ctx, _CONNTRACKTABLEUPDATE);
+    call_next_program(ctx, _CONNTRACKTABLEUPDATE);
   } else {
-    call_ingress_program(ctx, _NEXT_HOP_1);
+    call_next_program(ctx, _NEXT_HOP_1);
   }
-  pcn_log(ctx, LOG_DEBUG, "[ConntrackLabel] Something went wrong.");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Something went wrong.");
   return RX_DROP;
 #endif
   return RX_DROP;

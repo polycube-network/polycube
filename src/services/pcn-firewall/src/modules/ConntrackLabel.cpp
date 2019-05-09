@@ -17,16 +17,18 @@
 #include "../Firewall.h"
 #include "datapaths/Firewall_ConntrackLabel_dp.h"
 
-Firewall::ConntrackLabel::ConntrackLabel(const int &index, Firewall &outer)
-    : Firewall::Program(firewall_code_conntracklabel, index,
-                        ChainNameEnum::INVALID, outer) {
+Firewall::ConntrackLabel::ConntrackLabel(const int &index,
+                                         const ChainNameEnum &direction,
+                                         Firewall &outer)
+    : Firewall::Program(firewall_code_conntracklabel, index, direction,
+                        outer) {
   load();
 }
 
 Firewall::ConntrackLabel::~ConntrackLabel() {}
 
 std::vector<std::pair<ct_k, ct_v>> Firewall::ConntrackLabel::getMap() {
-  auto table = firewall.get_hash_table<ct_k, ct_v>("connections", index);
+  auto table = firewall.get_hash_table<ct_k, ct_v>("connections", index, getProgramType());
   return table.get_all();
 }
 
@@ -39,18 +41,12 @@ std::string Firewall::ConntrackLabel::getCode() {
   /*Replacing hops*/
   replaceAll(noMacroCode, "_NEXT_HOP_1", std::to_string(index + 1));
 
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
-
   replaceAll(noMacroCode, "_CONNTRACK_MODE",
              std::to_string(firewall.conntrackMode));
 
   /*Pointing to the module in charge of updating the conn table and forwarding*/
   replaceAll(noMacroCode, "_CONNTRACKTABLEUPDATE",
-             std::to_string(3 + ModulesConstants::NR_MODULES * 4 + 1));
+             std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1));
 
   return noMacroCode;
 }

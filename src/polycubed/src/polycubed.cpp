@@ -28,6 +28,7 @@
 
 #include "config.h"
 #include "polycube/services/json.hpp"
+#include "netlink.h"
 #include "rest_server.h"
 #include "utils.h"
 #include "version.h"
@@ -53,6 +54,7 @@ std::shared_ptr<spdlog::logger> logger;
 // create core instance
 PolycubedCore *core;
 RestServer *restserver;
+int netlink_nofitication_id = -1;
 
 void shutdown() {
   static bool done = false;
@@ -67,6 +69,12 @@ void shutdown() {
     delete core;
     delete restserver;
   }
+
+  if (netlink_nofitication_id != -1) {
+    Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED,
+                                              netlink_nofitication_id);
+  }
+
   logger->info("polycubed is shutting down. Bye!");
   done = true;
 }
@@ -245,6 +253,12 @@ int main(int argc, char *argv[]) {
 
   auto base_model = new BaseModel();
   core = new PolycubedCore(base_model);
+
+  // register handler to detect interfaces that are deleted
+  netlink_nofitication_id = Netlink::getInstance().registerObserver(
+    Netlink::Event::LINK_DELETED,
+    std::bind(&ServiceController::netlink_notification, std::placeholders::_1,
+              std::placeholders::_2));
 
   // setup rest server
   int thr = 4;

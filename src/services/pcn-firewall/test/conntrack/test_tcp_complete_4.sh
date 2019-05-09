@@ -14,12 +14,8 @@ echo "TCP Conntrack Test (ns1->ns2) [Automatic forward][Interactive mode]"
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=TRACE
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=TRACE
+polycubectl attach fw veth1
 
 polycubectl firewall fw set accept-established=ON
 
@@ -35,7 +31,7 @@ polycubectl firewall fw chain INGRESS append conntrack=INVALID action=DROP > /de
 set -e
 
 echo "Starting netcat server"
-sudo ip netns exec ns2 netcat -l 60123&
+sudo netcat -l 60123&
 sleep 3
 
 echo "Starting netcat client"

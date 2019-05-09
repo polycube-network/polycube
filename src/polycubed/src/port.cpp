@@ -17,8 +17,6 @@
 #include "port.h"
 #include "controller.h"
 #include "extiface.h"
-#include "netlink.h"
-
 #include "service_controller.h"
 
 // workaround for now
@@ -37,17 +35,9 @@ Port::Port(CubeIface &parent, const std::string &name, uint16_t index,
       index_(index),
       uuid_(GuidGenerator().newGuid()),
       peer_port_(nullptr),
-      logger(spdlog::get("polycubed")) {
-  netlink_notification_index = Netlink::getInstance().registerObserver(
-      Netlink::Event::LINK_DELETED,
-      std::bind(&Port::netlink_notification, this, std::placeholders::_1,
-                std::placeholders::_2));
-}
+      logger(spdlog::get("polycubed")) {}
 
-Port::~Port() {
-  Netlink::getInstance().unregisterObserver(Netlink::Event::LINK_DELETED,
-                                            netlink_notification_index);
-}
+Port::~Port() {}
 
 uint16_t Port::get_port_id() const {
   return index_;  // TODO: rename this variable
@@ -139,12 +129,6 @@ bool Port::operator==(const PortIface &rhs) const {
     return this->uuid() == rhs.uuid();
   else
     return false;
-}
-
-void Port::netlink_notification(int ifindex, const std::string &ifname) {
-  if (peer_ == ifname) {
-    set_peer("");
-  }
 }
 
 void Port::set_peer(const std::string &peer) {

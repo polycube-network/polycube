@@ -3,39 +3,27 @@
 timeout=25
 
 function create_veth {
-  for i in `seq 1 $1`;
-  do
-  	sudo ip netns add ns${i}
-  	sudo ip link add veth${i}_ type veth peer name veth${i}
-  	sudo ip link set veth${i}_ netns ns${i}
-  	sudo ip netns exec ns${i} ip link set dev veth${i}_ up
-  	sudo ip link set dev veth${i} up
-  	sudo ip netns exec ns${i} ifconfig veth${i}_ 10.0.0.${i}/24
-  done
-}
-
-function create_link {
-  for i in `seq 1 $1`;
-  do
-  	sudo ip link add link${i}1 type veth peer name link${i}2
-  	sudo ip link set dev link${i}1 up
-  	sudo ip link set dev link${i}2 up
-  done
+  setup_veth_pair
 }
 
 function delete_veth {
-  for i in `seq 1 $1`;
-  do
-  	sudo ip link del veth${i}
-  	sudo ip netns del ns${i}
-  done
+  delete_veth_pair
 }
 
-function delete_link {
-  for i in `seq 1 $1`;
-  do
-  	sudo ip link del link${i}1
-  done
+function setup_veth_pair {
+    sudo ip netns add ns1
+    sudo ip link add veth1_ type veth peer name veth1
+    sudo ip link set veth1_ netns ns1
+    sudo ip netns exec ns1 ip link set dev veth1_ up
+    sudo ip netns exec ns1 ifconfig veth1_ 10.0.0.1/24
+
+    sudo ip link set dev veth1 up
+    sudo ifconfig veth1 10.0.0.2/24
+}
+
+function delete_veth_pair {
+  sudo ip link del veth1
+  sudo ip netns del ns1
 }
 
 function test_fail {

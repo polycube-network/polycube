@@ -18,9 +18,11 @@
 #include "datapaths/Firewall_DefaultAction_dp.h"
 #include "polycube/common.h"
 
-Firewall::DefaultAction::DefaultAction(const int &index, Firewall &outer)
-    : Firewall::Program(firewall_code_defaultaction, index,
-                        ChainNameEnum::INVALID, outer) {
+Firewall::DefaultAction::DefaultAction(const int &index,
+                                       const ChainNameEnum &direction,
+                                       Firewall &outer)
+    : Firewall::Program(firewall_code_defaultaction, index, direction,
+                        outer) {
   load();
 }
 
@@ -29,49 +31,27 @@ Firewall::DefaultAction::~DefaultAction() {}
 std::string Firewall::DefaultAction::getCode() {
   std::string noMacroCode = code;
 
-  if (firewall.getChain(ChainNameEnum::INGRESS)->getDefault() ==
+  if (firewall.getChain(direction)->getDefault() ==
       ActionEnum::DROP) {
-    replaceAll(noMacroCode, "_ACTIONINGRESS", "return RX_DROP;");
+    replaceAll(noMacroCode, "_ACTION", "return RX_DROP;");
   } else {
-    replaceAll(noMacroCode, "_ACTIONINGRESS",
-               "call_ingress_program(ctx, " +
-                   std::to_string(3 + ModulesConstants::NR_MODULES * 4 + 1) +
+    replaceAll(noMacroCode, "_ACTION",
+               "call_next_program(ctx, " +
+                   std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1) +
                    "); "
                    "return RX_DROP;");
   }
-
-  if (firewall.getChain(ChainNameEnum::EGRESS)->getDefault() ==
-      ActionEnum::DROP) {
-    replaceAll(noMacroCode, "_ACTIONEGRESS", "return RX_DROP;");
-  } else {
-    replaceAll(noMacroCode, "_ACTIONEGRESS",
-               "call_ingress_program(ctx, " +
-                   std::to_string(3 + ModulesConstants::NR_MODULES * 4 + 1) +
-                   "); "
-                   "return RX_DROP;");
-  }
-
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
-  return noMacroCode;
 
   return noMacroCode;
 }
 
 uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
-  std::string tableName = "pkts";
-
-  if (chain == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (chain == ChainNameEnum::EGRESS)
-    tableName += "Egress";
+  std::string tableName = "pktsCounter";
 
   try {
     uint64_t pkts = 0;
-    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(tableName, index);
+    auto pktsTable = firewall.get_percpuarray_table<uint64_t>(tableName, index,
+                                                              getProgramType());
     auto values = pktsTable.get(0);
 
     return std::accumulate(values.begin(), values.end(), pkts);
@@ -81,17 +61,13 @@ uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
 }
 
 uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
-  std::string tableName = "bytes";
-
-  if (chain == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (chain == ChainNameEnum::EGRESS)
-    tableName += "Egress";
+  std::string tableName = "bytesCounter";
 
   try {
     uint64_t bytes = 0;
     auto bytesTable =
-        firewall.get_percpuarray_table<uint64_t>(tableName, index);
+        firewall.get_percpuarray_table<uint64_t>(tableName, index,
+                                                 getProgramType());
     auto values = bytesTable.get(0);
 
     return std::accumulate(values.begin(), values.end(), bytes);
@@ -101,22 +77,16 @@ uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
 }
 
 void Firewall::DefaultAction::flushCounters(ChainNameEnum chain) {
-  std::string pktsTableName = "pkts";
-  std::string bytesTableName = "bytes";
-
-  if (chain == ChainNameEnum::INGRESS) {
-    pktsTableName += "Ingress";
-    bytesTableName += "Ingress";
-  } else if (chain == ChainNameEnum::EGRESS) {
-    pktsTableName += "Egress";
-    bytesTableName += "Egress";
-  }
+  std::string pktsTableName = "pktsCounter";
+  std::string bytesTableName = "bytesCounter";
 
   try {
     auto pktsTable =
-        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index);
+        firewall.get_percpuarray_table<uint64_t>(pktsTableName, index,
+                                                 getProgramType());
     auto bytesTable =
-        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index);
+        firewall.get_percpuarray_table<uint64_t>(bytesTableName, index,
+                                                 getProgramType());
 
     pktsTable.set(0, 0);
     bytesTable.set(0, 0);

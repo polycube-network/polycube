@@ -18,7 +18,7 @@
 #include "Firewall_dp.h"
 
 Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
-    : Cube(conf.getBase(), {firewall_code}, {}) {
+    : TransparentCube(conf.getBase(), {firewall_code}, {firewall_code}) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Firewall] [%n] [%l] %v");
   logger()->info("Creating Firewall instance");
 
@@ -30,21 +30,23 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
   addChain(ChainNameEnum::EGRESS, chain);
   logger()->debug("Ingress and Egress chain added");
 
-  /*Initialize programs*/
-  programs.insert(
-      std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-          std::make_pair(ModulesConstants::PARSER, ChainNameEnum::INVALID),
-          new Firewall::Parser(0, *this)));
-  programs.insert(
-      std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-          std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                         ChainNameEnum::INVALID),
-          new Firewall::ConntrackLabel(1, *this)));
-  programs.insert(
-      std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-          std::make_pair(ModulesConstants::CHAINFORWARDER,
-                         ChainNameEnum::INVALID),
-          new Firewall::ChainForwarder(2, *this)));
+  ingress_programs.resize(3 + ModulesConstants::NR_MODULES + 2, nullptr);
+  egress_programs.resize(3 + ModulesConstants::NR_MODULES + 2, nullptr);
+
+  /* Initialize ingress programs */
+  ingress_programs[ModulesConstants::PARSER] =
+    new Firewall::Parser(0, ChainNameEnum::INGRESS, *this);
+  ingress_programs[ModulesConstants::CONNTRACKLABEL] =
+    new Firewall::ConntrackLabel(1, ChainNameEnum::INGRESS, *this);
+  ingress_programs[ModulesConstants::CHAINFORWARDER] =
+    new Firewall::ChainForwarder(2, ChainNameEnum::INGRESS, *this);
+
+  egress_programs[ModulesConstants::PARSER] =
+    new Firewall::Parser(0, ChainNameEnum::EGRESS, *this);
+  egress_programs[ModulesConstants::CONNTRACKLABEL] =
+    new Firewall::ConntrackLabel(1, ChainNameEnum::EGRESS, *this);
+  egress_programs[ModulesConstants::CHAINFORWARDER] =
+    new Firewall::ChainForwarder(2, ChainNameEnum::EGRESS, *this);
 
   /*
    * 3 modules in the beginning
@@ -56,19 +58,21 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
    * Conntrack Label
    */
 
-  programs.insert(
-      std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-          std::make_pair(ModulesConstants::DEFAULTACTION,
-                         ChainNameEnum::INVALID),
-          new Firewall::DefaultAction(3 + ModulesConstants::NR_MODULES * 4,
-                                      *this)));
+  ingress_programs[ModulesConstants::DEFAULTACTION] =
+    new Firewall::DefaultAction(3 + ModulesConstants::NR_MODULES * 2,
+                                ChainNameEnum::INGRESS,*this);
 
-  programs.insert(
-      std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-          std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE,
-                         ChainNameEnum::INVALID),
-          new Firewall::ConntrackTableUpdate(
-              3 + ModulesConstants::NR_MODULES * 4 + 1, *this)));
+  ingress_programs[ModulesConstants::CONNTRACKTABLEUPDATE] =
+    new Firewall::ConntrackTableUpdate(3 + ModulesConstants::NR_MODULES * 2 + 1,
+                                       ChainNameEnum::INGRESS, *this);
+
+  egress_programs[ModulesConstants::DEFAULTACTION] =
+    new Firewall::DefaultAction(3 + ModulesConstants::NR_MODULES * 2,
+                                ChainNameEnum::EGRESS, *this);
+
+  egress_programs[ModulesConstants::CONNTRACKTABLEUPDATE] =
+    new Firewall::ConntrackTableUpdate(3 + ModulesConstants::NR_MODULES * 2 + 1,
+                                       ChainNameEnum::EGRESS, *this);
 }
 
 Firewall::~Firewall() {
@@ -76,15 +80,25 @@ Firewall::~Firewall() {
   chains_.clear();
 
   // Delete all eBPF programs
-  for (auto it = programs.begin(); it != programs.end(); ++it) {
-    delete it->second;
+  for (auto &i : ingress_programs) {
+    if (i) {
+      delete i;
+    }
   }
+
+  for (auto &i : egress_programs) {
+    if (i) {
+      delete i;
+    }
+  }
+
+  TransparentCube::dismount();
 }
 
 void Firewall::update(const FirewallJsonObject &conf) {
   // This method updates all the object/parameter in Firewall object specified
   // in the conf JsonObject.
-  Cube::set_conf(conf.getBase());
+  TransparentCube::set_conf(conf.getBase());
 
   if (conf.chainIsSet()) {
     for (auto &i : conf.getChain()) {
@@ -92,14 +106,6 @@ void Firewall::update(const FirewallJsonObject &conf) {
       auto m = getChain(name);
       m->update(i);
     }
-  }
-
-  if (conf.ingressPortIsSet()) {
-    setIngressPort(conf.getIngressPort());
-  }
-
-  if (conf.egressPortIsSet()) {
-    setEgressPort(conf.getEgressPort());
   }
 
   if (conf.acceptEstablishedIsSet()) {
@@ -110,14 +116,6 @@ void Firewall::update(const FirewallJsonObject &conf) {
     setConntrack(conf.getConntrack());
   }
 
-  if (conf.portsIsSet()) {
-    for (auto &i : conf.getPorts()) {
-      auto name = i.getName();
-      auto m = getPorts(name);
-      m->update(i);
-    }
-  }
-
   if (conf.interactiveIsSet()) {
     setInteractive(conf.getInteractive());
   }
@@ -125,70 +123,33 @@ void Firewall::update(const FirewallJsonObject &conf) {
 
 FirewallJsonObject Firewall::toJsonObject() {
   FirewallJsonObject conf;
-  conf.setBase(Cube::to_json());
+  conf.setBase(TransparentCube::to_json());
 
   // Remove comments when you implement all sub-methods
   for (auto &i : getChainList()) {
     conf.addChain(i->toJsonObject());
   }
 
-  conf.setIngressPort(getIngressPort());
-
-  conf.setEgressPort(getEgressPort());
-
   conf.setConntrack(getConntrack());
 
   conf.setAcceptEstablished(getAcceptEstablished());
-
-  for (auto &i : getPortsList()) {
-    conf.addPorts(i->toJsonObject());
-  }
 
   conf.setInteractive(getInteractive());
 
   return conf;
 }
 
-void Firewall::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
-                         const std::vector<uint8_t> &packet) {
-  logger()->info("Packet received from port {0}", port.name());
-}
-
-std::string Firewall::getIngressPort() {
-  // This method retrieves the ingressPort value.
-  return ingressPort;
-}
-
-void Firewall::setIngressPort(const std::string &value) {
-  // This method sets the ingressPort value.
-  auto port = getPorts(value);
-  ingressPort = port->getName();
-  reload_all();
-}
-
-std::string Firewall::getEgressPort() {
-  // This method retrieves the egressPort value.
-  return egressPort;
-}
-
-void Firewall::setEgressPort(const std::string &value) {
-  // This method sets the egressPort value.
-  auto port = getPorts(value);
-  // if (!port->getPeer().empty() && port->getPeer() == ":host" && transparent)
-  // {
-  //   logger()->info(
-  //       "Switching to Host mode. The EGRESS chain will be disabled.");
-  //   transparent = false;
-  // }
-  // if (!port->getPeer().empty() && port->getPeer() == ":host" && !transparent)
-  // {
-  //   logger()->info(
-  //       "Switching to Transparent mode. The EGRESS chain will be enabled.");
-  //   transparent = true;
-  // }
-
-  egressPort = port->getName();
-  reload_all();
+void Firewall::packet_in(polycube::service::Sense sense,
+                                      polycube::service::PacketInMetadata &md,
+                                      const std::vector<uint8_t> &packet) {
+  switch (sense) {
+  case polycube::service::Sense::INGRESS:
+    logger()->info("packet in event from ingress program");
+    break;
+  case polycube::service::Sense::EGRESS:
+    logger()->info("packet in event from egress program");
+    break;
+  }
 }
 
 bool Firewall::getInteractive() {
@@ -216,10 +177,8 @@ void Firewall::setAcceptEstablished(
       conntrackMode != ConntrackModes::AUTOMATIC) {
     conntrackMode = ConntrackModes::AUTOMATIC;
 
-    dynamic_cast<Firewall::ConntrackLabel *>(
-        programs[std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                                ChainNameEnum::INVALID)])
-        ->reload();
+    ingress_programs[ModulesConstants::CONNTRACKLABEL]->reload();
+    egress_programs[ModulesConstants::CONNTRACKLABEL]->reload();
     return;
   }
 
@@ -227,10 +186,8 @@ void Firewall::setAcceptEstablished(
       conntrackMode != ConntrackModes::MANUAL) {
     conntrackMode = ConntrackModes::MANUAL;
 
-    dynamic_cast<Firewall::ConntrackLabel *>(
-        programs[std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                                ChainNameEnum::INVALID)])
-        ->reload();
+    ingress_programs[ModulesConstants::CONNTRACKLABEL]->reload();
+    egress_programs[ModulesConstants::CONNTRACKLABEL]->reload();
     return;
   }
 }
@@ -248,118 +205,62 @@ void Firewall::setConntrack(const FirewallConntrackEnum &value) {
     this->conntrackMode = ConntrackModes::DISABLED;
 
     // The parser has to be reloaded to skip the conntrack
-    programs[std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE,
-                            ChainNameEnum::INVALID)]
-        ->reload();
-    programs[std::make_pair(ModulesConstants::PARSER, ChainNameEnum::INVALID)]
-        ->reload();
+    ingress_programs[ModulesConstants::CONNTRACKTABLEUPDATE]->reload();
+    egress_programs[ModulesConstants::CONNTRACKTABLEUPDATE]->reload();
 
-    auto it = programs.find(std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                                           ChainNameEnum::INVALID));
-    if (it != programs.end()) {
-      programs.erase(it);
+    ingress_programs[ModulesConstants::PARSER]->reload();
+    egress_programs[ModulesConstants::PARSER]->reload();
+
+    if (ingress_programs[ModulesConstants::CONNTRACKLABEL]) {
+      delete ingress_programs[ModulesConstants::CONNTRACKLABEL];
+      ingress_programs[ModulesConstants::CONNTRACKLABEL] = nullptr;
     }
+
+    if (egress_programs[ModulesConstants::CONNTRACKLABEL]) {
+      delete egress_programs[ModulesConstants::CONNTRACKLABEL];
+      egress_programs[ModulesConstants::CONNTRACKLABEL] = nullptr;
+    }
+
     return;
   }
 
   if (value == FirewallConntrackEnum::ON &&
       this->conntrackMode == ConntrackModes::DISABLED) {
     this->conntrackMode = ConntrackModes::MANUAL;
+    ingress_programs[ModulesConstants::CONNTRACKLABEL] =
+      new Firewall::ConntrackLabel(1, ChainNameEnum::INGRESS, *this);
+    egress_programs[ModulesConstants::CONNTRACKLABEL] =
+      new Firewall::ConntrackLabel(1, ChainNameEnum::EGRESS, *this);
 
-    programs.insert(
-        std::pair<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *>(
-            std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                           ChainNameEnum::INVALID),
-            new Firewall::ConntrackLabel(1, *this)));
+    ingress_programs[ModulesConstants::CONNTRACKTABLEUPDATE]->reload();
+    egress_programs[ModulesConstants::CONNTRACKTABLEUPDATE]->reload();
 
-    // The parser has to be reloaded to skip the conntrack
-    programs[std::make_pair(ModulesConstants::CONNTRACKTABLEUPDATE,
-                            ChainNameEnum::INVALID)]
-        ->reload();
-    programs[std::make_pair(ModulesConstants::PARSER, ChainNameEnum::INVALID)]
-        ->reload();
+    ingress_programs[ModulesConstants::PARSER]->reload();
+    egress_programs[ModulesConstants::PARSER]->reload();
     return;
   }
 }
 
-int Firewall::getIngressPortIndex() {
-  if (ingressPort.empty()) {
-    // No port set.
-    return 0;
-  }
-  return get_port(ingressPort)->index();
-}
-int Firewall::getEgressPortIndex() {
-  if (egressPort.empty()) {
-    // No port set.
-    return 0;
-  }
-  return get_port(egressPort)->index();
-}
-
 void Firewall::reload_chain(ChainNameEnum chain) {
-  for (auto it = programs.begin(); it != programs.end(); ++it) {
-    if (it->first.second == chain) {
-      it->second->reload();
+  if (chain == ChainNameEnum::INGRESS) {
+    for (auto &i : ingress_programs) {
+      i->reload();
+    }
+  } else if (chain == ChainNameEnum::EGRESS) {
+    for (auto &i : egress_programs) {
+      i->reload();
     }
   }
 }
 
 void Firewall::reload_all() {
-  for (auto it = programs.begin(); it != programs.end(); ++it) {
-    it->second->reload();
-  }
+  reload_chain(ChainNameEnum::INGRESS);
+  reload_chain(ChainNameEnum::EGRESS);
 }
 
 bool Firewall::isContrackActive() {
   return (conntrackMode == ConntrackModes::AUTOMATIC ||
           conntrackMode == ConntrackModes::MANUAL);
-}
-
-std::shared_ptr<Ports> Firewall::getPorts(const std::string &name) {
-  return get_port(name);
-}
-
-std::vector<std::shared_ptr<Ports>> Firewall::getPortsList() {
-  return get_ports();
-}
-
-void Firewall::addPorts(const std::string &name, const PortsJsonObject &conf) {
-  add_port<PortsJsonObject>(name, conf);
-  auto ports = get_ports();
-
-  if (ports.size() == 1) {
-    // First port inserted. By default this is the ingress port.
-    setIngressPort(name);
-  } else if (ports.size() == 2) {
-    // Second port inserted. By default this is the egress port.
-    setEgressPort(name);
-  }
-}
-
-void Firewall::addPortsList(const std::vector<PortsJsonObject> &conf) {
-  for (auto &i : conf) {
-    std::string name_ = i.getName();
-    addPorts(name_, i);
-  }
-}
-
-void Firewall::replacePorts(const std::string &name,
-                            const PortsJsonObject &conf) {
-  delPorts(name);
-  std::string name_ = conf.getName();
-  addPorts(name_, conf);
-}
-
-void Firewall::delPorts(const std::string &name) {
-  remove_port(name);
-}
-
-void Firewall::delPortsList() {
-  auto ports = get_ports();
-  for (auto it : ports) {
-    delPorts(it->name());
-  }
 }
 
 std::shared_ptr<SessionTable> Firewall::getSessionTable(
@@ -371,8 +272,7 @@ std::shared_ptr<SessionTable> Firewall::getSessionTable(
 std::vector<std::shared_ptr<SessionTable>> Firewall::getSessionTableList() {
   std::vector<std::pair<ct_k, ct_v>> connections =
       dynamic_cast<Firewall::ConntrackLabel *>(
-          programs[std::make_pair(ModulesConstants::CONNTRACKLABEL,
-                                  ChainNameEnum::INVALID)])
+          ingress_programs[ModulesConstants::CONNTRACKLABEL])
           ->getMap();
 
   std::vector<std::shared_ptr<SessionTable>> sessionTable;
@@ -433,11 +333,7 @@ std::shared_ptr<Chain> Firewall::getChain(const ChainNameEnum &name) {
     throw std::runtime_error("There is no chain " +
                              ChainJsonObject::ChainNameEnum_to_string(name));
   }
-  if (!transparent && name == ChainNameEnum::EGRESS) {
-    throw std::runtime_error(
-        "Cannot configure rules on EGRESS chain when the firewall is "
-        "configured with unidirectional ports");
-  }
+
   return std::shared_ptr<Chain>(&chains_.at(name), [](Chain *) {});
 }
 

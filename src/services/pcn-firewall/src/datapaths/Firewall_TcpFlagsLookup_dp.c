@@ -18,10 +18,6 @@
    Match on TCP Flags.
    ======================= */
 
-#define TRACE _TRACE
-//#include <bcc/helpers.h>
-//#include <uapi/linux/in.h>
-
 #define IPPROTO_TCP 6
 
 struct packetHeaders {
@@ -36,10 +32,10 @@ struct packetHeaders {
   uint8_t connStatus;
 };
 
-BPF_TABLE("extern", int, struct packetHeaders, packet_DIRECTION, 1);
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
   int key = 0;
-  return packet_DIRECTION.lookup(&key);
+  return packet.lookup(&key);
 }
 
 #if _NR_ELEMENTS > 0
@@ -47,15 +43,15 @@ struct elements {
   uint64_t bits[_MAXRULES];
 };
 
-BPF_ARRAY(tcpFlags_DIRECTION, struct elements, 256);
+BPF_ARRAY(tcpFlags, struct elements, 256);
 static __always_inline struct elements *getBitVect(int *key) {
-  return tcpFlags_DIRECTION.lookup(key);
+  return tcpFlags.lookup(key);
 }
 
-BPF_TABLE("extern", int, struct elements, sharedEle_DIRECTION, 1);
+BPF_TABLE("extern", int, struct elements, sharedEle, 1);
 static __always_inline struct elements *getShared() {
   int key = 0;
-  return sharedEle_DIRECTION.lookup(&key);
+  return sharedEle.lookup(&key);
 }
 
 #endif
@@ -71,11 +67,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   }
   if (pkt->l4proto != IPPROTO_TCP) {
-    pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION ignoring packet. ");
-    call_ingress_program(ctx, _NEXT_HOP_1);
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][TCPFlagsLookup]: Ignoring packet");
+    call_next_program(ctx, _NEXT_HOP_1);
     return RX_DROP;
   }
-  pcn_log(ctx, LOG_DEBUG, "Code flags _DIRECTION receiving packet. ");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][TCPFlagsLookup]: Receiving packet");
 
   int flags = 0;
   flags = pkt->flags;
@@ -95,7 +91,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
       pcn_log(ctx, LOG_DEBUG,
-              "Code flags _DIRECTION  Match found. Bitvec: %llu, result %llu. ",
+              "[_CHAIN_NAME][TCPFlagsLookup]:  Match found. Bitvec: %llu, result %llu.",
               (ele->bits)[0], (result->bits)[0]);
 #else
       int i = 0;
@@ -108,7 +104,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }  // if result == NULL
   }    // if ele==NULL
 
-  call_ingress_program(ctx, _NEXT_HOP_1);
+  call_next_program(ctx, _NEXT_HOP_1);
 
 #else
   return RX_DROP;

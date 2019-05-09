@@ -94,18 +94,24 @@ ChainStatsJsonObject ChainStats::toJsonObject() {
 
 void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
                                uint64_t &pkts, uint64_t &bytes) {
-  std::map<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *> &programs =
-      parent.parent_.programs;
+  pkts = 0;
+  bytes = 0;
 
-  if (programs.find(std::make_pair(ModulesConstants::ACTION, parent.name)) ==
-      programs.end()) {
-    pkts = 0;
-    bytes = 0;
+  std::vector<Firewall::Program *> *programs;
+  if (parent.name == ChainNameEnum::INGRESS) {
+    programs = &parent.parent_.ingress_programs;
+  } else if (parent.name == ChainNameEnum::EGRESS) {
+     programs = &parent.parent_.egress_programs;
+  } else {
     return;
   }
 
   auto actionProgram = dynamic_cast<Firewall::ActionLookup *>(
-      programs[std::make_pair(ModulesConstants::ACTION, parent.name)]);
+      programs->at(ModulesConstants::ACTION));
+
+  if (actionProgram == nullptr) {
+    return;
+  }
 
   bytes = actionProgram->getBytesCount(id);
   pkts = actionProgram->getPktsCount(id);
@@ -116,7 +122,6 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
     Chain &parent) {
   /*Adding default rule counter*/
   ChainStatsJsonObject csj;
-
   csj.setAction(parent.defaultAction);
 
   /*Assigning an random ID just for showing*/
@@ -124,12 +129,17 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
 
   csj.setDescription("DEFAULT");
 
-  std::map<std::pair<uint8_t, ChainNameEnum>, Firewall::Program *> &programs =
-      parent.parent_.programs;
+  std::vector<Firewall::Program *> *programs;
+  if (parent.name == ChainNameEnum::INGRESS) {
+    programs = &parent.parent_.ingress_programs;
+  } else if (parent.name == ChainNameEnum::EGRESS) {
+     programs = &parent.parent_.egress_programs;
+  } else {
+    return std::make_shared<ChainStats>(parent, csj);
+  }
 
-  auto actionProgram =
-      dynamic_cast<Firewall::DefaultAction *>(programs[std::make_pair(
-          ModulesConstants::DEFAULTACTION, ChainNameEnum::INVALID)]);
+  auto actionProgram = dynamic_cast<Firewall::DefaultAction *>(
+      programs->at(ModulesConstants::DEFAULTACTION));
 
   csj.setPkts(actionProgram->getPktsCount(parent.name));
   csj.setBytes(actionProgram->getBytesCount(parent.name));

@@ -17,9 +17,11 @@
 #include "../Firewall.h"
 #include "datapaths/Firewall_ChainForwarder_dp.h"
 
-Firewall::ChainForwarder::ChainForwarder(const int &index, Firewall &outer)
-    : Firewall::Program(firewall_code_chainforwarder, index,
-                        ChainNameEnum::INVALID, outer) {
+Firewall::ChainForwarder::ChainForwarder(const int &index,
+                                         const ChainNameEnum &direction,
+                                         Firewall &outer)
+    : Firewall::Program(firewall_code_chainforwarder, index, direction,
+                        outer) {
   load();
 }
 
@@ -72,10 +74,5 @@ std::string Firewall::ChainForwarder::getCode() {
                std::to_string(FROM_NRULES_TO_NELEMENTS(0)));
   }
 
-  /*Replacing ports*/
-  replaceAll(noMacroCode, "_INGRESSPORT",
-             std::to_string(firewall.getIngressPortIndex()));
-  replaceAll(noMacroCode, "_EGRESSPORT",
-             std::to_string(firewall.getEgressPortIndex()));
   return noMacroCode;
 }

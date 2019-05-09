@@ -1,4 +1,4 @@
-source "${BASH_SOURCE%/*}/helpers.bash"
+source "${BASH_SOURCE%/*}/../helpers.bash"
 
 function fwcleanup {
   set +e
@@ -12,12 +12,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl firewall fw set loglevel=DEBUG
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
+polycubectl firewall add fw loglevel=DEBUG
+polycubectl attach fw veth1
 polycubectl firewall fw set interactive=false
 
 # Allowing connections to be started only from NS2 to NS1
@@ -59,7 +55,7 @@ if [[ $? == 0 ]]; then
 fi
 
 echo "(4) Trying to ping (ns2->ns1) (not allowed)"
-sudo ip netns exec ns2 ping -c 2 -i 0.5 10.0.0.1
+sudo ping -c 2 -i 0.5 10.0.0.1
 if [[ $? == 0 ]]; then
   echo "Test failed (4)"
   exit 1

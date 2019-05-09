@@ -27,8 +27,8 @@ struct lpm_k {
 
 Firewall::IpLookup::IpLookup(const int &index, const ChainNameEnum &direction,
                              const int &type, Firewall &outer)
-    : Firewall::Program(firewall_code_iplookup, index, direction, outer) {
-  this->type = type;
+    : Firewall::Program(firewall_code_iplookup, index, direction, outer),
+    type(type) {
   load();
 }
 
@@ -52,18 +52,6 @@ std::string Firewall::IpLookup::getCode() {
              std::to_string(FROM_NRULES_TO_NELEMENTS(
                  firewall.getChain(direction)->getNrRules())));
 
-  /*Replacing tracing flag*/
-  if (firewall.trace)
-    replaceAll(noMacroCode, "_TRACE", std::to_string(1));
-  else
-    replaceAll(noMacroCode, "_TRACE", std::to_string(0));
-
-  /*Replacing direction suffix*/
-  if (direction == ChainNameEnum::INGRESS)
-    replaceAll(noMacroCode, "_DIRECTION", "Ingress");
-  else
-    replaceAll(noMacroCode, "_DIRECTION", "Egress");
-
   /*Replacing type*/
   if (type == SOURCE_TYPE)
     replaceAll(noMacroCode, "_TYPE", "src");
@@ -86,16 +74,11 @@ void Firewall::IpLookup::updateTableValue(uint8_t netmask, std::string ip,
   }
   tableName += "Trie";
 
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-
   lpm_k key{
       .netmask_len = netmask, .ip = utils::ip_string_to_be_uint(ip),
   };
 
-  auto table = firewall.get_raw_table(tableName, index);
+  auto table = firewall.get_raw_table(tableName, index, getProgramType());
   table.set(&key, value.data());
 }
 
@@ -110,17 +93,12 @@ void Firewall::IpLookup::updateTableValue(IpAddr ip,
   }
   tableName += "Trie";
 
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-
   lpm_k key{
       .netmask_len = ip.netmask,
       .ip = ip.ip,  // TODO: is byteordering ok?
   };
 
-  auto table = firewall.get_raw_table(tableName, index);
+  auto table = firewall.get_raw_table(tableName, index, getProgramType());
   table.set(&key, value.data());
 }
 

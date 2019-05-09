@@ -40,12 +40,6 @@ std::string Firewall::ConntrackMatch::getCode() {
              std::to_string(FROM_NRULES_TO_NELEMENTS(
                  firewall.getChain(direction)->getNrRules())));
 
-  /*Replacing direction suffix*/
-  if (direction == ChainNameEnum::INGRESS)
-    replaceAll(noMacroCode, "_DIRECTION", "Ingress");
-  else
-    replaceAll(noMacroCode, "_DIRECTION", "Egress");
-
   /*Replacing the default action*/
   replaceAll(noMacroCode, "_DEFAULTACTION", defaultActionString());
 
@@ -57,14 +51,8 @@ bool Firewall::ConntrackMatch::updateTableValue(
   std::string tableName;
   tableName = "Conntrack";
 
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-  else
-    return false;
   try {
-    auto table = firewall.get_raw_table(tableName, index);
+    auto table = firewall.get_raw_table(tableName, index, getProgramType());
     table.set(&status, value.data());
   } catch (...) {
     return false;

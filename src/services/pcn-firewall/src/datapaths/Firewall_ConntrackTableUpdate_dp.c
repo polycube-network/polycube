@@ -104,27 +104,21 @@ struct ct_v {
   uint8_t state;
   uint32_t sequence;
 };
-BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 10240);
 
-BPF_TABLE("extern", int, struct packetHeaders, packetIngress, 1);
-BPF_TABLE("extern", int, struct packetHeaders, packetEgress, 1);
+
+#if _CONNTRACK_MODE != 0
+BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 10240);
+#endif
+
+BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "ConntrackTableUpdate received packet");
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackTableUpdate]: Receiving packet");
 #if _CONNTRACK_MODE == 0
-  if (md->in_port == _INGRESSPORT)
-    pcn_pkt_redirect(ctx, md, _EGRESSPORT);
-  else
-    pcn_pkt_redirect(ctx, md, _INGRESSPORT);
-  return RX_REDIRECT;
+  return RX_OK;
 #else
-  struct packetHeaders *pkt;
   int k = 0;
-  if (md->in_port == _INGRESSPORT) {
-    pkt = packetIngress.lookup(&k);
-  } else {
-    pkt = packetEgress.lookup(&k);
-  }
+  struct packetHeaders *pkt = packet.lookup(&k);
   if (pkt == NULL) {
     // Not possible
     return RX_DROP;
@@ -322,7 +316,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       pcn_log(ctx, LOG_DEBUG,
-              "[TableUpdate][FW_DIRECTION] Should not get here. Flags: %d. "
+              "[_CHAIN_NAME][ConntrackTableUpdate]: Should not get here. Flags: %d. "
               "State: %d. ",
               pkt->flags, value->state);
       // TODO Unexpected situation
@@ -389,7 +383,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       }
 
       pcn_log(ctx, LOG_DEBUG,
-              "[TableUpdate][REV_DIRECTION] Should not get here. Flags: %d. "
+              "[_CHAIN_NAME][ConntrackTableUpdate]: Should not get here. Flags: %d. "
               "State: %d. ",
               pkt->flags, value->state);
       goto forward_action;
@@ -405,17 +399,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       goto forward_action;
     } else {
       // Validation failed
-      pcn_log(ctx, LOG_DEBUG, "Validation failed %d", pkt->flags);
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackTableUpdate]: Validation failed %d", pkt->flags);
       goto forward_action;
     }
   }
 
 forward_action:;
-  // TODO
-  if (md->in_port == _INGRESSPORT)
-    pcn_pkt_redirect(ctx, md, _EGRESSPORT);
-  else
-    pcn_pkt_redirect(ctx, md, _INGRESSPORT);
-  return RX_REDIRECT;
+  return RX_OK;
 #endif
 }

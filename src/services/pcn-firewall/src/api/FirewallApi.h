@@ -33,7 +33,6 @@
 #include "ChainRuleJsonObject.h"
 #include "ChainStatsJsonObject.h"
 #include "FirewallJsonObject.h"
-#include "PortsJsonObject.h"
 #include "SessionTableJsonObject.h"
 #include <vector>
 
@@ -50,15 +49,11 @@ Response create_firewall_chain_list_by_id_handler(const char *name, const Key *k
 Response create_firewall_chain_reset_counters_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response create_firewall_chain_rule_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_firewall_chain_rule_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response create_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response create_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response delete_firewall_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_firewall_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_firewall_chain_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_firewall_chain_rule_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_firewall_chain_rule_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response delete_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response delete_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_accept_established_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys);
@@ -89,12 +84,8 @@ Response read_firewall_chain_stats_sport_by_id_handler(const char *name, const K
 Response read_firewall_chain_stats_src_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_chain_stats_tcpflags_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_conntrack_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_firewall_egress_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_firewall_ingress_port_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_session_table_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_session_table_eta_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_session_table_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
@@ -104,8 +95,6 @@ Response replace_firewall_chain_by_id_handler(const char *name, const Key *keys,
 Response replace_firewall_chain_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_firewall_chain_rule_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_firewall_chain_rule_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response replace_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response replace_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_accept_established_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -114,18 +103,13 @@ Response update_firewall_chain_list_by_id_handler(const char *name, const Key *k
 Response update_firewall_chain_rule_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_chain_rule_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_conntrack_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_firewall_egress_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_firewall_ingress_port_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_firewall_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_firewall_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response firewall_chain_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 Response firewall_chain_rule_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 Response firewall_chain_stats_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 Response firewall_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
-Response firewall_ports_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 Response firewall_session_table_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 
 

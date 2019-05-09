@@ -44,18 +44,6 @@ std::string Firewall::TcpFlagsLookup::getCode() {
              std::to_string(FROM_NRULES_TO_NELEMENTS(
                  firewall.getChain(direction)->getNrRules())));
 
-  /*Replacing tracing flag*/
-  if (firewall.trace)
-    replaceAll(noMacroCode, "_TRACE", std::to_string(1));
-  else
-    replaceAll(noMacroCode, "_TRACE", std::to_string(0));
-
-  /*Replacing direction suffix*/
-  if (direction == ChainNameEnum::INGRESS)
-    replaceAll(noMacroCode, "_DIRECTION", "Ingress");
-  else
-    replaceAll(noMacroCode, "_DIRECTION", "Egress");
-
   /*Replacing the default action*/
   replaceAll(noMacroCode, "_DEFAULTACTION", defaultActionString());
 
@@ -66,14 +54,8 @@ bool Firewall::TcpFlagsLookup::updateTableValue(
     uint32_t flagMask, const std::vector<uint64_t> &value) {
   std::string tableName = "tcpFlags";
 
-  if (direction == ChainNameEnum::INGRESS)
-    tableName += "Ingress";
-  else if (direction == ChainNameEnum::EGRESS)
-    tableName += "Egress";
-  else
-    return false;
   try {
-    auto table = firewall.get_raw_table(tableName, index);
+    auto table = firewall.get_raw_table(tableName, index, getProgramType());
     table.set(&flagMask, value.data());
   } catch (...) {
     return false;

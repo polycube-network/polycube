@@ -4,7 +4,7 @@ module firewall {
   prefix "firewall";
 
   import polycube-base { prefix "polycube-base"; }
-  import polycube-standard-base { prefix "polycube-standard-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
 
   organization "Polycube open source project";
   description "YANG data model for the Polycube Firewall service";
@@ -14,7 +14,7 @@ module firewall {
   polycube-base:service-name "firewall";
   polycube-base:service-min-kernel-version "4.14.0";
 
-  uses "polycube-standard-base:standard-base-yang-module";
+  uses "polycube-transparent-base:transparent-base-yang-module";
 
   typedef action {
     type enumeration {
@@ -97,16 +97,6 @@ module firewall {
     }
   }
 
-  leaf ingress-port {
-    type string;
-    description "Name for the ingress port, from which arrives traffic processed by INGRESS chain (by default it's the first port of the cube)";
-  }
-
-  leaf egress-port {
-    type string;
-    description "Name for the egress port, from which arrives traffic processed by EGRESS chain (by default it's the second port of the cube)";
-  }
-
   leaf conntrack {
     type enumeration {
       enum ON;
@@ -126,7 +116,7 @@ module firewall {
   leaf interactive {
     type boolean;
     description "Interactive mode applies new rules immediately; if 'false', the command 'apply-rules' has to be used to apply all the rules at once. Default is TRUE.";
-        default true;
+    default true;
   }
 
   list session-table {
