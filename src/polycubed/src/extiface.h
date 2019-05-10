@@ -48,6 +48,8 @@ class ExtIface : public PeerIface {
   void set_next_index(uint16_t index);
   bool is_used() const;
 
+  std::string get_iface_name() const;
+
  protected:
   static std::set<std::string> used_ifaces;
   int load_ingress();

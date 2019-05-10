@@ -151,8 +151,11 @@ nlohmann::json TransparentCube::to_json() const {
 
   std::string parent;
   if (parent_) {
-    auto port_parent = dynamic_cast<Port *>(parent_);
-    parent = port_parent->get_path();
+    if (auto port_parent = dynamic_cast<Port *>(parent_)) {
+      parent = port_parent->get_path();
+    } else if (auto iface_parent = dynamic_cast<ExtIface *>(parent_)) {
+      parent = iface_parent->get_iface_name();
+    }
   }
 
   j["parent"] = parent;
