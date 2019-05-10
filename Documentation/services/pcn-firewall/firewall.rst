@@ -1,9 +1,9 @@
 Firewall
 ========
 
-This service is a transparent firewall, it can be attached to a port or a netdev, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags.
-Policy rules can include one or more of the above fields; if a given field is missing, its content is influent for the matching.
-*Packets that are not ip are forwarded without any check*.
+This service implements a transparent firewall. It can be attached to a port or a netdev, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags.
+Policy rules can include one or more of the above fields; if a given field is missing, its content does not influence the matching.
+*Non-IP packets are forwarded without any check*.
 
 Features
 --------
@@ -20,7 +20,7 @@ Supported features:
   - ``Forward`` packet from the interface from which it was received to the other
   - ``Drop`` packet
 
-- Not IP packets are forwarded by default.
+- Non-IP packets are forwarded by default.
 - Up to 5k rules for each chain (INGRESS/EGRESS).
 
 How to use
@@ -29,8 +29,8 @@ How to use
 Ingress ad egress chains
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service is based on the ingress and egress chains.
-Ingress and egress chains are independent and have two different policy sets.
+The service supports independent ingress and egress policy chains, with two different policy sets.
+
 
 Rule insertion
 ^^^^^^^^^^^^^^
