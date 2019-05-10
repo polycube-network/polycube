@@ -284,6 +284,12 @@ bool ServiceController::parse_peer_name(const std::string &peer,
   return true;
 }
 
+/*
+ * This function in on charge of setting the peer of ports
+ * connected to netdevs when they are removed.
+ * This function also removes the ExtIface object if this is
+ * not already removed.
+ */
 void ServiceController::netlink_notification(int ifindex,
                                              const std::string &ifname) {
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
