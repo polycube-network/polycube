@@ -3,7 +3,7 @@ Firewall
 
 This service implements a transparent firewall. It can be attached to a port or a netdev, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags.
 Policy rules can include one or more of the above fields; if a given field is missing, its content does not influence the matching.
-*Non-IP packets are forwarded without any check*.
+*Non-IP packets are always forwarded, without any check*.
 
 Features
 --------
@@ -20,7 +20,7 @@ Supported features:
   - ``Forward`` packet from the interface from which it was received to the other
   - ``Drop`` packet
 
-- Non-IP packets are forwarded by default.
+- Non-IP packets are always forwarded.
 - Up to 5k rules for each chain (INGRESS/EGRESS).
 
 How to use
