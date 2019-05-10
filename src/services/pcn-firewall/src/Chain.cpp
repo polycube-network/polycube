@@ -538,7 +538,7 @@ std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
   ChainRuleJsonObject defaultRule;
   defaultRule.setAction(getDefault());
   defaultRule.setDescription("Default Policy");
-  defaultRule.setId(0);
+  defaultRule.setId(rules_.size());
 
   rules.push_back(
       std::shared_ptr<ChainRule>(new ChainRule(*this, defaultRule)));
