@@ -603,7 +603,7 @@ void Chain::delRule(const uint32_t &id) {
     counters_[i] = counters_[i + 1];
     counters_[i]->counter.setId(i);
   }
-  rules_.resize(counters_.size() - 1);
+  counters_.resize(counters_.size() - 1);
 
   if (parent_.interactive_) {
     applyRules();
