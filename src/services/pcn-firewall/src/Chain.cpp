@@ -137,9 +137,17 @@ ChainAppendOutputJsonObject Chain::append(ChainAppendInputJsonObject input) {
 
   uint32_t id = rules_.size();
   conf.setId(id);
-  ChainAppendOutputJsonObject result;
   addRule(id, conf);
+
+  ChainAppendOutputJsonObject result;
   result.setId(id);
+
+//  TODO improve
+//  if (parent_.interactive_) {
+//    ChainRule::applyAcceptEstablishedOptimization(*this);
+//    parent_.attachInterfaces();
+//  }
+
   return result;
 }
 
@@ -197,27 +205,7 @@ std::shared_ptr<spdlog::logger> Chain::logger() {
 }
 
 uint32_t Chain::getNrRules() {
-  /*
-   * ChainRule::get returns only the valid rules to avoid segmentation faults
-   * all around the code.
-   * This methods returns the true number of rules, that can't be get from
-   * ChainRule::get without
-   * looking for the max id.
-   */
   return rules_.size();
-}
-
-/*
- * returns only valid elements in the rules_ vector
- */
-std::vector<std::shared_ptr<ChainRule>> Chain::getRealRuleList() {
-  std::vector<std::shared_ptr<ChainRule>> rules;
-  for (auto &rule : rules_) {
-    if (rule) {
-      rules.push_back(rule);
-    }
-  }
-  return rules;
 }
 
 void Chain::updateChain() {
@@ -247,10 +235,8 @@ void Chain::updateChain() {
   std::map<int, std::vector<uint64_t>> protocols;
   std::vector<std::vector<uint64_t>> flags;
 
-  auto rules = getRealRuleList();
-
   // Looping through conntrack
-  conntrack_from_rules_to_map(states, rules);
+  conntrack_from_rules_to_map(states, rules_);
   if (!states.empty()) {
     // At least one rule requires a matching on conntrack, so it can be
     // injected.
@@ -276,7 +262,7 @@ void Chain::updateChain() {
   // Done looping through conntrack
 
   // Looping through IP source
-  ip_from_rules_to_map(SOURCE_TYPE, ips, rules);
+  ip_from_rules_to_map(SOURCE_TYPE, ips, rules_);
   if (!ips.empty()) {
     // At least one rule requires a matching on ipsource, so inject
     // the module on the first available position
@@ -296,7 +282,7 @@ void Chain::updateChain() {
   // Done looping through IP source
 
   // Looping through IP destination
-  ip_from_rules_to_map(DESTINATION_TYPE, ips, rules);
+  ip_from_rules_to_map(DESTINATION_TYPE, ips, rules_);
 
   if (!ips.empty()) {
     // At least one rule requires a matching on ipdestination, so inject
@@ -317,7 +303,7 @@ void Chain::updateChain() {
   // Done looping through IP destination
 
   // Looping through l4 protocol
-  transportproto_from_rules_to_map(protocols, rules);
+  transportproto_from_rules_to_map(protocols, rules_);
 
   if (!protocols.empty()) {
     // At least one rule requires a matching on
@@ -339,7 +325,7 @@ void Chain::updateChain() {
   // Done looping through l4 protocol
 
   // Looping through source port
-  port_from_rules_to_map(SOURCE_TYPE, ports, rules);
+  port_from_rules_to_map(SOURCE_TYPE, ports, rules_);
 
   if (!ports.empty()) {
     // At least one rule requires a matching on  source ports,
@@ -360,7 +346,7 @@ void Chain::updateChain() {
   // Done looping through source port
 
   // Looping through destination port
-  port_from_rules_to_map(DESTINATION_TYPE, ports, rules);
+  port_from_rules_to_map(DESTINATION_TYPE, ports, rules_);
 
   if (!ports.empty()) {
     // At least one rule requires a matching on source ports,
@@ -381,7 +367,7 @@ void Chain::updateChain() {
   // Done looping through destination port
 
   // Looping through tcp flags
-  flags_from_rules_to_map(flags, rules);
+  flags_from_rules_to_map(flags, rules_);
 
   if (!flags.empty()) {
     // At least one rule requires a matching on flags,
@@ -422,7 +408,7 @@ void Chain::updateChain() {
   }
   ++index;
 
-  for (auto &rule : rules) {
+  for (auto &rule : rules_) {
     actionlookup->updateTableValue(rule->getId(),
         ChainRule::ActionEnum_to_int(rule->getAction()));
   }
@@ -532,7 +518,7 @@ std::shared_ptr<ChainRule> Chain::getRule(const uint32_t &id) {
 }
 
 std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
-  auto rules(getRealRuleList());
+  auto rules(rules_);
 
   // Adding a "stub" default rule
   ChainRuleJsonObject defaultRule;
@@ -547,6 +533,11 @@ std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
 }
 
 void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
+
+  if (id > rules_.size()) {
+    throw std::runtime_error("rule id not allowed");
+  }
+
   auto newRule = std::make_shared<ChainRule>(*this, conf);
 
   // Forcing counters update
@@ -558,7 +549,7 @@ void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
     throw new std::runtime_error("I won't be thrown");
 
   } else if (rules_.size() <= id && newRule != nullptr) {
-    rules_.resize(id + 1);
+    rules_.resize(rules_.size() + 1);
   }
   if (rules_[id]) {
     logger()->info("Rule {0} overwritten!", id);
@@ -578,14 +569,14 @@ void Chain::addRuleList(const std::vector<ChainRuleJsonObject> &conf) {
   }
 }
 
+// TODO check
 void Chain::replaceRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
-  delRule(id);
   uint32_t id_ = conf.getId();
   addRule(id_, conf);
 }
 
 void Chain::delRule(const uint32_t &id) {
-  if (rules_.size() < id || !rules_[id]) {
+  if ((id >= rules_.size()) || (!rules_[id])) {
     throw std::runtime_error("There is no rule " + id);
   }
 
