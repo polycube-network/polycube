@@ -511,7 +511,7 @@ void Chain::delStatsList() {
 }
 
 std::shared_ptr<ChainRule> Chain::getRule(const uint32_t &id) {
-  if (rules_.size() < id || !rules_[id]) {
+  if (rules_.size() <= id || !rules_[id]) {
     throw std::runtime_error("There is no rule " + id);
   }
   return rules_[id];
