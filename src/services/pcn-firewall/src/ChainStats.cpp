@@ -18,7 +18,7 @@
 #include "Firewall.h"
 
 ChainStats::ChainStats(Chain &parent, const ChainStatsJsonObject &conf)
-    : parent_(parent) {
+    : ChainStatsBase(parent) {
   this->counter = conf;
 }
 

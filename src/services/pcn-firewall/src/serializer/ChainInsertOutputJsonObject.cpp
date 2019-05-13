@@ -10,18 +10,18 @@
 
 
 
-#include "ChainAppendOutputJsonObject.h"
+#include "ChainInsertOutputJsonObject.h"
 #include <regex>
 
 namespace polycube {
 namespace service {
 namespace model {
 
-ChainAppendOutputJsonObject::ChainAppendOutputJsonObject() {
+ChainInsertOutputJsonObject::ChainInsertOutputJsonObject() {
   m_idIsSet = false;
 }
 
-ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(const nlohmann::json &val) :
+ChainInsertOutputJsonObject::ChainInsertOutputJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_idIsSet = false;
 
@@ -31,7 +31,7 @@ ChainAppendOutputJsonObject::ChainAppendOutputJsonObject(const nlohmann::json &v
   }
 }
 
-nlohmann::json ChainAppendOutputJsonObject::toJson() const {
+nlohmann::json ChainInsertOutputJsonObject::toJson() const {
   nlohmann::json val = nlohmann::json::object();
   if (!getBase().is_null()) {
     val.update(getBase());
@@ -44,20 +44,20 @@ nlohmann::json ChainAppendOutputJsonObject::toJson() const {
   return val;
 }
 
-uint32_t ChainAppendOutputJsonObject::getId() const {
+uint32_t ChainInsertOutputJsonObject::getId() const {
   return m_id;
 }
 
-void ChainAppendOutputJsonObject::setId(uint32_t value) {
+void ChainInsertOutputJsonObject::setId(uint32_t value) {
   m_id = value;
   m_idIsSet = true;
 }
 
-bool ChainAppendOutputJsonObject::idIsSet() const {
+bool ChainInsertOutputJsonObject::idIsSet() const {
   return m_idIsSet;
 }
 
-void ChainAppendOutputJsonObject::unsetId() {
+void ChainInsertOutputJsonObject::unsetId() {
   m_idIsSet = false;
 }
 

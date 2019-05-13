@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../interface/SessionTableInterface.h"
+#include "base/SessionTableBase.h"
 
 #include <spdlog/spdlog.h>
 #include <chrono>
@@ -47,9 +47,11 @@ enum {
 
 class Firewall;
 
-using namespace io::swagger::server::model;
+//using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class SessionTable : public SessionTableInterface {
+
+class SessionTable : public SessionTableBase {
  public:
   SessionTable(Firewall &parent, const SessionTableJsonObject &conf);
   virtual ~SessionTable();
@@ -99,7 +101,5 @@ class SessionTable : public SessionTableInterface {
   //static uint64_t hex_string_to_uint64(const std::string &str);
 
  private:
-  Firewall &parent_;
-
   SessionTableJsonObject fields;
 };

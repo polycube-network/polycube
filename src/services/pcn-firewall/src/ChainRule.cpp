@@ -19,7 +19,7 @@
 #include "Firewall.h"
 
 ChainRule::ChainRule(Chain &parent, const ChainRuleJsonObject &conf)
-    : parent_(parent), id(conf.getId()) {
+    : ChainRuleBase(parent), id(conf.getId()) {
   update(conf);
 }
 

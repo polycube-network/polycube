@@ -16,17 +16,15 @@
 
 #pragma once
 
-#include "../interface/ChainRuleInterface.h"
 #include "defines.h"
 
-#include <inttypes.h>
-#include <spdlog/spdlog.h>
+#include "base/ChainRuleBase.h"
 
 class Chain;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class ChainRule : public ChainRuleInterface {
+class ChainRule : public ChainRuleBase {
   friend class ChainStats;
   friend class Chain;
 
@@ -102,8 +100,6 @@ class ChainRule : public ChainRuleInterface {
   static int ChainRuleConntrackEnum_to_int(const ConntrackstatusEnum &status);
 
  private:
-  Chain &parent_;
-
   uint32_t id;
 
   ConntrackstatusEnum conntrack;

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../interface/FirewallInterface.h"
+#include "base/FirewallBase.h"
 
 #include "polycube/services/transparent_cube.h"
 #include "polycube/services/utils.h"
@@ -34,7 +34,7 @@
 #include "SessionTable.h"
 #include "defines.h"
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
 class Chain;
 
@@ -52,8 +52,7 @@ struct ct_v {
   uint32_t sequence;
 } __attribute__((packed));
 
-class Firewall : public polycube::service::TransparentCube,
-                 public FirewallInterface {
+class Firewall : public FirewallBase {
   friend class Chain;
   friend class ChainRule;
   friend class ChainStats;
@@ -66,9 +65,6 @@ class Firewall : public polycube::service::TransparentCube,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
-  void update(const FirewallJsonObject &conf) override;
-  FirewallJsonObject toJsonObject() override;
-
   /// <summary>
   ///
   /// </summary>
@@ -76,9 +72,6 @@ class Firewall : public polycube::service::TransparentCube,
   std::vector<std::shared_ptr<Chain>> getChainList() override;
   void addChain(const ChainNameEnum &name,
                 const ChainJsonObject &conf) override;
-  void addChainList(const std::vector<ChainJsonObject> &conf) override;
-  void replaceChain(const ChainNameEnum &name,
-                    const ChainJsonObject &conf) override;
   void delChain(const ChainNameEnum &name) override;
   void delChainList() override;
 

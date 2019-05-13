@@ -16,15 +16,13 @@
 
 #pragma once
 
-#include "../interface/ChainStatsInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "base/ChainStatsBase.h"
 
 class Chain;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class ChainStats : public ChainStatsInterface {
+class ChainStats : public ChainStatsBase {
   friend class ChainRule;
   friend class Chain;
 
@@ -98,7 +96,6 @@ class ChainStats : public ChainStatsInterface {
   uint32_t getId() override;
 
  private:
-  Chain &parent_;
   ChainStatsJsonObject counter;
 
   static std::shared_ptr<ChainStats> getDefaultActionCounters(Chain &parent);

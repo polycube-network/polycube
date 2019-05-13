@@ -17,7 +17,7 @@
 #include "Chain.h"
 #include "Firewall.h"
 
-Chain::Chain(Firewall &parent, const ChainJsonObject &conf) : parent_(parent) {
+Chain::Chain(Firewall &parent, const ChainJsonObject &conf) : ChainBase(parent) {
   update(conf);
 }
 
@@ -607,4 +607,12 @@ void Chain::delRuleList() {
   if (parent_.interactive_) {
     applyRules();
   }
+}
+
+ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
+  throw std::runtime_error("Chain::ChainInsertOutput: Method not implemented");
+}
+
+void Chain::deletes(ChainDeleteInputJsonObject input) {
+  throw std::runtime_error("Chain::: Method not implemented");
 }

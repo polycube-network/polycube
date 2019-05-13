@@ -230,6 +230,26 @@ module firewall {
       }
     }
 
+    action insert {
+      input {
+        leaf id {
+          type uint32;
+        }
+        uses "firewall:rule-fields";
+      }
+      output {
+        leaf id {
+          type uint32;
+        }
+      }
+    }
+
+    action delete {
+      input {
+        uses "firewall:rule-fields";
+      }
+    }
+
     action reset-counters {
       description "Reset the counters to 0 for the chain.";
       output {
