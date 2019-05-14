@@ -40,9 +40,7 @@ class Chain : public ChainBase {
   Chain(Firewall &parent, const ChainJsonObject &conf);
   virtual ~Chain();
 
-  std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
-  ChainJsonObject toJsonObject() override;
 
   /// <summary>
   /// Default action if no rule matches in the ingress chain. Default is DROP.

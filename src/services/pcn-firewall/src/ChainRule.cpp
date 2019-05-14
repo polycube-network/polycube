@@ -194,7 +194,3 @@ uint32_t ChainRule::getId() {
   // This method retrieves the id value.
   return id;
 }
-
-std::shared_ptr<spdlog::logger> ChainRule::logger() {
-  return parent_.logger();
-}

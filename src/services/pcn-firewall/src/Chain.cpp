@@ -52,23 +52,6 @@ void Chain::update(const ChainJsonObject &conf) {
   }
 }
 
-ChainJsonObject Chain::toJsonObject() {
-  ChainJsonObject conf;
-
-  conf.setDefault(getDefault());
-
-  for (auto &i : getStatsList()) {
-    conf.addChainStats(i->toJsonObject());
-  }
-
-  conf.setName(getName());
-  for (auto &i : getRuleList()) {
-    conf.addChainRule(i->toJsonObject());
-  }
-
-  return conf;
-}
-
 ActionEnum Chain::getDefault() {
   // This method retrieves the default value.
   return this->defaultAction;
@@ -198,10 +181,6 @@ ChainApplyRulesOutputJsonObject Chain::applyRules() {
     result.setResult(false);
   }
   return result;
-}
-
-std::shared_ptr<spdlog::logger> Chain::logger() {
-  return parent_.logger();
 }
 
 uint32_t Chain::getNrRules() {

@@ -229,7 +229,3 @@ uint16_t ChainStats::getSport() {
 uint32_t ChainStats::getId() {
   return counter.getId();
 }
-
-std::shared_ptr<spdlog::logger> ChainStats::logger() {
-  return parent_.logger();
-}

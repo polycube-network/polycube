@@ -32,7 +32,6 @@ class ChainRule : public ChainRuleBase {
   ChainRule(Chain &parent, const ChainRuleJsonObject &conf);
   virtual ~ChainRule();
 
-  std::shared_ptr<spdlog::logger> logger();
   void update(const ChainRuleJsonObject &conf) override;
   ChainRuleJsonObject toJsonObject() override;
 

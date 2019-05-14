@@ -30,7 +30,6 @@ class ChainStats : public ChainStatsBase {
   ChainStats(Chain &parent, const ChainStatsJsonObject &conf);
   virtual ~ChainStats();
 
-  std::shared_ptr<spdlog::logger> logger();
   void update(const ChainStatsJsonObject &conf) override;
   ChainStatsJsonObject toJsonObject() override;
 
