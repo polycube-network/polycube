@@ -232,6 +232,10 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
     id = input.getId();
   }
 
+  if (id > rules_.size()) {
+    throw std::runtime_error("id not allowed");
+  }
+
   auto newRule = std::make_shared<ChainRule>(*this, conf);
 
   ChainStatsJsonObject confStats;
