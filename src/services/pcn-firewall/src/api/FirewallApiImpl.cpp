@@ -160,7 +160,7 @@ create_firewall_chain_delete_by_id(const std::string &name, const ChainNameEnum 
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
 
-//  return chain->delete(value);
+  return chain->deletes(value);
 }
 
 /**

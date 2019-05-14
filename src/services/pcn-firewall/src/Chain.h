@@ -20,6 +20,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <memory>
 
 #include "base/ChainBase.h"
 

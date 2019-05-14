@@ -589,9 +589,156 @@ void Chain::delRuleList() {
 }
 
 ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
-  throw std::runtime_error("Chain::ChainInsertOutput: Method not implemented");
+  ChainRuleJsonObject conf;
+
+  if (input.conntrackIsSet()) {
+    conf.setConntrack(input.getConntrack());
+  }
+  if (input.srcIsSet()) {
+    conf.setSrc(input.getSrc());
+  }
+  if (input.dstIsSet()) {
+    conf.setDst(input.getDst());
+  }
+  if (input.sportIsSet()) {
+    conf.setSport(input.getSport());
+  }
+  if (input.dportIsSet()) {
+    conf.setDport(input.getDport());
+  }
+  if (input.tcpflagsIsSet()) {
+    conf.setTcpflags(input.getTcpflags());
+  }
+  if (input.l4protoIsSet()) {
+    conf.setL4proto(input.getL4proto());
+  }
+  if (input.actionIsSet()) {
+    conf.setAction(input.getAction());
+  } else {
+    conf.setAction(ActionEnum::DROP);
+  }
+
+  uint32_t id = 0;
+  if (input.idIsSet()) {
+    id = input.getId();
+  }
+
+  if (id > rules_.size()) {
+    throw std::runtime_error("id not allowed");
+  }
+
+  auto newRule = std::make_shared<ChainRule>(*this, conf);
+
+  ChainStatsJsonObject confStats;
+  auto newStats = std::make_shared<ChainStats>(*this, confStats);
+
+  getStatsList();
+
+  if (newRule == nullptr) {
+    // Totally useless, but it is needed to avoid the compiler making wrong
+    // assumptions and reordering
+    throw new std::runtime_error("I won't be thrown");
+
+  } else if (rules_.size() >= id && newRule != nullptr) {
+    rules_.resize(rules_.size() + 1);
+    counters_.resize(counters_.size() + 1);
+  }
+
+  // 0, 1, 2, 3
+  // insert @2
+  // 0, 1, 2*, 2->3, 3->4
+
+  // for rules before id
+  // nothing
+
+  // for rules starting from id to rules size-1
+  // move ahead i -> i+i
+  // btw, better to start from the end of the array
+  // for rules starting from size-1 to id
+  // move ahead i -> i+i
+
+  int i = 0;
+  int id_int = (int)id;
+
+  // ids are 0,1,2
+  // size=3
+  // id = 1 (insert)
+
+  // new size = 4
+
+  // from 1 to 2
+  // move 2->3
+  // move 1->2,
+  // replace 1
+
+  for (i = rules_.size() - 2; i >= id_int; i--) {
+    rules_[i + 1] = rules_[i];
+    counters_[i + 1] = counters_[i];
+    if (rules_[i + 1] != nullptr) {
+      rules_[i + 1]->id = i + 1;
+    }
+    if (counters_[i + 1] != nullptr) {
+      counters_[i + 1]->counter.setId(i + 1);
+    }
+  }
+
+  rules_[id] = newRule;
+  rules_[id]->id = id;
+
+  counters_[id] = newStats;
+  counters_[id]->counter.setPkts(0);
+  counters_[id]->counter.setBytes(0);
+  counters_[id]->counter.setId(id);
+
+  if (parent_.interactive_) {
+    updateChain();
+  }
+
+  // set fields for return object
+  ChainInsertOutputJsonObject result;
+  result.setId(id);
+
+  return result;
 }
 
 void Chain::deletes(ChainDeleteInputJsonObject input) {
-  throw std::runtime_error("Chain::: Method not implemented");
+  ChainRuleJsonObject conf;
+
+  if (input.conntrackIsSet()) {
+    conf.setConntrack(input.getConntrack());
+  }
+  if (input.srcIsSet()) {
+    conf.setSrc(input.getSrc());
+  }
+  if (input.dstIsSet()) {
+    conf.setDst(input.getDst());
+  }
+  if (input.sportIsSet()) {
+    conf.setSport(input.getSport());
+  }
+  if (input.dportIsSet()) {
+    conf.setDport(input.getDport());
+  }
+  if (input.tcpflagsIsSet()) {
+    conf.setTcpflags(input.getTcpflags());
+  }
+  if (input.l4protoIsSet()) {
+    conf.setL4proto(input.getL4proto());
+  }
+  if (input.actionIsSet()) {
+    conf.setAction(input.getAction());
+  } else {
+    conf.setAction(ActionEnum::DROP);
+  }
+
+  for (int i = 0; i < rules_.size(); i++) {
+    if (rules_[i] != nullptr) {
+      ChainRule c(*this, conf);
+      if (rules_[i]->equal(c)) {
+        delRule(i);
+        return;
+      }
+    }
+  }
+  throw std::runtime_error("no matching rule to delete");
 }

@@ -35,6 +35,8 @@ class ChainRule : public ChainRuleBase {
   void update(const ChainRuleJsonObject &conf) override;
   ChainRuleJsonObject toJsonObject() override;
 
+  bool equal(ChainRule &cmp);
+
   /// <summary>
   /// Description of the rule.
   /// </summary>

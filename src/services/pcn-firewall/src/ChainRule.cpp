@@ -194,3 +194,64 @@ uint32_t ChainRule::getId() {
   // This method retrieves the id value.
   return id;
 }
+
+bool ChainRule::equal(ChainRule &cmp) {
+  if (ipSrcIsSet != cmp.ipSrcIsSet)
+    return false;
+  if (ipSrcIsSet) {
+    if (ipSrc.toString() != cmp.ipSrc.toString())
+      return false;
+  }
+
+  if (ipDstIsSet != cmp.ipDstIsSet)
+    return false;
+  if (ipDstIsSet) {
+    if (ipDst.toString() != cmp.ipDst.toString())
+      return false;
+  }
+
+  if (srcPortIsSet != cmp.srcPortIsSet)
+    return false;
+  if (srcPortIsSet) {
+    if (srcPort != cmp.srcPort)
+      return false;
+  }
+
+  if (dstPortIsSet != cmp.dstPortIsSet)
+    return false;
+  if (dstPortIsSet) {
+    if (dstPort != cmp.dstPort)
+      return false;
+  }
+
+  if (l4ProtoIsSet != cmp.l4ProtoIsSet)
+    return false;
+  if (l4ProtoIsSet) {
+    if (l4Proto != cmp.l4Proto)
+      return false;
+  }
+
+  if (tcpFlagsIsSet != cmp.tcpFlagsIsSet)
+    return false;
+  if (tcpFlagsIsSet) {
+    if ((flagsSet != cmp.flagsSet) || ((flagsNotSet != cmp.flagsNotSet)))
+      return false;
+  }
+
+  if (actionIsSet != cmp.actionIsSet)
+    return false;
+
+  if (actionIsSet) {
+    if (action != cmp.action)
+      return false;
+  }
+
+  if (conntrackIsSet != cmp.conntrackIsSet)
+    return false;
+  if (conntrackIsSet) {
+    if (conntrack != cmp.conntrack)
+      return false;
+  }
+
+  return true;
+}
