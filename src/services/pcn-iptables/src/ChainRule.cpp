@@ -176,6 +176,20 @@ bool ChainRule::equal(ChainRule &cmp) {
       return false;
   }
 
+  if (inIfaceIsSet != cmp.inIfaceIsSet)
+    return false;
+  if (inIfaceIsSet) {
+    if (inIface != cmp.inIface)
+      return false;
+  }
+
+  if (outIfaceIsSet != cmp.outIfaceIsSet)
+    return false;
+  if (outIfaceIsSet) {
+    if (outIface != cmp.outIface)
+      return false;
+  }
+
   if (actionIsSet != cmp.actionIsSet)
     return false;
 
