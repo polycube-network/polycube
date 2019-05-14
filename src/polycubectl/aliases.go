@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	//"reflect"
 	"github.com/polycube-network/polycube/src/polycubectl/cliargs"
 )
 

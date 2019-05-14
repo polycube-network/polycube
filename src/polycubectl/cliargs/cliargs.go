@@ -21,6 +21,11 @@ import (
 	"strconv"
 	"strings"
 
+	"os"
+	"bufio"
+	"bytes"
+	"github.com/ghodss/yaml"
+
 	"github.com/polycube-network/polycube/src/polycubectl/config"
 	"github.com/polycube-network/polycube/src/polycubectl/httprequest"
 
@@ -441,7 +446,25 @@ func (cli *CLIArgs) GetHTTPRequest() (*httprequest.HTTPRequest, error) {
 			url += url0
 			body = body0
 		} else {
-			body = cli.buildBody()
+			// if there is text on the standard input that'll used as the body
+			var buffer bytes.Buffer
+			reader := bufio.NewReader(os.Stdin)
+			text, _ := reader.ReadString('\n')
+			for text != "" {
+				buffer.WriteString(text)
+				text, _ = reader.ReadString('\n')
+			}
+
+			if buffer.Len() > 0 {
+				jsonBuff, err := yaml.YAMLToJSON(buffer.Bytes())
+				if err != nil {
+					return nil, err
+				} else {
+					body = jsonBuff
+				}
+			} else {
+				body = cli.buildBody()
+			}
 		}
 	}
 
