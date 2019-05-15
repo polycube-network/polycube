@@ -3,11 +3,16 @@
 # use a clean instance of polycubed to run each test
 RELAUNCH_POLYCUBED=true
 
+SERVICES_LOAD_TIMEOUT=10
+
 # launch polycubed in DEBUG mode
 DEBUG=false
 
 # result.json path
 RESULT_JSON="result.json"
+
+declare -A services
+services[iptables]=pcn-iptables
 
 # cleanup environment before exit
 function cleanup {
@@ -93,6 +98,25 @@ function log_test {
   return $status
 }
 
+# Check if services are loaded
+function services_are_loaded {
+  echo "load_services:" > load_services
+  count=0
+  services_show=$(polycubectl services show)
+  for i in "${!services[@]}"
+  do
+    lines=$(echo $services_show | grep $i | wc -l)
+    if [ $lines -ne 0 ]
+    then
+      echo "$i YES" >> load_services
+    else
+      count=$((count + 1))
+      echo "$i NO" >> load_services
+    fi
+  done
+  echo $count
+}
+
 # Check if polycubed rest server is responding
 function polycubed_is_responding {
   ret=$(polycubectl ? > /dev/null)
@@ -166,6 +190,28 @@ function launch_and_wait_polycubed_is_responding {
           echo "relaunching polycubed in $i seconds"
         fi
       fi
+        break
+    fi
+  done
+
+  done=0
+  i=0
+  while : ; do
+    sleep 1
+    loaded=$(services_are_loaded)
+    if [[ $loaded -eq 0 ]]; then
+      done=1
+    fi
+
+    i=$((i+1))
+    if [ "$i" -eq $SERVICES_LOAD_TIMEOUT ]
+    then
+        echo "+ERROR+ timeout in checking services loaded $i seconds. try to run test anyway"
+        cat load_services | grep NO
+        break
+    fi
+    if [ "$done" -ne 0 ]; then
+        echo "checking services loaded in $i seconds"
         break
     fi
   done
