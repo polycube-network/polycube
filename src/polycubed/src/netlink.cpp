@@ -20,7 +20,15 @@
 #include <linux/if.h>
 #include <iostream>
 
+#include <arpa/inet.h>
+#include <sstream>
+#include <sys/socket.h>
+
 #include "exceptions.h"
+
+#ifndef SOL_NETLINK
+#define SOL_NETLINK 270
+#endif
 
 namespace polycube {
 namespace polycubed {
@@ -29,24 +37,28 @@ class Netlink::NetlinkNotification {
  public:
   NetlinkNotification(Netlink *parent) : parent_(parent), running(true) {
     /* Allocate a new socket */
-    sk = nl_socket_alloc();
-    nl_socket_disable_seq_check(sk);
-    nl_socket_modify_cb(sk, NL_CB_VALID, NL_CB_CUSTOM, recv_func, parent_);
-    nl_connect(sk, NETLINK_ROUTE);
-    nl_socket_add_memberships(sk, RTNLGRP_LINK, 0);
+    struct sockaddr_nl addr;
+    int option = 1;
+    bzero (&addr, sizeof(addr));
 
-    parent_->logger->debug("started NetlinkNotification");
+    sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    addr.nl_family = AF_NETLINK;
+    addr.nl_groups = (RTNLGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE) ;
+
+    if (bind(sock,(struct sockaddr *)&addr,sizeof(addr)) < 0) {
+      parent_->logger->error("Netlink error bind");
+      close(sock);
+    }
+
+    if (setsockopt(sock, SOL_NETLINK, NETLINK_LISTEN_ALL_NSID,(char*)&option,sizeof(option)) < 0) {
+      parent_->logger->error("Netlink error setsockopt");
+      close(sock);
+    }
+
+    parent_->logger->debug("Started NetlinkNotification");
 
     thread_ = std::thread(&NetlinkNotification::execute_wait, this);
-    // TODO: Detaching the thread is not a problem here since we are killing the
-    // thread when the program terminates
-    // thread_.detach();
-  }
-
-  void execute() {
-    while (running) {
-      nl_recvmsgs_default(sk);
-    }
+    thread_.detach();
   }
 
   void execute_wait() {
@@ -54,24 +66,31 @@ class Netlink::NetlinkNotification {
     fd_set readset;
     struct timeval tv;
 
-    socket_fd = nl_socket_get_fd(sk);
+    tv.tv_sec = NETLINK_TIMEOUT;
+    tv.tv_usec = 0;
 
     while (running) {
       do {
-        tv.tv_sec = NETLINK_TIMEOUT;
-        tv.tv_usec = 0;
         FD_ZERO(&readset);
-        FD_SET(socket_fd, &readset);
-        // The struct tv is decremented every time the select terminates.
-        // If the value is not updated, the next time select is called uses
-        // 0 as timeout value, behaving as a non-blocking socket.
-        result = select(socket_fd + 1, &readset, NULL, NULL, &tv);
+        FD_SET(sock, &readset);
+        result = select(sock + 1, &readset, NULL, NULL, &tv);
       } while (result < 0 && errno == EINTR && running);
 
       if (result > 0) {
-        if (FD_ISSET(socket_fd, &readset)) {
-          /* The socket_fd has data available to be read */
-          nl_recvmsgs_default(sk);
+        if (FD_ISSET(sock, &readset)) {
+          // The socket_fd has data available to be read
+          int received_bytes = 0;
+          struct nlmsghdr *nlh;
+          char buffer[4096];
+
+          bzero(buffer, sizeof(buffer));
+
+          received_bytes = recv(sock, buffer, sizeof(buffer), 0);
+          if (received_bytes < 0)
+            parent_->logger->error("Netlink Notification error received_bytes");
+
+          nlh = (struct nlmsghdr *) buffer;
+          recv_func(sock,nlh, &Netlink::getInstance(),received_bytes);
         }
       }
     }
@@ -82,8 +101,7 @@ class Netlink::NetlinkNotification {
     // TODO: I would prefer to avoid the timeout, the destructor for this object
     // is called
     // only once the program ends and the thread is killed
-    thread_.join();
-    nl_socket_free(sk);
+    close(sock);
   }
 
  private:
@@ -92,10 +110,11 @@ class Netlink::NetlinkNotification {
   bool running;
   std::thread thread_;
   static const long int NETLINK_TIMEOUT = 1;
+  int sock;
 
-  static int recv_func(struct nl_msg *msg, void *arg) {
+  static int recv_func(int socket, struct nlmsghdr *msg, void *arg, int received_bytes) {
     Netlink *parent = (Netlink *)arg;
-    struct nlmsghdr *nlh = nlmsg_hdr(msg);
+    struct nlmsghdr *nlh = msg;
 
     if (nlh->nlmsg_type == RTM_DELLINK) {
       struct ifinfomsg *iface = (struct ifinfomsg *)NLMSG_DATA(nlh);
@@ -103,6 +122,98 @@ class Netlink::NetlinkNotification {
       if (hdr->rta_type == IFLA_IFNAME) {
         parent->notify_link_deleted(iface->ifi_index,
                                     std::string((char *)RTA_DATA(hdr)));
+      }
+    }
+
+    if (nlh->nlmsg_type == RTM_NEWLINK) {
+      struct ifinfomsg *iface = (struct ifinfomsg *)NLMSG_DATA(nlh);
+      struct rtattr *hdr = IFLA_RTA(iface);
+      if (hdr->rta_type == IFLA_IFNAME) {
+        parent->notify_link_added(iface->ifi_index,
+                                    std::string((char *)RTA_DATA(hdr)));
+      }
+    }
+
+    if (nlh->nlmsg_type == RTM_NEWADDR) {
+      struct ifaddrmsg *iface = (struct ifaddrmsg *) NLMSG_DATA(nlh);
+      struct rtattr *hdr = IFA_RTA(iface);
+
+      char address[32];
+      char netmask[32];
+      int rtl = IFA_PAYLOAD(nlh);
+
+      while (rtl && RTA_OK(hdr, rtl)) {
+        if (hdr->rta_type == IFA_LOCAL)
+          inet_ntop(AF_INET, RTA_DATA(hdr), address, sizeof(address));
+        hdr = RTA_NEXT(hdr, rtl);
+      }
+
+      /* Write the new information to a string (separated by '/').
+         This string will be passed to the notify method */
+      int netmask_len = iface->ifa_prefixlen;
+      std::ostringstream info_new_address;
+      info_new_address << address << "/" << netmask_len;
+      std::string info_address = info_new_address.str();
+
+      parent->notify_new_address(iface->ifa_index, info_address);
+    }
+
+    if (nlh->nlmsg_type == RTM_NEWROUTE || nlh->nlmsg_type == RTM_DELROUTE) {
+      /* manage the routing table */
+      struct rtmsg *route_entry; /* This struct represent a route entry in the
+                                    routing table */
+      struct rtattr *route_attribute; /* This struct contain route attributes
+                                         (route type) */
+      int route_attribute_len = 0;
+      unsigned char route_netmask = 0;
+      unsigned char route_protocol = 0;
+      char destination_address[32];
+      char gateway_address[32] = "-";
+      int index = 0;
+      int metrics = 0;
+
+      route_entry = (struct rtmsg *)NLMSG_DATA(nlh);
+
+      route_netmask = route_entry->rtm_dst_len;
+      route_protocol = route_entry->rtm_protocol;
+      route_attribute = (struct rtattr *)RTM_RTA(route_entry);
+
+      /* Get the len route attribute */
+      route_attribute_len = RTM_PAYLOAD(nlh);
+
+      /* Loop through all attributes */
+      for (; RTA_OK(route_attribute, route_attribute_len);
+          route_attribute = RTA_NEXT(route_attribute, route_attribute_len)) {
+        /* Route destination address */
+        if (route_attribute->rta_type == RTA_DST) {
+          inet_ntop(AF_INET, RTA_DATA(route_attribute), destination_address,
+                    sizeof(destination_address));
+        }
+
+        /* The gateway of the route */
+        if (route_attribute->rta_type == RTA_GATEWAY) {
+          inet_ntop(AF_INET, RTA_DATA(route_attribute), gateway_address,
+                    sizeof(gateway_address));
+        }
+
+        /* Output interface index */
+        if (route_attribute->rta_type == RTA_OIF) {
+          int *in = (int *)RTA_DATA(route_attribute);
+          index = (int)*in;
+        }
+      }
+
+    /* Write the route information to a string (separated by '/').
+       This string will be passed to the notify method */
+      std::ostringstream infoRoute;
+      int net_len = route_netmask;
+      infoRoute << destination_address << "/" << net_len << "/" << gateway_address;
+      std::string info_route = infoRoute.str();
+
+      if (nlh->nlmsg_type == RTM_DELROUTE) {
+        parent->notify_route_deleted(index, info_route);
+      } else if (nlh->nlmsg_type == RTM_NEWROUTE) {
+        parent->notify_route_added(index, info_route);
       }
     }
 
@@ -451,14 +562,26 @@ std::map<std::string, ExtIfaceInfo> Netlink::get_available_ifaces() {
 }
 
 void Netlink::notify_link_deleted(int ifindex, const std::string &iface) {
-  logger->debug(
-      "received notification link deleted with ifindex {0} and name {1}",
-      ifindex, iface);
   notify(Netlink::Event::LINK_DELETED, ifindex, iface);
 }
 
+void Netlink::notify_link_added(int ifindex, const std::string &iface) {
+  notify(Netlink::Event::LINK_ADDED, ifindex, iface);
+}
+
+void Netlink::notify_route_added(int ifindex, const std::string &info_route) {
+  notify(Netlink::Event::ROUTE_ADDED, ifindex, info_route);
+}
+
+void Netlink::notify_route_deleted(int ifindex, const std::string &info_route) {
+  notify(Netlink::Event::ROUTE_DELETED, ifindex, info_route);
+}
+
+void Netlink::notify_new_address(int ifindex, const std::string &info_address) {
+  notify(Netlink::Event::NEW_ADDRESS, ifindex, info_address);
+}
+
 void Netlink::notify_all(int ifindex, const std::string &iface) {
-  logger->debug("received netlink notification");
   notify(Netlink::Event::ALL, ifindex, iface);
 }
 
