@@ -2,3 +2,4 @@ test_log*
 test_results*
 tmp
 result.json
+load_services
