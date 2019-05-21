@@ -43,19 +43,9 @@ public:
   void setName(std::string value);
   bool nameIsSet() const;
 
-  /// <summary>
-  /// MAC address of the port
-  /// </summary>
-  std::string getMac() const;
-  void setMac(std::string value);
-  bool macIsSet() const;
-  void unsetMac();
-
 private:
   std::string m_name;
   bool m_nameIsSet;
-  std::string m_mac;
-  bool m_macIsSet;
 };
 
 }

@@ -29,11 +29,6 @@ class Ports : public PortsBase {
       const PortsJsonObject &conf);
   virtual ~Ports();
 
-  /// <summary>
-  /// MAC address of the port
-  /// </summary>
-  std::string getMac() override;
-
  private:
   std::string mac_;
 };

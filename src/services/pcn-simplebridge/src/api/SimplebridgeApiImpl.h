@@ -59,7 +59,6 @@ namespace SimplebridgeApiImpl {
   std::vector<SimplebridgeJsonObject> read_simplebridge_list_by_id();
   PortsJsonObject read_simplebridge_ports_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_simplebridge_ports_list_by_id(const std::string &name);
-  std::string read_simplebridge_ports_mac_by_id(const std::string &name, const std::string &portsName);
   void replace_simplebridge_by_id(const std::string &name, const SimplebridgeJsonObject &value);
   void replace_simplebridge_fdb_by_id(const std::string &name, const FdbJsonObject &value);
   void replace_simplebridge_fdb_entry_by_id(const std::string &name, const std::string &address, const FdbEntryJsonObject &value);

@@ -16,17 +16,7 @@ module simplebridge {
   polycube-base:service-name "simplebridge";
   polycube-base:service-min-kernel-version "4.11.0";
 
-  uses "polycube-standard-base:standard-base-yang-module" {
-    augment ports {
-      leaf mac {
-        type yang:mac-address;
-        description "MAC address of the port";
-        config true;
-        polycube-base:init-only-config;
-        polycube-base:cli-example "C5:13:2D:36:27:9B";
-      }
-    }
-  }
+  uses "polycube-standard-base:standard-base-yang-module";
 
   container fdb {
     leaf aging-time {

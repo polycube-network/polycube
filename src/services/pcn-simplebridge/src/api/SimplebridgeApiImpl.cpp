@@ -451,24 +451,6 @@ read_simplebridge_ports_list_by_id(const std::string &name) {
   return m;
 }
 
-/**
-* @brief   Read mac by ID
-*
-* Read operation of resource: mac*
-*
-* @param[in] name ID of name
-* @param[in] portsName ID of ports_name
-*
-* Responses:
-* std::string
-*/
-std::string
-read_simplebridge_ports_mac_by_id(const std::string &name, const std::string &portsName) {
-  auto simplebridge = get_cube(name);
-  auto ports = simplebridge->getPorts(portsName);
-  return ports->getMac();
-
-}
 
 /**
 * @brief   Replace fdb by ID

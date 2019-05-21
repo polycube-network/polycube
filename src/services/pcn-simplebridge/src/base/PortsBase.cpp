@@ -29,7 +29,6 @@ PortsJsonObject PortsBase::toJsonObject() {
   conf.setBase(Port::to_json());
 
   conf.setName(getName());
-  conf.setMac(getMac());
 
   return conf;
 }
