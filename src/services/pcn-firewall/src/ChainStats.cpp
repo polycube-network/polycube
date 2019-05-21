@@ -18,7 +18,7 @@
 #include "Firewall.h"
 
 ChainStats::ChainStats(Chain &parent, const ChainStatsJsonObject &conf)
-    : parent_(parent) {
+    : ChainStatsBase(parent) {
   this->counter = conf;
 }
 
@@ -228,8 +228,4 @@ uint16_t ChainStats::getSport() {
 
 uint32_t ChainStats::getId() {
   return counter.getId();
-}
-
-std::shared_ptr<spdlog::logger> ChainStats::logger() {
-  return parent_.logger();
 }

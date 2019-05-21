@@ -21,7 +21,7 @@
 using namespace polycube::service;
 
 SessionTable::SessionTable(Firewall &parent, const SessionTableJsonObject &conf)
-    : parent_(parent) {
+    : SessionTableBase(parent) {
   fields = conf;
 }
 

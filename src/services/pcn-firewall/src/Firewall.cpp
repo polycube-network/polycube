@@ -18,7 +18,7 @@
 #include "Firewall_dp.h"
 
 Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
-    : TransparentCube(conf.getBase(), {firewall_code}, {firewall_code}) {
+    : TransparentCube(conf.getBase(), {firewall_code}, {firewall_code}), FirewallBase(name) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Firewall] [%n] [%l] %v");
   logger()->info("Creating Firewall instance");
 
@@ -93,50 +93,6 @@ Firewall::~Firewall() {
   }
 
   TransparentCube::dismount();
-}
-
-void Firewall::update(const FirewallJsonObject &conf) {
-  // This method updates all the object/parameter in Firewall object specified
-  // in the conf JsonObject.
-  TransparentCube::set_conf(conf.getBase());
-
-  if (conf.chainIsSet()) {
-    for (auto &i : conf.getChain()) {
-      auto name = i.getName();
-      auto m = getChain(name);
-      m->update(i);
-    }
-  }
-
-  if (conf.acceptEstablishedIsSet()) {
-    setAcceptEstablished(conf.getAcceptEstablished());
-  }
-
-  if (conf.conntrackIsSet()) {
-    setConntrack(conf.getConntrack());
-  }
-
-  if (conf.interactiveIsSet()) {
-    setInteractive(conf.getInteractive());
-  }
-}
-
-FirewallJsonObject Firewall::toJsonObject() {
-  FirewallJsonObject conf;
-  conf.setBase(TransparentCube::to_json());
-
-  // Remove comments when you implement all sub-methods
-  for (auto &i : getChainList()) {
-    conf.addChain(i->toJsonObject());
-  }
-
-  conf.setConntrack(getConntrack());
-
-  conf.setAcceptEstablished(getAcceptEstablished());
-
-  conf.setInteractive(getInteractive());
-
-  return conf;
 }
 
 void Firewall::packet_in(polycube::service::Sense sense,
@@ -359,20 +315,6 @@ void Firewall::addChain(const ChainNameEnum &name,
 
   chains_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
                   std::forward_as_tuple(*this, namedChain));
-}
-
-void Firewall::addChainList(const std::vector<ChainJsonObject> &conf) {
-  for (auto &i : conf) {
-    ChainNameEnum name_ = i.getName();
-    addChain(name_, i);
-  }
-}
-
-void Firewall::replaceChain(const ChainNameEnum &name,
-                            const ChainJsonObject &conf) {
-  delChain(name);
-  ChainNameEnum name_ = conf.getName();
-  addChain(name_, conf);
 }
 
 void Firewall::delChain(const ChainNameEnum &name) {

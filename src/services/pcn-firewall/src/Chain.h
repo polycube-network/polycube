@@ -20,8 +20,10 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <memory>
 
-#include "../interface/ChainInterface.h"
+#include "base/ChainBase.h"
+
 #include "ChainRule.h"
 #include "ChainStats.h"
 #include "Firewall.h"
@@ -29,9 +31,9 @@
 class Firewall;
 class ChainRule;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Chain : public ChainInterface {
+class Chain : public ChainBase {
   friend class ChainRule;
   friend class ChainStats;
 
@@ -39,9 +41,7 @@ class Chain : public ChainInterface {
   Chain(Firewall &parent, const ChainJsonObject &conf);
   virtual ~Chain();
 
-  std::shared_ptr<spdlog::logger> logger();
   void update(const ChainJsonObject &conf) override;
-  ChainJsonObject toJsonObject() override;
 
   /// <summary>
   /// Default action if no rule matches in the ingress chain. Default is DROP.
@@ -79,13 +79,14 @@ class Chain : public ChainInterface {
   void delRuleList() override;
 
   ChainAppendOutputJsonObject append(ChainAppendInputJsonObject input) override;
+  ChainInsertOutputJsonObject insert(ChainInsertInputJsonObject input) override;
+  void deletes(ChainDeleteInputJsonObject input) override;
   ChainResetCountersOutputJsonObject resetCounters() override;
   ChainApplyRulesOutputJsonObject applyRules() override;
 
   uint32_t getNrRules();
 
  private:
-  Firewall &parent_;
   ActionEnum defaultAction = ActionEnum::DROP;
   ChainNameEnum name;
   std::vector<std::shared_ptr<ChainRule>> rules_;
