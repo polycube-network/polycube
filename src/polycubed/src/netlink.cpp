@@ -62,17 +62,19 @@ class Netlink::NetlinkNotification {
   }
 
   void execute_wait() {
-    int socket_fd, result;
+    int result;
     fd_set readset;
     struct timeval tv;
 
-    tv.tv_sec = NETLINK_TIMEOUT;
-    tv.tv_usec = 0;
-
     while (running) {
       do {
+        tv.tv_sec = NETLINK_TIMEOUT;
+        tv.tv_usec = 0;
         FD_ZERO(&readset);
         FD_SET(sock, &readset);
+        // The struct tv is decremented every time the select terminates.
+        // If the value is not updated, the next time select is called uses
+        // 0 as timeout value, behaving as a non-blocking socket.
         result = select(sock + 1, &readset, NULL, NULL, &tv);
       } while (result < 0 && errno == EINTR && running);
 
