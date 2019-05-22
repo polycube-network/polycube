@@ -22,15 +22,7 @@
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
-    : PortsBase(parent, port) {
-  // This MAC address is not used in the datapath. We set only the variable here
-  if (conf.macIsSet()) {
-    mac_ = conf.getMac();
-  } else {
-    mac_ = utils::get_random_mac();
-    logger()->info("[Ports] New port add with random mac: {0}", mac_);
-  }
-}
+    : PortsBase(parent, port) {}
 
 Ports::~Ports() {
   try {
@@ -53,9 +45,3 @@ Ports::~Ports() {
         e.what());
   }
 }
-
-std::string Ports::getMac() {
-  // This method retrieves the mac value.
-  return mac_;
-}
-

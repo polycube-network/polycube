@@ -19,22 +19,17 @@ namespace model {
 
 PortsJsonObject::PortsJsonObject() {
   m_nameIsSet = false;
-  m_macIsSet = false;
 }
 
 PortsJsonObject::PortsJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_nameIsSet = false;
-  m_macIsSet = false;
 
 
   if (val.count("name")) {
     setName(val.at("name").get<std::string>());
   }
 
-  if (val.count("mac")) {
-    setMac(val.at("mac").get<std::string>());
-  }
 }
 
 nlohmann::json PortsJsonObject::toJson() const {
@@ -45,10 +40,6 @@ nlohmann::json PortsJsonObject::toJson() const {
 
   if (m_nameIsSet) {
     val["name"] = m_name;
-  }
-
-  if (m_macIsSet) {
-    val["mac"] = m_mac;
   }
 
   return val;
@@ -67,24 +58,6 @@ bool PortsJsonObject::nameIsSet() const {
   return m_nameIsSet;
 }
 
-
-
-std::string PortsJsonObject::getMac() const {
-  return m_mac;
-}
-
-void PortsJsonObject::setMac(std::string value) {
-  m_mac = value;
-  m_macIsSet = true;
-}
-
-bool PortsJsonObject::macIsSet() const {
-  return m_macIsSet;
-}
-
-void PortsJsonObject::unsetMac() {
-  m_macIsSet = false;
-}
 
 
 }

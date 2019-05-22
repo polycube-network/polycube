@@ -56,7 +56,6 @@ Response read_simplebridge_fdb_entry_port_by_id_handler(const char *name, const 
 Response read_simplebridge_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_simplebridge_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_simplebridge_ports_mac_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_simplebridge_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_simplebridge_fdb_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_simplebridge_fdb_entry_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);

@@ -35,15 +35,10 @@ class PortsBase: public polycube::service::Port {
  public:
   PortsBase(polycube::service::Cube<Ports> &parent,
       std::shared_ptr<polycube::service::PortIface> port);
-  
+
   virtual ~PortsBase();
   virtual void update(const PortsJsonObject &conf);
   virtual PortsJsonObject toJsonObject();
-
-  /// <summary>
-  /// MAC address of the port
-  /// </summary>
-  virtual std::string getMac() = 0;
 
   std::shared_ptr<spdlog::logger> logger();
  protected:

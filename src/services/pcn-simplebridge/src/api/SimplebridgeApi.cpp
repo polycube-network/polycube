@@ -486,31 +486,6 @@ Response read_simplebridge_ports_list_by_id_handler(
   }
 }
 
-Response read_simplebridge_ports_mac_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_portsName;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ports_name")) {
-      unique_portsName = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_simplebridge_ports_mac_by_id(unique_name, unique_portsName);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response replace_simplebridge_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ,
