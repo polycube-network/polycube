@@ -223,16 +223,21 @@ class Firewall : public FirewallBase {
   };
 
   class L4PortLookup : public Program {
-   private:
-    int type;  // SOURCE or DESTINATION
-
    public:
     L4PortLookup(const int &index, const ChainNameEnum &direction,
                  const int &type, Firewall &outer);
+    L4PortLookup(const int &index, const ChainNameEnum &chain, const int &type,
+                 Firewall &outer,
+                 const std::map<uint16_t, std::vector<uint64_t>> &ports);
     ~L4PortLookup();
     std::string getCode();
     bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
     void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &ports);
+
+  private:
+      int type;  // SOURCE or DESTINATION
+      bool wildcard_rule_;
+      std::string wildcard_string_;
   };
 
   class TcpFlagsLookup : public Program {
@@ -318,4 +323,29 @@ class Firewall : public FirewallBase {
 
   static void replaceAll(std::string &str, const std::string &from,
                          const std::string &to);
+
+  template <typename Iterator>
+  static std::string fromContainerToMapString(Iterator begin, Iterator end,
+                                              const std::string open,
+                                              const std::string close,
+                                              const std::string separator);
 };
+
+template <typename Iterator>
+std::string Firewall::fromContainerToMapString(Iterator it, Iterator end,
+                                               const std::string open,
+                                               const std::string close,
+                                               const std::string separator) {
+  std::string result = open;
+  bool first = true;
+  int cnt = 0;
+  for (; it != end; ++it) {
+    cnt++;
+    if (!first)
+      result += separator;
+    first = false;
+    result += /*"-" + */ std::to_string((*it));
+  }
+  result += close;
+  return result;
+}

@@ -88,8 +88,11 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     } else {
 /*#pragma unroll does not accept a loop with a single iteration, so we need to
  * distinguish cases to avoid a verifier error.*/
+      bool isAllZero = true;
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
+      if (result->bits[0])
+        isAllZero = false;
       pcn_log(ctx, LOG_DEBUG,
               "[_CHAIN_NAME][TCPFlagsLookup]:  Match found. Bitvec: %llu, result %llu.",
               (ele->bits)[0], (result->bits)[0]);
@@ -98,9 +101,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #pragma unroll
       for (i = 0; i < _NR_ELEMENTS; ++i) {
         (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
+        if (result->bits[i])
+          isAllZero = false;
       }
 
 #endif
+      if (isAllZero) {
+        pcn_log(ctx, LOG_DEBUG,
+                "[_CHAIN_NAME][TCPFlagsLookup]: Bitvector is all zero. Break pipeline.");
+        _DEFAULTACTION
+      }
     }  // if result == NULL
   }    // if ele==NULL
 

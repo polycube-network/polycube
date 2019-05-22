@@ -22,6 +22,34 @@ Firewall::L4PortLookup::L4PortLookup(const int &index,
                                      const int &type, Firewall &outer)
     : Firewall::Program(firewall_code_l4portlookup, index, direction, outer) {
   this->type = type;
+
+  wildcard_rule_ = false;
+  wildcard_string_ = "";
+
+  load();
+}
+
+Firewall::L4PortLookup::L4PortLookup(const int &index,
+                                     const ChainNameEnum &direction,
+                                     const int &type, Firewall &outer,
+                                     const std::map<uint16_t, std::vector<uint64_t>> &ports)
+    : Firewall::Program(firewall_code_l4portlookup, index, direction, outer) {
+
+  this->type = type;
+
+  auto it = ports.find(0);
+  if (it == ports.end()) {
+    wildcard_rule_ = false;
+    wildcard_string_ = "";
+    // std::cout << "-- wildcard NO --+" << std::endl;
+  } else {
+    wildcard_rule_ = true;
+    wildcard_string_ = fromContainerToMapString(
+            it->second.begin(), it->second.end(), "{", "}", ",");
+    // std::cout << "-- wildcard YES --+" << std::endl;
+    // std::cout << wildcardString << std::endl;
+  }
+
   load();
 }
 
@@ -53,6 +81,13 @@ std::string Firewall::L4PortLookup::getCode() {
 
   /*Replacing the default action*/
   replaceAll(noMacroCode, "_DEFAULTACTION", defaultActionString());
+
+  if (wildcard_rule_) {
+    replaceAll(noMacroCode, "_WILDCARD_RULE", std::to_string(1));
+    replaceAll(noMacroCode, "_WILDCARD_BITVECTOR", wildcard_string_);
+  } else {
+    replaceAll(noMacroCode, "_WILDCARD_RULE", std::to_string(0));
+  }
 
   return noMacroCode;
 }

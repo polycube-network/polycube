@@ -57,6 +57,10 @@ static __always_inline struct elements *getBitVect(uint16_t *key) {
 #endif
 
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
+#if _WILDCARD_RULE
+  u64 wildcard_ele[_MAXRULES] = _WILDCARD_BITVECTOR;
+#endif
+
 /*The struct elements and the lookup table are defined only if _NR_ELEMENTS>0,
  * so
  * this code has to be used only in this case.*/
@@ -78,35 +82,79 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     _TYPEPort = pkt->_TYPEPort;
   }
 
-  struct elements *ele = getBitVect(&_TYPEPort);
+  // Ports are stored in an hashmap
+  // A. map[0] (if exists) contains wildcard match
+  // B. map[port] (if some exists) contain ports matching
 
-  if (ele == NULL) {
-    _TYPEPort = 0;
-    ele = getBitVect(&_TYPEPort);
-    if (ele == NULL) {
-      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: No match");
-      _DEFAULTACTION
-    }
-  }
+  // if no match in A. and B.
+  // we assume current bitvector is 0x000000...
+  // also AND returns 0x0000...
+  // so we can apply DEFAULT action with no additional cost.
+
   struct elements *result = getShared();
+
+  bool isAllZero = true;
   if (result == NULL) {
     /*Can't happen. The PERCPU is preallocated.*/
     return RX_DROP;
   } else {
+    struct elements *ele = getBitVect(&_TYPEPort);
+
+    if (ele == NULL) {
+    // if lookup with port fails, we have to
+    // a. verify if we have a wildcard key (0)
+    // b. if so, use to bitvector from wildcard key
+
+#if _WILDCARD_RULE
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: +WILDCARD RULE+");
+      goto WILDCARD;
+#else
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][L4PortLookup_TYPE]: No match. ");
+      _DEFAULTACTION
+#endif
+    }
+
 /*#pragma unroll does not accept a loop with a single iteration, so we need to
- * distinguish cases to avoid a verifier error.*/
+* distinguish cases to avoid a verifier error.*/
 #if _NR_ELEMENTS == 1
     (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
+    if (result->bits[0] != 0)
+      isAllZero = false;
+    goto NEXT;
+
+#if _WILDCARD_RULE
+  WILDCARD:;
+    (result->bits)[0] = wildcard_ele[0] & (result->bits)[0];
+    if (result->bits[0] != 0)
+      isAllZero = false;
+#endif
 #else
     int i = 0;
 #pragma unroll
     for (i = 0; i < _NR_ELEMENTS; ++i) {
       (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
+      if (result->bits[i] != 0)
+        isAllZero = false;
     }
-
+    goto NEXT;
+#if _WILDCARD_RULE
+  WILDCARD:;
+#pragma unroll
+    for (i = 0; i < _NR_ELEMENTS; ++i) {
+      (result->bits)[i] = wildcard_ele[i] & (result->bits)[i];
+      if (result->bits[i] != 0)
+        isAllZero = false;
+    }
+#endif
 #endif
   }  // if result == NULL
 
+NEXT:;
+  if (isAllZero) {
+    pcn_log(ctx, LOG_DEBUG,
+            "[_CHAIN_NAME][L4PortLookup_TYPE]: Bitvector is all zero. Break pipeline");
+    _DEFAULTACTION
+  }
   call_next_program(ctx, _NEXT_HOP_1);
 #else
   return RX_DROP;
