@@ -123,3 +123,43 @@ What to do when *testing failing* ?
 ***********************************
 
 Click in testing failing button, go to jenkins control panel, open the build number is failing, open console output in order to understand where tests are failing. At the end of the output there is a summary with tests passing/failing.
+
+
+Valgrind
+^^^^^^^^
+
+Valgrind is an open source tool for analyzing memory management and threading bugs. It can easily discover memory leaks, and spot possible segfault errors.
+
+
+Requirements for polycubed: (1) valgrind 3.15+ (2) disable `setrlimit` in polycubed.cpp
+
+1 Install valgrind 3.15
+***********************
+
+Valgrind 3.14+ is introducing support for bpf() system call.
+Previous versions won't work.
+
+- Download Valgrind 3.15+ source from here http://www.valgrind.org/downloads/current.html
+- Build Valgrind from source http://valgrind.org/docs/manual/dist.install.html
+::
+
+    ./configure
+    make
+    sudo make install
+
+2 Disable `setrlimit`
+*********************
+
+Only for debug purposes and in order to be able to run valgrind we have to disable `setrlimit` in polycubed.cpp.
+
+We suggest to comment out following lines in :scm_web:`polycubed.cpp <src/polycubed/src/polycubed.cpp#L226>`
+::
+
+    // Each instance of a service requires a high number of file descriptors
+    // (for example helloworld required 7), hence the default limit is too low
+    // for creating many instances of the services.
+    struct rlimit r = {32 * 1024, 64 * 1024};
+    if (setrlimit(RLIMIT_NOFILE, &r)) {
+        logger->critical("Failed to set max number of possible filedescriptor");
+        return -1;
+    }
