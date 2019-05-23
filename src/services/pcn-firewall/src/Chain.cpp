@@ -208,164 +208,177 @@ void Chain::updateChain() {
   int startingIndex = index;
   Firewall::Program *firstProgramLoaded;
   std::vector<Firewall::Program *> newProgramsChain(3 + ModulesConstants::NR_MODULES + 2);
-  std::map<uint8_t, std::vector<uint64_t>> states;
-  std::map<struct IpAddr, std::vector<uint64_t>> ips;
-  std::map<uint16_t, std::vector<uint64_t>> ports;
-  std::map<int, std::vector<uint64_t>> protocols;
-  std::vector<std::vector<uint64_t>> flags;
+  std::map<uint8_t, std::vector<uint64_t>> conntrack_map;
+  std::map<struct IpAddr, std::vector<uint64_t>> ipsrc_map;
+  std::map<struct IpAddr, std::vector<uint64_t>> ipdst_map;
+  std::map<uint16_t, std::vector<uint64_t>> portsrc_map;
+  std::map<uint16_t, std::vector<uint64_t>> portdst_map;
+  std::map<int, std::vector<uint64_t>> protocol_map;
+  std::vector<std::vector<uint64_t>> flags_map;
 
-  // Looping through conntrack
-  conntrack_from_rules_to_map(states, rules_);
-  if (!states.empty()) {
-    // At least one rule requires a matching on conntrack, so it can be
-    // injected.
-    if (!parent_.isContrackActive()) {
-      logger()->error(
-          "[{0}] Conntrack is not active, please remember to activate it.",
-          parent_.getName());
-    }
-    Firewall::ConntrackMatch *conntrack =
-      new Firewall::ConntrackMatch(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::CONNTRACKMATCH] = conntrack;
-    // Now the program is loaded, populate it.
-    conntrack->updateMap(states);
 
-    // This check is not really needed here, it will always be the first module
-    // to be injected
-    if (index == startingIndex) {
-      firstProgramLoaded = conntrack;
+  // calculate bitvectors, and check if no wildcard is present.
+  // if no wildcard is present, we can early break the pipeline.
+  // so we put modules with _break flags_map, before the others in order
+  // to maximize probability to early break the pipeline.
+  bool conntrack_break = conntrackFromRulesToMap(conntrack_map, rules_);
+  bool ipsrc_break = ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, rules_);
+  bool ipdst_break = ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, rules_);
+  bool protocol_break = transportProtoFromRulesToMap(protocol_map, rules_);
+  bool portsrc_break = portFromRulesToMap(SOURCE_TYPE, portsrc_map, rules_);
+  bool portdst_break = portFromRulesToMap(DESTINATION_TYPE, portdst_map, rules_);
+  bool flags_break = flagsFromRulesToMap(flags_map, rules_);
+
+  logger()->debug(
+          "Early break of pipeline conntrack:{0} ipsrc:{1} ipdst:{2} protocol:{3} "
+          "portstc:{4} portdst:{5} flags_map:{6} ",
+          conntrack_break, ipsrc_break, ipdst_break, protocol_break, portsrc_break,
+          portdst_break, flags_break);
+
+  // first loop iteration pushes program that could early break the pipeline
+  // second iteration, push others programs
+
+  bool second = false;
+
+  for (int j = 0; j < 2; j++) {
+    if (j == 1)
+      second = true;
+
+    std::cout << "++++Conntrack Map empty " << conntrack_map.empty() << std::endl;
+
+    // Looping through conntrack
+    if (!conntrack_map.empty() && conntrack_break ^ second) {
+      // At least one rule requires a matching on conntrack, so it can be
+      // injected.
+      if (!parent_.isContrackActive()) {
+        logger()->error(
+                "[{0}] Conntrack is not active, please remember to activate it.",
+                parent_.getName());
+      }
+      Firewall::ConntrackMatch *conntrack =
+              new Firewall::ConntrackMatch(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::CONNTRACKMATCH] = conntrack;
+      // Now the program is loaded, populate it.
+      conntrack->updateMap(conntrack_map);
+
+      // This check is not really needed here, it will always be the first module
+      // to be injected
+      if (index == startingIndex) {
+        firstProgramLoaded = conntrack;
+      }
+      ++index;
     }
-    ++index;
+    // Done looping through conntrack
+
+    // Looping through IP source
+    if (!ipsrc_map.empty() && (ipsrc_break ^ second)) {
+      // At least one rule requires a matching on ipsource, so inject
+      // the module on the first available position
+      Firewall::IpLookup *iplookup =
+              new Firewall::IpLookup(index, name, SOURCE_TYPE, this->parent_);
+      newProgramsChain[ModulesConstants::IPSOURCE] = iplookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = iplookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      iplookup->updateMap(ipsrc_map);
+    }
+    // Done looping through IP source
+
+    // Looping through IP destination
+    if (!ipdst_map.empty() && ipdst_break ^ second) {
+      // At least one rule requires a matching on ipdestination, so inject
+      // the module on the first available position
+      Firewall::IpLookup *iplookup =
+              new Firewall::IpLookup(index, name, DESTINATION_TYPE, this->parent_);
+      newProgramsChain[ModulesConstants::IPDESTINATION] = iplookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = iplookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      iplookup->updateMap(ipdst_map);
+    }
+    // Done looping through IP destination
+
+    // Looping through l4 protocol
+    if (!protocol_map.empty() && protocol_break ^ second) {
+      // At least one rule requires a matching on
+      // source port__map, so inject the module
+      // on the first available position
+      Firewall::L4ProtocolLookup *protocollookup =
+              new Firewall::L4ProtocolLookup(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::L4PROTO] = protocollookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = protocollookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      protocollookup->updateMap(protocol_map);
+    }
+    // Done looping through l4 protocol
+
+    // Looping through source port
+    if (!portsrc_map.empty() && portsrc_break ^ second) {
+      // At least one rule requires a matching on  source port__map,
+      // so inject the  module  on the first available position
+      Firewall::L4PortLookup *portlookup =
+              new Firewall::L4PortLookup(index, name, SOURCE_TYPE, this->parent_, portsrc_map);
+      newProgramsChain[ModulesConstants::PORTSOURCE] = portlookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = portlookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      portlookup->updateMap(portsrc_map);
+    }
+    // Done looping through source port
+
+    // Looping through destination port
+    if (!portdst_map.empty() && portdst_break ^ second) {
+      // At least one rule requires a matching on source port__map,
+      // so inject the module  on the first available position
+      Firewall::L4PortLookup *portlookup =
+              new Firewall::L4PortLookup(index, name, DESTINATION_TYPE, this->parent_, portdst_map);
+      newProgramsChain[ModulesConstants::PORTDESTINATION] = portlookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = portlookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      portlookup->updateMap(portdst_map);
+    }
+    // Done looping through destination port
+
+    // Looping through tcp flags_map
+    if (!flags_map.empty() && flags_break ^ second) {
+      // At least one rule requires a matching on flags_map,
+      // so inject the  module in the first available position
+      Firewall::TcpFlagsLookup *tcpflagslookup =
+              new Firewall::TcpFlagsLookup(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::TCPFLAGS] = tcpflagslookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = tcpflagslookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      tcpflagslookup->updateMap(flags_map);
+    }
+    // Done looping through tcp flags_map
   }
-  states.clear();
-  // Done looping through conntrack
-
-  // Looping through IP source
-  ip_from_rules_to_map(SOURCE_TYPE, ips, rules_);
-  if (!ips.empty()) {
-    // At least one rule requires a matching on ipsource, so inject
-    // the module on the first available position
-    Firewall::IpLookup *iplookup =
-        new Firewall::IpLookup(index, name, SOURCE_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::IPSOURCE] = iplookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = iplookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    iplookup->updateMap(ips);
-  }
-  ips.clear();
-  // Done looping through IP source
-
-  // Looping through IP destination
-  ip_from_rules_to_map(DESTINATION_TYPE, ips, rules_);
-
-  if (!ips.empty()) {
-    // At least one rule requires a matching on ipdestination, so inject
-    // the module on the first available position
-    Firewall::IpLookup *iplookup =
-        new Firewall::IpLookup(index, name, DESTINATION_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::IPDESTINATION] = iplookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = iplookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    iplookup->updateMap(ips);
-  }
-  ips.clear();
-  // Done looping through IP destination
-
-  // Looping through l4 protocol
-  transportproto_from_rules_to_map(protocols, rules_);
-
-  if (!protocols.empty()) {
-    // At least one rule requires a matching on
-    // source ports, so inject the module
-    // on the first available position
-    Firewall::L4ProtocolLookup *protocollookup =
-        new Firewall::L4ProtocolLookup(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::L4PROTO] = protocollookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = protocollookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    protocollookup->updateMap(protocols);
-  }
-  protocols.clear();
-  // Done looping through l4 protocol
-
-  // Looping through source port
-  port_from_rules_to_map(SOURCE_TYPE, ports, rules_);
-
-  if (!ports.empty()) {
-    // At least one rule requires a matching on  source ports,
-    // so inject the  module  on the first available position
-    Firewall::L4PortLookup *portlookup =
-        new Firewall::L4PortLookup(index, name, SOURCE_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::PORTSOURCE] = portlookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = portlookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    portlookup->updateMap(ports);
-  }
-  ports.clear();
-  // Done looping through source port
-
-  // Looping through destination port
-  port_from_rules_to_map(DESTINATION_TYPE, ports, rules_);
-
-  if (!ports.empty()) {
-    // At least one rule requires a matching on source ports,
-    // so inject the module  on the first available position
-    Firewall::L4PortLookup *portlookup =
-        new Firewall::L4PortLookup(index, name, DESTINATION_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::PORTDESTINATION] = portlookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = portlookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    portlookup->updateMap(ports);
-  }
-  ports.clear();
-  // Done looping through destination port
-
-  // Looping through tcp flags
-  flags_from_rules_to_map(flags, rules_);
-
-  if (!flags.empty()) {
-    // At least one rule requires a matching on flags,
-    // so inject the  module in the first available position
-    Firewall::TcpFlagsLookup *tcpflagslookup =
-        new Firewall::TcpFlagsLookup(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::TCPFLAGS] = tcpflagslookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = tcpflagslookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    tcpflagslookup->updateMap(flags);
-  }
-  flags.clear();
-
-  // Done looping through tcp flags
 
   // Adding bitscan
   Firewall::BitScan *bitscan =

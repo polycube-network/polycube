@@ -221,15 +221,17 @@ static int ChainRuleConntrackEnum_to_int(const ConntrackstatusEnum &status) {
 
 // convert ip address list from internal rules representation, to Api
 // representation
-void Chain::ip_from_rules_to_map(
-    const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
-    const std::vector<std::shared_ptr<ChainRule>> &rules) {
+bool Chain::ipFromRulesToMap(
+        const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+        const std::vector<std::shared_ptr<ChainRule>> &rules) {
   // track if, at least, one wildcard rule is present
-  std::vector<uint32_t> dontCareRules;
+  std::vector<uint32_t> dont_care_rules;
 
   // current rule ip and id
   struct IpAddr current;
-  uint32_t ruleId;
+  uint32_t rule_id;
+
+  bool brk = true;
 
   // std::cout<< "+ITERATING ON RULES+ Adding ips in map (except 0.0.0.0 handled
   // later)";
@@ -248,21 +250,21 @@ void Chain::ip_from_rules_to_map(
       }
     } catch (std::runtime_error re) {
       // IP not set: don't care rule.
-      dontCareRules.push_back(rule->getId());
+      dont_care_rules.push_back(rule->getId());
       // std::cout << "IP RULE DONT CARE | ID: " << rule->getId();
       continue;
     }
-    ruleId = rule->getId();
+    rule_id = rule->getId();
     // std::cout << "ID: " << ruleId << " Current IP: " << current.toString() <<
     // std::endl;
     auto it = ips.find(current);
     if (it == ips.end()) {
       // std::cout << "FIRST TIME I SEE THIS IP -> insert " << std::endl;
       std::vector<uint64_t> bitVector(
-          FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-      current.ruleId = ruleId;
+              FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+      current.ruleId = rule_id;
       ips.insert(
-          std::pair<struct IpAddr, std::vector<uint64_t>>(current, bitVector));
+              std::pair<struct IpAddr, std::vector<uint64_t>>(current, bitVector));
 
       //   for (auto eval : ips) {
       //     std::cout << eval.first.toString() << ": ";
@@ -278,30 +280,30 @@ void Chain::ip_from_rules_to_map(
     auto &address = eval.first;
     auto &bitVector = eval.second;
 
-    struct IpAddr currentRuleIp;
-    uint32_t currentRuleId;
+    struct IpAddr current_rule_ip;
+    uint32_t current_rule_id;
 
     // For each rule (if don't care rule, use 0.0.0.0), then apply netmask,
     // compare and SET_BIT if match
     for (auto const &rule : rules) {
       try {
         if (type == SOURCE_TYPE) {
-          currentRuleIp.fromString(rule->getSrc());
+          current_rule_ip.fromString(rule->getSrc());
           // std::cout << "SRC IP RULE | ";
         } else {
-          currentRuleIp.fromString(rule->getDst());
+          current_rule_ip.fromString(rule->getDst());
           // std::cout << "DST IP RULE | ";
         }
       } catch (std::runtime_error re) {
         // IP not set: don't care rule.
-        currentRuleIp.fromString("0.0.0.0/0");
+        current_rule_ip.fromString("0.0.0.0/0");
         // std::cout << "IP RULE DONT CARE | ID: " << rule->getId();
       }
 
-      currentRuleId = rule->getId();
+      current_rule_id = rule->getId();
       // std::cout << "ID: " << currentRuleId << " Current rule IP: " <<
       // currentRuleIp.toString() << std::endl;
-      auto netmask = (currentRuleIp.netmask);
+      auto netmask = (current_rule_ip.netmask);
       auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask) - 1));
 
       // std::cout << "ADDRESS(fixed): " << address.toString() << "
@@ -309,10 +311,10 @@ void Chain::ip_from_rules_to_map(
       // std::cout << "netmask: " << netmask << "mask: " <<
       // std::bitset<32>(mask) << std::endl;
 
-      if (((address.ip & mask) == (currentRuleIp.ip & mask)) &&
-          (currentRuleIp.netmask <= address.netmask)) {
+      if (((address.ip & mask) == (current_rule_ip.ip & mask)) &&
+          (current_rule_ip.netmask <= address.netmask)) {
         // std::cout << "Set BIT " << std::endl;
-        SET_BIT(bitVector[currentRuleId / 63], currentRuleId % 63);
+        SET_BIT(bitVector[current_rule_id / 63], current_rule_id % 63);
       }
     }
   }
@@ -322,37 +324,37 @@ void Chain::ip_from_rules_to_map(
 
   // Don't care rules are in all entries. Anyway, this loops is useless if there
   // are no rules at all requiring matching on this field.
-  if (ips.size() != 0 && dontCareRules.size() != 0) {
+  if (ips.size() != 0 && dont_care_rules.size() != 0) {
     // std::cout << "++ ADDING 0.0.0.0/0 rule :)" << std::endl;
 
     std::vector<uint64_t> bitVector(
-        FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-    struct IpAddr wildcardIp = {0, 0};
+            FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+    struct IpAddr wildcard_ip = {0, 0};
 
-    auto &address = wildcardIp;
+    auto &address = wildcard_ip;
 
-    struct IpAddr currentRuleIp;
-    uint32_t currentRuleId;
+    struct IpAddr current_rule_ip;
+    uint32_t current_rule_id;
 
     for (auto const &rule : rules) {
       try {
         if (type == SOURCE_TYPE) {
-          currentRuleIp.fromString(rule->getSrc());
+          current_rule_ip.fromString(rule->getSrc());
           // std::cout << "SRC IP RULE | ";
         } else {
-          currentRuleIp.fromString(rule->getDst());
+          current_rule_ip.fromString(rule->getDst());
           // std::cout << "DST IP RULE | ";
         }
       } catch (std::runtime_error re) {
         // IP not set: don't care rule.
-        currentRuleIp.fromString("0.0.0.0/0");
-        std::cout << "IP RULE DONT CARE | ID: " << rule->getId();
+        current_rule_ip.fromString("0.0.0.0/0");
+        // std::cout << "IP RULE DONT CARE | ID: " << rule->getId();
       }
 
-      currentRuleId = rule->getId();
+      current_rule_id = rule->getId();
       // std::cout << "ID: " << currentRuleId << " Current rule IP: " <<
       // currentRuleIp.toString() << std::endl;
-      auto netmask = (currentRuleIp.netmask);
+      auto netmask = (current_rule_ip.netmask);
       auto mask = (netmask == 32 ? 0xffffffff : (((uint32_t)1 << netmask) - 1));
 
       // std::cout << "ADDRESS(fixed): " << address.toString() << "
@@ -360,16 +362,19 @@ void Chain::ip_from_rules_to_map(
       // std::cout << "netmask: " << netmask << "mask: " <<
       // std::bitset<32>(mask) << std::endl;
 
-      if (((address.ip & mask) == (currentRuleIp.ip & mask)) &&
-          (currentRuleIp.netmask <= address.netmask)) {
+      if (((address.ip & mask) == (current_rule_ip.ip & mask)) &&
+          (current_rule_ip.netmask <= address.netmask)) {
         // std::cout << "Set BIT " << std::endl;
-        SET_BIT(bitVector[currentRuleId / 63], currentRuleId % 63);
+        SET_BIT(bitVector[current_rule_id / 63], current_rule_id % 63);
       }
     }
 
-    ips.insert(
-        std::pair<struct IpAddr, std::vector<uint64_t>>(wildcardIp, bitVector));
+    ips.insert(std::pair<struct IpAddr, std::vector<uint64_t>>(wildcard_ip,
+                                                               bitVector));
+    brk = false;
   }
+
+  return brk;
 
   // std::cout << "++ END ++ " << std::endl;
 
@@ -380,64 +385,72 @@ void Chain::ip_from_rules_to_map(
   // }
 }
 
-void Chain::transportproto_from_rules_to_map(
-    std::map<int, std::vector<uint64_t>> &protocols,
-    const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint32_t> dontCareRules;
+bool Chain::transportProtoFromRulesToMap(
+        std::map<int, std::vector<uint64_t>> &protocols,
+        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  std::vector<uint32_t> dont_care_rules;
 
   int proto;
-  uint32_t ruleId;
+  uint32_t rule_id;
+
+  bool brk = true;
 
   for (auto const &rule : rules) {
     try {
-      ruleId = rule->getId();
+      rule_id = rule->getId();
       proto = Firewall::protocol_from_string_to_int(rule->getL4proto());
     } catch (std::runtime_error re) {
-      dontCareRules.push_back(ruleId);
+      dont_care_rules.push_back(rule_id);
       continue;
     }
     auto it = protocols.find(proto);
     if (it == protocols.end()) {
       // First entry
       std::vector<uint64_t> bitVector(
-          FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-      SET_BIT(bitVector[ruleId / 63], ruleId % 63);
+              FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+      SET_BIT(bitVector[rule_id / 63], rule_id % 63);
       protocols.insert(std::pair<int, std::vector<uint64_t>>(proto, bitVector));
     } else {
-      SET_BIT((it->second)[ruleId / 63], ruleId % 63);
+      SET_BIT((it->second)[rule_id / 63], rule_id % 63);
     }
   }
   // Don't care rules are in all entries. Anyway, this loops is useless if there
   // are no rules at all requiring matching on this field.
-  if (protocols.size() != 0 && dontCareRules.size() != 0) {
+  if (protocols.size() != 0 && dont_care_rules.size() != 0) {
     std::vector<uint64_t> bitVector(
-        FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+            FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
     protocols.insert(std::pair<int, std::vector<uint64_t>>(0, bitVector));
-    for (auto const &ruleNumber : dontCareRules) {
+    for (auto const &ruleNumber : dont_care_rules) {
       for (auto &proto : protocols) {
         SET_BIT((proto.second)[ruleNumber / 63], ruleNumber % 63);
       }
     }
+    brk = false;
   }
+  return brk;
 }
 
-void Chain::port_from_rules_to_map(
-    const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
-    const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint16_t> dontCareRules;
 
-  uint32_t ruleId;
+bool Chain::portFromRulesToMap(
+        const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
+        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  std::vector<uint32_t> dont_care_rules;
+
+  uint32_t rule_id;
   uint16_t port;
+
+  bool brk = true;
+
   for (auto const &rule : rules) {
     try {
-      ruleId = rule->getId();
+      rule_id = rule->getId();
       if (type == SOURCE_TYPE)
         port = rule->getSport();
       else
         port = rule->getDport();
     } catch (std::runtime_error re) {
       // IP not set: don't care rule.
-      dontCareRules.push_back(ruleId);
+      dont_care_rules.push_back(rule_id);
       continue;
     }
 
@@ -445,28 +458,30 @@ void Chain::port_from_rules_to_map(
     if (it == ports.end()) {
       // First entry
       std::vector<uint64_t> bitVector(
-          FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-      SET_BIT(bitVector[ruleId / 63], ruleId % 63);
+              FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+      SET_BIT(bitVector[rule_id / 63], rule_id % 63);
       ports.insert(std::pair<uint16_t, std::vector<uint64_t>>(port, bitVector));
     } else {
-      SET_BIT((it->second)[ruleId / 63], ruleId % 63);
+      SET_BIT((it->second)[rule_id / 63], rule_id % 63);
     }
   }
   // Don't care rules are in all entries. Anyway, this loop is useless if there
   // are no rules at all requiring matching on this field.
-  if (ports.size() != 0 && dontCareRules.size() != 0) {
+  if (ports.size() != 0 && dont_care_rules.size() != 0) {
     std::vector<uint64_t> bitVector(
-        FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+            FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
     ports.insert(std::pair<uint16_t, std::vector<uint64_t>>(0, bitVector));
-    for (auto const &ruleNumber : dontCareRules) {
+    for (auto const &ruleNumber : dont_care_rules) {
       for (auto &port : ports) {
         SET_BIT((port.second)[ruleNumber / 63], ruleNumber % 63);
       }
     }
+    brk = false;
   }
+  return brk;
 }
 
-void Chain::conntrack_from_rules_to_map(
+bool Chain::conntrackFromRulesToMap(
     std::map<uint8_t, std::vector<uint64_t>> &statusMap,
     const std::vector<std::shared_ptr<ChainRule>> &rules) {
   std::vector<uint16_t> dontCareRules;
@@ -508,9 +523,11 @@ void Chain::conntrack_from_rules_to_map(
       }
     }
   }
+
+  return false;
 }
 
-void Chain::flags_from_rules_to_map(
+bool Chain::flagsFromRulesToMap(
     std::vector<std::vector<uint64_t>> &flags,
     const std::vector<std::shared_ptr<ChainRule>> &rules) {
   flags.clear();
@@ -526,7 +543,7 @@ void Chain::flags_from_rules_to_map(
     }
   }
   if (!areFlagsPresent) {
-    return;
+    return false;
   }
 
   std::vector<uint64_t> bitVector(FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
@@ -565,4 +582,8 @@ void Chain::flags_from_rules_to_map(
       }
     }
   }
+
+  // tcp flags current implementation is based on array.
+  // no break optimization could be performed right now.
+  return false;
 }

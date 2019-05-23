@@ -100,23 +100,24 @@ class Chain : public ChainBase {
   /*Like getRuleList, but without the last (fake) default rule*/
   std::vector<std::shared_ptr<ChainRule>> getRealRuleList();
 
-  static void ip_from_rules_to_map(
-      const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
-      const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static bool ipFromRulesToMap(
+          const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
+          const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void transportproto_from_rules_to_map(
-      std::map<int, std::vector<uint64_t>> &protocols,
-      const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static bool transportProtoFromRulesToMap(
+          std::map<int, std::vector<uint64_t>> &protocols,
+          const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void port_from_rules_to_map(
-      const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
-      const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static bool portFromRulesToMap(
+          const uint8_t &type, std::map<uint16_t, std::vector<uint64_t>> &ports,
+          const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void flags_from_rules_to_map(
-      std::vector<std::vector<uint64_t>> &flags,
-      const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static bool flagsFromRulesToMap(
+          std::vector<std::vector<uint64_t>> &flags,
+          const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void conntrack_from_rules_to_map(
-      std::map<uint8_t, std::vector<uint64_t>> &statusMap,
-      const std::vector<std::shared_ptr<ChainRule>> &rules);
+  static bool conntrackFromRulesToMap(
+          std::map<uint8_t, std::vector<uint64_t>> &statusMap,
+          const std::vector<std::shared_ptr<ChainRule>> &rules);
+
 };
