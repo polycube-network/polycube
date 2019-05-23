@@ -15,7 +15,8 @@ How to use
 ----------
 
 **NOTE**: ``polycubed`` must be running, in order to use ``polycubectl``.
-You can start the daemon typing ``sudo polycubed`` in another terminal. Refer to :doc:`Quick Start <../quickstart>`.
+You can start the daemon typing ``sudo polycubed`` in another terminal.
+Refer to :doc:`Quick Start <../quickstart>`.
 
 ``polycubectl`` is a generic CLI, that enables the user to interact with ``Cubes`` (``bridge``, ``router``, ...) and with some framework primitives to ``connect``, ``show`` and build complex ``topologies``.
 
@@ -23,9 +24,6 @@ You can start the daemon typing ``sudo polycubed`` in another terminal. Refer to
 
         # Show help
         polycubectl --help
-
-::
-
         Keyword           Type      Description
         simpleforwarder   service   Simple Forwarder Base Service
         simplebridge      service   Simple L2 Bridge Service
@@ -45,14 +43,71 @@ You can start the daemon typing ``sudo polycubed`` in another terminal. Refer to
         connect           command   Connect ports
         disconnect        command   Disconnect ports
 
-        attach                  command   Attach transparent cubes
-        detach                  command   Detach transparent cubes
+        attach            command   Attach transparent cubes
+        detach            command   Detach transparent cubes
 
         services          command   Show/Add/Del services (e.g. Bridge, Router, ..)
         cubes             command   Show running service instances (e.g. br1, nat2, ..)
         topology          command   Show topology of service instances
         netdevs           command   Show net devices available
 
+``polycubectl`` is service agnostic, hence the syntax is service dependent.
+However we can generalize the syntax as:
+
+::
+
+        polycubectl [parent] [command] [child] [argument0=value0] [argument1=value1]
+
+
+- ``parent``: path of the parent resource where the command has to be applied.
+- ``command``: ``add``, ``del``, ``show``, ``set`` or a yang action.
+- ``child``: specific resource where the command is applied.
+- ``argument``: some commands accept additional commands that are sent in the body request.
+
+Some examples:
+
+::
+
+        polycubectl router r0 add loglevel=debug
+        polycubectl r0 ports add port1 ip=10.1.0.1 netmask=255.255.0.0
+        polycubectl r0 show routing table
+        polycubectl r0 ports port1 set peer=veth1
+        polycubectl r0 ports del port1
+
+        # yang action
+        polycubectl firewall1 chain ingress append src=10.0.0.1 action=DROP
+
+
+The best way to know what is the syntax for each service is to use the `Help`_ or the bash completion by pressing ``<TAB>`` at any point.
+
+
+``polycubectl`` is also able to read the contents of the request from the standard input, it can be used in two ways:
+
+Passing complex configuration from the command line
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+        # create a helloworld instance with loglevel debug and action forward
+        polycubectl helloworld add hw0 << EOF
+        {
+        "loglevel": "debug",
+        "action": "forward"
+        }
+        EOF
+
+
+Reading configuration from a file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+        # create helloworld from a yaml file
+        polycubectl helloworld add hw0 < hw0.yaml
+
+        # create a router from a json file
+        polycubectl router add r0 < r0.json
+
+        # add a list of cubes
+        polycubectl cubes add < mycubes.yaml
 
 Help
 ^^^^
@@ -124,7 +179,8 @@ More complete examples are available in :doc:`tutorials <../tutorials/index>`.
 Configuration
 -------------
 
-By default, the CLI contacts ``polycubed`` daemon at ``http://localhost:9000/polycube/v1/``. The user can override this configuration with following instructions.
+By default, ``polycubectl`` contacts ``polycubed`` at ``http://localhost:9000/polycube/v1/``.
+The user can override this configuration with following instructions.
 
 Parameters
 ^^^^^^^^^^

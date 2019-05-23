@@ -67,9 +67,8 @@ void Service::ClearCubes() {
   }
 }
 
-void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
-                                  ResponseWriter response, bool update,
-                                  bool initialization) {
+std::vector<Response>
+Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool update, bool initialization) {
   if (update || !ServiceController::exists_cube(name)) {
     auto op = OperationType(update, initialization);
     auto k = ListKeyValues{};
@@ -82,9 +81,7 @@ void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
 
     auto body_errors = BodyValidate(name, k, jbody, initialization);
     if (!body_errors.empty()) {
-      Server::ResponseGenerator::Generate(std::move(body_errors),
-                                          std::move(response));
-      return;
+      return std::move(body_errors);
     }
 
     auto resp = WriteValue(name, body, k, op);
@@ -93,12 +90,9 @@ void Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
                     resp.error_tag == ErrorTag::kNoContent)) {
       cube_names_.AddValue(name);
     }
-    Server::ResponseGenerator::Generate(std::vector<Response>{resp},
-                                        std::move(response));
+    return std::vector<Response>{resp};
   } else {
-    Server::ResponseGenerator::Generate(
-        std::vector<Response>{{ErrorTag::kDataExists, nullptr}},
-        std::move(response));
+    return std::vector<Response>{{ErrorTag::kDataExists, nullptr}};
   }
 }
 
@@ -129,8 +123,8 @@ void Service::post_body(const Request &request, ResponseWriter response) {
     return;
   }
 
-  CreateReplaceUpdate(body["name"].get<std::string>(), body,
-                      std::move(response), false, true);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, false, true);
+  Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
 void Service::post(const Request &request, ResponseWriter response) {
@@ -151,7 +145,8 @@ void Service::post(const Request &request, ResponseWriter response) {
     }
   }
 
-  CreateReplaceUpdate(name, body, std::move(response), false, true);
+  auto resp = CreateReplaceUpdate(name, body, false, true);
+  Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
 void Service::put(const Request &request, ResponseWriter response) {
@@ -163,7 +158,8 @@ void Service::put(const Request &request, ResponseWriter response) {
     body = nlohmann::json::parse(request.body());
   }
   body["name"] = name;
-  CreateReplaceUpdate(name, body, std::move(response), false, true);
+  auto resp = CreateReplaceUpdate(name, body, false, true);
+  Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
 void Service::patch(const Request &request, ResponseWriter response) {
@@ -175,7 +171,8 @@ void Service::patch(const Request &request, ResponseWriter response) {
     body = nlohmann::json::parse(request.body());
   }
   body["name"] = name;
-  CreateReplaceUpdate(name, body, std::move(response), true, false);
+  auto resp = CreateReplaceUpdate(name, body, true, false);
+  Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
 void Service::del(const Pistache::Rest::Request &request,
@@ -203,8 +200,8 @@ void Service::patch_body(const Request &request, ResponseWriter response) {
         std::move(response));
     return;
   }
-  CreateReplaceUpdate(body["name"].get<std::string>(), body,
-                      std::move(response), true, false);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, true, false);
+  Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
 void Service::options_body(const Request &request, ResponseWriter response) {

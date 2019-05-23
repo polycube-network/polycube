@@ -85,6 +85,9 @@ class RestServer {
   void get_cube(const Pistache::Rest::Request &request,
                 Pistache::Http::ResponseWriter response);
 
+    void post_cubes(const Pistache::Rest::Request &request,
+                       Pistache::Http::ResponseWriter response);
+
   void cubes_help(const Pistache::Rest::Request &request,
                   Pistache::Http::ResponseWriter response);
 
