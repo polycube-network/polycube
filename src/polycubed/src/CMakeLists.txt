@@ -58,6 +58,7 @@ set(polycubed_sources
   datapath_log.cpp
   id_generator.cpp
   utils/extiface_info.cpp
+  utils/ns.cpp
   utils/netlink.cpp
   utils/utils.cpp
   ${server_sources}
