@@ -30,7 +30,7 @@
 #include "polycube/services/json.hpp"
 #include "netlink.h"
 #include "rest_server.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include "version.h"
 
 #include <spdlog/sinks/rotating_file_sink.h>

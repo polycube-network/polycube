@@ -58,8 +58,8 @@ set(polycubed_sources
   service_controller.cpp
   patchpanel.cpp
   datapath_log.cpp
-  utils.cpp
   id_generator.cpp
+  utils/utils.cpp
   ${server_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/load_services.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
