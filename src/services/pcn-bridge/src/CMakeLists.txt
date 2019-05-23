@@ -40,7 +40,7 @@ load_file_as_variable(pcn-bridge
   ../datamodel/bridge.yang
   bridge_datamodel)
 
-target_link_libraries(pcn-bridge ${POLYCUBE_LIBRARIES})
+target_link_libraries(pcn-bridge ${POLYCUBE_LIBRARIES} stp)
 
 # Specify shared library install directory
 
