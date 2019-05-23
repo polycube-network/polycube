@@ -24,7 +24,7 @@
 #include <sstream>
 #include <sys/socket.h>
 
-#include "exceptions.h"
+#include "../exceptions.h"
 
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270

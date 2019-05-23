@@ -15,9 +15,9 @@
  */
 
 #include "port_xdp.h"
-#include "netlink.h"
 
 #include "cube_xdp.h"
+#include "utils/netlink.h"
 
 namespace polycube {
 namespace polycubed {

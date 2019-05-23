@@ -53,12 +53,12 @@ set(polycubed_sources
   extiface.cpp
   extiface_tc.cpp
   extiface_xdp.cpp
-  extiface_info.cpp
-  netlink.cpp
   service_controller.cpp
   patchpanel.cpp
   datapath_log.cpp
   id_generator.cpp
+  utils/extiface_info.cpp
+  utils/netlink.cpp
   utils/utils.cpp
   ${server_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/load_services.cpp

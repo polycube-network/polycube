@@ -29,8 +29,7 @@
 #include "service_controller.h"
 
 #include "cube_factory_impl.h"
-#include "extiface_info.h"
-#include "netlink.h"
+//#include "extiface_info.h"
 
 using json = nlohmann::json;
 

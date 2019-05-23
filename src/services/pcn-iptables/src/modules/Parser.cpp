@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "../../../../polycubed/src/extiface_info.h"
 #include "../Iptables.h"
 #include "datapaths/Iptables_Parser_dp.h"
 

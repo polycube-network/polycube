@@ -37,7 +37,7 @@
 #include "SessionTable.h"
 #include "defines.h"
 
-#include "../../../polycubed/src/netlink.h"
+#include "../../../polycubed/src/utils/netlink.h"
 
 #define REQUIRED_FIB_LOOKUP_KERNEL ("4.19.0")
 
