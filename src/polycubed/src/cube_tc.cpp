@@ -41,7 +41,8 @@ CubeTC::~CubeTC() {
 }
 
 std::string CubeTC::get_wrapper_code() {
-  return Cube::get_wrapper_code() + CUBE_TC_COMMON_WRAPPER + CUBETC_WRAPPER;
+  return Cube::get_wrapper_code() + CUBE_TC_COMMON_WRAPPER + CUBETC_WRAPPER +
+         CUBETC_HELPERS;
 }
 
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
@@ -143,7 +144,9 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *skb,
   skb->cb[4] = metadata[2];
   return pcn_pkt_controller(skb, md, reason);
 }
+)";
 
+const std::string CubeTC::CUBETC_HELPERS = R"(
 /* checksum related */
 static __always_inline
 int pcn_l3_csum_replace(struct CTXTYPE *ctx, u32 csum_offset,
@@ -161,6 +164,32 @@ static __always_inline
 __wsum pcn_csum_diff(__be32 *from, u32 from_size, __be32 *to,
                      u32 to_size, __wsum seed) {
   return bpf_csum_diff(from, from_size, to, to_size, seed);
+}
+
+/* vlan related */
+static __always_inline
+bool pcn_is_vlan_present(struct CTXTYPE *ctx) {
+  return ctx->vlan_present;
+}
+
+static __always_inline
+int pcn_get_vlan_id(struct CTXTYPE *ctx) {
+  return ctx->vlan_tci & 0x0fff;
+}
+
+static __always_inline
+int pcn_get_vlan_proto(struct CTXTYPE *ctx) {
+  return ctx->vlan_proto;
+}
+
+static __always_inline
+int pcn_vlan_pop_tag(struct CTXTYPE *ctx) {
+  return bpf_skb_vlan_pop(ctx);
+}
+
+static __always_inline
+int pcn_vlan_push_tag(struct CTXTYPE *ctx, u16 eth_proto, u32 vlan_id) {
+  return bpf_skb_vlan_push(ctx, eth_proto, vlan_id);
 }
 
 )";

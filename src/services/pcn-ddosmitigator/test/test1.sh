@@ -31,9 +31,9 @@ sudo ifconfig veth1 10.0.0.2/24
 
 TYPE="TC"
 
-if [ -n "$1" ]; then
-  TYPE=$1
-fi
+#if [ -n "$1" ]; then
+#  TYPE=$1
+#fi
 
 # use ddosmitigator in REDIRECT mode and forward traffic between interfaces
 

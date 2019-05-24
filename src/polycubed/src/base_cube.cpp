@@ -477,6 +477,22 @@ static __always_inline
 __wsum pcn_csum_diff(__be32 *from, u32 from_size, __be32 *to,
                      u32 to_size, __wsum seed);
 
+/* vlan related */
+static __always_inline
+bool pcn_is_vlan_present(struct CTXTYPE *pkt);
+
+static __always_inline
+int pcn_get_vlan_id(struct CTXTYPE *pkt);
+
+static __always_inline
+int pcn_get_vlan_proto(struct CTXTYPE *pkt);
+
+static __always_inline
+int pcn_vlan_pop_tag(struct CTXTYPE *pkt);
+
+static __always_inline
+int pcn_vlan_push_tag(struct CTXTYPE *pkt, u16 eth_proto, u32 vlan_id);
+
 )";
 
 }  // namespace polycubed

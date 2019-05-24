@@ -64,6 +64,7 @@ class CubeTC : public Cube {
 
  private:
   static const std::string CUBE_TC_COMMON_WRAPPER;
+  static const std::string CUBETC_HELPERS;
   static const std::string CUBETC_WRAPPER;
 };
 
