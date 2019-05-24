@@ -83,8 +83,6 @@ std::shared_ptr<spdlog::logger> SessionTable::logger() {
 
 std::string SessionTable::state_from_number_to_string(int state) {
   switch (state) {
-  case (WILDCARD):
-    return "WILDCARD";
   case (NEW):
     return "NEW";
   case (ESTABLISHED):
@@ -93,8 +91,10 @@ std::string SessionTable::state_from_number_to_string(int state) {
     return "SYN_SENT";
   case (SYN_RECV):
     return "SYN_RECV";
-  case (FIN_WAIT):
-    return "FIN_WAIT";
+  case (FIN_WAIT_1):
+    return "FIN_WAIT_1";
+  case (FIN_WAIT_2):
+    return "FIN_WAIT_2";
   case (LAST_ACK):
     return "LAST_ACK";
   case (TIME_WAIT):
@@ -105,9 +105,6 @@ std::string SessionTable::state_from_number_to_string(int state) {
 
 uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl, uint16_t state,
                                        uint16_t l4proto) {
-  if (state == WILDCARD) {
-    return -1;
-  }
   if (state == NEW) {
     if (l4proto == IPPROTO_UDP) {
       ttl = ttl - UDP_NEW_TIMEOUT;
@@ -128,7 +125,7 @@ uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl, uint16_t state,
   if (state == SYN_RECV) {
     ttl = ttl - TCP_SYN_RECV;
   }
-  if (state == FIN_WAIT) {
+  if (state == FIN_WAIT_1 || state == FIN_WAIT_2) {
     ttl = ttl - TCP_FIN_WAIT;
   }
   if (state == LAST_ACK) {
@@ -146,6 +143,8 @@ uint32_t SessionTable::from_ttl_to_eta(uint64_t ttl, uint16_t state,
   } else {
     return uptime_seconds - ttl;
   }
+
+return 0;
 }
 
 //uint64_t SessionTable::hex_string_to_uint64(const std::string &str) {

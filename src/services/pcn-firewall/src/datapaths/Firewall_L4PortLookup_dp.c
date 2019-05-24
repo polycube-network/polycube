@@ -31,7 +31,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+} __attribute__((packed));
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 static __always_inline struct packetHeaders *getPacket() {
@@ -120,7 +120,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     (result->bits)[0] = (ele->bits)[0] & (result->bits)[0];
     if (result->bits[0] != 0)
       isAllZero = false;
-    goto NEXT;
+    goto NXT;
 
 #if _WILDCARD_RULE
   WILDCARD:;
@@ -136,7 +136,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
       if (result->bits[i] != 0)
         isAllZero = false;
     }
-    goto NEXT;
+    goto NXT;
 #if _WILDCARD_RULE
   WILDCARD:;
 #pragma unroll
@@ -149,7 +149,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #endif
   }  // if result == NULL
 
-NEXT:;
+NXT:;
   if (isAllZero) {
     pcn_log(ctx, LOG_DEBUG,
             "[_CHAIN_NAME][L4PortLookup_TYPE]: Bitvector is all zero. Break pipeline");

@@ -18,13 +18,13 @@
 #include "Firewall.h"
 
 int Firewall::protocol_from_string_to_int(const std::string &proto) {
-  if (proto == "TCP")
+  if (proto == "TCP" || proto == "tcp")
     return IPPROTO_TCP;
-  if (proto == "UDP")
+  if (proto == "UDP" || proto == "udp")
     return IPPROTO_UDP;
-  if (proto == "ICMP")
+  if (proto == "ICMP" || proto == "icmp")
     return IPPROTO_ICMP;
-  if (proto == "GRE")
+  if (proto == "GRE" || proto == "gre")
     return IPPROTO_GRE;
   else
     throw std::runtime_error("Protocol not supported.");
@@ -43,13 +43,13 @@ void Firewall::replaceAll(std::string &str, const std::string &from,
 }
 
 int ChainRule::protocol_from_string_to_int(const std::string &proto) {
-  if (proto == "TCP")
+  if (proto == "TCP" || proto == "tcp")
     return IPPROTO_TCP;
-  if (proto == "UDP")
+  if (proto == "UDP" || proto == "udp")
     return IPPROTO_UDP;
-  if (proto == "ICMP")
+  if (proto == "ICMP" || proto == "icmp")
     return IPPROTO_ICMP;
-  if (proto == "GRE")
+  if (proto == "GRE" || proto == "gre")
     return IPPROTO_GRE;
 
   throw std::runtime_error("Protocol not supported.");
@@ -207,15 +207,14 @@ int ChainRule::ActionEnum_to_int(const ActionEnum &action) {
 }
 
 static int ChainRuleConntrackEnum_to_int(const ConntrackstatusEnum &status) {
-  // 0 is reserved for "wildcard"
   if (status == ConntrackstatusEnum::NEW) {
-    return 1;
+    return 0;
   } else if (status == ConntrackstatusEnum::ESTABLISHED) {
-    return 2;
+    return 1;
   } else if (status == ConntrackstatusEnum::RELATED) {
-    return 3;
+    return 2;
   } else if (status == ConntrackstatusEnum::INVALID) {
-    return 4;
+    return 3;
   }
 }
 
@@ -482,46 +481,40 @@ bool Chain::portFromRulesToMap(
 }
 
 bool Chain::conntrackFromRulesToMap(
-    std::map<uint8_t, std::vector<uint64_t>> &statusMap,
-    const std::vector<std::shared_ptr<ChainRule>> &rules) {
-  std::vector<uint16_t> dontCareRules;
+        std::map<uint8_t, std::vector<uint64_t>> &statusMap,
+        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  std::vector<uint8_t> statesVector({NEW, ESTABLISHED, RELATED, INVALID});
+  uint32_t rule_id;
+  uint8_t rule_state;
+  bool conntrackRulePresent = false;
 
-  uint32_t ruleId;
-  uint8_t status;
   for (auto const &rule : rules) {
     try {
-      ruleId = rule->getId();
-      status = ChainRuleConntrackEnum_to_int(rule->getConntrack());
-
-    } catch (std::runtime_error re) {
-      // Not set: don't care rule.
-      dontCareRules.push_back(ruleId);
-      continue;
-    }
-
-    auto it = statusMap.find(status);
-    if (it == statusMap.end()) {
-      // First entry
-      std::vector<uint64_t> bitVector(
-          FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-      SET_BIT(bitVector[ruleId / 63], ruleId % 63);
-      statusMap.insert(
-          std::pair<uint8_t, std::vector<uint64_t>>(status, bitVector));
-    } else {
-      SET_BIT((it->second)[ruleId / 63], ruleId % 63);
+      rule_state = ChainRuleConntrackEnum_to_int(rule->getConntrack());
+      conntrackRulePresent = true;
+    } catch (...) {
     }
   }
-  // Don't care rules are in all entries. Anyway, this loop is useless if there
-  // are no rules at all requiring matching on this field.
-  if (statusMap.size() != 0 && dontCareRules.size() != 0) {
+
+  if (!conntrackRulePresent)
+    return false;
+
+  for (uint8_t state : statesVector) {
     std::vector<uint64_t> bitVector(
-        FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
-    statusMap.insert(std::pair<uint8_t, std::vector<uint64_t>>(0, bitVector));
-    for (auto const &ruleNumber : dontCareRules) {
-      for (auto &statusMapEntry : statusMap) {
-        SET_BIT((statusMapEntry.second)[ruleNumber / 63], ruleNumber % 63);
+            FROM_NRULES_TO_NELEMENTS(Firewall::maxRules));
+    for (auto const &rule : rules) {
+      try {
+        rule_id = rule->getId();
+        rule_state = ChainRuleConntrackEnum_to_int(rule->getConntrack());
+        if (rule_state == state)
+          SET_BIT(bitVector[rule_id / 63], rule_id % 63);
+      } catch (std::runtime_error re) {
+        // wildcard rule, set bit to 1
+        SET_BIT(bitVector[rule_id / 63], rule_id % 63);
       }
     }
+    statusMap.insert(
+            std::pair<uint8_t, std::vector<uint64_t>>(state, bitVector));
   }
 
   return false;

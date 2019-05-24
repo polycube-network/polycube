@@ -16,10 +16,12 @@
 
 #include "../Firewall.h"
 #include "datapaths/Firewall_Parser_dp.h"
+//#include "../../../pcn-iptables/src/defines.h"
 
 Firewall::Parser::Parser(const int &index, const ChainNameEnum &direction,
                          Firewall &outer)
     : Firewall::Program(firewall_code_parser, index, direction, outer) {
+
   reload();
 }
 
@@ -29,16 +31,18 @@ std::string Firewall::Parser::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
-
-  if (firewall.conntrackMode == ConntrackModes::DISABLED) {
-    // Skip the next module (conntrack), that is not loaded
-    replaceAll(noMacroCode, "_NEXT_HOP", std::to_string(index + 2));
-  } else {
-    replaceAll(noMacroCode, "_NEXT_HOP", std::to_string(index + 1));
-  }
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules)));
 
   replaceAll(noMacroCode, "_DEFAULTACTION", this->defaultActionString());
+
+  replaceAll(noMacroCode, "_CONNTRACKLABEL", std::to_string(ModulesConstants::CONNTRACKLABEL));
+  replaceAll(noMacroCode, "_CHAINFORWARDER", std::to_string(ModulesConstants::CHAINFORWARDER));
+
+  if (firewall.getConntrack() == FirewallConntrackEnum::ON) {
+    replaceAll(noMacroCode, "_CONNTRACK_ENABLED", std::to_string(1));
+  } else {
+    replaceAll(noMacroCode, "_CONNTRACK_ENABLED", std::to_string(0));
+  }
 
   try {
     replaceAll(noMacroCode, "_NR_ELEMENTS",

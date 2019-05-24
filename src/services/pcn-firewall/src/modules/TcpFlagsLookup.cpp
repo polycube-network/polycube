@@ -30,7 +30,7 @@ std::string Firewall::TcpFlagsLookup::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules)));
 
   /*Replacing hops*/
   for (auto const &hop : hops) {

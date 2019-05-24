@@ -22,6 +22,7 @@ Firewall::ConntrackLabel::ConntrackLabel(const int &index,
                                          Firewall &outer)
     : Firewall::Program(firewall_code_conntracklabel, index, direction,
                         outer) {
+
   load();
 }
 
@@ -36,7 +37,7 @@ std::string Firewall::ConntrackLabel::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules)));
 
   /*Replacing hops*/
   replaceAll(noMacroCode, "_NEXT_HOP_1", std::to_string(index + 1));
@@ -47,6 +48,9 @@ std::string Firewall::ConntrackLabel::getCode() {
   /*Pointing to the module in charge of updating the conn table and forwarding*/
   replaceAll(noMacroCode, "_CONNTRACKTABLEUPDATE",
              std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1));
+
+  replaceAll(noMacroCode, "_CHAINFORWARDER",
+             std::to_string(ModulesConstants::CHAINFORWARDER));
 
   return noMacroCode;
 }

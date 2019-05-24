@@ -244,8 +244,6 @@ void Chain::updateChain() {
     if (j == 1)
       second = true;
 
-    std::cout << "++++Conntrack Map empty " << conntrack_map.empty() << std::endl;
-
     // Looping through conntrack
     if (!conntrack_map.empty() && conntrack_break ^ second) {
       // At least one rule requires a matching on conntrack, so it can be

@@ -49,6 +49,8 @@ struct ct_k {
 struct ct_v {
   uint64_t ttl;
   uint8_t state;
+  uint8_t ipRev;
+  uint8_t portRev;
   uint32_t sequence;
 } __attribute__((packed));
 
@@ -143,7 +145,9 @@ class Firewall : public FirewallBase {
 
     polycube::service::ProgramType getProgramType();
 
-   public:
+    std::mutex program_mutex_;
+
+  public:
     Program(const std::string &code, const int &index,
             const ChainNameEnum &direction, Firewall &outer);
     virtual ~Program();
@@ -289,6 +293,13 @@ class Firewall : public FirewallBase {
                          Firewall &outer);
     ~ConntrackTableUpdate();
     std::string getCode();
+
+    void updateTimestamp();
+    void updateTimestampTimer();
+    void quitAndJoin();
+
+    std::thread timestamp_update_thread_;
+    std::atomic<bool> quit_thread_;
   };
 
   /*==========================
