@@ -23,12 +23,28 @@
 #include <arpa/inet.h>
 #include <sstream>
 #include <sys/socket.h>
+#include <netinet/ether.h>
 
 #include "../exceptions.h"
 
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270
 #endif
+
+/*useful for memory paging*/
+#define SIZE_ALIGN 8192
+#define NLMSG_TAIL(nmsg) \
+        ((struct rtattr *) (((char *) (nmsg)) + NLMSG_ALIGN((nmsg)->nlmsg_len)))
+
+struct nl_req {
+  struct nlmsghdr nlmsg;
+  struct ifinfomsg ifinfomsg;
+};
+
+struct nl_ipreq {
+  struct nlmsghdr nlmsg;
+  struct ifaddrmsg ifaddrmsg;
+};
 
 namespace polycube {
 namespace polycubed {
@@ -614,6 +630,221 @@ void Netlink::detach_from_xdp(const std::string &iface, int attach_flags) {
   }
 
   logger->debug("XDP program detached from port: {0}", iface);
+}
+
+struct nlmsghdr* Netlink::netlink_alloc() {
+  size_t len = NLMSG_ALIGN(SIZE_ALIGN) + NLMSG_ALIGN(sizeof(struct nlmsghdr *));
+  struct nlmsghdr *nlmsg = (struct nlmsghdr *) malloc(len);
+  memset(nlmsg, 0, len);
+
+  struct nl_req *unr = (struct nl_req *)nlmsg;
+  unr->ifinfomsg.ifi_family = AF_UNSPEC;
+  nlmsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+  nlmsg->nlmsg_type = RTM_NEWLINK;
+  // NLM_F_REQUEST   Must be set on all request messages
+  // NLM_F_ACK       Request for an acknowledgment on success
+  nlmsg->nlmsg_flags = NLM_F_REQUEST|NLM_F_ACK;
+
+  return nlmsg;
+}
+
+struct nlmsghdr* Netlink::netlink_ip_alloc() {
+  size_t len = NLMSG_ALIGN(SIZE_ALIGN) + NLMSG_ALIGN(sizeof(struct nlmsghdr *));
+  struct nlmsghdr *nlmsg = (struct nlmsghdr *) malloc(len);
+  memset(nlmsg, 0, len);
+
+  struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
+  uni->ifaddrmsg.ifa_family = AF_INET;
+  uni->ifaddrmsg.ifa_scope = 0;
+
+  nlmsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+  nlmsg->nlmsg_type = RTM_NEWADDR;
+  // NLM_F_REQUEST   Must be set on all request messages
+  // NLM_F_ACK       Request for an acknowledgment on success
+  // NLM_F_CREATE    Create object if it doesn't already exist
+  // NLM_F_EXCL      Don't replace if the object already exists
+  nlmsg->nlmsg_flags = NLM_F_REQUEST|NLM_F_ACK|NLM_F_CREATE|NLM_F_EXCL;
+
+  return nlmsg;
+}
+
+int Netlink::netlink_nl_send(struct nlmsghdr *nlmsg) {
+  struct sockaddr_nl nladdr;
+  struct iovec iov = {
+    .iov_base = (void*)nlmsg,
+    .iov_len = nlmsg->nlmsg_len,
+  };
+  struct msghdr msg = {
+    .msg_name = &nladdr,
+    .msg_namelen = sizeof(nladdr),
+    .msg_iov = &iov,
+    .msg_iovlen = 1,
+  };
+  int nlfd;
+
+  memset(&nladdr, 0, sizeof(struct sockaddr_nl));
+  nladdr.nl_family = AF_NETLINK;
+  nladdr.nl_pid = 0;
+  nladdr.nl_groups = 0;
+
+  nlfd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+  if (nlfd < 0) {
+    free(nlmsg);
+    logger->error("netlink_nl_send: Unable to open socket");
+    throw std::runtime_error("netlink_nl_send: Unable to open socket");
+  }
+
+  if (sendmsg(nlfd, &msg, 0) < 0) {
+    free(nlmsg);
+    close(nlfd);
+    logger->error("netlink_nl_send: Unable to sendmsg");
+    throw std::runtime_error("netlink_nl_send: Unable to sendmsg");
+  }
+
+  /* read the reply message to check that there are no errors */
+  if (recvmsg(nlfd, &msg, 0) < 0) {
+    free(nlmsg);
+    close(nlfd);
+    logger->error("netlink_nl_send: Unable to recvmsg");
+    throw std::runtime_error("netlink_nl_send: Unable to recvmsg");
+  }
+
+  /* if there is an error return error code */
+  if (nlmsg->nlmsg_type == NLMSG_ERROR) {
+    struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(nlmsg);
+    free(nlmsg);
+    close(nlfd);
+    return err->error;
+  }
+
+  free(nlmsg);
+  close(nlfd);
+  return 0;
+}
+
+void Netlink::set_iface_status(const std::string &iface, IFACE_STATUS status) {
+  struct nlmsghdr *nlmsg = netlink_alloc();
+  struct nl_req *unr = (struct nl_req *)nlmsg;
+
+  int index = get_iface_index(iface);
+  if (index == -1) {
+    logger->error("set_iface_status: iface {0} does not exist", iface);
+    throw std::runtime_error("set_iface_status: iface does not exist");
+  }
+
+  unr->ifinfomsg.ifi_index = index;
+  unr->ifinfomsg.ifi_change |= IFF_UP;
+  if (status == IFACE_STATUS::UP)
+    unr->ifinfomsg.ifi_flags |= IFF_UP;
+  else if (status == IFACE_STATUS::DOWN)
+    unr->ifinfomsg.ifi_flags |= ~IFF_UP;
+
+  netlink_nl_send(nlmsg);
+}
+
+void Netlink::set_iface_mac(const std::string &iface, const std::string &mac) {
+  struct rtnl_link *link;
+  struct rtnl_link *old_link;
+  struct nl_sock *sk;
+  struct nl_cache *link_cache;
+
+  sk = nl_socket_alloc();
+  if (nl_connect(sk, NETLINK_ROUTE) < 0) {
+    logger->error("set_iface_mac: Unable to open socket");
+    throw std::runtime_error("set_iface_mac: Unable to open socket");
+  }
+
+  link = rtnl_link_alloc();
+  if (!link) {
+    nl_close(sk);
+    logger->error("set_iface_mac: Invalid link");
+    throw std::runtime_error("set_iface_mac: Invalid link");
+  }
+
+  rtnl_link_set_name(link, iface.c_str());
+
+  struct nl_addr* addr;
+  addr = nl_addr_build(AF_LLC, ether_aton(mac.c_str()), ETH_ALEN);
+  if (!addr) {
+    nl_close(sk);
+    logger->error("set_iface_mac: Invalid MAC address");
+    throw std::runtime_error("set_iface_mac: Invalid MAC address");
+  }
+  rtnl_link_set_addr(link, addr);
+
+  if (rtnl_link_alloc_cache(sk, AF_UNSPEC, &link_cache) < 0) {
+    nl_close(sk);
+    logger->error("set_iface_mac: Unable to allocate cache");
+    throw std::runtime_error("set_iface_mac: Unable to allocate cache");
+  }
+
+  old_link = rtnl_link_get_by_name(link_cache, iface.c_str());
+  if (rtnl_link_change(sk, old_link, link, 0) < 0) {
+    nl_close(sk);
+    logger->error("set_iface_mac: Unable to change link");
+    throw std::runtime_error("set_iface_mac: Unable to change link");
+  }
+
+  rtnl_link_put(link);
+  nl_close(sk);
+}
+
+void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int prefix) {
+  struct nlmsghdr *nlmsg = netlink_ip_alloc();
+  struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
+  struct rtattr *rta;
+  struct in_addr ia;
+
+  int index = get_iface_index(iface);
+  if (index == -1) {
+    logger->error("set_iface_ip: iface {0} does not exist", iface);
+    throw std::runtime_error("set_iface_ip: iface does not exist");
+  }
+
+  uni->ifaddrmsg.ifa_index = index;
+  uni->ifaddrmsg.ifa_prefixlen = prefix;
+
+  if (inet_pton(AF_INET, ip.c_str(), &ia) <= 0) {
+    free(nlmsg);
+    logger->error("set_iface_ip: Error in inet_pton");
+    throw std::runtime_error("set_iface_ip: Error in inet_pton");
+  }
+
+  rta = NLMSG_TAIL(nlmsg);
+  rta->rta_type = IFA_LOCAL;
+  rta->rta_len = RTA_LENGTH(sizeof(struct in_addr));
+  memcpy(RTA_DATA(rta), &ia, sizeof(struct in_addr));
+  nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
+
+  rta = NLMSG_TAIL(nlmsg);
+  rta->rta_type = IFA_ADDRESS;
+  rta->rta_len = RTA_LENGTH(sizeof(struct in_addr));
+  memcpy(RTA_DATA(rta), &ia, sizeof(struct in_addr));
+  nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
+
+  netlink_nl_send(nlmsg);
+}
+
+void Netlink::move_iface_into_ns(const std::string &iface, int fd) {
+  struct nlmsghdr *nlmsg = netlink_alloc();
+  struct nl_req *unr = (struct nl_req *)nlmsg;
+  struct rtattr *rta;
+
+  int index = get_iface_index(iface);
+  if (index == -1) {
+    logger->error("move_iface_into_ns: iface {0} does not exist", iface);
+    throw std::runtime_error("move_iface_into_ns: iface does not exist");
+  }
+
+  unr->ifinfomsg.ifi_index = index;
+  rta = NLMSG_TAIL(nlmsg);
+  rta->rta_type = IFLA_NET_NS_FD;
+  rta->rta_len = RTA_LENGTH(sizeof(int));
+
+  memcpy(RTA_DATA(rta), &fd, sizeof(pid_t));
+  nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
+
+  netlink_nl_send(nlmsg);
 }
 
 }  // namespace polycubed

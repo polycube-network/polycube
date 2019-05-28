@@ -59,6 +59,7 @@ set(polycubed_sources
   id_generator.cpp
   utils/extiface_info.cpp
   utils/ns.cpp
+  utils/veth.cpp
   utils/netlink.cpp
   utils/utils.cpp
   ${server_sources}

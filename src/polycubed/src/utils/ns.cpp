@@ -202,6 +202,13 @@ nla_put_failure:
   throw std::runtime_error("Error constructing nlmsg");
 }
 
+std::string Namespace::get_name() const {
+  return name_;
+}
+int Namespace::get_fd() const {
+  return fd_;
+}
+
 void Namespace::create_ns(const std::string &name) {
   std::string netns_path(std::string(NETNS_RUN_DIR) + "/" + name);
 

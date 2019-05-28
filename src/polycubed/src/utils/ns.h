@@ -35,6 +35,9 @@ class Namespace {
   void remove();
   void set_id(int id);
 
+  std::string get_name() const;
+  int get_fd() const;
+
   ~Namespace();
 
  private:
