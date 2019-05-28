@@ -101,6 +101,8 @@ for dir in ./../src/services/*; do
 done
 
 if $TEST_BRIDGE_STP ; then
+  echo 0 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables > /dev/null
+  
   for dir in ./../src/services/pcn-bridge/test/stp/; do
       dirtest=$dir
       if [ -d "$dirtest" ]; then
@@ -112,6 +114,8 @@ if $TEST_BRIDGE_STP ; then
         done
       fi
   done
+  
+  echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables > /dev/null
 fi
 
 cat $test_log
