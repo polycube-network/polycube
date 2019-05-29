@@ -28,10 +28,10 @@
 
 #include "config.h"
 #include "polycube/services/json.hpp"
-#include "netlink.h"
 #include "rest_server.h"
-#include "utils.h"
 #include "version.h"
+#include "utils/netlink.h"
+#include "utils/utils.h"
 
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>

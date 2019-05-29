@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "../../../../polycubed/src/netlink.h"
 #include "../Iptables.h"
 #include "datapaths/Iptables_ChainSelector_dp.h"
 

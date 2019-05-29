@@ -21,6 +21,7 @@
 #include "polycubed_core.h"
 #include "service_controller.h"
 #include "version.h"
+#include "utils/netlink.h"
 
 #include "polycube/services/response.h"
 #include "server/Resources/Data/AbstractFactory.h"

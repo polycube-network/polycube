@@ -39,7 +39,7 @@
 #include "../Resources/Endpoint/ParentResource.h"
 #include "../Resources/Endpoint/Service.h"
 
-#include "server/../utils.h"
+#include "server/../utils/utils.h"
 
 namespace polycube::polycubed::Rest::Parser {
 std::int16_t Yang::GetExtensionIndex(lys_ext_instance **extensions,

@@ -15,8 +15,7 @@
  */
 
 #include "Iptables.h"
-#include "../../../polycubed/src/netlink.h"
-#include "./../../../polycubed/src/utils.h"
+#include "./../../../polycubed/src/utils/utils.h"
 #include "Iptables_dp.h"
 
 Iptables::Iptables(const std::string name, const IptablesJsonObject &conf)

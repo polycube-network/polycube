@@ -18,8 +18,8 @@
 #include "extiface_tc.h"
 #include "bcc_mutex.h"
 #include "exceptions.h"
-#include "netlink.h"
 #include "patchpanel.h"
+#include "utils/netlink.h"
 
 #include <iostream>
 

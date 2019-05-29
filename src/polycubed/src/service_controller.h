@@ -35,7 +35,7 @@ using polycube::service::PortType;
 #include "polycube/services/json.hpp"
 #include "port_tc.h"
 #include "port_xdp.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 namespace polycube {
 namespace polycubed {

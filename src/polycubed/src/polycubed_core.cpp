@@ -17,6 +17,7 @@
 #include "polycubed_core.h"
 #include "config.h"
 #include "rest_server.h"
+#include "utils/netlink.h"
 
 #include "server/Resources/Body/ListResource.h"
 #include "server/Resources/Body/ParentResource.h"

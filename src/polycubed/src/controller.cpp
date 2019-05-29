@@ -20,8 +20,8 @@
 #include "cube_tc.h"
 #include "cube_xdp.h"
 #include "datapath_log.h"
-#include "netlink.h"
 #include "patchpanel.h"
+#include "utils/netlink.h"
 
 #include "polycube/services/utils.h"
 
