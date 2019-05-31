@@ -25,6 +25,14 @@ class Nat;
 using namespace io::swagger::server::model;
 
 /* definitions copied from datapath */
+
+/* __attribute__((packed))
+ * forces alignment for this structure;
+ * otherwise misaligned read/write could happen
+ * between userspace and kernel space.
+ * same attribute should be used in kernel/user space
+ * structs declaration.
+ */
 struct st_k {
   uint32_t src_ip;
   uint32_t dst_ip;

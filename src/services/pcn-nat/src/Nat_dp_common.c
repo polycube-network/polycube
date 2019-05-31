@@ -40,6 +40,14 @@
   (sizeof(struct eth_hdr) + sizeof(struct iphdr) + \
    offsetof(struct icmphdr, checksum))
 #define IS_PSEUDO 0x10
+
+/* __attribute__((packed))
+ * forces alignment for this structure;
+ * otherwise misaligned read/write could happen
+ * between userspace and kernel space.
+ * same attribute should be used in kernel/user space
+ * structs declaration.
+ */
 struct eth_hdr {
   __be64 dst : 48;
   __be64 src : 48;
@@ -52,9 +60,9 @@ struct st_k {
   uint16_t src_port;
   uint16_t dst_port;
   uint8_t proto;
-};
+} __attribute__((packed));
 struct st_v {
   uint32_t new_ip;
   uint16_t new_port;
   uint8_t originating_rule_type;
-};
+} __attribute__((packed));
