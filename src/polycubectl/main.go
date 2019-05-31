@@ -49,13 +49,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if config.GetConfig().HardCodedVersionEnabled {
-		v := GetHardCodedVersion(os.Args[1:])
-		if v != "" {
-			config.GetConfig().Version = v
-		}
-	}
-
 	LogCommand(os.Args)
 
 	cliArgs, err := cliargs.ParseCLIArgs(os.Args[1:])

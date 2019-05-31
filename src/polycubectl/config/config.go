@@ -38,9 +38,6 @@ type Config struct {
 	Debug   bool   `yaml:"debug"`
 	Expert  bool   `yaml:"expert"`
 	Url     string `yaml:"url"`
-	Version string `yaml:"version"`
-	// get version to be used according to service name
-	HardCodedVersionEnabled bool
 	// enables Workaround for urls (e.g. set peer=veth1 PUT /peer/ "veth1")
 	SingleParameterWorkaround bool
 
@@ -58,8 +55,6 @@ func NewDefaultConfig() Config {
 		Debug:                     false,
 		Expert:                    true,
 		Url:                       "http://localhost:9000/polycube/v1/",
-		Version:                   "2",
-		HardCodedVersionEnabled:   true,
 		SingleParameterWorkaround: true,
 	}
 
@@ -78,7 +73,6 @@ func saveConfig(config Config) error {
 `# debug: shows http method/url and body of the response
 # expert: enables the possibility to add new services
 # url: is the base url to contact the rest server
-# version: (1) uses PUT method, (2) uses PATCH method
 # cacert: path to certification authority certificate to validate polycubed identity
 # cert: path to certificate to present to polycubed for validate polycubectl identity
 # key: path to private key for polycubectl
@@ -131,10 +125,6 @@ func LoadConfig() (error) {
 		return fmt.Errorf("error decoding config file: %s", err.Error())
 	}
 
-	if config.Version != "" && config.Version != "1" && config.Version != "2" {
-		return fmt.Errorf("%s if not a valid version, please check the config file. %s", config.Version)
-	}
-
 	if os.Getenv("POLYCUBECTL_URL") != "" {
 		config.Url = os.Getenv("POLYCUBECTL_URL")
 	}
@@ -151,10 +141,6 @@ func LoadConfig() (error) {
 		if errb == nil {
 			config.Expert = b
 		}
-	}
-
-	if os.Getenv("POLYCUBECTL_VERSION") != "" {
-		config.Version = os.Getenv("POLYCUBECTL_VERSION")
 	}
 
 	if os.Getenv("POLYCUBECTL_CACERT") != "" {

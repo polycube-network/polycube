@@ -404,11 +404,7 @@ func (cli *CLIArgs) getRequestMethod() string {
 	} else if cli.Command == AddCommand || cli.Command == "" {
 		return httprequest.PostStr
 	} else if cli.Command == SetCommand {
-		if config.GetConfig().Version == "1" {
-			return httprequest.PutStr
-		} else {
-			return httprequest.PatchStr
-		}
+		return httprequest.PatchStr
 	} else if cli.Command == ShowCommand {
 		return httprequest.GetStr
 	} else if cli.Command == DelCommand {
