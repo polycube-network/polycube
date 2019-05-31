@@ -480,6 +480,103 @@ bool Chain::portFromRulesToMap(
   return brk;
 }
 
+bool Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+                                    struct HorusRule &key,
+                                    struct HorusValue &value) {
+  key.setFields = 0;
+  bool conntrackSet = false;
+
+  try {
+    rule->getConntrack();
+    return false;
+  } catch (std::runtime_error) {}
+
+  try {
+    IpAddr ips;
+    ips.fromString(rule->getSrc());
+    if (ips.netmask == 32) {
+      SET_BIT(key.setFields, HorusConst::SRCIP);
+      key.src_ip = ips.ip;
+    }
+  } catch (std::runtime_error) {
+  }
+
+  try {
+    IpAddr ipd;
+    ipd.fromString(rule->getDst());
+    if (ipd.netmask == 32) {
+      SET_BIT(key.setFields, HorusConst::DSTIP);
+      key.dst_ip = ipd.ip;
+    }
+  } catch (std::runtime_error) {
+  }
+
+  try {
+    uint8_t proto = Firewall::protocol_from_string_to_int(rule->getL4proto());
+    SET_BIT(key.setFields, HorusConst::L4PROTO);
+    key.l4proto = proto;
+  } catch (std::runtime_error) {
+  }
+
+  try {
+    uint16_t srcport = rule->getSport();
+    SET_BIT(key.setFields, HorusConst::SRCPORT);
+    key.src_port = srcport;
+  } catch (std::runtime_error) {
+  }
+
+  try {
+    uint16_t dstport = rule->getDport();
+    SET_BIT(key.setFields, HorusConst::DSTPORT);
+    key.dst_port = dstport;
+  } catch (std::runtime_error) {
+  }
+
+  // TODO Check if ACCEPT/DROP semantic is valid
+
+  ActionEnum action = rule->getAction();
+
+  if (action == ActionEnum::DROP)
+    value.action = 0;
+  else
+    value.action = 1;
+
+  value.ruleID = rule->getId();
+  return true;
+}
+
+void Chain::horusFromRulesToMap(
+        std::map<struct HorusRule, struct HorusValue> &horus,
+        const std::vector<std::shared_ptr<ChainRule>> &rules) {
+  struct HorusRule key;
+  struct HorusValue value;
+
+//  bool first_rule = true;
+  uint64_t set_fields = 0;
+
+  // find match pattern for first rule (e.g. 01101 means ips proto ports set)
+
+  int i = 0;
+
+  for (auto const &rule : rules) {
+    if (i >= HorusConst::MAX_RULE_SIZE_FOR_HORUS)
+      break;
+    if(!fromRuleToHorusKeyValue(rule, key, value))
+      return;
+    if (i == 0) {
+      if (key.setFields == 0) {
+        break;
+      }
+      set_fields = key.setFields;
+    }
+    if (key.setFields != set_fields) {
+      break;
+    }
+    horus.insert(std::pair<struct HorusRule, struct HorusValue>(key, value));
+    i++;
+  }
+}
+
 bool Chain::conntrackFromRulesToMap(
         std::map<uint8_t, std::vector<uint64_t>> &statusMap,
         const std::vector<std::shared_ptr<ChainRule>> &rules) {

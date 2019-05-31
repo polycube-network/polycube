@@ -175,7 +175,31 @@ class Firewall : public FirewallBase {
     std::string getCode();
   };
 
-  class ChainForwarder : public Program {
+  class Horus : public Program {
+  public:
+      enum HorusType { HORUS_INGRESS, HORUS_EGRESS };
+
+      Horus(const int &index, Firewall &outer, const ChainNameEnum &direction,
+              const std::map<struct HorusRule, struct HorusValue> &horus);
+      ~Horus();
+
+      std::string getCode();
+      std::string defaultActionString(ChainNameEnum chain);  // Overrides
+
+      uint64_t getPktsCount(int rule_number);
+      uint64_t getBytesCount(int rule_number);
+
+      void flushCounters(int rule_number);
+      void updateTableValue(struct HorusRule horus_key,
+                            struct HorusValue horus_value);
+      void updateMap(const std::map<struct HorusRule, struct HorusValue> &horus);
+
+  private:
+      HorusType type_;
+      std::map<struct HorusRule, struct HorusValue> horus_;
+  };
+
+    class ChainForwarder : public Program {
    public:
     ChainForwarder(const int &index, const ChainNameEnum &direction,
                    Firewall &outer);
@@ -317,6 +341,16 @@ class Firewall : public FirewallBase {
   std::map<ChainNameEnum, Chain> chains_;
   std::vector<Firewall::Program *> ingress_programs;
   std::vector<Firewall::Program *> egress_programs;
+
+  // HORUS optimization enabled by current rule set
+  bool horus_runtime_enabled_ingress_ = false;
+  bool horus_runtime_enabled_egress_ = false;
+
+  bool horus_enabled = true;
+
+  // are we on swap or regular horus program index
+  bool horus_swap_ingress_ = false;
+  bool horus_swap_egress_ = false;
 
   /*==========================
    *METHODS DECLARATION

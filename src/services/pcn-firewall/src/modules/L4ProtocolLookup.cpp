@@ -21,6 +21,7 @@ Firewall::L4ProtocolLookup::L4ProtocolLookup(const int &index,
                                              const ChainNameEnum &direction,
                                              Firewall &outer)
     : Firewall::Program(firewall_code_l4protolookup, index, direction, outer) {
+
   load();
 }
 

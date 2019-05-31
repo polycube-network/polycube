@@ -41,7 +41,7 @@ std::string Firewall::ActionLookup::getCode() {
 
   /*Pointing to the module in charge of updating the conn table and forwarding*/
   replaceAll(noMacroCode, "_CONNTRACKTABLEUPDATE",
-             std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1));
+             std::to_string(ModulesConstants::CONNTRACKTABLEUPDATE));
 
   return noMacroCode;
 }

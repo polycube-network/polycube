@@ -83,8 +83,6 @@ void Firewall::ConntrackTableUpdate::updateTimestampTimer() {
 void Firewall::ConntrackTableUpdate::updateTimestamp() {
   try {
     // TODO CHeck it works fine
-    std::lock_guard<std::mutex> guard(program_mutex_);
-
     // iptables.logger()->debug("get system timestamp");
 
     // get timestamp from system

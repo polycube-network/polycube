@@ -33,6 +33,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
+  uint8_t forwardingDecision;
 } __attribute__((packed));
 
 

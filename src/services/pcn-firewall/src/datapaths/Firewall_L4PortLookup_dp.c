@@ -21,6 +21,11 @@
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
 
+enum {
+  FORWARDING_NOT_SET,
+  FORWARDING_PASS_LABELING
+};
+
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -31,6 +36,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
+  uint8_t forwardingDecision;
 } __attribute__((packed));
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);

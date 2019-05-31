@@ -24,6 +24,11 @@
 #define IPPROTO_TCP 6
 #define IPPROTO_UDP 17
 
+enum {
+  FORWARDING_NOT_SET,
+  FORWARDING_PASS_LABELING
+};
+
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -34,6 +39,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
+  uint8_t forwardingDecision;
 } __attribute__((packed));
 
 struct elements {
@@ -99,6 +105,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pkt->srcIp = ip->saddr;
   pkt->dstIp = ip->daddr;
   pkt->l4proto = ip->protocol;
+  pkt->forwardingDecision = FORWARDING_NOT_SET;
 
   if (ip->protocol == IPPROTO_TCP) {
     struct tcp_hdr *tcp = NULL;
@@ -144,9 +151,16 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_TRACE, "[_CHAIN_NAME] [Parser] sPort: %P dPort: %P ", pkt->srcPort,
           pkt->dstPort);
 
+#if _HORUS_ENABLED
+  pcn_log(ctx, LOG_TRACE, "[_CHAIN_NAME] [Parser] Call HORUS _HORUS ");
+  call_next_program(ctx, _HORUS);
+#endif
+
 #if _CONNTRACK_ENABLED
+  pcn_log(ctx, LOG_TRACE, "[_CHAIN_NAME] [Parser] Call CONNTRACKLABEL _CONNTRACKLABEL ");
   call_next_program(ctx, _CONNTRACKLABEL);
 #else
+  pcn_log(ctx, LOG_TRACE, "[_CHAIN_NAME] [Parser] Call CHAINFORWARDER _CHAINFORWARDER ");
   call_next_program(ctx, _CHAINFORWARDER);
 #endif
 

@@ -68,6 +68,11 @@ enum {
   TIME_WAIT
 };
 
+enum {
+  FORWARDING_NOT_SET,
+  FORWARDING_PASS_LABELING
+};
+
 struct packetHeaders {
   uint32_t srcIp;
   uint32_t dstIp;
@@ -78,6 +83,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
+  uint8_t forwardingDecision;
 } __attribute__((packed));
 
 struct ct_k {
@@ -456,20 +462,30 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 action:
 #if _CONNTRACK_MODE == 1
-  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 1 calling chainforwarder", pkt->connStatus);
   // Manual mode
-  call_next_program(ctx, _CHAINFORWARDER);
+  if (pkt->forwardingDecision == FORWARDING_PASS_LABELING) {
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 1 FORWARDING_PASS_LABELING calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE", pkt->connStatus);
+    call_next_program(ctx, _CONNTRACKTABLEUPDATE);
+  } else {
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 1 calling CHAINFORWARDER _CHAINFORWARDER", pkt->connStatus);
+    call_next_program(ctx, _CHAINFORWARDER);
+  }
   return RX_DROP;
 #elif _CONNTRACK_MODE == 2
   // Automatic mode: if established, forward directly
   pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ");
 
   if (pkt->connStatus == ESTABLISHED) {
-    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling ct table update");
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE");
     call_next_program(ctx, _CONNTRACKTABLEUPDATE);
   } else {
-    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling chain fwd");
-    call_next_program(ctx, _CHAINFORWARDER);
+    if (pkt->forwardingDecision == FORWARDING_PASS_LABELING) {
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 2 FORWARDING_PASS_LABELING calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE", pkt->connStatus);
+      call_next_program(ctx, _CONNTRACKTABLEUPDATE);
+    } else {
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling CHAINFORWARDER _CHAINFORWARDER");
+      call_next_program(ctx, _CHAINFORWARDER);
+    }
   }
   pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Something went wrong.");
   return RX_DROP;

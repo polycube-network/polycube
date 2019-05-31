@@ -44,6 +44,31 @@ std::string Firewall::Parser::getCode() {
     replaceAll(noMacroCode, "_CONNTRACK_ENABLED", std::to_string(0));
   }
 
+  bool * horus_runtime_enabled_;
+  bool * horus_swap_;
+
+  if (getProgramType() == ProgramType::INGRESS) {
+    horus_runtime_enabled_ = &firewall.horus_runtime_enabled_ingress_;
+    horus_swap_ = &firewall.horus_swap_ingress_;
+  } else {
+    horus_runtime_enabled_ = &firewall.horus_runtime_enabled_egress_;
+    horus_swap_ = &firewall.horus_swap_egress_;
+  }
+
+  if (*horus_runtime_enabled_) {
+    replaceAll(noMacroCode, "_HORUS_ENABLED", "1");
+  } else {
+    replaceAll(noMacroCode, "_HORUS_ENABLED", "0");
+  }
+
+  if (*horus_swap_) {
+    replaceAll(noMacroCode, "_HORUS",
+               std::to_string(ModulesConstants::HORUS_INGRESS_SWAP));
+  } else {
+    replaceAll(noMacroCode, "_HORUS",
+               std::to_string(ModulesConstants::HORUS_INGRESS));
+  }
+
   try {
     replaceAll(noMacroCode, "_NR_ELEMENTS",
              std::to_string(FROM_NRULES_TO_NELEMENTS(

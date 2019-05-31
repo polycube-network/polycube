@@ -21,6 +21,7 @@ Firewall::TcpFlagsLookup::TcpFlagsLookup(const int &index,
                                          const ChainNameEnum &direction,
                                          Firewall &outer)
     : Firewall::Program(firewall_code_tcpflagslookup, index, direction, outer) {
+
   load();
 }
 

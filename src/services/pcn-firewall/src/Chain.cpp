@@ -138,10 +138,18 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
   ChainResetCountersOutputJsonObject result;
   try {
     std::vector<Firewall::Program *> *programs;
+
+    bool * horus_runtime_enabled_;
+    bool * horus_swap_;
+
     if (name == ChainNameEnum::INGRESS) {
       programs = &parent_.ingress_programs;
+      horus_runtime_enabled_ = &parent_.horus_runtime_enabled_ingress_;
+      horus_swap_ = &parent_.horus_swap_ingress_;
     } else if (name == ChainNameEnum::EGRESS) {
-       programs = &parent_.egress_programs;
+      programs = &parent_.egress_programs;
+      horus_runtime_enabled_ = &parent_.horus_runtime_enabled_egress_;
+      horus_swap_ = &parent_.horus_swap_egress_;
     } else {
       return result;
     }
@@ -153,12 +161,25 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
     auto actionProgram = dynamic_cast<Firewall::ActionLookup *>(
         programs->at(ModulesConstants::ACTION));
 
+    Firewall::Horus * horusProgram;
+
+    if (*horus_runtime_enabled_) {
+      if (!(*horus_swap_)) {
+        horusProgram = dynamic_cast<Firewall::Horus *>(programs->at(ModulesConstants::HORUS_INGRESS));
+      } else {
+        horusProgram = dynamic_cast<Firewall::Horus *>(programs->at(ModulesConstants::HORUS_INGRESS_SWAP));
+      }
+    }
+
     for (auto cr : rules_) {
       actionProgram->flushCounters(cr->getId());
+      if (*horus_runtime_enabled_){
+        horusProgram->flushCounters(cr->getId());
+      }
     }
 
     dynamic_cast<Firewall::DefaultAction *>(
-        programs->at(ModulesConstants::DEFAULTACTION))->flushCounters(name);
+            programs->at(ModulesConstants::DEFAULTACTION))->flushCounters(name);
 
     counters_.clear();
 
@@ -189,10 +210,17 @@ uint32_t Chain::getNrRules() {
 
 void Chain::updateChain() {
   std::vector<Firewall::Program *> *programs;
+  bool * horus_runtime_enabled_;
+  bool * horus_swap_;
+
   if (name == ChainNameEnum::INGRESS) {
     programs = &parent_.ingress_programs;
+    horus_runtime_enabled_ = &parent_.horus_runtime_enabled_ingress_;
+    horus_swap_ = &parent_.horus_swap_ingress_;
   } else if (name == ChainNameEnum::EGRESS) {
      programs = &parent_.egress_programs;
+    horus_runtime_enabled_ = &parent_.horus_runtime_enabled_egress_;
+    horus_swap_ = &parent_.horus_swap_egress_;
   } else {
     return;
   }
@@ -203,11 +231,11 @@ void Chain::updateChain() {
   // std::lock_guard<std::mutex> lkBpf(parent_.bpfInjectMutex);
   auto start = std::chrono::high_resolution_clock::now();
 
-  int index = 3 + (chainNumber * ModulesConstants::NR_MODULES);
+  int index = ModulesConstants::NR_INITIAL_MODULES + (chainNumber * ModulesConstants::NR_MODULES);
 
   int startingIndex = index;
   Firewall::Program *firstProgramLoaded;
-  std::vector<Firewall::Program *> newProgramsChain(3 + ModulesConstants::NR_MODULES + 2);
+  std::vector<Firewall::Program *> newProgramsChain(ModulesConstants::NR_INITIAL_MODULES + ModulesConstants::NR_MODULES + 1);
   std::map<uint8_t, std::vector<uint64_t>> conntrack_map;
   std::map<struct IpAddr, std::vector<uint64_t>> ipsrc_map;
   std::map<struct IpAddr, std::vector<uint64_t>> ipdst_map;
@@ -215,6 +243,105 @@ void Chain::updateChain() {
   std::map<uint16_t, std::vector<uint64_t>> portdst_map;
   std::map<int, std::vector<uint64_t>> protocol_map;
   std::vector<std::vector<uint64_t>> flags_map;
+
+  std::map<struct HorusRule, struct HorusValue> horus;
+
+
+  /*
+   * HORUS - Homogeneous RUleset analySis
+   *
+   * Horus optimization allows to
+   * a) offload a group of contiguous rules matching on same field
+   * b) match the group of offloaded rules with complexity O(1) - single hashmap lookup
+   * c) dynamically adapting to different groups of rules, matching each
+   *    combination of ipsrc/dst, portsrc/dst, tcpflags
+   * d) dynamically check when the optimization is possible according to current
+   *    ruleset. It means check orthogonality
+   *    of rules before the offloaded group, respect to the group itself.
+   *
+   * each pkt received by the program, is looked-up vs the HORUS HASHMAP.
+   * hit ->
+   *  -DROP action: drop the packet;
+   *  -ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through pipeline
+   * miss ->
+   *  -GOTO all pipeline steps
+   */
+
+  *horus_runtime_enabled_ = false;
+
+  // Apply Horus optimization only if it is enabled
+  if (parent_.horus_enabled) {
+    // if len Chain >= MIN_RULES_HORUS_OPTIMIZATION
+    if (getRuleList().size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+      // calculate horus ruleset
+      horusFromRulesToMap(horus, getRuleList());
+
+      // if horus.size() >= MIN_RULES_HORUS_OPTIMIZATION
+      if (horus.size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+        logger()->info("Horus Optimization ENABLED for this rule-set");
+
+        *horus_runtime_enabled_ = true;
+
+        // SWAP indexes
+        *horus_swap_ = !(*horus_swap_);
+
+        uint8_t horus_index_new = -1;
+        uint8_t horus_index_old = -1;
+
+        // Apply Horus optimization
+
+        // Calculate current new/old indexes
+        if (*horus_swap_) {
+          horus_index_new = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_old = ModulesConstants::HORUS_INGRESS;
+        } else {
+          horus_index_old = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_new = ModulesConstants::HORUS_INGRESS;
+        }
+
+        // Compile and inject program
+
+        std::vector<Firewall::Program *> *prog;
+
+        if (name == ChainNameEnum::INGRESS) {
+          prog = &parent_.ingress_programs;
+        } else if (name == ChainNameEnum::EGRESS) {
+          prog = &parent_.egress_programs;
+        } else {
+          throw std::runtime_error("No ingress/egress chain");
+        }
+
+        Firewall::Horus * horusptr =
+                new Firewall::Horus(horus_index_new, parent_, name, horus);
+        prog->at(horus_index_new) = horusptr;
+
+        auto horusProgram = dynamic_cast<Firewall::Horus *>(
+                programs->at(horus_index_new));
+
+        horusProgram->updateMap(horus);
+
+        auto parserIngress = dynamic_cast<Firewall::Parser *>(programs->at(ModulesConstants::PARSER));
+        parserIngress->reload();
+
+        // Delete old Horus, if present
+
+        if (programs->at(horus_index_old) != nullptr) {
+          delete programs->at(horus_index_old);
+        }
+        programs->at(horus_index_old) = nullptr;
+      }
+    }
+  }
+  if (*horus_runtime_enabled_ == false) {
+    auto parserIngress = dynamic_cast<Firewall::Parser *>(programs->at(ModulesConstants::PARSER));
+    parserIngress->reload();
+
+    // Delete old Horus, if present
+    delete programs->at(ModulesConstants::HORUS_INGRESS);
+    delete programs->at(ModulesConstants::HORUS_INGRESS_SWAP);
+    programs->at(ModulesConstants::HORUS_INGRESS) = nullptr;
+    programs->at(ModulesConstants::HORUS_INGRESS_SWAP) = nullptr;
+  }
 
 
   // calculate bitvectors, and check if no wildcard is present.

@@ -23,6 +23,7 @@ Firewall::DefaultAction::DefaultAction(const int &index,
                                        Firewall &outer)
     : Firewall::Program(firewall_code_defaultaction, index, direction,
                         outer) {
+
   load();
 }
 
@@ -37,7 +38,7 @@ std::string Firewall::DefaultAction::getCode() {
   } else {
     replaceAll(noMacroCode, "_ACTION",
                "call_next_program(ctx, " +
-                   std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1) +
+                   std::to_string(ModulesConstants::CONNTRACKTABLEUPDATE) +
                    "); "
                    "return RX_DROP;");
   }
