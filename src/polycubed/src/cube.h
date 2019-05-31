@@ -52,7 +52,7 @@ class Cube : public BaseCube, public CubeIface {
  public:
   explicit Cube(const std::string &name, const std::string &service_name,
                 PatchPanel &patch_panel_ingress_,
-                PatchPanel &patch_panel_egress_, LogLevel level, CubeType type);
+                PatchPanel &patch_panel_egress_, LogLevel level, CubeType type, bool shadow, bool span);
   virtual ~Cube();
 
   std::shared_ptr<PortIface> add_port(const std::string &name,
@@ -66,6 +66,9 @@ class Cube : public BaseCube, public CubeIface {
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
 
+  const bool get_shadow() const;
+  const bool get_span() const;
+  void set_span(const bool value);
  protected:
   static std::string get_wrapper_code();
   uint16_t allocate_port_id();
@@ -77,6 +80,8 @@ class Cube : public BaseCube, public CubeIface {
   std::map<int, std::shared_ptr<PortIface>> ports_by_index_;
   std::set<uint16_t> free_ports_;  // keeps track of available ports
 
+  bool shadow_;
+  bool span_;
  private:
   // ebpf wrappers
   static const std::string MASTER_CODE;

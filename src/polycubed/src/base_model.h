@@ -46,6 +46,10 @@ class BaseModel {
   Response set_port_peer(const std::string &cube_name,
                          const std::string &port_name,
                          const nlohmann::json &json);
+  Response get_shadow(const std::string &cube_name) const;
+  Response get_span(const std::string &cube_name) const;
+  Response set_span(const std::string &cube_name,
+                      const nlohmann::json &json);
 };
 
 }  // namespace polycube::polycubed

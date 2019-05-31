@@ -45,7 +45,7 @@ bool ConcreteFactory::IsBaseModel(
   if (tree_names_.size() == 1) {
     auto leaf = tree_names_.front();
     if (leaf == "type" || leaf == "uuid" || leaf == "loglevel" ||
-        leaf == "parent" || leaf == "service-name") {
+        leaf == "parent" || leaf == "service-name" || leaf == "shadow" || leaf == "span") {
       return true;
     }
   } else if (tree_names_.size() == 2) {
@@ -155,6 +155,22 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
       read_handler_ = [local_core](const std::string &cube_name,
                                    const ListKeyValues &keys) -> Response {
         return local_core->base_model()->get_service(cube_name);
+      };
+    } else if (leaf == "shadow") {
+      read_handler_ = [local_core](const std::string &cube_name,
+                                   const ListKeyValues &keys) -> Response {
+        return local_core->base_model()->get_shadow(cube_name);
+      };
+    } else if (leaf == "span") {
+      read_handler_ = [local_core](const std::string &cube_name,
+                                   const ListKeyValues &keys) -> Response {
+        return local_core->base_model()->get_span(cube_name);
+      };
+
+      replace_handler_ = [local_core](
+          const std::string &cube_name, const nlohmann::json &json,
+          const ListKeyValues &keys, Endpoint::Operation op) -> Response {
+        return local_core->base_model()->set_span(cube_name, json);
       };
     } else {
       throw std::runtime_error("unkown element found in base datamodel:" + leaf);

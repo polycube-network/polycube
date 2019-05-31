@@ -48,6 +48,9 @@ class Cube : public BaseCube {
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
 
+  const bool get_shadow() const;
+  const bool get_span() const;
+  void set_span(const bool value);
  private:
   std::shared_ptr<CubeIface> cube_;  // pointer to the cube in polycubed
   packet_in_cb handle_packet_in;
@@ -172,6 +175,21 @@ void Cube<PortType>::set_conf(const nlohmann::json &conf) {
 template <class PortType>
 nlohmann::json Cube<PortType>::to_json() const {
   return cube_->to_json();
+}
+
+template <class PortType>
+const bool Cube<PortType>::get_shadow() const {
+  return cube_->get_shadow();
+}
+
+template <class PortType>
+const bool Cube<PortType>::get_span() const {
+  return cube_->get_span();
+}
+
+template <class PortType>
+void Cube<PortType>::set_span(const bool value) {
+  return cube_->set_span(value);
 }
 
 }  // namespace service

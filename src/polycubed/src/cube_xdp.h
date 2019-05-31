@@ -47,7 +47,7 @@ class CubeXDP : public Cube {
   explicit CubeXDP(const std::string &name, const std::string &service_name,
                    const std::vector<std::string> &ingress_code,
                    const std::vector<std::string> &egress_code, LogLevel level,
-                   CubeType type);
+                   CubeType type, bool shadow, bool span);
 
   virtual ~CubeXDP();
   int get_attach_flags() const;

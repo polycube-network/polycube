@@ -24,7 +24,7 @@ namespace polycubed {
 
 Cube::Cube(const std::string &name, const std::string &service_name,
            PatchPanel &patch_panel_ingress, PatchPanel &patch_panel_egress,
-           LogLevel level, CubeType type)
+           LogLevel level, CubeType type, bool shadow, bool span)
     : BaseCube(name, service_name, MASTER_CODE, patch_panel_ingress,
                patch_panel_egress, level, type) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
@@ -36,6 +36,9 @@ Cube::Cube(const std::string &name, const std::string &service_name,
   // add free ports
   for (uint16_t i = 0; i < _POLYCUBE_MAX_PORTS; i++)
     free_ports_.insert(i);
+
+  shadow_ = shadow;
+  span_ = span;
 }
 
 Cube::~Cube() {
@@ -74,6 +77,9 @@ nlohmann::json Cube::to_json() const {
   if (ports_json.size() > 0) {
     j["ports"] = ports_json;
   }
+
+  j["shadow"] = shadow_;
+  j["span"] = span_;
 
   return j;
 }
@@ -166,6 +172,18 @@ void Cube::update_forwarding_table(int index, int value) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (forward_chain_)  // is the forward chain still active?
     forward_chain_->update_value(index, value);
+}
+
+const bool Cube::get_shadow() const {
+  return shadow_;
+}
+
+const bool Cube::get_span() const {
+  return span_;
+}
+
+void Cube::set_span(const bool value) {
+  span_ = value;
 }
 
 const std::string Cube::MASTER_CODE = R"(
