@@ -1,0 +1,53 @@
+module monitor {
+  yang-version 1.1;
+  namespace "http://polycube.network/monitor";
+  prefix "monitor";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Network Monitor";
+
+  polycube-base:service-description "Monitor Service";
+  polycube-base:service-version "2.0";
+  polycube-base:service-name "monitor";
+  polycube-base:service-min-kernel-version "4.11.0";
+
+  uses "polycube-transparent-base:transparent-base-yang-module";
+
+  container stats {
+    description "Statistics for Network Monitor";
+    config false;
+
+    leaf tcpattemptfails {
+        type uint64;
+        description "TCP attempt fails";
+        config false;
+    }
+
+    leaf tcpoutrsts {
+        type uint64;
+        description "TCP sent with RST flag";
+        config false;
+    }
+
+    leaf deliverratio {
+        type uint64;
+        description "pkts delivered to application over total number";
+        config false;
+    }
+
+    leaf responseratio {
+        type uint64;
+        description "pkts request to send over received pkts";
+        config false;
+    }
+
+    leaf lastupdate {
+        type uint64;
+        description "last update (time from epoch in milliseconds)";
+        config false;
+    }
+  }
+}

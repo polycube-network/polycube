@@ -1,0 +1,944 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "x-yang-path": "/input/monitor.yang",
+        "version": "1.0.0",
+        "x-service-name": "monitor",
+        "description": "monitor API generated from monitor.yang",
+        "title": "monitor API"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "schemes": [
+        "http"
+    ],
+    "tags": [
+        {
+            "name": "monitor"
+        }
+    ],
+    "paths": {
+        "/monitor/{name}/": {
+            "put": {
+                "responses": {
+                    "201": {
+                        "description": "OK: Resource replaced successfully"
+                    },
+                    "404": {
+                        "description": "Resource not found"
+                    },
+                    "204": {
+                        "description": "No content: Resource modified successfully"
+                    },
+                    "400": {
+                        "description": "Bad request: resource not replaced"
+                    }
+                },
+                "description": "Replace operation of resource: monitor",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    },
+                    {
+                        "required": true,
+                        "description": "monitorbody object",
+                        "schema": {
+                            "$ref": "#/definitions/Monitor"
+                        },
+                        "name": "monitor",
+                        "in": "body"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "x-has-default-impl": true,
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Replace monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "replaceMonitorByID"
+            },
+            "delete": {
+                "responses": {
+                    "404": {
+                        "description": "Resource not found"
+                    },
+                    "403": {
+                        "description": "Forbidden: User not authorized"
+                    },
+                    "204": {
+                        "description": "No content: Resource deleted"
+                    }
+                },
+                "description": "Delete operation of resource: monitor",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "x-has-default-impl": true,
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Delete monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "deleteMonitorByID"
+            },
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Created: Successful operation"
+                    },
+                    "404": {
+                        "description": "Not found: Resource not created"
+                    },
+                    "403": {
+                        "description": "Forbidden: User not authorized"
+                    },
+                    "409": {
+                        "description": "Conflict: Resource not created"
+                    }
+                },
+                "description": "Create operation of resource: monitor",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    },
+                    {
+                        "required": true,
+                        "description": "monitorbody object",
+                        "schema": {
+                            "$ref": "#/definitions/Monitor"
+                        },
+                        "name": "monitor",
+                        "in": "body"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "x-has-default-impl": true,
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Create monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "createMonitorByID"
+            },
+            "patch": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful update"
+                    },
+                    "404": {
+                        "description": "Not found: Resource not found"
+                    },
+                    "403": {
+                        "description": "Forbidden: User not authorized"
+                    },
+                    "204": {
+                        "description": "No content: Successful update"
+                    }
+                },
+                "description": "Update operation of resource: monitor",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    },
+                    {
+                        "required": true,
+                        "description": "monitorbody object",
+                        "schema": {
+                            "$ref": "#/definitions/Monitor"
+                        },
+                        "name": "monitor",
+                        "in": "body"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Update monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "updateMonitorByID"
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/Monitor"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: monitor",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorByID"
+            }
+        },
+        "/monitor/": {
+            "patch": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful update"
+                    },
+                    "404": {
+                        "description": "Not found: Resource not found"
+                    },
+                    "403": {
+                        "description": "Forbidden: User not authorized"
+                    },
+                    "204": {
+                        "description": "No content: Successful update"
+                    }
+                },
+                "description": "Update operation of resource: monitor",
+                "parameters": [
+                    {
+                        "required": true,
+                        "description": "monitorbody object",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/Monitor"
+                            },
+                            "type": "array"
+                        },
+                        "name": "monitor",
+                        "in": "body"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Update monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "updateMonitorListByID"
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/Monitor"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: monitor",
+                "parameters": [],
+                "produces": [
+                    "application/json"
+                ],
+                "x-has-default-impl": true,
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read monitor by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorListByID"
+            }
+        },
+        "/monitor/{name}/uuid/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "string",
+                            "description": "UUID of the Cube",
+                            "format": "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: uuid",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read uuid by ID",
+                "x-is-base-datamodel": true,
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorUuidByID"
+            }
+        },
+        "/monitor/{name}/type/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "x-is-enum": "true",
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "description": "Type of the Cube (TC, XDP_SKB, XDP_DRV)",
+                            "default": "TC",
+                            "enum": [
+                                "TC",
+                                "XDP_SKB",
+                                "XDP_DRV"
+                            ],
+                            "type": "string",
+                            "example": "TC"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: type",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read type by ID",
+                "x-is-base-datamodel": true,
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorTypeByID"
+            }
+        },
+        "/monitor/{name}/service-name/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "string",
+                            "example": "helloworld"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: service-name",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read service-name by ID",
+                "x-is-base-datamodel": true,
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorServiceNameByID"
+            }
+        },
+        "/monitor/{name}/loglevel/": {
+            "patch": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful update"
+                    },
+                    "404": {
+                        "description": "Not found: Resource not found"
+                    },
+                    "403": {
+                        "description": "Forbidden: User not authorized"
+                    },
+                    "204": {
+                        "description": "No content: Successful update"
+                    }
+                },
+                "description": "Update operation of resource: loglevel",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    },
+                    {
+                        "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                        "required": true,
+                        "name": "loglevel",
+                        "x-is-enum": "true",
+                        "in": "body",
+                        "schema": {
+                            "default": "INFO",
+                            "enum": [
+                                "TRACE",
+                                "DEBUG",
+                                "INFO",
+                                "WARN",
+                                "ERR",
+                                "CRITICAL",
+                                "OFF"
+                            ],
+                            "type": "string",
+                            "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                            "example": "INFO"
+                        }
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Update loglevel by ID",
+                "x-is-base-datamodel": true,
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "updateMonitorLoglevelByID"
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "x-is-enum": "true",
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "default": "INFO",
+                            "enum": [
+                                "TRACE",
+                                "DEBUG",
+                                "INFO",
+                                "WARN",
+                                "ERR",
+                                "CRITICAL",
+                                "OFF"
+                            ],
+                            "type": "string",
+                            "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                            "example": "INFO"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: loglevel",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read loglevel by ID",
+                "x-is-base-datamodel": true,
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorLoglevelByID"
+            }
+        },
+        "/monitor/{name}/stats/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/Stats"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: stats",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read stats by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsByID"
+            }
+        },
+        "/monitor/{name}/stats/tcpattemptfails/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "integer",
+                            "description": "TCP attempt fails",
+                            "format": "uint64"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: tcpattemptfails",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read tcpattemptfails by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsTcpattemptfailsByID"
+            }
+        },
+        "/monitor/{name}/stats/tcpoutrsts/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "integer",
+                            "description": "TCP sent with RST flag",
+                            "format": "uint64"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: tcpoutrsts",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read tcpoutrsts by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsTcpoutrstsByID"
+            }
+        },
+        "/monitor/{name}/stats/deliverratio/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "integer",
+                            "description": "pkts delivered to application over total number",
+                            "format": "uint64"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: deliverratio",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read deliverratio by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsDeliverratioByID"
+            }
+        },
+        "/monitor/{name}/stats/responseratio/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "integer",
+                            "description": "pkts request to send over received pkts",
+                            "format": "uint64"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: responseratio",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read responseratio by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsResponseratioByID"
+            }
+        },
+        "/monitor/{name}/stats/lastupdate/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "OK: Successful operation",
+                        "schema": {
+                            "readOnly": true,
+                            "type": "integer",
+                            "description": "last update (time from epoch in milliseconds)",
+                            "format": "uint64"
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed: Use POST to invoke operations"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "description": "Read operation of resource: lastupdate",
+                "parameters": [
+                    {
+                        "description": "ID of name",
+                        "required": true,
+                        "in": "path",
+                        "type": "string",
+                        "name": "name"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitor"
+                ],
+                "summary": "Read lastupdate by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "readMonitorStatsLastupdateByID"
+            }
+        }
+    },
+    "definitions": {
+        "Stats": {
+            "properties": {
+                "tcpattemptfails": {
+                    "readOnly": true,
+                    "type": "integer",
+                    "description": "TCP attempt fails",
+                    "format": "uint64"
+                },
+                "tcpoutrsts": {
+                    "readOnly": true,
+                    "type": "integer",
+                    "description": "TCP sent with RST flag",
+                    "format": "uint64"
+                },
+                "deliverratio": {
+                    "readOnly": true,
+                    "type": "integer",
+                    "description": "pkts delivered to application over total number",
+                    "format": "uint64"
+                },
+                "responseratio": {
+                    "readOnly": true,
+                    "type": "integer",
+                    "description": "pkts request to send over received pkts",
+                    "format": "uint64"
+                },
+                "lastupdate": {
+                    "readOnly": true,
+                    "type": "integer",
+                    "description": "last update (time from epoch in milliseconds)",
+                    "format": "uint64"
+                }
+            },
+            "x-parent": "Monitor"
+        },
+        "Monitor": {
+            "x-is-list": "true",
+            "x-is-transparent": true,
+            "properties": {
+                "name": {
+                    "x-is-cube-name": true,
+                    "x-is-key": true,
+                    "description": "Name of the monitor service",
+                    "x-has-default-impl": true,
+                    "x-is-required": true,
+                    "type": "string",
+                    "example": "monitor1"
+                },
+                "uuid": {
+                    "x-is-base-datamodel": true,
+                    "readOnly": true,
+                    "type": "string",
+                    "description": "UUID of the Cube",
+                    "format": "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                },
+                "type": {
+                    "description": "Type of the Cube (TC, XDP_SKB, XDP_DRV)",
+                    "default": "TC",
+                    "enum": [
+                        "TC",
+                        "XDP_SKB",
+                        "XDP_DRV"
+                    ],
+                    "readOnly": true,
+                    "x-is-base-datamodel": true,
+                    "type": "string",
+                    "example": "TC"
+                },
+                "service-name": {
+                    "readOnly": true,
+                    "type": "string",
+                    "example": "helloworld",
+                    "x-is-base-datamodel": true
+                },
+                "loglevel": {
+                    "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                    "default": "INFO",
+                    "enum": [
+                        "TRACE",
+                        "DEBUG",
+                        "INFO",
+                        "WARN",
+                        "ERR",
+                        "CRITICAL",
+                        "OFF"
+                    ],
+                    "x-is-base-datamodel": true,
+                    "type": "string",
+                    "example": "INFO"
+                },
+                "stats": {
+                    "$ref": "#/definitions/Stats"
+                }
+            },
+            "x-parent": "Monitor"
+        }
+    }
+}
