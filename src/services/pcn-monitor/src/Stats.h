@@ -45,4 +45,7 @@ class Stats : public StatsBase {
   /// last update (time from epoch in milliseconds)
   /// </summary>
   uint64_t getLastupdate() override;
+
+ private:
+  static uint64_t count; // used for a dummy counters implementation
 };

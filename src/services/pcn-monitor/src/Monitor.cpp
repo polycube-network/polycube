@@ -15,38 +15,30 @@
 Monitor::Monitor(const std::string name, const MonitorJsonObject &conf)
   : TransparentCube(conf.getBase(), { monitor_code }, {}),
     MonitorBase(name) {
-  logger()->info("Creating Monitor instance");
-  auto value = conf.getStats();
-  addStats(conf.getStats());
+  logger()->debug("Creating Monitor instance");
 }
 
 
 Monitor::~Monitor() {
-  logger()->info("Destroying Monitor instance");
+  logger()->debug("Destroying Monitor instance");
 }
 
 void Monitor::packet_in(polycube::service::Sense sense,
-    polycube::service::PacketInMetadata &md,
-    const std::vector<uint8_t> &packet) {
-    logger()->debug("Packet received");
+  polycube::service::PacketInMetadata &md,
+  const std::vector<uint8_t> &packet) {
+  logger()->debug("Packet received");
 }
 
 std::shared_ptr<Stats> Monitor::getStats() {
-  throw std::runtime_error("Monitor::getStats: Method not implemented");
+  StatsJsonObject sjo;
+  return std::shared_ptr<Stats>(new Stats(*this, sjo));
 }
 
-void Monitor::addStats(const StatsJsonObject &value) {
-  throw std::runtime_error("Monitor::addStats: Method not implemented");
-}
+void Monitor::addStats(const StatsJsonObject &value) {}
 
 // Basic default implementation, place your extension here (if needed)
-void Monitor::replaceStats(const StatsJsonObject &conf) {
-  // call default implementation in base class
-  MonitorBase::replaceStats(conf);
-}
+void Monitor::replaceStats(const StatsJsonObject &conf) {}
 
-void Monitor::delStats() {
-  throw std::runtime_error("Monitor::delStats: method not implemented");
-}
+void Monitor::delStats() {}
 
 
