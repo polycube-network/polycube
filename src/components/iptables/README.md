@@ -5,9 +5,11 @@
 
 For `pcn-iptables` support you should enable `ENABLE_PCN_IPTABLES` flag in CMakeFile.
 ```
-cd polycube/build/
+cd polycube
+mkdir -p build
+cd build
 cmake .. -DENABLE_PCN_IPTABLES=ON
-make && make install
+make && sudo make install
 ```
 
 ## Steps to RUN pcn-iptables
