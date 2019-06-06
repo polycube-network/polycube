@@ -163,7 +163,7 @@ std::shared_ptr<NattingTable> Nat::getNattingTable(
         .dst_ip = utils::ip_string_to_be_uint(internalDst),
         .src_port = htons(internalSport),
         .dst_port = htons(internalDport),
-        .proto = std::stol(proto),
+        .proto = uint8_t(std::stol(proto)),
     };
 
     st_v value = table.get(map_key);
