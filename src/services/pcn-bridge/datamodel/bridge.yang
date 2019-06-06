@@ -1,0 +1,227 @@
+module bridge {
+  yang-version 1.1;
+  namespace "http://polycube.network/bridge";
+  prefix "bridge";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
+
+  import ietf-yang-types { prefix "yang"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube L2 bridge";
+
+  polycube-base:service-description "L2 Bridge Service";
+  polycube-base:service-version "1.0.0";
+  polycube-base:service-name "bridge";
+  polycube-base:service-min-kernel-version "4.11.0";
+
+  uses "polycube-standard-base:standard-base-yang-module" {
+    augment ports {
+      leaf mac {
+        type yang:mac-address;
+        description "MAC address of the port";
+        config true;
+        polycube-base:init-only-config;
+        polycube-base:cli-example "C5:13:2D:36:27:9B";
+      }
+
+      leaf mode {
+        type enumeration {
+          enum access;
+          enum trunk;
+        }
+        default access;
+        description "Type of bridge interface: access/trunk";
+        polycube-base:cli-example "access";
+      }
+
+      container access {
+        description "vlan associated to a port in access mode";
+        leaf vlanid {
+          type uint16;
+          default 1;
+          description "VLAN associated with this interface";
+          polycube-base:cli-example "1";
+        }
+      }
+
+      container trunk {
+        list allowed {
+        description "Allowed vlans";
+          key "vlanid";
+          leaf vlanid {
+            type uint16;
+            description "Allowed vlan";
+            polycube-base:cli-example "1";
+          }
+        }
+        
+        leaf native-vlan-enabled {
+          type boolean;
+          default true;
+          description "Enable/Disable the native vlan feature in this trunk port";
+          polycube-base:cli-example "true";
+         }
+            
+        leaf native-vlan {
+          type uint16;
+          default 1;
+          description "VLAN that is not tagged in this trunk port";
+          polycube-base:cli-example "1";
+        }
+      }
+
+      list stp {
+        key "vlan";
+        description "Per-vlan Spanning Tree Protocol Port Configuration";
+        leaf vlan {
+          type uint16;
+          mandatory true;
+          description "VLAN identifier for this entry";
+          polycube-base:cli-example "1";
+        }
+
+        leaf state {
+          type enumeration {
+            enum disabled;
+            enum blocking;
+            enum listening;
+            enum learning;
+            enum forwarding;
+          }
+          description "STP port state";
+          config false;
+        }
+
+        leaf path-cost {
+          type uint32;
+          default 4;
+          description "STP cost associated with this interface";
+          polycube-base:cli-example "19";
+        }
+
+        leaf port-priority {
+          type uint8;
+          default 128;
+          description "Port priority of this interface";
+          polycube-base:cli-example "128";
+        }
+      }
+
+    }
+  }
+
+  container fdb {
+    leaf aging-time {
+      type uint32;
+      units seconds;
+      default 300;
+      description "Aging time of the filtering database (in seconds)";
+      polycube-base:cli-example "300";
+    }
+
+    list entry {
+      key "vlan mac";
+      description "Entry associated with the filtering database";
+
+      leaf vlan {
+        type uint16;
+        mandatory true;
+        description "VLAN identifier";
+        polycube-base:cli-example "1";
+      }
+
+      leaf mac {
+        type yang:mac-address;
+        mandatory true;
+        description "MAC address of the filtering database entry";
+        polycube-base:cli-example "C5:13:2D:36:27:9B";
+      }
+
+      leaf type {
+        type enumeration {
+          enum static;
+          enum dynamic;
+        }
+        default static;
+        description "Type of filtering entry";
+        config false;
+        polycube-base:cli-example "static | dynamic";
+      }
+
+      leaf port {
+        type string;
+        mandatory true;
+        description "Output port name";
+        polycube-base:cli-example "port2";
+      }
+
+      leaf age {
+        type uint32;
+        units seconds;
+        description "Age of the current filtering database entry";
+        config false;
+      }
+    }
+
+    action flush {
+      description "Flushes the filtering database of the bridge";
+    }
+  }
+
+  leaf stp-enabled {
+    type boolean;
+    default false;
+    description "Enable/Disable the STP protocol of the bridge";
+    polycube-base:cli-example "false";
+  }
+
+  leaf mac {
+    type yang:mac-address;
+    description "Main MAC address of the bridge used by the STP";
+    polycube-base:cli-example "C5:13:2D:36:27:9B";
+  }
+
+  list stp {
+    key "vlan";
+    description "Per-vlan Spanning Tree Protocol Configuration";
+    leaf vlan {
+      type uint16;
+      mandatory true;
+      description "VLAN identifier for this entry";
+      polycube-base:cli-example "1";
+    }
+
+    leaf priority {
+      type uint16;
+      default 32768;
+      description "Bridge priority for STP";
+      polycube-base:cli-example "32768";
+    }
+
+    leaf forward-delay {
+      type uint32;
+      units seconds;
+      default 10;
+      description "Delay used by STP bridges for port state transition";
+      polycube-base:cli-example "10";
+    }
+
+    leaf hello-time {
+      type uint32;
+      units seconds;
+      default 2;
+      description "Interval between transmissions of BPDU messages";
+      polycube-base:cli-example "2";
+    }
+
+    leaf max-message-age {
+      type uint32;
+      units seconds;
+      default 20;
+      description "Maximum age of a BPDU";
+      polycube-base:cli-example "20";
+    }
+  }
+}

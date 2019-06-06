@@ -239,8 +239,8 @@ const std::string CubeXDP::CUBEXDP_HELPERS = R"(
 // for some reason vlan_hdr is not defined in uapi/linux/if_vlan.h, it is
 // a short structure hence define it here
 struct vlan_hdr {
-	__be16	h_vlan_TCI;
-	__be16	h_vlan_encapsulated_proto;
+  __be16  h_vlan_TCI;
+  __be16  h_vlan_encapsulated_proto;
 };
 
 static __always_inline
@@ -254,18 +254,19 @@ bool pcn_is_vlan_present(struct xdp_md *pkt) {
   uint16_t h_proto;
   nh_off = sizeof(*eth);
 
-  if (data + nh_off  > data_end)
+  if (data + nh_off > data_end)
     return false;
 
   h_proto = eth->h_proto;
   if (h_proto == htons(ETH_P_8021Q) || h_proto == htons(ETH_P_8021AD)) {
     return true;
   }
+
   return false;
 }
 
 static __always_inline
-int pcn_get_vlan_id(struct xdp_md *pkt, uint16_t *vlan_id, uint16_t *eth_proto) {
+int pcn_get_vlan_id(struct xdp_md *pkt) {
   void* data_end = (void*)(long)pkt->data_end;
   void* data = (void*)(long)pkt->data;
 
@@ -278,32 +279,53 @@ int pcn_get_vlan_id(struct xdp_md *pkt, uint16_t *vlan_id, uint16_t *eth_proto) 
     return -1;
 
   h_proto = eth->h_proto;
-  if (h_proto == htons(ETH_P_8021Q) || h_proto == htons(ETH_P_8021AD)) {
-    struct vlan_hdr *vhdr;
-    vhdr = data + nh_off;
+  if (h_proto != htons(ETH_P_8021Q) && h_proto == htons(ETH_P_8021AD))
+    return -1;
 
-    nh_off += sizeof(struct vlan_hdr);
+  struct vlan_hdr *vhdr;
+  vhdr = data + nh_off;
 
-    if (data + nh_off > data_end)
-      return -1;
+  nh_off += sizeof(struct vlan_hdr);
 
-    *vlan_id = ntohs(vhdr->h_vlan_TCI) & 0x0fff;
-    h_proto = vhdr->h_vlan_encapsulated_proto;
-    *eth_proto = bpf_ntohs(h_proto);
-    //bpf_trace_printk("1-Found VLAN TAG: %d and eth_proto: 0x%x\n", *vlan_id, ntohs(h_proto));
-  }
+  if (data + nh_off > data_end)
+    return -1;
 
-  //TODO: Handle double tagged packets
-
-  return 0;
+  // TODO: Handle double tagged packets
+  return ntohs(vhdr->h_vlan_TCI) & 0x0fff;
 }
 
 static __always_inline
-uint8_t pcn_pop_vlan_tag(struct xdp_md *pkt) {
+int pcn_get_vlan_proto(struct xdp_md *pkt) {
   void* data_end = (void*)(long)pkt->data_end;
   void* data = (void*)(long)pkt->data;
 
-  //bpf_trace_printk("POP Vlan Tag\n");
+  struct ethhdr *eth = data;
+  uint64_t nh_off = 0;
+  uint16_t h_proto;
+
+  nh_off = sizeof(*eth);
+  if (data + nh_off  > data_end)
+    return -1;
+
+  h_proto = eth->h_proto;
+  if (h_proto != htons(ETH_P_8021Q) && h_proto != htons(ETH_P_8021AD))
+    return -1;
+
+  struct vlan_hdr *vhdr;
+  vhdr = data + nh_off;
+
+  nh_off += sizeof(struct vlan_hdr);
+
+  if (data + nh_off > data_end)
+   return -1;
+
+  return bpf_ntohs(vhdr->h_vlan_encapsulated_proto);
+}
+
+static __always_inline
+int pcn_vlan_pop_tag(struct xdp_md *pkt) {
+  void* data_end = (void*)(long)pkt->data_end;
+  void* data = (void*)(long)pkt->data;
 
   struct ethhdr *old_eth = data;
   struct ethhdr *new_eth;
@@ -312,8 +334,8 @@ uint8_t pcn_pop_vlan_tag(struct xdp_md *pkt) {
 
   nh_off = sizeof(*old_eth);
 
-  if (data + nh_off  > data_end)
-    return false;
+  if (data + nh_off > data_end)
+    return -1;
 
   h_proto = old_eth->h_proto;
   if (h_proto == htons(ETH_P_8021Q) || h_proto == htons(ETH_P_8021AD)) {
@@ -353,15 +375,13 @@ uint8_t pcn_pop_vlan_tag(struct xdp_md *pkt) {
   }
 
   /* TODO: Should I handle double VLAN tagged packet */
-  return 1; //ERROR
+  return -1; //ERROR
 }
 
 static __always_inline
-uint8_t pcn_push_vlan_tag(struct xdp_md *pkt, u16 eth_proto, u32 vlan_id) {
+int pcn_vlan_push_tag(struct xdp_md *pkt, u16 eth_proto, u32 vlan_id) {
   void* data = (void*)(long)pkt->data;
   void* data_end = (void*)(long)pkt->data_end;
-
-  //bpf_trace_printk("PUSH Vlan Tag: %d and eth_proto: 0x%x\n", vlan_id, ntohs(eth_proto));
 
   struct ethhdr *old_eth = data;
   struct ethhdr *new_eth;
@@ -372,7 +392,7 @@ uint8_t pcn_push_vlan_tag(struct xdp_md *pkt, u16 eth_proto, u32 vlan_id) {
   nh_off = sizeof(*old_eth);
 
   if (data + nh_off  > data_end)
-    return 1;
+    return -1;
 
   __be16 vlan_proto = htons(eth_proto);
   if(vlan_proto != htons(ETH_P_8021Q) && vlan_proto != htons(ETH_P_8021AD)) {
@@ -380,7 +400,7 @@ uint8_t pcn_push_vlan_tag(struct xdp_md *pkt, u16 eth_proto, u32 vlan_id) {
   }
 
   if (bpf_xdp_adjust_head(pkt, 0 - (int)sizeof(struct vlan_hdr)))
-    return 1; //ERROR
+    return -1; //ERROR
 
   data = (void *)(long)pkt->data;
 
@@ -389,17 +409,17 @@ uint8_t pcn_push_vlan_tag(struct xdp_md *pkt, u16 eth_proto, u32 vlan_id) {
   new_eth = data;
   nh_off = sizeof(*new_eth);
   if (data + nh_off  > data_end)
-    return 1; //ERROR
+    return -1; //ERROR
 
   vhdr = data + sizeof(*new_eth);
   nh_off += sizeof(*vhdr);
   if (data + nh_off  > data_end)
-    return 1; //ERROR
+    return -1; //ERROR
 
   old_eth = data + sizeof(*vhdr);
   nh_off += sizeof(*old_eth);
   if (data + nh_off  > data_end)
-    return 1; //ERROR
+    return -1; //ERROR
 
   memmove(new_eth, old_eth, sizeof(*new_eth));
   new_eth->h_proto = vlan_proto; //set eth proto to ETH_P_8021Q or ETH_P_8021AD

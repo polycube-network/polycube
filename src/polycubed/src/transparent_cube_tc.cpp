@@ -43,7 +43,7 @@ TransparentCubeTC::~TransparentCubeTC() {
 
 std::string TransparentCubeTC::get_wrapper_code() {
   return TransparentCube::get_wrapper_code() + CubeTC::CUBE_TC_COMMON_WRAPPER +
-         TRANSPARENTCUBETC_WRAPPER;
+         CubeTC::CUBETC_HELPERS + TRANSPARENTCUBETC_WRAPPER;
 }
 
 void TransparentCubeTC::do_compile(int id, uint32_t next, ProgramType type,

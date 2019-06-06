@@ -44,7 +44,7 @@ TransparentCubeXDP::~TransparentCubeXDP() {
 
 std::string TransparentCubeXDP::get_wrapper_code() {
   return TransparentCube::get_wrapper_code() + CubeXDP::CUBEXDP_COMMON_WRAPPER +
-         TRANSPARENTCUBEXDP_WRAPPER;
+         TRANSPARENTCUBEXDP_WRAPPER + CubeXDP::CUBEXDP_HELPERS;
 }
 
 void TransparentCubeXDP::compile(ebpf::BPF &bpf, const std::string &code,
