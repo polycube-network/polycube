@@ -1,8 +1,6 @@
 pcn-iptables: An iptables clone based on eBPF
 =============================================
 
-**Disclaimer**: this guide is still a draft
-
 Polycube comes with ``iptables`` application (in brief ``pcn-iptables``) that provides an iptables clone, with compatible syntax and semantic.
 The backend is based on `eBPF` programs, more efficient algorithms and runtime optimizations.
 The frontend provides same iptables CLI, users can setup security policies using same syntax.
@@ -13,7 +11,7 @@ Supported features
 Currently supported features:
 
 - Support for ``INPUT``, ``OUTPUT``, ``FORWARD`` chains
-- Support for ``ip``, ``protocol``, ``ports``, ``tcp flags``
+- Support for ``ip``, ``protocol``, ``ports``, ``tcp flags``, ``interfaces``
 - Support for ``connection tracking``
 - Support for bpf ``TC`` and ``XDP`` mode
 
@@ -25,6 +23,8 @@ Detailed supported parameters
 - ``--sport`` source port
 - ``--dport`` destination port
 - ``--tcpflags`` tcp flags
+- ``-i`` input interface
+- ``-o`` output interface
 - ``-m conntrack --ctstate`` conntrack module
 
 Detailed supported targets
@@ -46,20 +46,40 @@ Limitations
 ^^^^^^^^^^^
 
 - No support for multiple chains
-- No support for ``-i`` ``-o`` interfaces
 - No support for ``SNAT``, ``DNAT``, ``MASQUESRADE``
 - ``-S`` ``-L`` generate an output slightly different from iptables
 
 Install
 -------
 
-For ``pcn-iptables`` support you should enable ``ENABLE_PCN_IPTABLES`` flag in CMakeFile.
+Prerequisites
+^^^^^^^^^^^^^
+
+pcn-iptables comes as a component of polycube framework.
+Refer to :doc:`polycube install guide<../../../installation>` for dependencies, kernel requirements and basic checkout and install guide.
+
+Install Steps
+^^^^^^^^^^^^^
+
+To compile and install ``pcn-iptables``, you should enable the ``ENABLE_PCN_IPTABLES`` flag in the polycube CMakeFile, which is set to ``OFF`` by default;
+this allows to compile the customized version of ``iptables`` used to translate commands, and install in the system pcn-iptables-init pcn-iptables and pcn-iptables-clean utils.
+
+Note:
+The ``ENABLE_SERVICE_IPTABLES`` flag, which is set to ``ON`` by default, is used to compile and install the ``libpcn-iptables.so`` service (like other polycube services: bridge, router, ..).
+This flag is required to be enabled as well, but it comes by default.
+
 ::
 
-        cd polycube/build/
-        cmake .. -DENABLE_PCN_IPTABLES=ON
-        make && make install
 
+        cd polycube
+
+        # hint: ensure git submodules are updated
+        # git submodule update --init --recursive
+
+        mkdir -p build
+        cd build
+        cmake .. -DENABLE_PCN_IPTABLES=ON
+        make && sudo make install
 
 Run
 ---
@@ -128,5 +148,20 @@ XDP mode
 Limitations
 ^^^^^^^^^^^
 
-- It requires your network interfaces to support XDP Native mode
-- If any interface is not supporting XDP, on such interface traffic is not filtered
+- pcn-iptables operates only on interfaces that support XDP native mode
+- traffic is not filtered on interfaces that support only eBPF TC programs.
+
+pcn-iptables components
+-----------------------
+
+iptables submodule
+^^^^^^^^^^^^^^^^^^
+
+A customized fork of iptables is included as submodule under :scm_web:`src/components/iptables/iptables <src/components/iptables>`.
+We customized this version of iptables in order not to inject iptables command into netfilter, but convert them, after a validation step, into polycube syntax.
+
+scripts folder
+^^^^^^^^^^^^^^
+
+Scripts are used as a glue logic to make pcn-iptables run. Main purpose is initialize, cleanup and run pcn-iptables, pass pcn-iptables parameters through iptables (in charge of converting them), then pass converted commands to pcn-iptables service.
+Scripts are installed under ``/usr/local/bin``.
