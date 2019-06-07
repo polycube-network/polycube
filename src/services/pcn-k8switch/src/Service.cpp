@@ -325,7 +325,7 @@ void Service::updateKernelServiceMap() {
   // In doesn't indicate a real backend
   backend value{
       .ip = utils::ip_string_to_be_uint(getVip()),
-      .port = consistent_array.size(),
+      .port = uint8_t(consistent_array.size()),
       .proto = 0,
   };
   // logger()->trace("Setting Service map with key: {0} and value: {1}",
