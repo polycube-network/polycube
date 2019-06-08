@@ -32,6 +32,7 @@ class Port::impl {
   impl(Port &op);
   ~impl();
   void send_packet_out(EthernetII &packet, bool recirculate);
+  void send_packet_ns(EthernetII &packet);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);
@@ -104,6 +105,10 @@ void Port::impl::send_packet_out(EthernetII &packet, bool recirculate) {
   port_->send_packet_out(packet.serialize(), recirculate);
 }
 
+void Port::impl::send_packet_ns(EthernetII &packet) {
+  port_->send_packet_ns(packet.serialize());
+}
+
 PortStatus Port::impl::get_status() const {
   return port_->get_status();
 }
@@ -127,6 +132,10 @@ Port::~Port() {}
 
 void Port::send_packet_out(EthernetII &packet, bool recirculate) {
   return pimpl_->send_packet_out(packet, recirculate);
+}
+
+void Port::send_packet_ns(EthernetII &packet) {
+  return pimpl_->send_packet_ns(packet);
 }
 
 int Port::index() const {

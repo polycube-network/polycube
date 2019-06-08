@@ -40,6 +40,7 @@ class Port {
   Port(std::shared_ptr<PortIface> port);
   ~Port();
   void send_packet_out(EthernetII &packet, bool recirculate = false);
+  void send_packet_ns(EthernetII &packet);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);

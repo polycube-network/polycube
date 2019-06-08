@@ -42,6 +42,7 @@ class PortIface {
  public:
   virtual void send_packet_out(const std::vector<uint8_t> &packet,
                                bool recirculate = false) = 0;
+  virtual void send_packet_ns(const std::vector<uint8_t> &packet) = 0;
   virtual uint16_t index() const = 0;
   virtual bool operator==(const PortIface &rhs) const = 0;
   virtual std::string name() const = 0;

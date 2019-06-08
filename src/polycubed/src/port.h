@@ -70,6 +70,7 @@ class Port : public polycube::service::PortIface, public PeerIface {
   const std::string &peer() const;
   void send_packet_out(const std::vector<uint8_t> &packet,
                        bool recirculate = false);
+  void send_packet_ns(const std::vector<uint8_t> &packet);
   PortStatus get_status() const;
   PortType get_type() const;
 

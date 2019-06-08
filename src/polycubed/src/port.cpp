@@ -23,6 +23,8 @@
 #include "polycubed_core.h"
 extern polycube::polycubed::PolycubedCore *core;
 
+const std::string prefix_port = "ns_port_";
+
 namespace polycube {
 namespace polycubed {
 
@@ -197,6 +199,12 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
     module = peer_port_->get_index();
   }
   c.send_packet_to_cube(module, port, packet);
+}
+
+void Port::send_packet_ns(const std::vector<uint8_t> &packet) {
+  std::string name_ns_port = prefix_port + name_;
+  std::shared_ptr<PortIface> port_ns = parent_.get_port(name_ns_port);
+  port_ns->send_packet_out(packet);
 }
 
 void Port::update_indexes() {
