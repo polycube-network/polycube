@@ -133,6 +133,9 @@ void Veth::remove() {
   if (!link)
     link = rtnl_link_get_by_name(link_cache, peerB_.get_name().c_str());
 
+  if (!link)
+    throw std::runtime_error("Veth::remove - veth not found");
+
   if (rtnl_link_delete(sk, link) < 0) {
     nl_close(sk);
     throw std::runtime_error("Veth::remove - Unable to remove veth");
