@@ -80,6 +80,17 @@ void VethPeer::set_ip(const std::string &ip, const int prefix) {
   }
 }
 
+void VethPeer::set_ipv6(const std::string &ipv6) {
+  if (!ns_.empty()) {
+    /* exec set_iface_ipv6 into namespace */
+    std::function<void()> doThis = [&]{Netlink::getInstance().set_iface_ipv6(name_, ipv6);};
+    Namespace namespace_ = Namespace::open(ns_);
+    namespace_.execute(doThis);
+  } else {
+    Netlink::getInstance().set_iface_ipv6(name_, ipv6);
+  }
+}
+
 /* Class Veth */
 Veth Veth::create(const std::string &peerA, const std::string &peerB) {
   struct rtnl_link *link;
