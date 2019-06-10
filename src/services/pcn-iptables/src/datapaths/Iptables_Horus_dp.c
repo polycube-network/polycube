@@ -30,7 +30,7 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+} __attribute__((packed));
 
 struct horusKey {
 #if _SRCIP
@@ -69,14 +69,13 @@ enum {
 
 BPF_TABLE("extern", int, struct packetHeaders, packet, 1);
 
-// TODO 1024 -> const
-BPF_TABLE("hash", struct horusKey, struct horusValue, horusTable, 1024);
+BPF_TABLE("hash", struct horusKey, struct horusValue, horusTable, _MAX_RULE_SIZE_FOR_HORUS);
 
 BPF_TABLE("extern", int, int, forwardingDecision, 1);
 
 // Per-CPU maps used to keep counter of HORUS rules
-BPF_TABLE("percpu_array", int, u64, pkts_horus, 1024);
-BPF_TABLE("percpu_array", int, u64, bytes_horus, 1024);
+BPF_TABLE("percpu_array", int, u64, pkts_horus, _MAX_RULE_SIZE_FOR_HORUS);
+BPF_TABLE("percpu_array", int, u64, bytes_horus, _MAX_RULE_SIZE_FOR_HORUS);
 
 static __always_inline void incrementHorusCounters(u32 ruleID, u32 bytes) {
   u64 *value;
@@ -133,18 +132,18 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   struct horusValue *value;
   value = horusTable.lookup(&key);
 
-  pcn_log(ctx, LOG_DEBUG, "HORUS key: %x. pkt: %x", key.srcIp, pkt->srcIp);
+  pcn_log(ctx, LOG_DEBUG, "Horus srcIp: %I dstIp: %I", pkt->srcIp, pkt->dstIp);
   if (value == NULL) {
     // Miss, goto pipleline
     goto PIPELINE;
   } else {
     // Independently from the final action (ACCEPT or DROP)
     // I have to update the counters
-    if (value->ruleID <= 1024) {
+    if (value->ruleID < _MAX_RULE_SIZE_FOR_HORUS) {
       pcn_log(ctx, LOG_DEBUG, "HORUS RuleID: %d", value->ruleID);
       incrementHorusCounters(value->ruleID, md->packet_len);
     } else {
-      pcn_log(ctx, LOG_DEBUG, "HORUS RuleID is greater than 1024");
+      pcn_log(ctx, LOG_DEBUG, "HORUS RuleID is greater than _MAX_RULE_SIZE_FOR_HORUS");
       goto PIPELINE;
     }
 

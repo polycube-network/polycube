@@ -131,6 +131,9 @@ std::string Iptables::Horus::getCode() {
   replaceAll(no_macro_code, "_CONNTRACK_LABEL_INGRESS",
              std::to_string(ModulesConstants::CONNTRACKLABEL_INGRESS));
 
+  replaceAll(no_macro_code, "_MAX_RULE_SIZE_FOR_HORUS",
+             std::to_string(HorusConst::MAX_RULE_SIZE_FOR_HORUS));
+
   if (program_type_ == ProgramType::INGRESS) {
     replaceAll(no_macro_code, "call_bpf_program", "call_ingress_program");
   } else if (program_type_ == ProgramType::EGRESS) {
@@ -224,7 +227,7 @@ void Iptables::Horus::updateTableValue(struct HorusRule horus_key,
   }
 
   char buffer[2 * sizeof(uint32_t) +
-              2 * sizeof(uint16_t) /*+ sizeof(uint8_t)*/] = {0};
+              2 * sizeof(uint16_t) + sizeof(uint8_t)] = {0};
   auto table = iptables_.get_raw_table("horusTable", index_);
   table.set(key.toData(buffer), &horus_value);
 }
