@@ -9,7 +9,7 @@ cd polycube
 mkdir -p build
 cd build
 cmake .. -DENABLE_PCN_IPTABLES=ON
-make && sudo make install
+make -j`nproc` && sudo make install
 ```
 
 ## Steps to RUN pcn-iptables
@@ -18,7 +18,7 @@ make && sudo make install
 
 ```
 # Start polycubed, in other terminal (or background)
-sudo polycubed
+sudo polycubed &
 # run pcn-iptables-init.
 pcn-iptables-init
 ```
@@ -43,6 +43,10 @@ pcn-iptables -P FORWARD DROP # set default policy for FORWARD chain
 ```
 # run pcn-iptables-clean
 pcn-iptables-clean
+
+Validate it, if clean up successful:
+# Execute pcn-iptables -S and you should receive "No cube found named pcn-iptables"
+pcn-iptables -S
 ```
 
 
