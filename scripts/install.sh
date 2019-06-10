@@ -96,13 +96,15 @@ echo "Install pistache"
 cd $WORKDIR
 set +e
 if [ ! -d pistache ]; then
-  git clone https://github.com/oktal/pistache.git --depth=1
+  git clone https://github.com/oktal/pistache.git
 fi
 
 cd pistache
+# use last known working version
+git checkout 117db02eda9d63935193ad98be813987f6c32b33
 git submodule update --init
 mkdir -p build && cd build
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_SSL=ON ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_USE_SSL=ON ..
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
 
