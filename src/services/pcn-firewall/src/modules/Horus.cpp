@@ -69,7 +69,7 @@ Firewall::Horus::Horus(
 
 Firewall::Horus::~Horus() {}
 
-std::string Firewall::Horus::defaultActionString(ChainNameEnum chain) {
+std::string Firewall::Horus::defaultActionString() {
   return "";
 }
 

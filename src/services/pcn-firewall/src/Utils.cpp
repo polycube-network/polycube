@@ -551,7 +551,6 @@ void Chain::horusFromRulesToMap(
   struct HorusRule key;
   struct HorusValue value;
 
-//  bool first_rule = true;
   uint64_t set_fields = 0;
 
   // find match pattern for first rule (e.g. 01101 means ips proto ports set)
@@ -587,7 +586,7 @@ bool Chain::conntrackFromRulesToMap(
 
   for (auto const &rule : rules) {
     try {
-      rule_state = ChainRuleConntrackEnum_to_int(rule->getConntrack());
+      ChainRuleConntrackEnum_to_int(rule->getConntrack());
       conntrackRulePresent = true;
     } catch (...) {
     }

@@ -166,8 +166,8 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
   auto actionProgram = dynamic_cast<Firewall::DefaultAction *>(
       programs->at(ModulesConstants::DEFAULTACTION));
 
-  csj.setPkts(actionProgram->getPktsCount(parent.name));
-  csj.setBytes(actionProgram->getBytesCount(parent.name));
+  csj.setPkts(actionProgram->getPktsCount());
+  csj.setBytes(actionProgram->getBytesCount());
 
   return std::make_shared<ChainStats>(parent, csj);
 }

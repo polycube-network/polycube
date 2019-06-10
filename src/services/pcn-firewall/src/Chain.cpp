@@ -179,7 +179,7 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
     }
 
     dynamic_cast<Firewall::DefaultAction *>(
-            programs->at(ModulesConstants::DEFAULTACTION))->flushCounters(name);
+            programs->at(ModulesConstants::DEFAULTACTION))->flushCounters();
 
     counters_.clear();
 
@@ -285,8 +285,8 @@ void Chain::updateChain() {
         // SWAP indexes
         *horus_swap_ = !(*horus_swap_);
 
-        uint8_t horus_index_new = -1;
-        uint8_t horus_index_old = -1;
+        uint8_t horus_index_new;
+        uint8_t horus_index_old;
 
         // Apply Horus optimization
 
@@ -523,7 +523,6 @@ void Chain::updateChain() {
   if (index == startingIndex) {
     firstProgramLoaded = actionlookup;
   }
-  ++index;
 
   for (auto &rule : rules_) {
     actionlookup->updateTableValue(rule->getId(),
@@ -643,8 +642,7 @@ std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
   defaultRule.setDescription("Default Policy");
   defaultRule.setId(rules_.size());
 
-  rules.push_back(
-      std::shared_ptr<ChainRule>(new ChainRule(*this, defaultRule)));
+  rules.push_back(std::make_shared<ChainRule>(*this, defaultRule));
 
   return rules;
 }
@@ -663,7 +661,7 @@ void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
   if (newRule == nullptr) {
     // Totally useless, but it is needed to avoid the compiler making wrong
     // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
+    throw std::runtime_error("I won't be thrown");
 
   } else if (rules_.size() <= id && newRule != nullptr) {
     rules_.resize(rules_.size() + 1);
@@ -775,7 +773,7 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   if (newRule == nullptr) {
     // Totally useless, but it is needed to avoid the compiler making wrong
     // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
+    throw std::runtime_error("I won't be thrown");
 
   } else if (rules_.size() >= id && newRule != nullptr) {
     rules_.resize(rules_.size() + 1);

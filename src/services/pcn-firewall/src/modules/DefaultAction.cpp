@@ -46,7 +46,7 @@ std::string Firewall::DefaultAction::getCode() {
   return noMacroCode;
 }
 
-uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
+uint64_t Firewall::DefaultAction::getPktsCount() {
   std::string tableName = "pktsCounter";
 
   try {
@@ -61,7 +61,7 @@ uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
   }
 }
 
-uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
+uint64_t Firewall::DefaultAction::getBytesCount() {
   std::string tableName = "bytesCounter";
 
   try {
@@ -77,7 +77,7 @@ uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
   }
 }
 
-void Firewall::DefaultAction::flushCounters(ChainNameEnum chain) {
+void Firewall::DefaultAction::flushCounters() {
   std::string pktsTableName = "pktsCounter";
   std::string bytesTableName = "bytesCounter";
 

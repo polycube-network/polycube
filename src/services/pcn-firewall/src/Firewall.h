@@ -177,14 +177,13 @@ class Firewall : public FirewallBase {
 
   class Horus : public Program {
   public:
-      enum HorusType { HORUS_INGRESS, HORUS_EGRESS };
 
       Horus(const int &index, Firewall &outer, const ChainNameEnum &direction,
               const std::map<struct HorusRule, struct HorusValue> &horus);
       ~Horus();
 
       std::string getCode();
-      std::string defaultActionString(ChainNameEnum chain);  // Overrides
+      std::string defaultActionString();
 
       uint64_t getPktsCount(int rule_number);
       uint64_t getBytesCount(int rule_number);
@@ -195,7 +194,6 @@ class Firewall : public FirewallBase {
       void updateMap(const std::map<struct HorusRule, struct HorusValue> &horus);
 
   private:
-      HorusType type_;
       std::map<struct HorusRule, struct HorusValue> horus_;
   };
 
@@ -305,9 +303,9 @@ class Firewall : public FirewallBase {
     DefaultAction(const int &index, const ChainNameEnum &direction,
                   Firewall &outer);
     ~DefaultAction();
-    uint64_t getPktsCount(ChainNameEnum chain);
-    uint64_t getBytesCount(ChainNameEnum chain);
-    void flushCounters(ChainNameEnum chain);
+    uint64_t getPktsCount();
+    uint64_t getBytesCount();
+    void flushCounters();
     std::string getCode();
   };
 

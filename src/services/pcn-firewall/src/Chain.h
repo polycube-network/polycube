@@ -97,9 +97,6 @@ class Chain : public ChainBase {
 
   void updateChain();
 
-  /*Like getRuleList, but without the last (fake) default rule*/
-  std::vector<std::shared_ptr<ChainRule>> getRealRuleList();
-
   static bool ipFromRulesToMap(
           const uint8_t &type, std::map<struct IpAddr, std::vector<uint64_t>> &ips,
           const std::vector<std::shared_ptr<ChainRule>> &rules);
