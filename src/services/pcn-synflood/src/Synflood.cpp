@@ -15,38 +15,30 @@
 Synflood::Synflood(const std::string name, const SynfloodJsonObject &conf)
   : TransparentCube(conf.getBase(), { synflood_code }, {}),
     SynfloodBase(name) {
-  logger()->info("Creating Synflood instance");
-  auto value = conf.getStats();
-  addStats(conf.getStats());
+  logger()->debug("Creating Synflood instance");
 }
 
 
 Synflood::~Synflood() {
-  logger()->info("Destroying Synflood instance");
+  logger()->debug("Destroying Synflood instance");
 }
 
 void Synflood::packet_in(polycube::service::Sense sense,
-    polycube::service::PacketInMetadata &md,
-    const std::vector<uint8_t> &packet) {
-    logger()->debug("Packet received");
+  polycube::service::PacketInMetadata &md,
+  const std::vector<uint8_t> &packet) {
+  logger()->debug("Packet received");
 }
 
 std::shared_ptr<Stats> Synflood::getStats() {
-  throw std::runtime_error("Synflood::getStats: Method not implemented");
+  StatsJsonObject sjo;
+  return std::make_shared<Stats>(*this, sjo);
 }
 
-void Synflood::addStats(const StatsJsonObject &value) {
-  throw std::runtime_error("Synflood::addStats: Method not implemented");
-}
+void Synflood::addStats(const StatsJsonObject &value) {}
 
 // Basic default implementation, place your extension here (if needed)
-void Synflood::replaceStats(const StatsJsonObject &conf) {
-  // call default implementation in base class
-  SynfloodBase::replaceStats(conf);
-}
+void Synflood::replaceStats(const StatsJsonObject &conf) {}
 
-void Synflood::delStats() {
-  throw std::runtime_error("Synflood::delStats: method not implemented");
-}
+void Synflood::delStats() {}
 
 

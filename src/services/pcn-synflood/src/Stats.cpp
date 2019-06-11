@@ -20,23 +20,23 @@ Stats::Stats(Synflood &parent, const StatsJsonObject &conf)
 Stats::~Stats() {}
 
 uint64_t Stats::getTcpattemptfails() {
-  throw std::runtime_error("Stats::getTcpattemptfails: Method not implemented");
+  return 0;
 }
 
 uint64_t Stats::getTcpoutrsts() {
-  throw std::runtime_error("Stats::getTcpoutrsts: Method not implemented");
+  return 0;
 }
 
 uint64_t Stats::getDeliverratio() {
-  throw std::runtime_error("Stats::getDeliverratio: Method not implemented");
+  return 0;
 }
 
 uint64_t Stats::getResponseratio() {
-  throw std::runtime_error("Stats::getResponseratio: Method not implemented");
+  return 0;
 }
 
 uint64_t Stats::getLastupdate() {
-  throw std::runtime_error("Stats::getLastupdate: Method not implemented");
+  return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 
