@@ -21,7 +21,8 @@ add_library(pcn-synflood SHARED
   ${BASE_SOURCES}
   Stats.cpp
   Synflood.cpp
-  Synflood-lib.cpp)
+  Synflood-lib.cpp
+  Utils.cpp)
 
 # load ebpf datapath code a variable
 load_file_as_variable(pcn-synflood

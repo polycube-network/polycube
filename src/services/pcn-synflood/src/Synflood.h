@@ -13,6 +13,12 @@
 
 #include "Stats.h"
 
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
 using namespace polycube::service::model;
 
@@ -32,4 +38,6 @@ class Synflood : public SynfloodBase {
   void addStats(const StatsJsonObject &value) override;
   void replaceStats(const StatsJsonObject &conf) override;
   void delStats() override;
+
+  static std::string exec(const char* cmd);
 };

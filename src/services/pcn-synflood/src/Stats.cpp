@@ -19,24 +19,60 @@ Stats::Stats(Synflood &parent, const StatsJsonObject &conf)
 
 Stats::~Stats() {}
 
+const uint64_t ratioMultiplier = 1000;
+
 uint64_t Stats::getTcpattemptfails() {
-  return 0;
+  try {
+    return std::stoull(Synflood::exec("nstat -a | grep TcpAttemptFails | awk '{print $2}'"));
+  } catch (...) {
+    return 0;
+  }
 }
 
 uint64_t Stats::getTcpoutrsts() {
-  return 0;
+  try {
+    return std::stoull(Synflood::exec("nstat -a | grep TcpOutRsts | awk '{print $2}'"));
+  } catch (...) {
+    return 0;
+  }
 }
 
 uint64_t Stats::getDeliverratio() {
-  return 0;
+  try {
+    std::istringstream ipInDeliversStream(Synflood::exec("nstat -a | grep IpInDelivers | awk '{print $2}'"));
+    std::istringstream ipInReceivesStream(Synflood::exec("nstat -a | grep IpInReceives | awk '{print $2}'"));
+
+    uint64_t ipInDelivers;
+    uint64_t ipInReceives;
+
+    ipInDeliversStream >> ipInDelivers;
+    ipInReceivesStream >> ipInReceives;
+
+    float ratio = ((float) ipInDelivers / ((float) ipInReceives + 1.0)) * ratioMultiplier;
+    return (uint64_t) (ratio);
+  } catch (...) {
+    return 0;
+  }
 }
 
 uint64_t Stats::getResponseratio() {
-  return 0;
+  try {
+    std::istringstream ipOutRequestsStream(Synflood::exec("nstat -a | grep IpOutRequests | awk '{print $2}'"));
+    std::istringstream ipInReceivesStream(Synflood::exec("nstat -a | grep IpInReceives | awk '{print $2}'"));
+
+    uint64_t ipOutRequests;
+    uint64_t ipInReceives;
+
+    ipOutRequestsStream >> ipOutRequests;
+    ipInReceivesStream >> ipInReceives;
+
+    float ratio = ((float)ipOutRequests / ((float)ipInReceives + 1.0)) * ratioMultiplier;
+    return (uint64_t)(ratio);
+  } catch (...) {
+    return 0;
+  }
 }
 
 uint64_t Stats::getLastupdate() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
-
-
