@@ -21,3 +21,4 @@ This folder contains the list of services (a.k.a. *cubes*) currently available i
     pcn-router/router
     pcn-simplebridge/simplebridge
     pcn-simpleforwarder/simpleforwarder
+    pcn-synflood/synflood
