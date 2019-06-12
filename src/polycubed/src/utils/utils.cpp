@@ -44,6 +44,29 @@ bool check_kernel_version(const std::string &version) {
          KERNEL_VERSION(major_r, minor_r, patch_r);
 }
 
+std::map<std::string, std::string> strip_port_peers(json &cubes) {
+  std::map<std::string, std::string> peers;
+
+  for (auto &cube : cubes) {
+    if (!cube.count("ports")) {
+      continue;
+    }
+
+    auto &ports = cube.at("ports");
+
+    for (auto &port : ports) {
+      if (port.count("peer")) {
+        auto cube_name = cube.at("name").get<std::string>();
+        auto port_name = port.at("name").get<std::string>();
+        peers[cube_name + ":" + port_name] = port.at("peer").get<std::string>();
+        port.erase("peer");
+      }
+    }
+  }
+
+  return peers;
+}
+
 }  // namespace utils
 }  // namespace polycubed
 }  // namespace polycube
