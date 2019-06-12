@@ -436,20 +436,33 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
                                Pistache::Http::ResponseWriter response) {
   logRequest(request);
   try {
-    json j = json::parse(request.body());
-    logJson(j);
+    json cubes = json::parse(request.body());
+    logJson(cubes);
+    /*
+     * This is possible that a cube's port has as peer another port
+     * of a cube that hasn't been created yet.  This logic removes all
+     * the peers from the request and sets them after all cubes have
+     * been created.
+     */
+    auto peers = utils::strip_port_peers(cubes);
     std::vector<Response> resp = {{ErrorTag::kNoContent, nullptr}};
     bool error = false;
-    for (auto &it : j) {
-      resp = core.get_service_controller(it["service-name"]).get_management_interface()->get_service()
-              ->CreateReplaceUpdate(it["name"], it, false, true);
+
+    for (auto &cube : cubes) {
+      resp = core.get_service_controller(cube["service-name"]).get_management_interface()->get_service()
+              ->CreateReplaceUpdate(cube["name"], cube, false, true);
       if (!error && resp[0].error_tag != kCreated) {
         Rest::Server::ResponseGenerator::Generate(std::move(resp), std::move(response));
         error = true;
       }
     }
+
     if (!error) {
       Rest::Server::ResponseGenerator::Generate(std::move(resp), std::move(response));
+    }
+
+    for (auto &[peer1, peer2] : peers) {
+      core.try_to_set_peer(peer1, peer2);
     }
   } catch (const std::runtime_error &e) {
     logger->error("{0}", e.what());

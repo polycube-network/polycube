@@ -39,6 +39,7 @@ namespace polycubed {
 class RestServer;
 
 class PolycubedCore {
+  friend class RestServer;
  public:
   PolycubedCore(BaseModel *base_model);
   ~PolycubedCore();
