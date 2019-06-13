@@ -35,10 +35,9 @@ Router::Router(const std::string name, const RouterJsonObject &conf)
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Router] [%n] [%l] %v");
   logger()->info("Creating Router instance");
 
+  addPortsList(conf.getPorts());
   addArpEntryList(conf.getArpEntry());
   addRouteList(conf.getRoute());
-
-  addPortsList(conf.getPorts());
 
   if (get_shadow()) {
     // netlink notification
