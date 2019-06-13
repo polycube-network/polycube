@@ -35,9 +35,8 @@ Router::Router(const std::string name, const RouterJsonObject &conf)
   logger()->info("Creating Router instance");
 
   addArpEntryList(conf.getArpEntry());
-  addRouteList(conf.getRoute());
-
   addPortsList(conf.getPorts());
+  addRouteList(conf.getRoute());
 }
 
 Router::~Router() {}
