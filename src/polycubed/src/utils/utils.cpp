@@ -67,6 +67,31 @@ std::map<std::string, std::string> strip_port_peers(json &cubes) {
   return peers;
 }
 
+std::map<std::string, json> strip_port_tcubes(json &jcube) {
+  std::map<std::string, json> cubes;
+
+  if (!jcube.count("ports")) {
+    return cubes;
+  }
+
+  auto &jports = jcube.at("ports");
+
+  for (auto &jport : jports) {
+    if (!jport.count("tcubes")) {
+      continue;
+    }
+
+    auto port_name = jport.at("name").get<std::string>();
+
+    json jcubes = json::object();
+    jcubes["tcubes"] = jport.at("tcubes");
+    cubes[port_name] = jcubes;
+    jport.erase("tcubes");
+  }
+
+  return cubes;
+}
+
 }  // namespace utils
 }  // namespace polycubed
 }  // namespace polycube

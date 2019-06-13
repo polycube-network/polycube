@@ -40,6 +40,12 @@ module polycube-standard-base {
         description "Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2')";
         polycube-base:cli-example "r0:port1";
       }
+
+      leaf-list tcubes {
+        polycube-base:init-only-config;
+        description "List of transparent cubes attached to this port";
+        type string;
+      }
     }
 
     leaf shadow {

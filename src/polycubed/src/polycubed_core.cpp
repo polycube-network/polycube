@@ -343,7 +343,7 @@ void PolycubedCore::attach(const std::string &cube_name,
       }
       break;
     case PortType::XDP:
-      if (cube->get_type() != CubeType::XDP_DRV &&
+      if (cube->get_type() != CubeType::XDP_SKB &&
           cube->get_type() != CubeType::XDP_DRV) {
         throw std::runtime_error(cube_name + " and " + port_name +
                                  " have incompatible types");

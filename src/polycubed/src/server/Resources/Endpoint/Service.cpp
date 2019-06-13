@@ -23,6 +23,8 @@
 #include "../Body/JsonNodeField.h"
 #include "../Body/ListKey.h"
 
+#include <memory>
+
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 
 Service::Service(const std::string &name, const std::string &description,
@@ -84,11 +86,29 @@ Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool
       return std::move(body_errors);
     }
 
+   /*
+    * It is possible that a port inside a cube includes a list of
+    * transparent cubes to be attached.  Those transparent cubes when are
+    * attached can request the port for some configuration, at this point
+    * the cube is not ready at that fails.
+    * This logic removes the transparent cubes list from the ports and
+    * only assigns them when the cube is fully created.
+    */
+   auto cubes_list = utils::strip_port_tcubes(body);
+
     auto resp = WriteValue(name, body, k, op);
     if (!update && (resp.error_tag == ErrorTag::kOk ||
                     resp.error_tag == ErrorTag::kCreated ||
                     resp.error_tag == ErrorTag::kNoContent)) {
       cube_names_.AddValue(name);
+    }
+
+    // use  previously calculated list to update ports' transparent cubes
+    auto cube_ = ServiceController::get_cube(name);
+    auto cube = std::dynamic_pointer_cast<polycube::polycubed::Cube>(cube_);
+    for (auto &[k, v] : cubes_list) {
+      auto port = cube->get_port(k);
+      port->set_conf(cubes_list[k]);
     }
     return std::vector<Response>{resp};
   } else {
