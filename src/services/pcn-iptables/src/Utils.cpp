@@ -534,10 +534,15 @@ bool Chain::interfaceFromRulesToMap(
   return brk;
 }
 
-void Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+bool Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
                                     struct HorusRule &key,
                                     struct HorusValue &value) {
   key.setFields = 0;
+
+  try {
+    rule->getConntrack();
+    return false;
+  } catch (std::runtime_error) {}
 
   try {
     IpAddr ips;
@@ -590,7 +595,7 @@ void Chain::fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
     value.action = 1;
 
   value.ruleID = rule->getId();
-  return;
+  return true;
 }
 
 void Chain::horusFromRulesToMap(
@@ -599,7 +604,6 @@ void Chain::horusFromRulesToMap(
   struct HorusRule key;
   struct HorusValue value;
 
-  bool first_rule = true;
   uint64_t set_fields = 0;
 
   // find match pattern for first rule (e.g. 01101 means ips proto ports set)
@@ -607,22 +611,21 @@ void Chain::horusFromRulesToMap(
   int i = 0;
 
   for (auto const &rule : rules) {
-    i++;
-    fromRuleToHorusKeyValue(rule, key, value);
-
-    if (i == 1) {
+    if (i >= HorusConst::MAX_RULE_SIZE_FOR_HORUS)
+      break;
+    if(!fromRuleToHorusKeyValue(rule, key, value))
+      return;
+    if (i == 0) {
       if (key.setFields == 0) {
         break;
       }
-
       set_fields = key.setFields;
     }
-
     if (key.setFields != set_fields) {
       break;
     }
-
     horus.insert(std::pair<struct HorusRule, struct HorusValue>(key, value));
+    i++;
   }
 }
 
