@@ -115,6 +115,19 @@ std::shared_ptr<PortType> Cube<PortType>::add_port(const std::string &port_name,
 
     std::tie(iter, inserted) = ports_by_name_.emplace(port_name, port);
     ports_by_id_.emplace(port->index(), port);
+    /*
+     * When a transparent cube is attached to a port, it can query the service
+     * to get some port parameters (e.g., MAC address). If the transparent cube
+     * is attached while the port is being created these parameters will be not
+     * configured yet.
+     * This workaround first creates the port and then passes the configuration
+     * to attach the transparent cubes. The configuration that is passed
+     * in the constructor is ignored in the daemon.
+     * The solution for this workaround would be to implement the notification
+     * mechanishm, so when the parameters are configured those are pushed to the
+     * transparent cube.
+     */
+    port->set_conf(conf.getBase());
     return iter->second;
   } catch (const std::exception &ex) {
     cube_->remove_port(port_name);

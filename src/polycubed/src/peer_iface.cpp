@@ -111,6 +111,18 @@ void PeerIface::remove_cube(const std::string &cube_name) {
   update_indexes();
 }
 
+std::vector<std::string> PeerIface::get_cubes_names() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<std::string> cubes_names;
+
+  for (auto &cube : cubes_) {
+    cubes_names.push_back(cube->get_name());
+  }
+
+  return cubes_names;
+}
+
 PeerIface::CubePositionComparison PeerIface::compare_position(
     const std::string &cube1, const std::string &cube2) {
   // cube position, index 0 is the innermost one

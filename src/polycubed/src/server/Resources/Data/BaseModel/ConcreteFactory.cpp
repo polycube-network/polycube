@@ -22,11 +22,13 @@
 #include "../../Body/JsonNodeField.h"
 
 #include "../../Endpoint/LeafResource.h"
+#include "../../Endpoint/LeafListResource.h"
 #include "../../Endpoint/ListResource.h"
 #include "../../Endpoint/ParentResource.h"
 #include "../../Endpoint/Service.h"
 
 #include "LeafResource.h"
+#include "LeafListResource.h"
 
 #include "polycubed_core.h"
 
@@ -56,7 +58,7 @@ bool ConcreteFactory::IsBaseModel(
     tree_names_.pop();
     auto leaf = tree_names_.front();
 
-    if (leaf == "uuid" || leaf == "status" || leaf == "peer") {
+    if (leaf == "uuid" || leaf == "status" || leaf == "peer" || leaf == "tcubes") {
       return true;
     }
   }
@@ -212,8 +214,42 @@ std::unique_ptr<Endpoint::LeafListResource> ConcreteFactory::RestLeafList(
     const std::vector<Body::JsonNodeField> &node_fields, bool configuration,
     bool init_only_config, bool mandatory, Types::Scalar type,
     std::vector<std::string> &&default_value) const {
-  throw std::invalid_argument(
-      "Yang case leaf-list not supported in base datamodel");
+  std::function<Response(const std::string &, const ListKeyValues &keys)>
+      read_handler_;
+  std::function<Response(const std::string &, const nlohmann::json &,
+                         const ListKeyValues &, Endpoint::Operation)>
+      replace_handler_;
+
+  // TODO: I need to capture this variable inside the lambda functions,
+  // capturing "this" for me is not working
+  auto local_core = this->core_;
+
+  auto tree_names_ = tree_names;
+  tree_names_.pop();
+
+  if (tree_names_.size() == 2) {
+    if (tree_names_.front() != "ports") {
+      throw std::runtime_error("unknown element found in base datamodel");
+    }
+
+    tree_names_.pop();
+    auto leaf = tree_names_.front();
+    if (leaf == "tcubes") {
+      read_handler_ = [local_core](const std::string &cube_name,
+                                   const ListKeyValues &keys) -> Response {
+        return local_core->base_model()->get_port_tcubes(cube_name,
+                                                         keys[0].value);
+      };
+    } else {
+      throw std::runtime_error("unknown element found in base datamodel: " +
+                               leaf);
+    }
+  }
+
+  return std::make_unique<LeafListResource>(
+    std::move(read_handler_), std::move(replace_handler_), name, description,
+    cli_example, rest_endpoint, parent, configuration, init_only_config,
+    core_, std::move(value_field), node_fields, mandatory, type, std::move(default_value));
 }
 
 std::unique_ptr<Endpoint::ListResource> ConcreteFactory::RestList(
