@@ -49,11 +49,10 @@ uint16_t Port::index() const {
 }
 
 uint16_t Port::get_index() const {
-  std::lock_guard<std::mutex> guard(port_mutex_);
-  return __get_index();
+  return port_index_;
 }
 
-uint16_t Port::__get_index() const {
+uint16_t Port::calculate_index() const {
   // check if there is ingress-enabled transparent cube
   for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
     auto index = (*it)->get_index(ProgramType::INGRESS);
@@ -230,9 +229,11 @@ void Port::update_indexes() {
     }
   }
 
+  port_index_ = calculate_index();
+
   // CASE4: peer -> cube[N-1]
   if (peer_port_) {
-    peer_port_->set_next_index(__get_index());
+    peer_port_->set_next_index(port_index_);
   }
 
   // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
