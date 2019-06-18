@@ -202,6 +202,21 @@ nla_put_failure:
   throw std::runtime_error("Error constructing nlmsg");
 }
 
+int Namespace::set_random_id() {
+  int id = 0;
+again:
+  id++;
+  try {
+    set_id(id);
+  } catch (...) {
+    if (id < 100)
+      goto again;
+    else
+      throw std::runtime_error("set_random_id failed");
+  }
+  return id;
+}
+
 std::string Namespace::get_name() const {
   return name_;
 }

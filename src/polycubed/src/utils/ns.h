@@ -34,6 +34,7 @@ class Namespace {
   void execute(std::function<void()> f);
   void remove();
   void set_id(int id);
+  int set_random_id();
 
   std::string get_name() const;
   int get_fd() const;
