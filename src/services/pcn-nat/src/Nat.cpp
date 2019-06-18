@@ -83,6 +83,12 @@ void Nat::attach() {
     auto temp = get_parent_parameter("ip");
     external_ip_ = temp.substr(1, temp.length() - 2);  // remove qoutes
     logger()->info("external ip is : {}", external_ip_);
+    // if masquerare is enabled we need to update the IP address
+    // TODO: this action should also be performed when the IP address on the
+    // parent changes (it needs the subscription mechanishm)
+    if (rule_->getMasquerade()->getEnabled()) {
+      rule_->getMasquerade()->inject(utils::ip_string_to_be_uint(external_ip_));
+    }
   } catch (...) {
     logger()->warn("External IP not found. Is this enabled on a router?");
   }
