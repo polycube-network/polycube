@@ -28,7 +28,8 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+  uint8_t forwardingDecision;
+} __attribute__((packed));
 
 #if _NR_ELEMENTS > 0
 struct elements {
@@ -87,16 +88,26 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     } else {
 /*#pragma unroll does not accept a loop with a single iteration, so we need to
  * distinguish cases to avoid a verifier error.*/
+      bool isAllZero = true;
 #if _NR_ELEMENTS == 1
       (result->bits)[0] = (result->bits)[0] & (ele->bits)[0];
+      if (result->bits[0] != 0)
+        isAllZero = false;
 #else
 #pragma unroll
       for (int i = 0; i < _NR_ELEMENTS; ++i) {
         /*This is the first module, it initializes the percpu*/
         (result->bits)[i] = (result->bits)[i] & (ele->bits)[i];
-      }
 
+        if (result->bits[i] != 0)
+          isAllZero = false;
+      }
 #endif
+      if (isAllZero) {
+        pcn_log(ctx, LOG_DEBUG,
+                "[_CHAIN_NAME][IP_TYPE]: Bitvector is all zero. Break pipeline");
+        _DEFAULTACTION
+      }
     }  // if result == NULL
   }    // if ele==NULL
   call_next_program(ctx, _NEXT_HOP_1);

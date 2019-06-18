@@ -29,6 +29,7 @@ Firewall::IpLookup::IpLookup(const int &index, const ChainNameEnum &direction,
                              const int &type, Firewall &outer)
     : Firewall::Program(firewall_code_iplookup, index, direction, outer),
     type(type) {
+
   load();
 }
 
@@ -38,7 +39,7 @@ std::string Firewall::IpLookup::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules)));
 
   /*Replacing hops*/
   for (auto const &hop : hops) {

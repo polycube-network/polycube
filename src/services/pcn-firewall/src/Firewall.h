@@ -49,6 +49,8 @@ struct ct_k {
 struct ct_v {
   uint64_t ttl;
   uint8_t state;
+  uint8_t ipRev;
+  uint8_t portRev;
   uint32_t sequence;
 } __attribute__((packed));
 
@@ -143,7 +145,9 @@ class Firewall : public FirewallBase {
 
     polycube::service::ProgramType getProgramType();
 
-   public:
+    std::mutex program_mutex_;
+
+  public:
     Program(const std::string &code, const int &index,
             const ChainNameEnum &direction, Firewall &outer);
     virtual ~Program();
@@ -171,7 +175,29 @@ class Firewall : public FirewallBase {
     std::string getCode();
   };
 
-  class ChainForwarder : public Program {
+  class Horus : public Program {
+  public:
+
+      Horus(const int &index, Firewall &outer, const ChainNameEnum &direction,
+              const std::map<struct HorusRule, struct HorusValue> &horus);
+      ~Horus();
+
+      std::string getCode();
+      std::string defaultActionString();
+
+      uint64_t getPktsCount(int rule_number);
+      uint64_t getBytesCount(int rule_number);
+
+      void flushCounters(int rule_number);
+      void updateTableValue(struct HorusRule horus_key,
+                            struct HorusValue horus_value);
+      void updateMap(const std::map<struct HorusRule, struct HorusValue> &horus);
+
+  private:
+      std::map<struct HorusRule, struct HorusValue> horus_;
+  };
+
+    class ChainForwarder : public Program {
    public:
     ChainForwarder(const int &index, const ChainNameEnum &direction,
                    Firewall &outer);
@@ -223,16 +249,21 @@ class Firewall : public FirewallBase {
   };
 
   class L4PortLookup : public Program {
-   private:
-    int type;  // SOURCE or DESTINATION
-
    public:
     L4PortLookup(const int &index, const ChainNameEnum &direction,
                  const int &type, Firewall &outer);
+    L4PortLookup(const int &index, const ChainNameEnum &chain, const int &type,
+                 Firewall &outer,
+                 const std::map<uint16_t, std::vector<uint64_t>> &ports);
     ~L4PortLookup();
     std::string getCode();
     bool updateTableValue(uint16_t port, const std::vector<uint64_t> &value);
     void updateMap(const std::map<uint16_t, std::vector<uint64_t>> &ports);
+
+  private:
+      int type;  // SOURCE or DESTINATION
+      bool wildcard_rule_;
+      std::string wildcard_string_;
   };
 
   class TcpFlagsLookup : public Program {
@@ -272,9 +303,9 @@ class Firewall : public FirewallBase {
     DefaultAction(const int &index, const ChainNameEnum &direction,
                   Firewall &outer);
     ~DefaultAction();
-    uint64_t getPktsCount(ChainNameEnum chain);
-    uint64_t getBytesCount(ChainNameEnum chain);
-    void flushCounters(ChainNameEnum chain);
+    uint64_t getPktsCount();
+    uint64_t getBytesCount();
+    void flushCounters();
     std::string getCode();
   };
 
@@ -284,6 +315,13 @@ class Firewall : public FirewallBase {
                          Firewall &outer);
     ~ConntrackTableUpdate();
     std::string getCode();
+
+    void updateTimestamp();
+    void updateTimestampTimer();
+    void quitAndJoin();
+
+    std::thread timestamp_update_thread_;
+    std::atomic<bool> quit_thread_;
   };
 
   /*==========================
@@ -302,6 +340,16 @@ class Firewall : public FirewallBase {
   std::vector<Firewall::Program *> ingress_programs;
   std::vector<Firewall::Program *> egress_programs;
 
+  // HORUS optimization enabled by current rule set
+  bool horus_runtime_enabled_ingress_ = false;
+  bool horus_runtime_enabled_egress_ = false;
+
+  bool horus_enabled = true;
+
+  // are we on swap or regular horus program index
+  bool horus_swap_ingress_ = false;
+  bool horus_swap_egress_ = false;
+
   /*==========================
    *METHODS DECLARATION
    *==========================*/
@@ -318,4 +366,29 @@ class Firewall : public FirewallBase {
 
   static void replaceAll(std::string &str, const std::string &from,
                          const std::string &to);
+
+  template <typename Iterator>
+  static std::string fromContainerToMapString(Iterator begin, Iterator end,
+                                              const std::string open,
+                                              const std::string close,
+                                              const std::string separator);
 };
+
+template <typename Iterator>
+std::string Firewall::fromContainerToMapString(Iterator it, Iterator end,
+                                               const std::string open,
+                                               const std::string close,
+                                               const std::string separator) {
+  std::string result = open;
+  bool first = true;
+  int cnt = 0;
+  for (; it != end; ++it) {
+    cnt++;
+    if (!first)
+      result += separator;
+    first = false;
+    result += /*"-" + */ std::to_string((*it));
+  }
+  result += close;
+  return result;
+}

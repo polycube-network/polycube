@@ -70,7 +70,7 @@ Firewall::Program *Firewall::Program::getHop(std::string hopName) {
 std::string Firewall::Program::defaultActionString() {
   /*The default action for every program is calling the default action module.*/
   return "call_next_program(ctx, " +
-         std::to_string(3 + ModulesConstants::NR_MODULES * 2) +
+         std::to_string(ModulesConstants::DEFAULTACTION) +
          "); " +
          "return RX_DROP;";
 }

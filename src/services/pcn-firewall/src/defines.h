@@ -29,23 +29,27 @@ namespace ModulesConstants {
 // Modules common between chains (at the end): ConntrackTableUpdate
 
 const uint8_t NR_MODULES = 9;
+const uint8_t NR_INITIAL_MODULES = 7;
 
 const uint8_t PARSER = 0;
 const uint8_t CONNTRACKLABEL = 1;
 const uint8_t CHAINFORWARDER = 2;
 
-const uint8_t CONNTRACKMATCH = 3;
-const uint8_t IPSOURCE = 4;
-const uint8_t IPDESTINATION = 5;
-const uint8_t L4PROTO = 6;
-const uint8_t PORTSOURCE = 7;
-const uint8_t PORTDESTINATION = 8;
-const uint8_t TCPFLAGS = 9;
-const uint8_t BITSCAN = 10;
-const uint8_t ACTION = 11;
+const uint8_t DEFAULTACTION = 3;
+const uint8_t CONNTRACKTABLEUPDATE = 4;
 
-const uint8_t DEFAULTACTION = 12;
-const uint8_t CONNTRACKTABLEUPDATE = 13;
+const uint8_t HORUS_INGRESS = 5;
+const uint8_t HORUS_INGRESS_SWAP = 6;
+
+const uint8_t CONNTRACKMATCH = 7;
+const uint8_t IPSOURCE = 8;
+const uint8_t IPDESTINATION = 9;
+const uint8_t L4PROTO = 10;
+const uint8_t PORTSOURCE = 11;
+const uint8_t PORTDESTINATION = 12;
+const uint8_t TCPFLAGS = 13;
+const uint8_t BITSCAN = 14;
+const uint8_t ACTION = 15;
 }
 
 namespace ConntrackModes {
@@ -90,6 +94,49 @@ struct IpAddr {
            std::make_pair(that.ip, that.netmask);
   }
 };
+
+// const used by horus optimization
+namespace HorusConst {
+    const uint8_t SRCIP = 0;
+    const uint8_t DSTIP = 1;
+    const uint8_t L4PROTO = 2;
+    const uint8_t SRCPORT = 3;
+    const uint8_t DSTPORT = 4;
+
+// apply Horus mitigator optimization if there are at least # rules
+// matching the pattern, at ruleset begin
+    const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
+    const uint32_t MAX_RULE_SIZE_FOR_HORUS = 2048;
+}
+
+struct HorusRule {
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint8_t l4proto;
+    uint16_t src_port;
+    uint16_t dst_port;
+    // bitvector representing set fields for current rule
+    uint64_t setFields;
+
+    bool operator<(const HorusRule &that) const {
+      if (this->src_ip != that.src_ip)
+        return (this->src_ip < that.src_ip);
+      else if (this->dst_ip != that.dst_ip)
+        return (this->dst_ip < that.dst_ip);
+      else if (this->l4proto != that.l4proto)
+        return (this->l4proto < that.l4proto);
+      else if (this->src_port != that.src_port)
+        return (this->src_port < that.src_port);
+      else if (this->dst_port != that.dst_port)
+        return (this->dst_port < that.dst_port);
+      return false;
+    }
+} __attribute__((packed));
+
+struct HorusValue {
+    uint8_t action;
+    uint32_t ruleID;
+} __attribute__((packed));
 
 #define SET_BIT(number, x) number |= ((uint64_t)1 << x);
 #define CHECK_BIT(number, x) ((number) & ((uint64_t)1 << (x)))
