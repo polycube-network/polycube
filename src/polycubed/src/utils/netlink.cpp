@@ -668,6 +668,26 @@ struct nlmsghdr* Netlink::netlink_ip_alloc() {
   return nlmsg;
 }
 
+struct nlmsghdr* Netlink::netlink_ip_dealloc() {
+  size_t len = NLMSG_ALIGN(SIZE_ALIGN) + NLMSG_ALIGN(sizeof(struct nlmsghdr *));
+  struct nlmsghdr *nlmsg = (struct nlmsghdr *) malloc(len);
+  memset(nlmsg, 0, len);
+
+  struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
+  uni->ifaddrmsg.ifa_family = AF_INET;
+  uni->ifaddrmsg.ifa_scope = 0;
+
+  nlmsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+  nlmsg->nlmsg_type = RTM_DELADDR;
+  // NLM_F_REQUEST   Must be set on all request messages
+  // NLM_F_ACK       Request for an acknowledgment on success
+  // NLM_F_CREATE    Create object if it doesn't already exist
+  // NLM_F_EXCL      Don't replace if the object already exists
+  nlmsg->nlmsg_flags = NLM_F_REQUEST|NLM_F_ACK|NLM_F_CREATE|NLM_F_EXCL;
+
+  return nlmsg;
+}
+
 struct nlmsghdr* Netlink::netlink_ipv6_alloc() {
   size_t len = NLMSG_ALIGN(SIZE_ALIGN) + NLMSG_ALIGN(sizeof(struct nlmsghdr *));
   struct nlmsghdr *nlmsg = (struct nlmsghdr *) malloc(len);
@@ -828,6 +848,42 @@ void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int 
     free(nlmsg);
     logger->error("set_iface_ip: Error in inet_pton");
     throw std::runtime_error("set_iface_ip: Error in inet_pton");
+  }
+
+  rta = NLMSG_TAIL(nlmsg);
+  rta->rta_type = IFA_LOCAL;
+  rta->rta_len = RTA_LENGTH(sizeof(struct in_addr));
+  memcpy(RTA_DATA(rta), &ia, sizeof(struct in_addr));
+  nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
+
+  rta = NLMSG_TAIL(nlmsg);
+  rta->rta_type = IFA_ADDRESS;
+  rta->rta_len = RTA_LENGTH(sizeof(struct in_addr));
+  memcpy(RTA_DATA(rta), &ia, sizeof(struct in_addr));
+  nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
+
+  netlink_nl_send(nlmsg);
+}
+
+void Netlink::unset_iface_ip(const std::string &iface, const std::string &ip, int prefix) {
+  struct nlmsghdr *nlmsg = netlink_ip_dealloc();
+  struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
+  struct rtattr *rta;
+  struct in_addr ia;
+
+  int index = get_iface_index(iface);
+  if (index == -1) {
+    logger->error("unset_iface_ip: iface {0} does not exist", iface);
+    throw std::runtime_error("unset_iface_ip: iface does not exist");
+  }
+
+  uni->ifaddrmsg.ifa_index = index;
+  uni->ifaddrmsg.ifa_prefixlen = prefix;
+
+  if (inet_pton(AF_INET, ip.c_str(), &ia) <= 0) {
+    free(nlmsg);
+    logger->error("unset_iface_ip: Error in inet_pton");
+    throw std::runtime_error("unset_iface_ip: Error in inet_pton");
   }
 
   rta = NLMSG_TAIL(nlmsg);
