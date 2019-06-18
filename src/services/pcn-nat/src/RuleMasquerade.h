@@ -25,6 +25,7 @@ class Rule;
 using namespace io::swagger::server::model;
 
 class RuleMasquerade : public RuleMasqueradeInterface {
+  friend class Nat;
  public:
   RuleMasquerade(Rule &parent);
   RuleMasquerade(Rule &parent, const RuleMasqueradeJsonObject &conf);
@@ -41,6 +42,7 @@ class RuleMasquerade : public RuleMasqueradeInterface {
   void setEnabled(const bool &value) override;
 
  private:
+  bool inject(uint32_t ip); // injects the rule in datapath
   Rule &parent_;
   bool enabled;
 };
