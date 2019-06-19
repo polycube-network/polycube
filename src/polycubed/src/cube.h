@@ -25,6 +25,7 @@
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "polycube/services/port_iface.h"
+#include "utils/veth.h"
 
 #include <api/BPF.h>
 #include <api/BPFTable.h>
@@ -44,6 +45,8 @@ using polycube::service::CubeIface;
 using polycube::service::PortIface;
 using polycube::service::ProgramType;
 using polycube::service::CubeType;
+using polycube::service::PacketIn;
+using polycube::service::PortStatus;
 
 namespace polycube {
 namespace polycubed {
@@ -69,6 +72,8 @@ class Cube : public BaseCube, public CubeIface {
   const bool get_shadow() const;
   const bool get_span() const;
   void set_span(const bool value);
+
+  const std::string get_veth_name_from_index(const int ifindex);
  protected:
   static std::string get_wrapper_code();
   uint16_t allocate_port_id();
@@ -80,8 +85,11 @@ class Cube : public BaseCube, public CubeIface {
   std::map<int, std::shared_ptr<PortIface>> ports_by_index_;
   std::set<uint16_t> free_ports_;  // keeps track of available ports
 
+  std::map<std::string, std::shared_ptr<Veth>> veth_by_name_;
+  std::map<int, std::string> ifindex_veth_;
   bool shadow_;
   bool span_;
+
  private:
   // ebpf wrappers
   static const std::string MASTER_CODE;

@@ -51,6 +51,8 @@ class Cube : public BaseCube {
   const bool get_shadow() const;
   const bool get_span() const;
   void set_span(const bool value);
+
+  const std::string get_veth_name_from_index(const int ifindex);
  private:
   std::shared_ptr<CubeIface> cube_;  // pointer to the cube in polycubed
   packet_in_cb handle_packet_in;
@@ -190,6 +192,11 @@ const bool Cube<PortType>::get_span() const {
 template <class PortType>
 void Cube<PortType>::set_span(const bool value) {
   return cube_->set_span(value);
+}
+
+template <class PortType>
+const std::string Cube<PortType>::get_veth_name_from_index(const int ifindex) {
+  return cube_->get_veth_name_from_index(ifindex);
 }
 
 }  // namespace service

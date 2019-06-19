@@ -33,10 +33,20 @@ CubeTC::CubeTC(const std::string &name, const std::string &service_name,
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
+  if (shadow && span) {
+    auto res = ingress_programs_[0]->open_perf_buffer("span_slowpath", send_packet_ns_span_mode, nullptr, this);
+    if (res.code() != 0) {
+      logger->error("cannot open perf ring buffer for span_slowpath: {0}", res.msg());
+      throw BPFError("cannot open span_slowpath perf buffer");
+    }
+    start_thread_span_mode();
+  }
 }
 
 CubeTC::~CubeTC() {
   // it cannot be done in Cube::~Cube() because calls a virtual method
+  if (get_span())
+    stop_thread_span_mode();
   Cube::uninit();
 }
 
@@ -46,7 +56,7 @@ std::string CubeTC::get_wrapper_code() {
 }
 
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
-                        ebpf::BPF &bpf, const std::string &code, int index) {
+                        ebpf::BPF &bpf, const std::string &code, int index, bool shadow, bool span) {
   // compile ebpf program
   std::string all_code(get_wrapper_code() +
                        DatapathLog::get_instance().parse_log(code));
@@ -55,6 +65,11 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
   cflags_.push_back("-DCUBE_ID=" + std::to_string(id));
   cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
   cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  if (shadow) {
+    cflags_.push_back("-DSHADOW");
+    if (span)
+      cflags_.push_back("-DSPAN");
+  }
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags_);
@@ -88,7 +103,7 @@ void CubeTC::do_unload(ebpf::BPF &bpf) {
 
 void CubeTC::compile(ebpf::BPF &bpf, const std::string &code, int index,
                      ProgramType type) {
-  do_compile(get_id(), type, level_, bpf, code, index);
+  do_compile(get_id(), type, level_, bpf, code, index, get_shadow(), get_span());
 }
 
 int CubeTC::load(ebpf::BPF &bpf, ProgramType type) {
@@ -99,8 +114,83 @@ void CubeTC::unload(ebpf::BPF &bpf, ProgramType type) {
   do_unload(bpf);
 }
 
+void CubeTC::send_packet_ns_span_mode(void *cb_cookie, void *data, int data_size) {
+  PacketIn *md = static_cast<PacketIn *>(data);
+
+  uint8_t *data_ = static_cast<uint8_t *>(data);
+  data_ += sizeof(PacketIn);
+
+  CubeTC *cube = static_cast<CubeTC *>(cb_cookie);
+  if (cube == nullptr)
+    throw std::runtime_error("Bad cube");
+
+  try {
+    std::vector<uint8_t> packet(data_, data_ + md->packet_len);
+
+    /* send packet to the namespace only if the port has even index
+     * because if the port has odd index the packet is already sent
+     * to the namespace by the datapath */
+    if (!(md->port_id % 2)) {
+      auto in_port = cube->ports_by_index_.at(md->port_id);
+      in_port->send_packet_ns(packet);
+    }
+
+  } catch(const std::exception &e) {
+    // TODO: ignore the problem, what else can we do?
+    spdlog::get("polycubed")->warn("Error processing packet in span mode - event: {}", e.what());
+  }
+}
+
+void CubeTC::start_thread_span_mode() {
+  /* create a thread that polls the perf ring buffer "span_slowpath"
+   * if there are packets to send to the namespace */
+  auto f = [&]() -> void {
+    stop_thread_ = false;
+    while (!stop_thread_) {
+      ingress_programs_[0]->poll_perf_buffer("span_slowpath", 500);
+    }
+  };
+  std::unique_ptr<std::thread> uptr(new std::thread(f));
+  pkt_in_thread_ = std::move(uptr);
+}
+
+void CubeTC::stop_thread_span_mode() {
+  stop_thread_ = true;
+  if (pkt_in_thread_) {
+    pkt_in_thread_->join();
+  }
+}
+
+void CubeTC::set_span(const bool value) {
+  if (!shadow_) {
+    throw std::runtime_error("Span mode is not present in no-shadow services");
+  }
+  if (span_ == value) {
+    return;
+  }
+  span_ = value;
+
+  if (!span_) {
+    stop_thread_span_mode();
+  }
+
+  reload_all();
+
+  if (span_) {
+    auto res = ingress_programs_[0]->open_perf_buffer("span_slowpath", send_packet_ns_span_mode, nullptr, this);
+    if (res.code() != 0) {
+      logger->error("cannot open perf ring buffer for span_slowpath: {0}", res.msg());
+      throw BPFError("cannot open span_slowpath perf buffer");
+    }
+    start_thread_span_mode();
+  }
+}
+
 const std::string CubeTC::CUBE_TC_COMMON_WRAPPER = R"(
 BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
+#if defined(SHADOW) && defined(SPAN)
+BPF_PERF_OUTPUT(span_slowpath);
+#endif
 
 static __always_inline
 int to_controller(struct CTXTYPE *skb, u16 reason) {
@@ -109,6 +199,14 @@ int to_controller(struct CTXTYPE *skb, u16 reason) {
   //bpf_trace_printk("to controller miss\n");
   return TC_ACT_OK;
 }
+
+#if defined(SHADOW) && defined(SPAN)
+static __always_inline
+int to_controller_span(struct CTXTYPE *skb, struct pkt_metadata md) {
+  int r = span_slowpath.perf_submit_skb(skb, md.packet_len, &md, sizeof(md));
+  return r;
+}
+#endif
 
 static __always_inline
 int pcn_pkt_drop(struct CTXTYPE *skb, struct pkt_metadata *md) {
@@ -207,6 +305,18 @@ int forward(struct CTXTYPE *skb, u32 out_port) {
   return TC_ACT_SHOT;
 }
 
+#if defined(SHADOW) && defined(SPAN)
+static __always_inline
+void packet_span(struct CTXTYPE *skb, u32 out_port) {
+  // Send the incoming packet in the namespace
+  struct pkt_metadata md = {};
+  md.in_port = out_port;
+  md.cube_id = CUBE_ID;
+  md.packet_len = skb->len;
+  to_controller_span(skb, md);
+}
+#endif
+
 int handle_rx_wrapper(struct CTXTYPE *skb) {
   //bpf_trace_printk("" MODULE_UUID_SHORT ": rx:%d\n", skb->cb[0]);
   struct pkt_metadata md = {};
@@ -215,6 +325,19 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   md.cube_id = CUBE_ID;
   md.packet_len = skb->len;
   skb->cb[0] = md.in_port << 16 | CUBE_ID;
+
+  // Check if the cube is shadow and the in_port has odd index
+#ifdef SHADOW
+  if (md.in_port % 2) {
+    u32 port_out = md.in_port - 1;
+    // forward on the port with even index
+    return forward(skb, port_out);
+  }
+#ifdef SPAN
+  packet_span(skb, md.in_port);
+#endif
+#endif
+
   int rc = handle_rx(skb, &md);
 
   switch (rc) {
@@ -236,7 +359,24 @@ int pcn_pkt_redirect(struct CTXTYPE *skb,
                      struct pkt_metadata *md, u32 port) {
   // FIXME: this is just to reuse this field
   md->reason = port;
+#if defined(SHADOW) && defined(SPAN)
+  if (!(port % 2))
+    packet_span(skb, port);
+#endif
   return RX_REDIRECT;
+}
+
+static __always_inline
+int pcn_pkt_redirect_ns(struct CTXTYPE *skb,
+                     struct pkt_metadata *md, u32 port) {
+// if SPAN is true the packet is not sent to the namespace to avoid duplication
+#if defined(SHADOW) && !defined(SPAN)
+  // FIXME: this is just to reuse this field
+  // forward on the port with odd index
+  md->reason = port + 1;
+  return RX_REDIRECT;
+#endif
+  return TC_ACT_SHOT;
 }
 )";
 
