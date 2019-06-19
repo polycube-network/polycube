@@ -30,8 +30,8 @@ Simplebridge::Simplebridge(const std::string name,
     : Cube(conf.getBase(), {simplebridge_code}, {}), quit_thread_(false),
       SimplebridgeBase(name) {
   logger()->info("Creating Simplebridge instance");
-  addFdb(conf.getFdb());
   addPortsList(conf.getPorts());
+  addFdb(conf.getFdb());
 
   timestamp_update_thread_ =
       std::thread(&Simplebridge::updateTimestampTimer, this);
