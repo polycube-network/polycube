@@ -315,6 +315,9 @@ IP:;  // ipv4 packet
   }
   /* Check if the pkt destination is one local interface of the router */
   if (rt_entry_p->type == TYPE_LOCALINTERFACE) {
+#ifdef SHADOW
+    return pcn_pkt_redirect_ns(ctx, md, md->in_port);
+#endif
     return send_packet_for_router_to_slowpath(ctx, md, eth, ip);
   }
   if (ip->ttl == 1) {
@@ -334,9 +337,12 @@ ARP:;  // arp packet
   struct arp_hdr *arp = data + sizeof(*eth);
   if (data + sizeof(*eth) + sizeof(*arp) > data_end)
     goto DROP;
-  if (arp->ar_op == bpf_htons(ARPOP_REQUEST))  // arp request?
+  if (arp->ar_op == bpf_htons(ARPOP_REQUEST)) { // arp request?
+#ifdef SHADOW
+    return pcn_pkt_redirect_ns(ctx, md, md->in_port);
+#endif
     return send_arp_reply(ctx, md, eth, arp, in_port);
-  else if (arp->ar_op == bpf_htons(ARPOP_REPLY))  // arp reply
+  } else if (arp->ar_op == bpf_htons(ARPOP_REPLY))  // arp reply
     return notify_arp_reply_to_slowpath(ctx, md, arp);
   return RX_DROP;
 DROP:
