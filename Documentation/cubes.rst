@@ -25,7 +25,7 @@ A standard cube:
            | +----------+ |
    port1---|-|          |-|---port3
            | |   core   | |
-   port2---|-|          |-|---port3
+   port2---|-|          |-|---port4
            | +----------+ |
            |              |
            +--------------+
@@ -70,6 +70,44 @@ Following is example topology composed by standard and transparent cubes.
     veth2                                                                 veth4
 
 ``polycubectl ?`` shows available cubes installed on your system.
+
+
+A shadow cube:
+  Only a standard cube can be **Shadow** type;
+   - ``polycubectl <cubetype> add <cubename> shadow=true``.
+
+  A shadow cube is associated with a Linux network namespace;
+
+  The parameters between the shadow cube and the namespace are aligned;
+
+  A port defined on a shadow cube is also visible from the network namespace:
+   - the user can decide to configure the ports using Linux (e.g. ifconfig or the ip command) or polycubectl;
+
+     for example: "``polycubectl <cubename> ports <PortName> set ip=<IpAddress>``" it is the same as "``ip netns exec pcn-<cubename> ifconfig <PortName> <IpAddress>``".
+   - the developer can let Linux handle some traffic by sending it to the namespace (e.g. ARP, ICMP, but in general all those protocols able to be managed by a tool running inside the namespace);
+
+::
+
+                       +--------------+
+               port1---|              |---port3
+                       |  namespace   |
+               port2---|              |---port4
+  Linux                +--------------+
+ ____________________________________________________________
+
+::
+
+  Polycube               shadow cube
+                       +--------------+
+                       |              |
+                       | +----------+ |
+               port1---|-|          |-|---port3
+                       | |   core   | |
+               port2---|-|          |-|---port4
+                       | +----------+ |
+                       |              |
+                       +--------------+
+
 
 Cubes structure
 ---------------
@@ -177,3 +215,19 @@ These primitives allow to associate transparent cubes to standard cube's ports o
   polycubectl attach firewall1 r1:port2
 
   polycubectl attach firewall0 veth1
+
+
+Span Mode
+---------
+
+The shadow cubes have a mode called **span**.
+
+The span mode when activated shows all the traffic seen by the service also to the namespace.
+ - To activate the span mode the command used is "``polycubectl <cubename> set span=true``".
+
+Span mode is very useful for debugging; On a shadow cube in span mode programs such as Wireshark or Tcpdump can sniff the traffic.
+
+However, the span mode consumes many resources when it is active, so it is disabled by default and it is recommended to use it only when necessary.
+
+N.B. Span mode duplicates traffic so that it is shown by the namespace, the cube continues to handle traffic.
+For this reason, for example, if we have a shadow router with active span mode we should not have Ip forwarding active on Linux, otherwise the router service forwards packets and copies them to the namespace, the namespace forwards again packets and there will be duplications.
