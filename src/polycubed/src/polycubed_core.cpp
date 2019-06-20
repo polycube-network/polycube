@@ -378,8 +378,8 @@ void PolycubedCore::attach(const std::string &cube_name,
         ServiceController::ports_to_ifaces.at(port_name));
   }
 
-  cube->set_parent(peer.get());
   peer->add_cube(cube.get(), position, other);
+  cube->set_parent(peer.get());
 }
 
 void PolycubedCore::detach(const std::string &cube_name,
