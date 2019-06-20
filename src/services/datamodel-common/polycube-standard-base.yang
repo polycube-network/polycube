@@ -41,5 +41,18 @@ module polycube-standard-base {
         polycube-base:cli-example "r0:port1";
       }
     }
+
+    leaf shadow {
+      type boolean;
+      default "false";
+      description "Defines if the service is visible in Linux";
+      polycube-base:init-only-config;
+    }
+
+    leaf span {
+      type boolean;
+      default "false";
+      description "Defines if all traffic is sent to Linux";
+    }
   }
 }

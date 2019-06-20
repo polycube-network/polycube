@@ -22,6 +22,8 @@ Polycube architecture adds a wrapper around the user's code, this wrapper calls 
 
 - **pcn_pkt_controller_with_metadata(struct __sk_buff *skb, struct pkt_metadata *md, u16 reason, u32 metadata[3])**: Sends the packet to the custom code running in the control path. In addition to the reason the user can also send some additional medatada.
 
+- **pcn_pkt_redirect_ns(struct __sk_buff *skb, struct pkt_metadata *md, u16 port)**: (it is only available for shadow services) sends the packet to the namespace as if it came from the port indicated as parameter
+
 Checksum calculation
 ********************
 
@@ -107,4 +109,3 @@ Usage example:
 ::
 
   pcn_pkt_log(ctx, LOG_DEBUG);
-

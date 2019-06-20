@@ -61,7 +61,7 @@ class CubeFactoryImpl : public CubeFactory {
   std::shared_ptr<CubeIface> create_cube(
       const std::string &name, const std::vector<std::string> &ingress_code,
       const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-      const CubeType type, const packet_in_cb &cb, LogLevel level);
+      const CubeType type, const packet_in_cb &cb, LogLevel level, bool shadow, bool span);
 
   std::shared_ptr<TransparentCubeIface> create_transparent_cube(
       const std::string &name, const std::vector<std::string> &ingress_code,

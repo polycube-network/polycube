@@ -30,7 +30,8 @@ enum {
 };
 
 Router::Router(const std::string name, const RouterJsonObject &conf)
-    : Cube(conf.getBase(), {generate_code()}, {}) {
+    : Cube(conf.getBase(), {generate_code()}, {}),
+    netlink_instance_router_(polycube::polycubed::Netlink::getInstance()) {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Router] [%n] [%l] %v");
   logger()->info("Creating Router instance");
 
@@ -38,9 +39,47 @@ Router::Router(const std::string name, const RouterJsonObject &conf)
   addRouteList(conf.getRoute());
 
   addPortsList(conf.getPorts());
+
+  if (get_shadow()) {
+    // netlink notification
+    netlink_notification_index_route_added = netlink_instance_router_.registerObserver(
+      polycube::polycubed::Netlink::Event::ROUTE_ADDED,
+      std::bind(&Router::netlink_notification_route_added, this,
+                std::placeholders::_1, std::placeholders::_2));
+
+    netlink_notification_index_route_deleted = netlink_instance_router_.registerObserver(
+      polycube::polycubed::Netlink::Event::ROUTE_DELETED,
+      std::bind(&Router::netlink_notification_route_deleted, this,
+                std::placeholders::_1, std::placeholders::_2));
+
+    netlink_notification_index_link_deleted = netlink_instance_router_.registerObserver(
+      polycube::polycubed::Netlink::Event::LINK_DELETED,
+      std::bind(&Router::netlink_notification_link_deleted, this,
+                std::placeholders::_1, std::placeholders::_2));
+
+    netlink_notification_index_new_address = netlink_instance_router_.registerObserver(
+      polycube::polycubed::Netlink::Event::NEW_ADDRESS,
+      std::bind(&Router::netlink_notification_new_address, this,
+                std::placeholders::_1, std::placeholders::_2));
+  }
 }
 
-Router::~Router() {}
+Router::~Router() {
+  if (get_shadow()) {
+    netlink_instance_router_.unregisterObserver(
+          polycube::polycubed::Netlink::Event::ROUTE_ADDED,
+          netlink_notification_index_route_added);
+    netlink_instance_router_.unregisterObserver(
+          polycube::polycubed::Netlink::Event::ROUTE_DELETED,
+          netlink_notification_index_route_deleted);
+    netlink_instance_router_.unregisterObserver(
+          polycube::polycubed::Netlink::Event::LINK_DELETED,
+          netlink_notification_index_link_deleted);
+    netlink_instance_router_.unregisterObserver(
+          polycube::polycubed::Netlink::Event::NEW_ADDRESS,
+          netlink_notification_index_new_address);
+  }
+}
 
 void Router::update(const RouterJsonObject &conf) {
   // This method updates all the object/parameter in Router object specified in
@@ -714,8 +753,12 @@ void Router::generate_arp_reply(Port &port, PacketInMetadata &md,
       port.send_packet_out(ethframe);
     }
   } else {
-    // no packet found, don't reply
-    logger()->info("no packet found for ARP reply");
+    if (get_shadow()) {
+      port.send_packet_ns(arp_reply);
+    } else {
+      // no packet found, don't reply
+      logger()->info("no packet found for ARP reply");
+    }
   }
   mu.unlock();
 }
@@ -730,6 +773,8 @@ std::vector<std::shared_ptr<Ports>> Router::getPortsList() {
 
 void Router::addPorts(const std::string &name, const PortsJsonObject &conf) {
   add_port<PortsJsonObject>(name, conf);
+  if (get_shadow())
+    getPorts(name)->setMac(getPorts(name)->getMac());
 }
 
 void Router::addPortsList(const std::vector<PortsJsonObject> &conf) {
@@ -963,4 +1008,202 @@ void Router::delArpEntryList() {
     throw std::runtime_error(
         "Error while removing all entries from the ARP table");
   }
+}
+
+/* Netlink */
+void Router::netlink_notification_route_added(int ifindex, const std::string &info_route) {
+  std::lock_guard<std::mutex> guard(router_mutex);
+
+  // Check if the interface is of this cube
+  std::string name_port = get_veth_name_from_index(ifindex);
+  if (!name_port.empty()) {
+    // update the routing table
+    // info_route = network/prefix/nexthop
+    std::istringstream split(info_route);
+    std::vector<std::string> info;
+
+    char split_char = '/';
+    for (std::string each; std::getline(split, each, split_char); info.push_back(each));
+    std::string network = info[0];
+    std::string prefix = info[1];
+    std::string nexthop = info[2];
+    if (nexthop == "-")
+      nexthop = "0.0.0.0";
+
+    try {
+      int port_index = get_port(name_port)->index();
+      add_linux_route(network, prefix, nexthop, name_port, port_index);
+    } catch (std::exception &e) {
+      logger()->trace("route added - False netlink notification: {0}", e.what());
+    }
+
+  }
+}
+
+void Router::netlink_notification_route_deleted(int ifindex, const std::string &info_route) {
+  std::lock_guard<std::mutex> guard(router_mutex);
+
+  // Check if the interface is of this cube
+  std::string name_port = get_veth_name_from_index(ifindex);
+  if (!name_port.empty()) {
+    // update the routing table
+    // info_route = network/prefix/nexthop
+    std::istringstream split(info_route);
+    std::vector<std::string> info;
+
+    char split_char = '/';
+    for (std::string each; std::getline(split, each, split_char); info.push_back(each));
+    std::string network = info[0];
+    std::string prefix = info[1];
+    std::string nexthop = info[2];
+    if (nexthop == "-")
+      nexthop = "0.0.0.0";
+
+    uint32_t prefix_ = std::stoi(prefix);
+    std::string netmask = utils::get_netmask_from_CIDR(prefix_);
+    try {
+      std::string ip_port = get_port(name_port)->getIp();
+
+      // remove the route only if it is not local
+      if (!address_in_subnet(ip_port, netmask, network) && prefix_ != 32)
+        remove_linux_route(network, prefix, nexthop, name_port);
+
+    } catch (std::exception &e) {
+      logger()->trace("route deleted - False netlink notification: {0}", e.what());
+    }
+
+  }
+}
+
+void Router::netlink_notification_link_deleted(int ifindex, const std::string &iface) {
+  std::lock_guard<std::mutex> guard(router_mutex);
+
+  // Check if the interface is of this cube
+  std::string name_port = get_veth_name_from_index(ifindex);
+  if (!name_port.empty()) {
+    try {
+      if (get_port(name_port)) {
+        delPorts(name_port);
+      }
+    } catch (std::exception &e) {
+      logger()->trace("link_deleted - False netlink notification: {0}", e.what());
+    }
+  }
+}
+
+void Router::netlink_notification_new_address(int ifindex, const std::string &info_address) {
+  std::lock_guard<std::mutex> guard(router_mutex);
+
+  // Check if the interface is of this cube
+  std::string name_port = get_veth_name_from_index(ifindex);
+  if (!name_port.empty()) {
+    try {
+      auto port = get_port(name_port);
+
+      // info_address = ip_address/prefix
+      std::istringstream split(info_address);
+      std::vector<std::string> info;
+
+      char split_char = '/';
+      for (std::string each; std::getline(split, each, split_char); info.push_back(each));
+      std::string new_ip = info[0];
+      std::string new_netmask = utils::get_netmask_from_CIDR(std::stoi(info[1]));
+
+      std::string old_ip = port->getIp();
+      std::string old_netmask = port->getNetmask();
+
+      if (old_ip != new_ip)
+        port->setIp_Netlink(new_ip);
+      if (old_netmask != new_netmask)
+        port->setNetmask_Netlink(new_netmask);
+
+    } catch (std::exception &e) {
+      logger()->trace("new_address - False netlink notification: {0}", e.what());
+    }
+  }
+}
+
+// Add Linux route to the routing table
+void Router::add_linux_route(const std::string &network,
+                             const std::string &prefix,
+                             const std::string &nexthop,
+                             const std::string &port_name,
+                             const int port_index) {
+  // Add the network reachable through the inteface
+  uint32_t prefix_ = std::stoi(prefix);
+  std::string interface_netmask = utils::get_netmask_from_CIDR(prefix_);
+  auto routing_table = get_hash_table<rt_k, rt_v>("routing_table");
+
+  rt_k key{
+      .netmask_len = prefix_,
+      .network = ip_string_to_be_uint(network),
+  };
+
+  try {
+    rt_v value1 = routing_table.get(key);
+
+    if (value1.nexthop == ip_string_to_be_uint(nexthop)) {
+      logger()->trace("This route already exists, it is not added");
+      return;
+    } else
+      logger()->trace("Route not found in the data path");
+  } catch (...) {
+    logger()->trace("Route not found in the data path");
+  }
+
+  // add route because not found in the data path
+  rt_v value{
+      .port = uint32_t(port_index),
+      .nexthop = ip_string_to_be_uint(nexthop),
+      .type = TYPE_NOLOCALINTERFACE,
+  };
+  routing_table.set(key, value);
+
+  logger()->info("Added Linux route [network: {0} - netmask: {1} - nexthop: {2} - interface: {3}]",
+                  network, interface_netmask, nexthop, port_name);
+
+  // Add the route in the table of the control plane
+  std::tuple<string, string, string> keyF(network, interface_netmask, nexthop);
+  uint32_t pathcost = 1;
+
+  routes_.emplace(std::piecewise_construct, std::forward_as_tuple(keyF),
+                  std::forward_as_tuple(*this, network, interface_netmask,
+                                        nexthop, port_name, pathcost));
+}
+
+// Remove Linux route from the routing table
+void Router::remove_linux_route(const std::string &network,
+                                const std::string &prefix,
+                                const std::string &nexthop,
+                                const std::string &port_name) {
+  uint32_t prefix_ = std::stoi(prefix);
+  std::string interface_netmask = utils::get_netmask_from_CIDR(prefix_);
+  auto routing_table = get_hash_table<rt_k, rt_v>("routing_table");
+
+  rt_k key{
+    .netmask_len = prefix_,
+    .network = ip_string_to_be_uint(network),
+  };
+
+  try {
+    rt_v value = routing_table.get(key);
+
+    if (value.nexthop == ip_string_to_be_uint(nexthop)) {
+      routing_table.remove(key);
+    } else {
+      logger()->trace("Route not found in the data path");
+      return;
+    }
+  } catch (...) {
+    logger()->trace("Route not found in the data path");
+    return;
+  }
+
+  logger()->info("Removed Linux route [network: {0} - netmask: {1} - nexthop: {2} - interface: {3}]",
+                network, interface_netmask, nexthop, port_name);
+
+  // remove the route in the table of the control plane
+  std::tuple<string, string, string> key_cp(network, interface_netmask, nexthop);
+  if (routes_.count(key_cp) != 0)
+    routes_.erase(key_cp);
 }

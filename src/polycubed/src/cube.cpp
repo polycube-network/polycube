@@ -16,17 +16,23 @@
 
 #include "cube.h"
 
+#include <net/if.h>
 #include "port_tc.h"
 #include "port_xdp.h"
+#include "utils/ns.h"
+#include "polycube/services/utils.h"
+
+const std::string prefix_ns = "pcn-";
+const std::string prefix_port = "ns_port_";
 
 namespace polycube {
 namespace polycubed {
 
 Cube::Cube(const std::string &name, const std::string &service_name,
            PatchPanel &patch_panel_ingress, PatchPanel &patch_panel_egress,
-           LogLevel level, CubeType type)
+           LogLevel level, CubeType type, bool shadow, bool span)
     : BaseCube(name, service_name, MASTER_CODE, patch_panel_ingress,
-               patch_panel_egress, level, type) {
+               patch_panel_egress, level, type), shadow_(shadow), span_(span) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   auto forward_ = master_program_->get_array_table<uint32_t>("forward_chain_");
@@ -36,11 +42,25 @@ Cube::Cube(const std::string &name, const std::string &service_name,
   // add free ports
   for (uint16_t i = 0; i < _POLYCUBE_MAX_PORTS; i++)
     free_ports_.insert(i);
+
+  if (!shadow_ && span_) {
+    throw std::runtime_error("Span mode is not present in no-shadow services");
+  }
+  if (shadow_) {
+    std::string name_ns = prefix_ns + name;
+    Namespace ns = Namespace::create(name_ns);
+    ns.set_random_id();
+  }
 }
 
 Cube::~Cube() {
   for (auto &it : ports_by_name_) {
     it.second->set_peer("");
+  }
+  if (get_shadow()) {
+    std::string name_ns = prefix_ns + get_name();
+    Namespace ns = Namespace::open(name_ns);
+    ns.remove();
   }
 }
 
@@ -75,6 +95,9 @@ nlohmann::json Cube::to_json() const {
     j["ports"] = ports_json;
   }
 
+  j["shadow"] = shadow_;
+  j["span"] = span_;
+
   return j;
 }
 
@@ -97,6 +120,9 @@ std::shared_ptr<PortIface> Cube::add_port(const std::string &name,
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (ports_by_name_.count(name) != 0) {
     throw std::runtime_error("Port " + name + " already exists");
+  }
+  if (get_shadow() && (name.find(prefix_port) != std::string::npos)) {
+    throw std::runtime_error("Port name cannot contain '" + prefix_port + "'");
   }
   auto id = allocate_port_id();
 
@@ -127,6 +153,61 @@ std::shared_ptr<PortIface> Cube::add_port(const std::string &name,
     throw;
   }
 
+  if (get_shadow()) {
+    // create a veth and move it in the namespace
+    std::string name_peerB = get_name() + "-" + name;
+    std::shared_ptr<Veth> veth = std::make_shared<Veth>(Veth::create(name, name_peerB));
+    VethPeer peerA = veth->get_peerA();
+    VethPeer peerB = veth->get_peerB();
+    int ifindex = if_nametoindex(name.c_str());
+
+    peerB.set_status(IFACE_STATUS::UP);
+    peerA.set_namespace(prefix_ns + get_name());
+    peerA.set_status(IFACE_STATUS::UP);
+    if (conf.count("ip") && conf.count("netmask")) {
+      int prefix = polycube::service::utils::get_netmask_length(conf.at("netmask").get<std::string>());
+      peerA.set_ip(conf.at("ip").get<std::string>(), prefix);
+    } else if (conf.count("ipv6")) {
+      peerA.set_ipv6(conf.at("ipv6").get<std::string>());
+    }
+    if (conf.count("mac")) {
+      peerA.set_mac(conf.at("mac").get<std::string>());
+    }
+
+    std::string name2 = prefix_port + name;
+    nlohmann::json conf2 = nlohmann::json::object();
+    conf2["name"] = name2;
+    conf2["peer"] = name_peerB;
+
+    auto id2 = allocate_port_id();
+    std::shared_ptr<PortIface> port2;
+
+    switch (type_) {
+    case CubeType::TC:
+      port2 = std::make_shared<PortTC>(*this, name2, id2, conf2);
+      break;
+    case CubeType::XDP_SKB:
+    case CubeType::XDP_DRV:
+      port2 = std::make_shared<PortXDP>(*this, name2, id2, conf2);
+      break;
+    }
+
+    ports_by_name_.emplace(name2, port2);
+    ports_by_index_.emplace(id2, port2);
+    veth_by_name_.emplace(name, veth);
+    ifindex_veth_.emplace(ifindex, name);
+
+    try {
+      port2->set_peer(name_peerB);
+    } catch(...) {
+      ports_by_name_.erase(name2);
+      ports_by_index_.erase(id2);
+      veth_by_name_.erase(name);
+      ifindex_veth_.erase(ifindex);
+      throw;
+    }
+  }
+
   return std::move(port);
 }
 
@@ -148,6 +229,32 @@ void Cube::remove_port(const std::string &name) {
   ports_by_name_.erase(name);
   ports_by_index_.erase(index);
   release_port_id(index);
+
+  cube_mutex_.unlock();
+  if (get_shadow()) {
+    // remove the veth
+    try {
+      veth_by_name_.at(name)->remove();
+      veth_by_name_.erase(name);
+    } catch (...) {
+      logger->trace("veth {0} not found", name);
+    }
+
+    for (auto const& [key, val] : ifindex_veth_) {
+      if (val == name) {
+        ifindex_veth_.erase(key);
+        break;
+      }
+    }
+
+    // remove the second port
+    std::string name2 = prefix_port + name;
+    ports_by_name_.at(name2)->set_peer("");
+    auto index2 = ports_by_name_.at(name2)->index();
+    ports_by_name_.erase(name2);
+    ports_by_index_.erase(index2);
+    release_port_id(index2);
+  }
 }
 
 std::shared_ptr<PortIface> Cube::get_port(const std::string &name) {
@@ -166,6 +273,32 @@ void Cube::update_forwarding_table(int index, int value) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   if (forward_chain_)  // is the forward chain still active?
     forward_chain_->update_value(index, value);
+}
+
+const bool Cube::get_shadow() const {
+  return shadow_;
+}
+
+const bool Cube::get_span() const {
+  return span_;
+}
+
+void Cube::set_span(const bool value) {
+  if (shadow_)
+    span_ = value;
+  else
+    throw std::runtime_error("Span mode is not present in no-shadow services");
+}
+
+/* returns the name of the veth given the ifindex */
+const std::string Cube::get_veth_name_from_index(const int ifindex) {
+  std::string name;
+  try {
+    name = ifindex_veth_.at(ifindex);
+  } catch (...) {
+    name = "";
+  }
+  return name;
 }
 
 const std::string Cube::MASTER_CODE = R"(

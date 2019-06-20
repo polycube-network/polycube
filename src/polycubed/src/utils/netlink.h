@@ -80,6 +80,8 @@ class Netlink {
   void set_iface_status(const std::string &iface, IFACE_STATUS status);
   void set_iface_mac(const std::string &iface, const std::string &mac);
   void set_iface_ip(const std::string &iface, const std::string &ip, int prefix);
+  void unset_iface_ip(const std::string &iface, const std::string &ip, int prefix);
+  void set_iface_ipv6(const std::string &iface, const std::string &ip);
   void move_iface_into_ns(const std::string &iface, int fd);
 
   template <typename Observer>
@@ -122,6 +124,8 @@ class Netlink {
 
   struct nlmsghdr* netlink_alloc();
   struct nlmsghdr* netlink_ip_alloc();
+  struct nlmsghdr* netlink_ip_dealloc();
+  struct nlmsghdr* netlink_ipv6_alloc();
   int netlink_nl_send(struct nlmsghdr *nlmsg);
 
   std::shared_ptr<spdlog::logger> logger;

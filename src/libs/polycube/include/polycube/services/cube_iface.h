@@ -84,6 +84,12 @@ class CubeIface : virtual public BaseCubeIface {
 
   virtual void set_conf(const nlohmann::json &conf) = 0;
   virtual nlohmann::json to_json() const = 0;
+
+  virtual const bool get_shadow() const = 0;
+  virtual const bool get_span() const = 0;
+  virtual void set_span(const bool value) = 0;
+
+  virtual const std::string get_veth_name_from_index(const int ifindex) = 0;
 };
 
 class TransparentCubeIface : virtual public BaseCubeIface {

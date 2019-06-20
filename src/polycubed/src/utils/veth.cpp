@@ -80,6 +80,17 @@ void VethPeer::set_ip(const std::string &ip, const int prefix) {
   }
 }
 
+void VethPeer::set_ipv6(const std::string &ipv6) {
+  if (!ns_.empty()) {
+    /* exec set_iface_ipv6 into namespace */
+    std::function<void()> doThis = [&]{Netlink::getInstance().set_iface_ipv6(name_, ipv6);};
+    Namespace namespace_ = Namespace::open(ns_);
+    namespace_.execute(doThis);
+  } else {
+    Netlink::getInstance().set_iface_ipv6(name_, ipv6);
+  }
+}
+
 /* Class Veth */
 Veth Veth::create(const std::string &peerA, const std::string &peerB) {
   struct rtnl_link *link;
@@ -132,6 +143,9 @@ void Veth::remove() {
   link = rtnl_link_get_by_name(link_cache, peerA_.get_name().c_str());
   if (!link)
     link = rtnl_link_get_by_name(link_cache, peerB_.get_name().c_str());
+
+  if (!link)
+    throw std::runtime_error("Veth::remove - veth not found");
 
   if (rtnl_link_delete(sk, link) < 0) {
     nl_close(sk);

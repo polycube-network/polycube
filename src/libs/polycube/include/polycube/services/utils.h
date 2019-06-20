@@ -59,6 +59,14 @@ std::string get_ip_from_string(const std::string &ipv_net);
  * length" -> 24 in this case */
 std::string get_netmask_from_string(const std::string &ipv_net);
 
+/* Take in ingress a string like 255.255.255.0 and return the "prefix
+ * length" -> 24 in this case */
+uint32_t get_netmask_length(const std::string &netmask_string);
+
+/* Take in ingress a prefix length like 24 and return the
+* "netmask" -> 255.255.255.0 in this case */
+std::string get_netmask_from_CIDR(const int cidr);
+
 /*
  * formats a debug string, custom specifiers are evaluated by a
  * custom implemented logic
