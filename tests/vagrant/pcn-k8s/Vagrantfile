@@ -62,7 +62,7 @@ $configureBox = <<-SCRIPT
     # ip of this box
     IP_ADDR=`ifconfig enp0s8 | grep mask | awk '{print $2}'| cut -f2 -d:`
     # set node-ip
-    sudo sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" /etc/default/kubelet
+    sudo sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" /var/lib/kubelet/kubeadm-flags.env
     sudo systemctl restart kubelet
 SCRIPT
 
@@ -82,8 +82,8 @@ $configureMaster = <<-SCRIPT
 
     # install PCN-K8S-CNI pod network addon
     export KUBECONFIG=/etc/kubernetes/admin.conf
-    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/src/components/k8s/standalone_etcd.yaml
-    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/src/components/k8s/pcn-k8s.yaml
+    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/master/src/components/k8s/standalone_etcd.yaml
+    kubectl apply -f https://raw.githubusercontent.com/polycube-network/polycube/master/src/components/k8s/pcn-k8s.yaml
 
     kubeadm token create --print-join-command > /etc/kubeadm_join_cmd.sh
     chmod +x /etc/kubeadm_join_cmd.sh
