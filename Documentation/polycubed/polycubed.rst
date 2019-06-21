@@ -59,14 +59,14 @@ If the same parameter is specified in both, the configuration file and the comma
 Persistency
 ^^^^^^^^^^^
 
-To add stateful capabilities and improve its reliability, polycubed has some functionalities that allow the user to recover from failures without losing data.
-By default, while running the daemon keeps in memory an instance of all the topology, that is updated each time the user modifies it.
-To avoid loss of data, after every change the cubes configuration is dumped to file too. The default path is ``/etc/polycube/cubes.yaml``.
-The standard behavior of the daemon at startup is to load the latest topology that have been dumped in that file the previous time.
-It is possible to define a different topology file by using the ``--cubes-dump`` flag followed by the path to the file.
-In the case we want to start polycubed with an empty topology, avoiding any possible load at startup, we can add the ``--cubes-init`` flag.
-Beware of the fact that any previous configuration in the file will be overwritten after the first modification.
-If not necessary, it is also possible to disable this functionality by using the ``--cubes-nodump`` flag and we would avoid any penalty it could produce.
+Polycubed has persistent capabilities, which means that (1) it can automatically load the configuration that was present when the daemon was shut down, (2) each time a configuration command is issued, it is automatically dumped on disk.
+This enables polycubed also to recover from failures, such as rebooting the machine.
+By default, the daemon keeps in memory an instance of all the topology, including the configuration of each individual service.
+Topology and configuration are automatically updated at each new command; the configuration is also dumped to disk, on file ``/etc/polycube/cubes.yaml``.
+The standard behavior of the daemon at startup is to load the latest topology that was active at the end of the previous execution.
+Users can load a different topology file by using the ``--cubes-dump`` flag followed by the path to the file.
+In case we want to start polycubed with an empty topology, avoiding any possible load at startup, we can launch polycubed with the ``--cubes-init`` flag. Beware that in this case any existing configuration in the default file will be overwritten.
+Finally, persistency can be disabled with the ``--cubes-nodump`` flag; this would also avoid any (very limited) performance penalty introduced by this feature.
 
 ::
 
