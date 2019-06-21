@@ -44,6 +44,54 @@ bool check_kernel_version(const std::string &version) {
          KERNEL_VERSION(major_r, minor_r, patch_r);
 }
 
+std::map<std::string, std::string> strip_port_peers(json &cubes) {
+  std::map<std::string, std::string> peers;
+
+  for (auto &cube : cubes) {
+    if (!cube.count("ports")) {
+      continue;
+    }
+
+    auto &ports = cube.at("ports");
+
+    for (auto &port : ports) {
+      if (port.count("peer")) {
+        auto cube_name = cube.at("name").get<std::string>();
+        auto port_name = port.at("name").get<std::string>();
+        peers[cube_name + ":" + port_name] = port.at("peer").get<std::string>();
+        port.erase("peer");
+      }
+    }
+  }
+
+  return peers;
+}
+
+std::map<std::string, json> strip_port_tcubes(json &jcube) {
+  std::map<std::string, json> cubes;
+
+  if (!jcube.count("ports")) {
+    return cubes;
+  }
+
+  auto &jports = jcube.at("ports");
+
+  for (auto &jport : jports) {
+    if (!jport.count("tcubes")) {
+      continue;
+    }
+
+    auto port_name = jport.at("name").get<std::string>();
+
+    json jcubes = json::object();
+    jcubes["tcubes"] = jport.at("tcubes");
+    cubes[port_name] = jcubes;
+    jport.erase("tcubes");
+  }
+
+  return cubes;
+}
+
 }  // namespace utils
 }  // namespace polycubed
 }  // namespace polycube

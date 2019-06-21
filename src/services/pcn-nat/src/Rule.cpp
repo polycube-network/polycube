@@ -20,11 +20,11 @@
 #include "Nat.h"
 
 Rule::Rule(Nat &parent, const RuleJsonObject &conf) : parent_(parent) {
-  update(conf);
   snat_ = std::make_shared<RuleSnat>(*this);
   dnat_ = std::make_shared<RuleDnat>(*this);
   portforwarding_ = std::make_shared<RulePortForwarding>(*this);
   masquerade_ = std::make_shared<RuleMasquerade>(*this);
+  update(conf);
 }
 
 Rule::~Rule() {

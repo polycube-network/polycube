@@ -37,6 +37,7 @@
 #include <spdlog/sinks/stdout_sinks.h>
 
 #include "polycubed_core.h"
+#include "cubes_dump.h"
 
 #define REQUIRED_POLYCUBED_KERNEL ("4.14.0")
 
@@ -54,6 +55,7 @@ std::shared_ptr<spdlog::logger> logger;
 // create core instance
 PolycubedCore *core;
 RestServer *restserver;
+CubesDump *cubesdump;
 int netlink_notification_id = -1;
 
 void shutdown() {
@@ -68,6 +70,10 @@ void shutdown() {
     logger->debug("rest server shutdown");
     delete core;
     delete restserver;
+  }
+
+  if (cubesdump) {
+    delete cubesdump;
   }
 
   if (netlink_notification_id != -1) {
@@ -277,6 +283,23 @@ int main(int argc, char *argv[]) {
 
   // register services that are shipped with polycube
   load_services(*core);
+
+  // create a cubes dump instance if needed
+  if (!config.getCubesNoDump()) {
+    cubesdump = new CubesDump();
+    core->set_cubes_dump(cubesdump);
+  }
+
+  // In case the user does not want to initialize the Polycube virtual network,
+  // let's load the last topology that was present when the daemon was shut down.
+  if (!config.getCubesInitTopology()) {
+    restserver->load_last_topology();
+  }
+
+  if (!config.getCubesNoDump()) {
+    // start to saving topology only after it has been loaded
+    cubesdump->Enable();
+  }
 
   // pause the execution of current thread until ctrl+c
   pause();

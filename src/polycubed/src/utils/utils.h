@@ -15,12 +15,18 @@
  */
 
 #include <string>
+#include <map>
+#include "polycube/services/json.hpp"
+
+using json = nlohmann::json;
 
 namespace polycube {
 namespace polycubed {
 namespace utils {
 
 bool check_kernel_version(const std::string &version);
+std::map<std::string, std::string> strip_port_peers(json &cubes);
+std::map<std::string, json> strip_port_tcubes(json &jcube);
 
 }  // namespace utils
 }  // namespace polycubed

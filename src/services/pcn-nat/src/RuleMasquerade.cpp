@@ -50,14 +50,8 @@ RuleMasqueradeJsonObject RuleMasquerade::toJsonObject() {
   return conf;
 }
 
-RuleMasqueradeEnableOutputJsonObject RuleMasquerade::enable() {
-  RuleMasqueradeEnableOutputJsonObject output;
-  if (enabled) {
-    // Already enabled
-    output.setResult(true);
-    return output;
-  }
-  try {
+bool RuleMasquerade::inject(uint32_t ip) {
+ try {
     // Inject rule in the datapath table
     auto sm_rules = parent_.getParent().get_hash_table<sm_k, sm_v>(
         "sm_rules", 0, ProgramType::EGRESS);
@@ -66,21 +60,47 @@ RuleMasqueradeEnableOutputJsonObject RuleMasquerade::enable() {
     };
 
     sm_v value{
-        .external_ip = utils::ip_string_to_be_uint(
-            parent_.getParent().getExternalIpString()),
+        .external_ip = ip,
         .entry_type = (uint8_t)NattingTableOriginatingRuleEnum::MASQUERADE,
     };
     sm_rules.set(key, value);
-    enabled = true;
+  } catch (std::exception &e) {
+    logger()->error("Error injecting masquerate rule " + std::string(e.what()));
+    return false;
+  }
+
+  return true;
+}
+
+RuleMasqueradeEnableOutputJsonObject RuleMasquerade::enable() {
+  RuleMasqueradeEnableOutputJsonObject output;
+  if (enabled) {
+    // Already enabled
     output.setResult(true);
+    return output;
+  }
+
+  uint32_t ip = 0;
+
+  try {
+    ip = utils::ip_string_to_be_uint(
+                       parent_.getParent().getExternalIpString());
+  } catch(...) {
+    output.setResult(false);
+    return output;
+  }
+
+  bool result = inject(ip);
+  output.setResult(result);
+  if (result) {
+    enabled = true;
     logger()->info("Enabled masquerade: 0.0.0.0 -> {0}",
                    parent_.getParent().getExternalIpString());
-  } catch (std::exception &e) {
-    logger()->info("Could not enable masquerade: " + std::string(e.what()));
-    output.setResult(false);
   }
+
   return output;
 }
+
 RuleMasqueradeDisableOutputJsonObject RuleMasquerade::disable() {
   RuleMasqueradeDisableOutputJsonObject output;
   if (!enabled) {
@@ -88,28 +108,27 @@ RuleMasqueradeDisableOutputJsonObject RuleMasquerade::disable() {
     output.setResult(true);
     return output;
   }
-  try {
-    auto sm_rules = parent_.getParent().get_hash_table<sm_k, sm_v>(
-        "sm_rules", 0, ProgramType::EGRESS);
-    sm_k key{
-        .internal_netmask_len = 0, .internal_ip = 0,
-    };
 
-    sm_rules.remove(key);
-
+  bool result = inject(0);
+  output.setResult(result);
+  if (result) {
     enabled = false;
-    output.setResult(true);
     logger()->info("Disabled masquerade");
-  } catch (std::exception &e) {
-    logger()->info("Could not disable masquerade: " + std::string(e.what()));
-    output.setResult(false);
   }
+
   return output;
 }
 
 void RuleMasquerade::setEnabled(const bool &value) {
+  if (value) {
+    enable();
+  } else {
+    disable();
+  }
+
   enabled = value;
 }
+
 bool RuleMasquerade::getEnabled() {
   return enabled;
 }

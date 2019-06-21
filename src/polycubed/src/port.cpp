@@ -163,6 +163,13 @@ void Port::set_conf(const nlohmann::json &conf) {
   if (conf.count("peer")) {
     set_peer(conf.at("peer").get<std::string>());
   }
+
+  // attach transparent cubes present on the port
+  if (conf.count("tcubes")) {
+    for (auto &cube : conf.at("tcubes")) {
+      core->attach(cube.get<std::string>(), get_path(), "last", "");
+    }
+  }
 }
 
 nlohmann::json Port::to_json() const {
@@ -172,6 +179,11 @@ nlohmann::json Port::to_json() const {
   val["uuid"] = uuid().str();
   val["status"] = port_status_to_string(get_status());
   val["peer"] = peer();
+
+  const auto &cubes_names = get_cubes_names();
+  if (cubes_names.size()) {
+    val["tcubes"] = cubes_names;
+  }
 
   return val;
 }

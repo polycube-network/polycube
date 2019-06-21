@@ -33,7 +33,7 @@ int PeerIface::calculate_cube_index(int index) {
 
 enum class Position { AUTO, FIRST, LAST };
 
-void PeerIface::add_cube(TransparentCube *cube, const std::string &position,
+void PeerIface::add_cube(TransparentCube *cube, std::string *position,
                          const std::string &other) {
   std::lock_guard<std::mutex> guard(mutex_);
   int index = 0;
@@ -51,7 +51,7 @@ void PeerIface::add_cube(TransparentCube *cube, const std::string &position,
     }
   }
 
-  if (position == "auto") {
+  if (*position == "auto") {
     CubePositionComparison cmp;
     // try to determine index from below
     for (int i = 0; i < cubes_.size(); i++) {
@@ -80,16 +80,17 @@ void PeerIface::add_cube(TransparentCube *cube, const std::string &position,
         }
       }
     }
-  } else if (position == "first") {
+  } else if (*position == "first") {
     index = 0;
-  } else if (position == "last") {
+  } else if (*position == "last") {
     index = cubes_.size();
-  } else if (position == "before") {
+  } else if (*position == "before") {
     index = other_index;
-  } else if (position == "after") {
+  } else if (*position == "after") {
     index = other_index + 1;
   }
 
+  *position = std::to_string(index);
   cubes_.insert(cubes_.begin() + calculate_cube_index(index), cube);
   update_indexes();
 }
@@ -109,6 +110,18 @@ void PeerIface::remove_cube(const std::string &cube_name) {
 
   cubes_.erase(pos);
   update_indexes();
+}
+
+std::vector<std::string> PeerIface::get_cubes_names() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<std::string> cubes_names;
+
+  for (auto &cube : cubes_) {
+    cubes_names.push_back(cube->get_name());
+  }
+
+  return cubes_names;
 }
 
 PeerIface::CubePositionComparison PeerIface::compare_position(

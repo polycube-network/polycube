@@ -24,6 +24,7 @@
 #include <unordered_map>
 
 #include "base_model.h"
+#include "cubes_dump.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "service_controller.h"
@@ -39,6 +40,7 @@ namespace polycubed {
 class RestServer;
 
 class PolycubedCore {
+  friend class RestServer;
  public:
   PolycubedCore(BaseModel *base_model);
   ~PolycubedCore();
@@ -82,6 +84,10 @@ class PolycubedCore {
 
   void set_rest_server(RestServer *rest_server);
   RestServer *get_rest_server();
+
+  void set_cubes_dump(CubesDump *cubes_dump);
+  CubesDump *get_cubes_dump();
+
   BaseModel *base_model();
 
  private:
@@ -92,6 +98,8 @@ class PolycubedCore {
   std::shared_ptr<spdlog::logger> logger;
   RestServer *rest_server_;
   BaseModel *base_model_;
+  // This manages the cubes configuration in memory and the dump to file
+  CubesDump *cubes_dump_;
 };
 
 }  // namespace polycubed

@@ -244,4 +244,24 @@ Response BaseModel::set_span(const std::string &cube_name,
   return Response{kOk, ::strdup("")};
 }
 
+Response BaseModel::get_port_tcubes(const std::string &cube_name,
+                                    const std::string &port_name) const {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  // TODO: is this case even possible?
+  auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+  if (cube == nullptr) {
+    return Response{kNoContent, ::strdup("Cube is transparent")};
+  }
+
+  auto port_ = cube->get_port(port_name);
+  auto port = std::dynamic_pointer_cast<Port>(port_);
+  nlohmann::json j = port->get_cubes_names();
+
+  return Response{kOk, ::strdup(j.dump().c_str())};
+}
+
 }  // namespace polycube::polycubed

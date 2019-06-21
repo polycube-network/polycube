@@ -40,9 +40,10 @@ class PeerIface {
 
   virtual std::string get_parameter(const std::string &parameter) = 0;
 
-  void add_cube(TransparentCube *cube, const std::string &position,
+  void add_cube(TransparentCube *cube, std::string *position,
                 const std::string &other);
   void remove_cube(const std::string &type);
+  std::vector<std::string> get_cubes_names() const;
 
  protected:
   enum class CubePositionComparison {
