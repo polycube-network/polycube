@@ -38,11 +38,11 @@ namespace SynfloodApiImpl {
   SynfloodJsonObject read_synflood_by_id(const std::string &name);
   std::vector<SynfloodJsonObject> read_synflood_list_by_id();
   StatsJsonObject read_synflood_stats_by_id(const std::string &name);
-  uint64_t read_synflood_stats_deliverratio_by_id(const std::string &name);
+  std::string read_synflood_stats_deliverratio_by_id(const std::string &name);
   uint64_t read_synflood_stats_lastupdate_by_id(const std::string &name);
-  uint64_t read_synflood_stats_responseratio_by_id(const std::string &name);
-  uint64_t read_synflood_stats_tcpattemptfails_by_id(const std::string &name);
-  uint64_t read_synflood_stats_tcpoutrsts_by_id(const std::string &name);
+  std::string read_synflood_stats_responseratio_by_id(const std::string &name);
+  std::string read_synflood_stats_tcpattemptfails_by_id(const std::string &name);
+  std::string read_synflood_stats_tcpoutrsts_by_id(const std::string &name);
   void replace_synflood_by_id(const std::string &name, const SynfloodJsonObject &value);
   void update_synflood_by_id(const std::string &name, const SynfloodJsonObject &value);
   void update_synflood_list_by_id(const std::vector<SynfloodJsonObject> &value);

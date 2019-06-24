@@ -126,9 +126,9 @@ read_synflood_stats_by_id(const std::string &name) {
 * @param[in] name ID of name
 *
 * Responses:
-* uint64_t
+* std::string
 */
-uint64_t
+std::string
 read_synflood_stats_deliverratio_by_id(const std::string &name) {
   auto synflood = get_cube(name);
   auto stats = synflood->getStats();
@@ -162,9 +162,9 @@ read_synflood_stats_lastupdate_by_id(const std::string &name) {
 * @param[in] name ID of name
 *
 * Responses:
-* uint64_t
+* std::string
 */
-uint64_t
+std::string
 read_synflood_stats_responseratio_by_id(const std::string &name) {
   auto synflood = get_cube(name);
   auto stats = synflood->getStats();
@@ -180,9 +180,9 @@ read_synflood_stats_responseratio_by_id(const std::string &name) {
 * @param[in] name ID of name
 *
 * Responses:
-* uint64_t
+* std::string
 */
-uint64_t
+std::string
 read_synflood_stats_tcpattemptfails_by_id(const std::string &name) {
   auto synflood = get_cube(name);
   auto stats = synflood->getStats();
@@ -198,9 +198,9 @@ read_synflood_stats_tcpattemptfails_by_id(const std::string &name) {
 * @param[in] name ID of name
 *
 * Responses:
-* uint64_t
+* std::string
 */
-uint64_t
+std::string
 read_synflood_stats_tcpoutrsts_by_id(const std::string &name) {
   auto synflood = get_cube(name);
   auto stats = synflood->getStats();

@@ -624,9 +624,8 @@
                         "description": "OK: Successful operation",
                         "schema": {
                             "readOnly": true,
-                            "type": "integer",
-                            "description": "TCP attempts fails",
-                            "format": "uint64"
+                            "type": "string",
+                            "description": "Number of failed TCP connections"
                         }
                     },
                     "405": {
@@ -669,9 +668,8 @@
                         "description": "OK: Successful operation",
                         "schema": {
                             "readOnly": true,
-                            "type": "integer",
-                            "description": "TCP sent with RST flag",
-                            "format": "uint64"
+                            "type": "string",
+                            "description": "Number of TCP segments sent, containing the RST flag"
                         }
                     },
                     "405": {
@@ -714,9 +712,8 @@
                         "description": "OK: Successful operation",
                         "schema": {
                             "readOnly": true,
-                            "type": "integer",
-                            "description": "pkts delivered to application over total received pkts",
-                            "format": "uint64"
+                            "type": "string",
+                            "description": "Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts"
                         }
                     },
                     "405": {
@@ -759,9 +756,8 @@
                         "description": "OK: Successful operation",
                         "schema": {
                             "readOnly": true,
-                            "type": "integer",
-                            "description": "pkts requests to send over total received pkts",
-                            "format": "uint64"
+                            "type": "string",
+                            "description": "Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts"
                         }
                     },
                     "405": {
@@ -848,27 +844,23 @@
             "properties": {
                 "tcpattemptfails": {
                     "readOnly": true,
-                    "type": "integer",
-                    "description": "TCP attempts fails",
-                    "format": "uint64"
+                    "type": "string",
+                    "description": "Number of failed TCP connections"
                 },
                 "tcpoutrsts": {
                     "readOnly": true,
-                    "type": "integer",
-                    "description": "TCP sent with RST flag",
-                    "format": "uint64"
+                    "type": "string",
+                    "description": "Number of TCP segments sent, containing the RST flag"
                 },
                 "deliverratio": {
                     "readOnly": true,
-                    "type": "integer",
-                    "description": "pkts delivered to application over total received pkts",
-                    "format": "uint64"
+                    "type": "string",
+                    "description": "Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts"
                 },
                 "responseratio": {
                     "readOnly": true,
-                    "type": "integer",
-                    "description": "pkts requests to send over total received pkts",
-                    "format": "uint64"
+                    "type": "string",
+                    "description": "Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts"
                 },
                 "lastupdate": {
                     "readOnly": true,
