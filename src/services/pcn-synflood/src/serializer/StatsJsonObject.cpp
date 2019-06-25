@@ -35,19 +35,19 @@ StatsJsonObject::StatsJsonObject(const nlohmann::json &val) :
 
 
   if (val.count("tcpattemptfails")) {
-    setTcpattemptfails(val.at("tcpattemptfails").get<uint64_t>());
+    setTcpattemptfails(val.at("tcpattemptfails").get<std::string>());
   }
 
   if (val.count("tcpoutrsts")) {
-    setTcpoutrsts(val.at("tcpoutrsts").get<uint64_t>());
+    setTcpoutrsts(val.at("tcpoutrsts").get<std::string>());
   }
 
   if (val.count("deliverratio")) {
-    setDeliverratio(val.at("deliverratio").get<uint64_t>());
+    setDeliverratio(val.at("deliverratio").get<std::string>());
   }
 
   if (val.count("responseratio")) {
-    setResponseratio(val.at("responseratio").get<uint64_t>());
+    setResponseratio(val.at("responseratio").get<std::string>());
   }
 
   if (val.count("lastupdate")) {
@@ -84,11 +84,11 @@ nlohmann::json StatsJsonObject::toJson() const {
   return val;
 }
 
-uint64_t StatsJsonObject::getTcpattemptfails() const {
+std::string StatsJsonObject::getTcpattemptfails() const {
   return m_tcpattemptfails;
 }
 
-void StatsJsonObject::setTcpattemptfails(uint64_t value) {
+void StatsJsonObject::setTcpattemptfails(std::string value) {
   m_tcpattemptfails = value;
   m_tcpattemptfailsIsSet = true;
 }
@@ -101,11 +101,11 @@ void StatsJsonObject::unsetTcpattemptfails() {
   m_tcpattemptfailsIsSet = false;
 }
 
-uint64_t StatsJsonObject::getTcpoutrsts() const {
+std::string StatsJsonObject::getTcpoutrsts() const {
   return m_tcpoutrsts;
 }
 
-void StatsJsonObject::setTcpoutrsts(uint64_t value) {
+void StatsJsonObject::setTcpoutrsts(std::string value) {
   m_tcpoutrsts = value;
   m_tcpoutrstsIsSet = true;
 }
@@ -118,11 +118,11 @@ void StatsJsonObject::unsetTcpoutrsts() {
   m_tcpoutrstsIsSet = false;
 }
 
-uint64_t StatsJsonObject::getDeliverratio() const {
+std::string StatsJsonObject::getDeliverratio() const {
   return m_deliverratio;
 }
 
-void StatsJsonObject::setDeliverratio(uint64_t value) {
+void StatsJsonObject::setDeliverratio(std::string value) {
   m_deliverratio = value;
   m_deliverratioIsSet = true;
 }
@@ -135,11 +135,11 @@ void StatsJsonObject::unsetDeliverratio() {
   m_deliverratioIsSet = false;
 }
 
-uint64_t StatsJsonObject::getResponseratio() const {
+std::string StatsJsonObject::getResponseratio() const {
   return m_responseratio;
 }
 
-void StatsJsonObject::setResponseratio(uint64_t value) {
+void StatsJsonObject::setResponseratio(std::string value) {
   m_responseratio = value;
   m_responseratioIsSet = true;
 }

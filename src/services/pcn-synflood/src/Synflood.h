@@ -38,6 +38,4 @@ class Synflood : public SynfloodBase {
   void addStats(const StatsJsonObject &value) override;
   void replaceStats(const StatsJsonObject &conf) override;
   void delStats() override;
-
-  static std::string exec(const char* cmd);
 };

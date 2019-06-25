@@ -37,34 +37,34 @@ public:
 
 
   /// <summary>
-  /// TCP attempts fails
+  /// Number of failed TCP connections
   /// </summary>
-  uint64_t getTcpattemptfails() const;
-  void setTcpattemptfails(uint64_t value);
+  std::string getTcpattemptfails() const;
+  void setTcpattemptfails(std::string value);
   bool tcpattemptfailsIsSet() const;
   void unsetTcpattemptfails();
 
   /// <summary>
-  /// TCP sent with RST flag
+  /// Number of TCP segments sent, containing the RST flag
   /// </summary>
-  uint64_t getTcpoutrsts() const;
-  void setTcpoutrsts(uint64_t value);
+  std::string getTcpoutrsts() const;
+  void setTcpoutrsts(std::string value);
   bool tcpoutrstsIsSet() const;
   void unsetTcpoutrsts();
 
   /// <summary>
-  /// pkts delivered to application over total received pkts
+  /// Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts
   /// </summary>
-  uint64_t getDeliverratio() const;
-  void setDeliverratio(uint64_t value);
+  std::string getDeliverratio() const;
+  void setDeliverratio(std::string value);
   bool deliverratioIsSet() const;
   void unsetDeliverratio();
 
   /// <summary>
-  /// pkts requests to send over total received pkts
+  /// Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts
   /// </summary>
-  uint64_t getResponseratio() const;
-  void setResponseratio(uint64_t value);
+  std::string getResponseratio() const;
+  void setResponseratio(std::string value);
   bool responseratioIsSet() const;
   void unsetResponseratio();
 
@@ -77,13 +77,13 @@ public:
   void unsetLastupdate();
 
 private:
-  uint64_t m_tcpattemptfails;
+  std::string m_tcpattemptfails;
   bool m_tcpattemptfailsIsSet;
-  uint64_t m_tcpoutrsts;
+  std::string m_tcpoutrsts;
   bool m_tcpoutrstsIsSet;
-  uint64_t m_deliverratio;
+  std::string m_deliverratio;
   bool m_deliverratioIsSet;
-  uint64_t m_responseratio;
+  std::string m_responseratio;
   bool m_responseratioIsSet;
   uint64_t m_lastupdate;
   bool m_lastupdateIsSet;

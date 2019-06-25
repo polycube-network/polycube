@@ -11,6 +11,16 @@
 
 #include "../base/StatsBase.h"
 
+enum class STATISTICS {
+  IP_IN_RECEIVES,
+  IP_IN_DELIVERS,
+  IP_OUT_REQUESTS,
+  TCP_ATTEMPT_FAILS,
+  TCP_OUT_RSTS,
+  DELIVER_RATIO,
+  RESPONSE_RATIO,
+  ALL_SYNFLOOD_STATS
+};
 
 class Synflood;
 
@@ -21,28 +31,41 @@ class Stats : public StatsBase {
   Stats(Synflood &parent, const StatsJsonObject &conf);
   virtual ~Stats();
 
-  /// <summary>
-  /// TCP attempts fails
-  /// </summary>
-  uint64_t getTcpattemptfails() override;
+  StatsJsonObject toJsonObject() override;
 
   /// <summary>
-  /// TCP sent with RST flag
+  /// Number of failed TCP connections
   /// </summary>
-  uint64_t getTcpoutrsts() override;
+  std::string getTcpattemptfails() override;
 
   /// <summary>
-  /// pkts delivered to application over total received pkts
+  /// Number of TCP segments sent, containing the RST flag
   /// </summary>
-  uint64_t getDeliverratio() override;
+  std::string getTcpoutrsts() override;
 
   /// <summary>
-  /// pkts requests to send over total received pkts
+  /// Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts
   /// </summary>
-  uint64_t getResponseratio() override;
+  std::string getDeliverratio() override;
+
+  /// <summary>
+  /// Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts
+  /// </summary>
+  std::string getResponseratio() override;
 
   /// <summary>
   /// last update (time from epoch in milliseconds)
   /// </summary>
   uint64_t getLastupdate() override;
+
+
+ private:
+  std::string TcpAttemptFails;
+  std::string TcpOutRsts;
+  std::string IpInDelivers;
+  std::string IpInReceives;
+  std::string IpOutRequests;
+
+  void updateAllValues();
+  void getValue(STATISTICS statistic_type);
 };

@@ -39,24 +39,24 @@ class StatsBase {
   virtual StatsJsonObject toJsonObject();
 
   /// <summary>
-  /// TCP attempts fails
+  /// Number of failed TCP connections
   /// </summary>
-  virtual uint64_t getTcpattemptfails() = 0;
+  virtual std::string getTcpattemptfails() = 0;
 
   /// <summary>
-  /// TCP sent with RST flag
+  /// Number of TCP segments sent, containing the RST flag
   /// </summary>
-  virtual uint64_t getTcpoutrsts() = 0;
+  virtual std::string getTcpoutrsts() = 0;
 
   /// <summary>
-  /// pkts delivered to application over total received pkts
+  /// Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts
   /// </summary>
-  virtual uint64_t getDeliverratio() = 0;
+  virtual std::string getDeliverratio() = 0;
 
   /// <summary>
-  /// pkts requests to send over total received pkts
+  /// Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts
   /// </summary>
-  virtual uint64_t getResponseratio() = 0;
+  virtual std::string getResponseratio() = 0;
 
   /// <summary>
   /// last update (time from epoch in milliseconds)
