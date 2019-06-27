@@ -32,17 +32,13 @@ namespace configuration {
 
 #define LOGLEVEL spdlog::level::level_enum::info
 #define DAEMON false
-#define CUBESINIT false
-#define CUBESNODUMP false
 #define PIDFILE "/var/run/polycube.pid"
 #define SERVER_PORT 9000
 #define SERVER_IP "localhost"
 #define LOGFILE "/var/log/polycube/polycubed.log"
 #define CONFIGFILEDIR "/etc/polycube"
 #define CONFIGFILENAME "polycubed.conf"
-#define CUBESDUMPFILE "cubes.yaml"
 #define CONFIGFILE (CONFIGFILEDIR "/" CONFIGFILENAME)
-#define CUBESDUMPFILEPATH (CONFIGFILEDIR "/" CUBESDUMPFILE)
 
 static void show_usage(const std::string &name) {
   std::cout << std::boolalpha;
@@ -68,11 +64,6 @@ static void show_usage(const std::string &name) {
             << ")" << std::endl;
   std::cout << "--configfile: configuration file (default: " << CONFIGFILE
             << ")" << std::endl;
-  std::cout << "--cubes-dump: file that keeps the last topology, "
-               "including the configuration of all cubes (default: " << CUBESDUMPFILEPATH
-            << ")" << std::endl;
-  std::cout << "--cubes-init: starts the daemon with an empty topology" << std::endl;
-  std::cout << "--cubes-nodump: starts the daemon without dumping updates to file" << std::endl;
   std::cout << "--cert-blacklist: path to black listed certificates"
             << std::endl;
   std::cout << "--cert-whitelist: path to white listed certificates"
@@ -104,10 +95,7 @@ Config::Config()
       server_port(SERVER_PORT),
       server_ip(SERVER_IP),
       logfile(LOGFILE),
-      configfile(CONFIGFILE),
-      cubes_dump_file(CUBESDUMPFILEPATH),
-      cubes_init(CUBESINIT),
-      cubes_nodump(CUBESNODUMP){}
+      configfile(CONFIGFILE) {}
 
 Config::~Config() {}
 
@@ -192,31 +180,6 @@ void Config::setLogFile(const std::string &value) {
   logfile = value;
 }
 
-std::string Config::getCubesDumpFilePath() const {
-  return cubes_dump_file;
-}
-
-void Config::setCubesDumpFilePath(const std::string &value) {
-  CHECK_OVERWRITE("cubes-dump", value, cubes_dump_file, CUBESDUMPFILEPATH);
-  cubes_dump_file = value;
-}
-
-bool Config::getCubesInitTopology() const {
-  return cubes_init;
-}
-
-void Config::setCubesInitTopology() {
-  cubes_init = true;
-}
-
-bool Config::getCubesNoDump() const {
-  return cubes_nodump;
-}
-
-void Config::setCubesNoDump() {
-  cubes_nodump = true;
-}
-
 std::string Config::getCertPath() const {
   return cert_path;
 }
@@ -283,8 +246,6 @@ void Config::create_configuration_file(const std::string &path) {
   file << "addr: " << server_ip << std::endl;
   file << "# file to save polycube logs" << std::endl;
   file << "logfile: " << logfile << std::endl;
-  file << "# file to save last topology" << std::endl;
-  file << "cubes-dump: " << cubes_dump_file << std::endl;
   file << "# Security related:" << std::endl;
   file << "# server certificate " << std::endl;
   file << "#cert: path_to_certificate_file" << std::endl;
@@ -309,9 +270,6 @@ void Config::dump() {
   logger->info(" port: {}", server_port);
   logger->info(" addr: {}", server_ip);
   logger->info(" logfile: {}", logfile);
-  logger->info(" cubes-dump: {}", cubes_dump_file);
-  logger->info(" cubes-init: {}", cubes_init);
-  logger->info(" cubes-nodump: {}", cubes_nodump);
   if (!cert_path.empty()) {
     logger->info(" cert: {}", cert_path);
   }
@@ -405,9 +363,6 @@ static struct option options[] = {
     {"cacert", required_argument, NULL, 5},
     {"cert-whitelist", required_argument, NULL, 6},
     {"cert-blacklist", required_argument, NULL, 7},
-    {"cubes-dump", required_argument, NULL, 8},
-    {"cubes-init", no_argument, NULL, 9},
-    {"cubes-nodump", no_argument, NULL, 10},
     {NULL, 0, NULL, 0},
 };
 
@@ -452,15 +407,6 @@ void Config::load_from_cli(int argc, char *argv[]) {
       break;
     case 7:
       setCertBlacklistPath(optarg);
-      break;
-    case 8:
-      setCubesDumpFilePath(optarg);
-      break;
-    case 9:
-      setCubesInitTopology();
-      break;
-    case 10:
-      setCubesNoDump();
       break;
     }
   }

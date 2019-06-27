@@ -65,8 +65,6 @@ class ListKey {
 };
 
 struct ListKeyValue {
-  const std::string list_element;
-  const std::string original_key;
   const std::string &name;
   const ListType type;
   const std::string value;
