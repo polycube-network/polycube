@@ -218,13 +218,28 @@ void CubesDump::UpdateCubesConfigCreateReplace(const std::vector<std::string> &r
         auto *reference = &(*item)[resItem[i]];
         if (element[resItem[i]].is_null()) { /* is element present? */
           if (!keys.empty() && keyValues.find(resItem[i]) != keyValues.end()) { /* is it a missing array? */
-            nlohmann::json toUpdate = nlohmann::json::array();
-            toUpdate.push_back(body);
-            nlohmann::json completeObj;
-            completeObj[resItem[i]] = toUpdate;
-            element.update(completeObj);
-            *item = element;
-            break;
+            if (i >= resItem.size() - 1 - keyValues.at(resItem[i]).size()) {
+              nlohmann::json toUpdate = nlohmann::json::array();
+              toUpdate.push_back(body);
+              nlohmann::json completeObj;
+              completeObj[resItem[i]] = toUpdate;
+              element.update(completeObj);
+              *item = element;
+              break;
+            } else {
+              nlohmann::json newArrayItem = nlohmann::json::object();
+              for (auto &keyValue : keyValues.at(resItem[i])) {
+                newArrayItem[keyValue.original_key] = keyValue.value;
+              }
+              nlohmann::json newArray = nlohmann::json::array();
+              newArray.push_back(newArrayItem);
+              nlohmann::json completeObj;
+              completeObj[resItem[i]] = newArray;
+              element.update(completeObj);
+              *item = element;
+              reference = &(*item)[resItem[i]].front();
+              i += keyValues[resItem[i]].size();
+            }
           }
         } else if (element[resItem[i]].is_array()) { /* is it an array? */
           auto toCreateReplace = std::find_if(reference->begin(), reference->end(),
@@ -399,7 +414,7 @@ bool CubesDump::checkPresence(const std::vector<std::string> &resItem,
   int index = 0;
 
   for (auto &element : keyValues.at(resItem[resItemIndex])) {
-    if (std::string(elem[keyValues.at(resItem[resItemIndex])[index].original_key]) == resItem[resItemIndex + index + 1]) {
+    if (elem[keyValues.at(resItem[resItemIndex])[index].original_key] == resItem[resItemIndex + index + 1]) {
       valuesNumber--;
       index++;
     }
