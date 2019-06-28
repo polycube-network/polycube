@@ -26,8 +26,6 @@
 #include "../../Server/ResponseGenerator.h"
 #include "Service.h"
 #include "rest_server.h"
-#include "../../config.h"
-#include "cubes_dump.h"
 
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 LeafResource::LeafResource(
@@ -115,12 +113,6 @@ void LeafResource::CreateReplaceUpdate(const Pistache::Rest::Request &request,
     auto op = Operation::kUpdate;
     auto resp = WriteValue(cube_name, jbody, keys, op);
     errors.push_back(resp);
-    // check if the operation completed successfully and in case update the configuration
-    if (isOperationSuccessful(resp.error_tag)) {
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(request.resource(), jbody, keys, op, ResourceType::LeafResource);
-      }
-    }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }

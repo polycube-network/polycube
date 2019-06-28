@@ -62,7 +62,6 @@ set(polycubed_sources
   utils/veth.cpp
   utils/netlink.cpp
   utils/utils.cpp
-  cubes_dump.cpp
   ${server_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/load_services.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)

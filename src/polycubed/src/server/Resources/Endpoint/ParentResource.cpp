@@ -26,8 +26,6 @@
 #include "../Body/JsonNodeField.h"
 #include "../Body/ListKey.h"
 #include "Service.h"
-#include "../../config.h"
-#include "cubes_dump.h"
 
 #include "LeafResource.h"
 #include "ListResource.h"
@@ -128,12 +126,6 @@ void ParentResource::CreateReplaceUpdate(
     } else {
       errors.push_back(resp);
     }
-    // check if the operation completed successfully and in case update the configuration
-    if (isOperationSuccessful(resp.error_tag)) {
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(request.resource(), jbody, keys, op, ResourceType::ParentResource);
-      }
-    }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }
@@ -212,15 +204,11 @@ void ParentResource::del(const Request &request, ResponseWriter response) {
     return;
   }
   auto resp = DeleteValue(cube_name, keys);
-  // check if the operation completed successfully and in case update the configuration
   if (resp.error_tag == ErrorTag::kOk) {
     Server::ResponseGenerator::Generate(
         std::vector<Response>{{ErrorTag::kNoContent, nullptr}},
         std::move(response));
     errors.push_back({ErrorTag::kCreated, nullptr});
-    if (auto d = core_->get_cubes_dump()) {
-      d->UpdateCubesConfig(request.resource(), nullptr, keys, Operation::kDelete, ResourceType::ParentResource);
-    }
   } else {
     Server::ResponseGenerator::Generate(std::vector<Response>{resp},
                                         std::move(response));

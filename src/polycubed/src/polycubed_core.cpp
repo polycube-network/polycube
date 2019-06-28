@@ -243,8 +243,6 @@ bool PolycubedCore::try_to_set_peer(const std::string &peer1,
     }
     auto port = cube->get_port(match[2]);
     port->set_peer(peer2);
-    // Update the peer of a port in the cubes configuration in memory
-    cubes_dump_->UpdatePortPeer(cube->get_name(), port->name(), peer2);
     return true;
   }
 
@@ -324,21 +322,19 @@ void PolycubedCore::attach(const std::string &cube_name,
 
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");
-  std::shared_ptr<CubeIface> cube2;
-  std::shared_ptr<PortIface> port;
 
   if (std::regex_match(port_name, match, rule)) {
     auto cube2_ = ServiceController::get_cube(match[1]);
     if (cube2_ == nullptr) {
       throw std::runtime_error("Port " + port_name + " does not exist");
     }
-    cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
     if (!cube2) {
       throw std::runtime_error("Cube " + std::string(match[1]) +
                                " is transparent");
     }
 
-    port = cube2->get_port(match[2]);
+    auto port = cube2->get_port(match[2]);
     switch (port->get_type()) {
     case PortType::TC:
       if (cube->get_type() != CubeType::TC) {
@@ -382,14 +378,8 @@ void PolycubedCore::attach(const std::string &cube_name,
         ServiceController::ports_to_ifaces.at(port_name));
   }
 
-  std::string insertPosition = position;
-  peer->add_cube(cube.get(), &insertPosition, other);
+  peer->add_cube(cube.get(), position, other);
   cube->set_parent(peer.get());
-
-  // if it is a cube's transparent cube, add it to the cubes configuration in memory
-  if (!match.empty()) {
-    cubes_dump_->UpdatePortTCubes(cube2->get_name(), port->name(), cube_name, std::stoi(insertPosition));
-  }
 }
 
 void PolycubedCore::detach(const std::string &cube_name,
@@ -409,21 +399,19 @@ void PolycubedCore::detach(const std::string &cube_name,
 
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");
-  std::shared_ptr<CubeIface> cube2;
-  std::shared_ptr<PortIface> port;
 
   if (std::regex_match(port_name, match, rule)) {
     auto cube2_ = ServiceController::get_cube(match[1]);
     if (cube2_ == nullptr) {
       throw std::runtime_error("Port " + port_name + " does not exist");
     }
-    cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
     if (!cube2) {
       throw std::runtime_error("Cube " + std::string(match[1]) +
                                " is transparent");
     }
 
-    port = cube2->get_port(match[2]);
+    auto port = cube2->get_port(match[2]);
     peer = std::dynamic_pointer_cast<PeerIface>(port);
     peer->remove_cube(cube->get_name());
   } else {
@@ -439,10 +427,6 @@ void PolycubedCore::detach(const std::string &cube_name,
   }
 
   cube->set_parent(nullptr);
-  // if it is a cube's transparent cube, remove it from the cubes configuration in memory
-  if (!match.empty()) {
-    cubes_dump_->UpdatePortTCubes(cube2->get_name(), port->name(), cube_name, -1);
-  }
 }
 
 std::string PolycubedCore::get_cube_port_parameter(
@@ -454,7 +438,7 @@ std::string PolycubedCore::get_cube_port_parameter(
   auto &ctrl = get_service_controller(service_name);
   auto res = ctrl.get_management_interface()->get_service()->Child("ports");
 
-  ListKeyValues k{{"ports", "name", "ports_name", ListType::kString, port_name}};
+  ListKeyValues k{{"ports_name", ListType::kString, port_name}};
 
   std::istringstream iss(port_name + "/" + parameter);
   for (std::string segment; std::getline(iss, segment, '/');) {
@@ -463,7 +447,7 @@ std::string PolycubedCore::get_cube_port_parameter(
       auto list = std::dynamic_pointer_cast<ListResource>(res);
       if (list != nullptr) {
         for (const auto &key : list->keys_) {
-          ListKeyValue v{"ports", key.OriginalName(), key.Name(), key.Type(), segment};
+          ListKeyValue v{key.Name(), key.Type(), segment};
           k.emplace_back(v);
           std::getline(iss, segment, '/');  // if null raise error
         }
@@ -522,14 +506,6 @@ RestServer *PolycubedCore::get_rest_server() {
 
 BaseModel *PolycubedCore::base_model() {
   return base_model_;
-}
-
-void PolycubedCore::set_cubes_dump(CubesDump *cubes_dump) {
-  cubes_dump_= cubes_dump;
-}
-
-CubesDump *PolycubedCore::get_cubes_dump() {
-  return cubes_dump_;
 }
 
 }  // namespace polycubed

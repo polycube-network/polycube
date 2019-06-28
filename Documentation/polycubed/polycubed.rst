@@ -54,33 +54,6 @@ If the same parameter is specified in both, the configuration file and the comma
     daemon: true
     #p: 6000 <-- this is NOT supported, only long options are
 
-
-
-Persistency
-^^^^^^^^^^^
-
-Polycubed has persistent capabilities, which means that (1) it can automatically load the configuration that was present when the daemon was shut down, (2) each time a configuration command is issued, it is automatically dumped on disk.
-This enables polycubed also to recover from failures, such as rebooting the machine.
-By default, the daemon keeps in memory an instance of all the topology, including the configuration of each individual service.
-Topology and configuration are automatically updated at each new command; the configuration is also dumped to disk, on file ``/etc/polycube/cubes.yaml``.
-The standard behavior of the daemon at startup is to load the latest topology that was active at the end of the previous execution.
-Users can load a different topology file by using the ``--cubes-dump`` flag followed by the path to the file.
-In case we want to start polycubed with an empty topology, avoiding any possible load at startup, we can launch polycubed with the ``--cubes-init`` flag. Beware that in this case any existing configuration in the default file will be overwritten.
-Finally, persistency can be disabled with the ``--cubes-nodump`` flag; this would also avoid any (very limited) performance penalty introduced by this feature.
-
-::
-
-    # start polycubed with custom cubes configuration
-    polycubed --cubes-dump ~/Desktop/myCubes.yaml
-
-    # start polycubed with an empty topology
-    polycubed --cubes-init
-
-    # start daemon without topology saving functionalities
-    polycubed --cubes-nodump
-
-
-
 Rest API
 ^^^^^^^^
 
