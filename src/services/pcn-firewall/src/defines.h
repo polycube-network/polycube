@@ -105,7 +105,7 @@ namespace HorusConst {
 
 // apply Horus mitigator optimization if there are at least # rules
 // matching the pattern, at ruleset begin
-    const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
+    const uint32_t MIN_RULE_SIZE_FOR_HORUS = 1;
     const uint32_t MAX_RULE_SIZE_FOR_HORUS = 2048;
 }
 
