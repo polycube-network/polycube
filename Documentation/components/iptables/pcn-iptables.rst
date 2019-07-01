@@ -58,7 +58,7 @@ For ``pcn-iptables`` support you should enable ``ENABLE_PCN_IPTABLES`` flag in C
 
         cd polycube/build/
         cmake .. -DENABLE_PCN_IPTABLES=ON
-        make && make install
+        make -j`nproc` && make install
 
 
 Run
@@ -70,7 +70,7 @@ Run
 ::
 
         # Start polycubed, in other terminal (or background)
-        sudo polycubed
+        sudo polycubed --daemon
         # Initialize pcn-iptables
         pcn-iptables-init
 
@@ -111,6 +111,10 @@ Following are just few examples of available commands.
 
         # Stop and clean pcn-iptables
         pcn-iptables-clean
+
+	# Execute the below command to validate if cleanup is successful.
+	pcn-iptables -S
+	``Note:  On successful cleanup, you should receive "No cube found named pcn-iptables"``
 
 
 Advanced Features
