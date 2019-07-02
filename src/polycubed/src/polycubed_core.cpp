@@ -21,6 +21,7 @@
 
 #include "server/Resources/Body/ListResource.h"
 #include "server/Resources/Body/ParentResource.h"
+#include "server/Resources/Body/LeafResource.h"
 
 #include "server/Resources/Endpoint/ParentResource.h"
 
@@ -429,6 +430,56 @@ void PolycubedCore::detach(const std::string &cube_name,
   cube->set_parent(nullptr);
 }
 
+void PolycubedCore::cube_port_parameter_subscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter,
+    ParameterEventCallback &cb) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+  cubes_port_event_callbacks_[outer_key][caller] = cb;
+
+  // send a first notification with the initial value
+  auto value = get_cube_port_parameter(cube, port_name, parameter);
+  cb(parameter, value);
+}
+
+void PolycubedCore::cube_port_parameter_unsubscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+
+  if (cubes_port_event_callbacks_.count(outer_key) > 0 &&
+      cubes_port_event_callbacks_[outer_key].count(caller) > 0) {
+    cubes_port_event_callbacks_[outer_key].erase(caller);
+  } else {
+    throw std::runtime_error("there is not subscription for " + parameter);
+  }
+}
+
+void PolycubedCore::notify_port_subscribers(
+    const std::string &cube, const std::string &port_name,
+    const std::string &parameter, const std::string &value) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+
+  // if there are not subscribers just return
+  if (cubes_port_event_callbacks_.count(outer_key) == 0) {
+    return;
+  }
+
+  // TODO: what are the implications of calling the callbacks while
+  // having the lock?, could it be a good idea to create a temporal copy
+  // of the callbacks to be invoked and call then with the lock released?
+
+  for (const auto &it: cubes_port_event_callbacks_[outer_key]) {
+    it.second(parameter, value);
+  }
+}
+
 std::string PolycubedCore::get_cube_port_parameter(
     const std::string &cube, const std::string &port_name,
     const std::string &parameter) {
@@ -461,12 +512,19 @@ std::string PolycubedCore::get_cube_port_parameter(
     }
   }
 
+  // support only leaf elements, maybe in the future we want to extend it
+  // to support complex elements
+  if (!std::dynamic_pointer_cast<LeafResource>(res)) {
+    throw std::runtime_error("Error getting port parameters: " + parameter);
+  }
+
   auto result = res->ReadValue(cube, k);
   std::string val(result.message);
+  val = val.substr(1, val.length() - 2); // remove qoutes
   ::free(result.message);
 
   if (result.error_tag != ErrorTag::kOk) {
-    throw std::runtime_error("Error getting port parameters: " + val);
+    throw std::runtime_error("Error getting port parameters: " + parameter);
   }
 
   return val;
