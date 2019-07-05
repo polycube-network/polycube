@@ -73,22 +73,18 @@ void TransparentCube::set_next(uint16_t next, ProgramType type) {
 
 void TransparentCube::set_parent(PeerIface *parent) {
   parent_ = parent;
-  if (parent) {
+  if (parent_) {
     attach_();
+
+    std::lock_guard<std::mutex> lock(subscription_list_mutex);
+    for (auto &it : subscription_list) {
+      parent_->subscribe_parameter(uuid().str(), it.first, it.second);
+    }
   }
 }
 
 PeerIface *TransparentCube::get_parent() {
   return parent_;
-}
-
-std::string TransparentCube::get_parent_parameter(
-    const std::string &parameter) {
-  if (!parent_) {
-    throw std::runtime_error("cube is not attached");
-  }
-
-  return parent_->get_parameter(parameter);
 }
 
 void TransparentCube::set_parameter(const std::string &parameter,
@@ -161,6 +157,43 @@ nlohmann::json TransparentCube::to_json() const {
   j["parent"] = parent;
 
   return j;
+}
+
+void TransparentCube::subscribe_parent_parameter(
+    const std::string &param_name, ParameterEventCallback &callback) {
+
+  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  // Add event to the list
+  subscription_list.emplace(param_name, callback);
+
+  // If not parent, just return, the subcription will done when the cube is attached
+  if (!parent_) {
+    return;
+  }
+  parent_->subscribe_parameter(uuid().str(), param_name, callback);
+}
+
+void TransparentCube::unsubscribe_parent_parameter(
+    const std::string &param_name) {
+
+  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  // Remove event from the list
+  subscription_list.erase(param_name);
+
+  // If not parent, just return
+  if (!parent_) {
+    return;
+  }
+  parent_->unsubscribe_parameter(uuid().str(), param_name);
+}
+
+std::string TransparentCube::get_parent_parameter(
+    const std::string &param_name) {
+  if (!parent_) {
+    throw std::runtime_error("cube is not attached");
+  }
+
+  return parent_->get_parameter(param_name);
 }
 
 }  // namespace polycubed

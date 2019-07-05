@@ -56,6 +56,12 @@ class Port {
   // this uses a different naming convention
   std::string getName() const;
 
+  void subscribe_peer_parameter(const std::string &param_name,
+                                ParameterEventCallback &callback);
+  void unsubscribe_peer_parameter(const std::string &param_name);
+  void set_peer_parameter(const std::string &param_name,
+                          const std::string &value);
+
  private:
   class impl;
   std::unique_ptr<impl> pimpl_;
