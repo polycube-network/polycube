@@ -149,7 +149,9 @@ void Ports::setIp(const std::string &value) {
     // unset old ip
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(getNetmask());
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.unset_iface_ip(getName(), ip_, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
@@ -159,7 +161,9 @@ void Ports::setIp(const std::string &value) {
     // set new ip
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(getNetmask());
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.set_iface_ip(getName(), value, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), value, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
@@ -204,7 +208,9 @@ void Ports::setNetmask(const std::string &value) {
     // unset old netmask
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(netmask_);
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.unset_iface_ip(getName(), ip_, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
@@ -214,7 +220,9 @@ void Ports::setNetmask(const std::string &value) {
     // set new netmask
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(value);
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.set_iface_ip(getName(), getIp(), prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), getIp(), prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }

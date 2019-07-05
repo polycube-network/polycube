@@ -79,10 +79,16 @@ class Netlink {
 
   void set_iface_status(const std::string &iface, IFACE_STATUS status);
   void set_iface_mac(const std::string &iface, const std::string &mac);
-  void set_iface_ip(const std::string &iface, const std::string &ip, int prefix);
-  void unset_iface_ip(const std::string &iface, const std::string &ip, int prefix);
-  void set_iface_ipv6(const std::string &iface, const std::string &ip);
+  std::string get_iface_mac(const std::string &iface);
+  void add_iface_ip(const std::string &iface, const std::string &ip, int prefix);
+  void add_iface_ipv6(const std::string &iface, const std::string &ip);
+  std::string get_iface_ip(const std::string &iface);
+  std::string get_iface_netmask(const std::string &iface);
+  void delete_iface_ip(const std::string &iface, const std::string &ip, int prefix);
   void move_iface_into_ns(const std::string &iface, int fd);
+
+  // Remove old ip address and add new ip address
+  void set_iface_cidr(const std::string &iface, const std::string &cidr);
 
   template <typename Observer>
   int registerObserver(const Event &event, Observer &&observer) {
