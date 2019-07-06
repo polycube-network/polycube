@@ -24,8 +24,12 @@
 #include <sstream>
 #include <sys/socket.h>
 #include <netinet/ether.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
 
 #include "../exceptions.h"
+#include "polycube/services/utils.h"
 
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270
@@ -456,7 +460,6 @@ int Netlink::get_iface_index(const std::string &iface) {
   }
 
   if (!(link = rtnl_link_get_by_name(cache, iface.c_str()))) {
-    std::cout << " error" << std::endl;
     return -1;
   }
 
@@ -829,7 +832,8 @@ void Netlink::set_iface_mac(const std::string &iface, const std::string &mac) {
   nl_close(sk);
 }
 
-void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int prefix) {
+void Netlink::add_iface_ip(const std::string &iface, const std::string &ip,
+                           int prefix) {
   struct nlmsghdr *nlmsg = netlink_ip_alloc();
   struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
   struct rtattr *rta;
@@ -837,8 +841,7 @@ void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int 
 
   int index = get_iface_index(iface);
   if (index == -1) {
-    logger->error("set_iface_ip: iface {0} does not exist", iface);
-    throw std::runtime_error("set_iface_ip: iface does not exist");
+    throw std::runtime_error("add_iface_ip: iface does not exist");
   }
 
   uni->ifaddrmsg.ifa_index = index;
@@ -846,8 +849,7 @@ void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int 
 
   if (inet_pton(AF_INET, ip.c_str(), &ia) <= 0) {
     free(nlmsg);
-    logger->error("set_iface_ip: Error in inet_pton");
-    throw std::runtime_error("set_iface_ip: Error in inet_pton");
+    throw std::runtime_error("add_iface_ip: Error in inet_pton");
   }
 
   rta = NLMSG_TAIL(nlmsg);
@@ -865,7 +867,8 @@ void Netlink::set_iface_ip(const std::string &iface, const std::string &ip, int 
   netlink_nl_send(nlmsg);
 }
 
-void Netlink::unset_iface_ip(const std::string &iface, const std::string &ip, int prefix) {
+void Netlink::delete_iface_ip(const std::string &iface, const std::string &ip,
+                              int prefix) {
   struct nlmsghdr *nlmsg = netlink_ip_dealloc();
   struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
   struct rtattr *rta;
@@ -873,8 +876,7 @@ void Netlink::unset_iface_ip(const std::string &iface, const std::string &ip, in
 
   int index = get_iface_index(iface);
   if (index == -1) {
-    logger->error("unset_iface_ip: iface {0} does not exist", iface);
-    throw std::runtime_error("unset_iface_ip: iface does not exist");
+    throw std::runtime_error("delete_iface_ip: iface does not exist");
   }
 
   uni->ifaddrmsg.ifa_index = index;
@@ -882,8 +884,7 @@ void Netlink::unset_iface_ip(const std::string &iface, const std::string &ip, in
 
   if (inet_pton(AF_INET, ip.c_str(), &ia) <= 0) {
     free(nlmsg);
-    logger->error("unset_iface_ip: Error in inet_pton");
-    throw std::runtime_error("unset_iface_ip: Error in inet_pton");
+    throw std::runtime_error("delete_iface_ip: Error in inet_pton");
   }
 
   rta = NLMSG_TAIL(nlmsg);
@@ -901,7 +902,8 @@ void Netlink::unset_iface_ip(const std::string &iface, const std::string &ip, in
   netlink_nl_send(nlmsg);
 }
 
-void Netlink::set_iface_ipv6(const std::string &iface, const std::string &ipv6) {
+void Netlink::add_iface_ipv6(const std::string &iface,
+                             const std::string &ipv6) {
   struct nlmsghdr *nlmsg = netlink_ipv6_alloc();
   struct nl_ipreq *uni = (struct nl_ipreq *)nlmsg;
   struct rtattr *rta;
@@ -909,16 +911,14 @@ void Netlink::set_iface_ipv6(const std::string &iface, const std::string &ipv6) 
 
   int index = get_iface_index(iface);
   if (index == -1) {
-    logger->error("set_iface_ipv6: iface {0} does not exist", iface);
-    throw std::runtime_error("set_iface_ipv6: iface does not exist");
+    throw std::runtime_error("add_iface_ipv6: iface does not exist");
   }
 
   uni->ifaddrmsg.ifa_index = index;
 
   if (inet_pton(AF_INET6, ipv6.c_str(), &ia) <= 0) {
     free(nlmsg);
-    logger->error("set_iface_ipv6: Error in inet_pton");
-    throw std::runtime_error("set_iface_ipv6: Error in inet_pton");
+    throw std::runtime_error("add_iface_ipv6: Error in inet_pton");
   }
 
   rta = NLMSG_TAIL(nlmsg);
@@ -956,6 +956,102 @@ void Netlink::move_iface_into_ns(const std::string &iface, int fd) {
   nlmsg->nlmsg_len = NLMSG_ALIGN(nlmsg->nlmsg_len) + RTA_ALIGN(rta->rta_len);
 
   netlink_nl_send(nlmsg);
+}
+
+std::string Netlink::get_iface_mac(const std::string &iface) {
+  unsigned char mac[IFHWADDRLEN];
+  struct ifreq ifr;
+  int fd, rv;
+
+  strcpy(ifr.ifr_name, iface.c_str());
+  fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+  if (fd < 0) {
+    throw std::runtime_error(
+        std::string("get_iface_mac error opening socket: ") +
+        std::strerror(errno));
+  }
+  rv = ioctl(fd, SIOCGIFHWADDR, &ifr);
+  if (rv >= 0)
+    memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
+  else {
+    close(fd);
+    throw std::runtime_error(
+        std::string("get_iface_mac error determining the MAC address: ") +
+        std::strerror(errno));
+  }
+  close(fd);
+
+  uint64_t mac_;
+  memcpy(&mac_, mac, sizeof mac_);
+  return polycube::service::utils::be_uint_to_mac_string(mac_);
+}
+
+void Netlink::set_iface_cidr(const std::string &iface,
+                             const std::string &cidr) {
+  // cidr = ip_address/prefix
+  // Split the fields
+  std::istringstream split(cidr);
+  std::vector<std::string> info;
+  char split_char = '/';
+  for (std::string each; std::getline(split, each, split_char);
+       info.push_back(each));
+  std::string ip = info[0];
+  int prefix = std::stoi(info[1]);
+
+  // Remove old ip
+  std::string old_ip = get_iface_ip(iface);
+  std::string old_netmask = get_iface_netmask(iface);
+  if (!old_ip.empty() && !old_netmask.empty()) {
+    int old_prefix = polycube::service::utils::get_netmask_length(old_netmask);
+    delete_iface_ip(iface, old_ip, old_prefix);
+  }
+
+  // Add new ip
+  add_iface_ip(iface, ip, prefix);
+}
+
+std::string Netlink::get_iface_ip(const std::string &iface) {
+  std::string ipAddress = "";
+  struct ifaddrs *interfaces = NULL;
+  struct ifaddrs *temp_addr = NULL;
+  int success = getifaddrs(&interfaces);
+  if (success == 0) {
+    // Loop through linked list of interfaces
+    temp_addr = interfaces;
+    while (temp_addr != NULL) {
+      if (temp_addr->ifa_addr->sa_family == AF_INET) {
+        if (temp_addr->ifa_name == iface)
+          ipAddress =
+              inet_ntoa(((struct sockaddr_in*)temp_addr->ifa_addr)->sin_addr);
+      }
+      temp_addr = temp_addr->ifa_next;
+    }
+  }
+  // Free memory
+  freeifaddrs(interfaces);
+  return ipAddress;
+}
+
+std::string Netlink::get_iface_netmask(const std::string &iface) {
+  std::string netmask = "";
+  struct ifaddrs *interfaces = NULL;
+  struct ifaddrs *temp_addr = NULL;
+  int success = getifaddrs(&interfaces);
+  if (success == 0) {
+    // Loop through linked list of interfaces
+    temp_addr = interfaces;
+    while (temp_addr != NULL) {
+      if (temp_addr->ifa_addr->sa_family == AF_INET) {
+        if (temp_addr->ifa_name == iface)
+          netmask = inet_ntoa(
+              ((struct sockaddr_in*)temp_addr->ifa_netmask)->sin_addr);
+      }
+      temp_addr = temp_addr->ifa_next;
+    }
+  }
+  // Free memory
+  freeifaddrs(interfaces);
+  return netmask;
 }
 
 }  // namespace polycubed

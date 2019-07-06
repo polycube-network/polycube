@@ -74,6 +74,7 @@ class Ports : public polycube::service::Port, public PortsInterface {
   /// </summary>
   std::string getMac() override;
   void setMac(const std::string &value) override;
+  void doSetMac(const std::string &value);
 
   /// <summary>
   /// Secondary IP address for the port

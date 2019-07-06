@@ -32,9 +32,20 @@ Nat::Nat(const std::string name, const NatJsonObject &conf)
 
   addRule(conf.getRule());
   //addNattingTableList(conf.getNattingTable());
+
+  ParameterEventCallback cb = [&](const std::string &parameter, const std::string &value) {
+    logger()->debug("parent IP has been updated to {}", value);
+    external_ip_ = value;
+    if (rule_->getMasquerade()->getEnabled()) {
+      rule_->getMasquerade()->inject(utils::ip_string_to_be_uint(external_ip_));
+    }
+  };
+  subscribe_parent_parameter("ip", cb);
 }
 
-Nat::~Nat() {}
+Nat::~Nat() {
+  unsubscribe_parent_parameter("ip");
+}
 
 void Nat::update(const NatJsonObject &conf) {
   // This method updates all the object/parameter in Nat object specified in the
@@ -76,22 +87,6 @@ void Nat::packet_in(polycube::service::Sense sense,
                     polycube::service::PacketInMetadata &md,
                     const std::vector<uint8_t> &packet) {
   logger()->info("packet in event");
-}
-
-void Nat::attach() {
-  try {
-    auto temp = get_parent_parameter("ip");
-    external_ip_ = temp.substr(1, temp.length() - 2);  // remove qoutes
-    logger()->info("external ip is : {}", external_ip_);
-    // if masquerare is enabled we need to update the IP address
-    // TODO: this action should also be performed when the IP address on the
-    // parent changes (it needs the subscription mechanishm)
-    if (rule_->getMasquerade()->getEnabled()) {
-      rule_->getMasquerade()->inject(utils::ip_string_to_be_uint(external_ip_));
-    }
-  } catch (...) {
-    logger()->warn("External IP not found. Is this enabled on a router?");
-  }
 }
 
 std::string Nat::generate_code() {

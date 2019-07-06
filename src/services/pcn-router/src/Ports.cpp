@@ -89,9 +89,76 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     PortsSecondaryip::createInControlPlane(*this, addr.getIp(),
                                            addr.getNetmask(), addr);
   }
+
+  // lambda function to align IP and Netmask between Port and ExtIface
+  ParameterEventCallback f_ip;
+  f_ip = [&](const std::string name_iface, const std::string cidr) {
+    if (peer() == name_iface) {
+      try {
+        if (cidr.empty()) {
+          // set the ip address of the port on the netdev
+          std::string ip = getIp();
+          int prefix = utils::get_netmask_length(getNetmask());
+          parent_.netlink_instance_router_.add_iface_ip(peer(), ip, prefix);
+        } else {
+          // set the ip address of the netdev on the port
+          // cidr = ip_address/prefix
+          std::istringstream split(cidr);
+          std::vector<std::string> info;
+
+          char split_char = '/';
+          for (std::string each; std::getline(split, each, split_char);
+               info.push_back(each));
+          std::string new_ip = info[0];
+          std::string new_netmask =
+              utils::get_netmask_from_CIDR(std::stoi(info[1]));
+
+          std::string old_ip = getIp();
+          std::string old_netmask = getNetmask();
+
+          logger()->debug(
+              "Align ip and netmask of port {0} with those of interface {1}",
+              name(), name_iface);
+
+          if (old_ip != new_ip)
+            setIp_Netlink(new_ip);
+          if (old_netmask != new_netmask)
+            setNetmask_Netlink(new_netmask);
+        }
+      } catch (std::exception &e) {
+        logger()->trace("iface_ip_notification - False ip notification: {0}",
+                        e.what());
+      }
+    }
+  };
+
+  // lambda function to align MAC between Port and ExtIface
+  ParameterEventCallback f_mac;
+  f_mac = [&](const std::string name_iface, const std::string mac) {
+    if (peer() == name_iface) {
+      try {
+        std::string old_mac = getMac();
+        if (old_mac != mac) {
+          logger()->debug("Align mac of port {0} with those of interface {1}",
+                          name(), name_iface);
+          doSetMac(mac);
+        }
+      } catch (std::exception &e) {
+        logger()->trace("iface_mac_notification - False mac notification: {0}",
+                        e.what());
+      }
+    }
+  };
+
+  // Register the new port to IP and MAC notifications arriving from ExtIface
+  subscribe_peer_parameter("IP", f_ip);
+  subscribe_peer_parameter("MAC", f_mac);
 }
 
-Ports::~Ports() {}
+Ports::~Ports() {
+  unsubscribe_peer_parameter("IP");
+  unsubscribe_peer_parameter("MAC");
+}
 
 void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
@@ -149,7 +216,9 @@ void Ports::setIp(const std::string &value) {
     // unset old ip
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(getNetmask());
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.unset_iface_ip(getName(), ip_, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
@@ -159,10 +228,17 @@ void Ports::setIp(const std::string &value) {
     // set new ip
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(getNetmask());
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.set_iface_ip(getName(), value, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), value, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
+
+    // Align Port with the peer interface
+    int prefix = get_netmask_length(getNetmask());
+    std::string cidr = ip_ + "/" + std::to_string(prefix);
+    set_peer_parameter("IP", cidr);
   }
 }
 
@@ -204,7 +280,9 @@ void Ports::setNetmask(const std::string &value) {
     // unset old netmask
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(netmask_);
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.unset_iface_ip(getName(), ip_, prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
@@ -214,10 +292,17 @@ void Ports::setNetmask(const std::string &value) {
     // set new netmask
     if (parent_.get_shadow()) {
       int prefix = get_netmask_length(value);
-      std::function<void()> doThis = [&]{parent_.netlink_instance_router_.set_iface_ip(getName(), getIp(), prefix);};
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), getIp(), prefix);
+      };
       polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
       namespace_.execute(doThis);
     }
+
+    // Align Port with the peer interface
+    int prefix = get_netmask_length(value);
+    std::string cidr = getIp() + "/" + std::to_string(prefix);
+    set_peer_parameter("IP", cidr);
   }
 }
 
@@ -255,6 +340,22 @@ std::string Ports::getMac() {
 
 void Ports::setMac(const std::string &value) {
   // This method set the mac value.
+  doSetMac(value);
+
+  if (parent_.get_shadow()) {
+    std::function<void()> doThis = [&]{
+      parent_.netlink_instance_router_.set_iface_mac(getName(), mac_);
+    };
+    polycube::polycubed::Namespace namespace_ =
+            polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+    namespace_.execute(doThis);
+  }
+
+  // Align Port with the peer interface
+  set_peer_parameter("MAC", value);
+}
+
+void Ports::doSetMac(const std::string &value) {
   if (mac_ != value) {
     std::string new_mac = value;
     /* Update the port in the datapath */
@@ -273,11 +374,6 @@ void Ports::setMac(const std::string &value) {
         getName(), new_mac, getIp(), getNetmask(), index);
 
     mac_ = new_mac;
-  }
-  if (parent_.get_shadow()) {
-    std::function<void()> doThis = [&]{parent_.netlink_instance_router_.set_iface_mac(getName(), mac_);};
-    polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
-    namespace_.execute(doThis);
   }
 }
 
