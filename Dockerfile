@@ -19,7 +19,7 @@ if [ "$MODE" = "pcn-k8s" ] ; then \
     GOOS=linux go build -o /pcn_k8s . ; \
 fi && \
 apt-get purge --auto-remove -y git bison cmake flex \
-libllvm5.0 llvm-5.0-dev libclang-5.0-dev uuid-dev autoconf \
+libllvm5.0 llvm-5.0-dev libclang-5.0-dev uuid-dev autoconf software-properties-common golang-go \
 libtool curl && \
 apt-get clean && \
 rm -fr /root /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/local/go/*
