@@ -92,72 +92,64 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
 
   // lambda function to align IP and Netmask between Port and ExtIface
   ParameterEventCallback f_ip;
-  f_ip = [&](const std::string name_iface, const std::string cidr) {
-    if (peer() == name_iface) {
-      try {
-        if (cidr.empty()) {
-          // set the ip address of the port on the netdev
-          std::string ip = getIp();
-          int prefix = utils::get_netmask_length(getNetmask());
-          parent_.netlink_instance_router_.add_iface_ip(peer(), ip, prefix);
-        } else {
-          // set the ip address of the netdev on the port
-          // cidr = ip_address/prefix
-          std::istringstream split(cidr);
-          std::vector<std::string> info;
+  f_ip = [&](const std::string param_name, const std::string cidr) {
+    try {
+      if (!cidr.empty()) {
+        // set the ip address of the netdev on the port
+        // cidr = ip_address/prefix
+        std::istringstream split(cidr);
+        std::vector<std::string> info;
 
-          char split_char = '/';
-          for (std::string each; std::getline(split, each, split_char);
-               info.push_back(each));
-          std::string new_ip = info[0];
-          std::string new_netmask =
-              utils::get_netmask_from_CIDR(std::stoi(info[1]));
+        char split_char = '/';
+        for (std::string each; std::getline(split, each, split_char);
+             info.push_back(each))
+          ;
+        std::string new_ip = info[0];
+        std::string new_netmask =
+            utils::get_netmask_from_CIDR(std::stoi(info[1]));
 
-          std::string old_ip = getIp();
-          std::string old_netmask = getNetmask();
+        std::string old_ip = getIp();
+        std::string old_netmask = getNetmask();
 
-          logger()->debug(
-              "Align ip and netmask of port {0} with those of interface {1}",
-              name(), name_iface);
+        logger()->debug("Align ip and netmask of port {0}", name());
 
-          if (old_ip != new_ip)
-            setIp_Netlink(new_ip);
-          if (old_netmask != new_netmask)
-            setNetmask_Netlink(new_netmask);
-        }
-      } catch (std::exception &e) {
-        logger()->trace("iface_ip_notification - False ip notification: {0}",
-                        e.what());
+        if (old_ip != new_ip)
+          setIp_Netlink(new_ip);
+        if (old_netmask != new_netmask)
+          setNetmask_Netlink(new_netmask);
       }
+    } catch (std::exception &e) {
+      logger()->trace("iface_ip_notification - False ip notification: {0}",
+                      e.what());
     }
   };
 
   // lambda function to align MAC between Port and ExtIface
   ParameterEventCallback f_mac;
-  f_mac = [&](const std::string name_iface, const std::string mac) {
-    if (peer() == name_iface) {
-      try {
-        std::string old_mac = getMac();
-        if (old_mac != mac) {
-          logger()->debug("Align mac of port {0} with those of interface {1}",
-                          name(), name_iface);
-          doSetMac(mac);
-        }
-      } catch (std::exception &e) {
-        logger()->trace("iface_mac_notification - False mac notification: {0}",
-                        e.what());
+  f_mac = [&](const std::string param_name, const std::string mac) {
+    try {
+      if (mac_ != mac) {
+        logger()->debug("Align mac of port {0}", name());
+        doSetMac(mac);
       }
+    } catch (std::exception &e) {
+      logger()->trace("iface_mac_notification - False mac notification: {0}",
+                      e.what());
     }
   };
 
-  // Register the new port to IP and MAC notifications arriving from ExtIface
-  subscribe_peer_parameter("IP", f_ip);
-  subscribe_peer_parameter("MAC", f_mac);
+  if (!parent_.get_shadow()) {
+    // Register the new port to IP and MAC notifications arriving from ExtIface
+    subscribe_peer_parameter("IP", f_ip);
+    subscribe_peer_parameter("MAC", f_mac);
+  }
 }
 
 Ports::~Ports() {
-  unsubscribe_peer_parameter("IP");
-  unsubscribe_peer_parameter("MAC");
+  if (!parent_.get_shadow()) {
+    unsubscribe_peer_parameter("IP");
+    unsubscribe_peer_parameter("MAC");
+  }
 }
 
 void Ports::update(const PortsJsonObject &conf) {
@@ -355,26 +347,24 @@ void Ports::setMac(const std::string &value) {
   set_peer_parameter("MAC", value);
 }
 
-void Ports::doSetMac(const std::string &value) {
-  if (mac_ != value) {
-    std::string new_mac = value;
-    /* Update the port in the datapath */
-    uint16_t index = this->index();
-    auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
-
-    try {
-      r_port value = router_port.get(index);
-      value.mac = utils::mac_string_to_be_uint(new_mac);
-    } catch (...) {
-      logger()->error("Port {0} not found in the data path", this->name());
-    }
-
-    logger()->debug(
-        "Updated mac port: {0} (index: {4}) [mac: {1} - ip: {2} - netmask: {3}]",
-        getName(), new_mac, getIp(), getNetmask(), index);
-
-    mac_ = new_mac;
+void Ports::doSetMac(const std::string &new_mac) {
+  if (mac_ == new_mac) {
+    return;
   }
+
+  /* Update the port in the datapath */
+  uint16_t index = this->index();
+  auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
+
+  r_port map_value = router_port.get(index);
+  map_value.mac = utils::mac_string_to_be_uint(new_mac);
+  router_port.set(index, map_value);
+
+  logger()->debug(
+      "Updated mac port: {0} (index: {4}) [mac: {1} - ip: {2} - netmask: {3}]",
+      getName(), new_mac, getIp(), getNetmask(), index);
+
+  mac_ = new_mac;
 }
 
 std::shared_ptr<spdlog::logger> Ports::logger() {

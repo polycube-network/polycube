@@ -134,18 +134,22 @@ void Port::set_peer(const std::string &peer) {
     if (peer_ == peer) {
       return;
     }
+
+    // if previous peer was an iface, remove subscriptions
+    if (auto extiface_old = dynamic_cast<ExtIface*>(peer_port_)) {
+      // Subscribe to the list of events
+      for (auto &it : subscription_list)
+        extiface_old->unsubscribe_parameter(uuid().str(), it.first);
+    }
   }
+
   ServiceController::set_port_peer(*this, peer);
 
-  {
-    std::lock_guard<std::mutex> guard(port_mutex_);
-    peer_ = peer;
-  }
+  std::lock_guard<std::mutex> guard(port_mutex_);
+  peer_ = peer;
 
   // Check if peer is a ExtIface
-  ExtIface* extiface = dynamic_cast<ExtIface*>(get_peer_iface());
-  if (extiface) {
-    std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  if (auto extiface = dynamic_cast<ExtIface*>(peer_port_)) {
     // Subscribe to the list of events
     for (auto &it : subscription_list)
       extiface->subscribe_parameter(uuid().str(), it.first, it.second);
@@ -308,33 +312,34 @@ void Port::unconnect(PeerIface &p1, PeerIface &p2) {
 
 void Port::subscribe_peer_parameter(const std::string &param_name,
                                     ParameterEventCallback &callback) {
-  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  std::lock_guard<std::mutex> lock(port_mutex_);
   // Add event to the list
   subscription_list.emplace(param_name, callback);
 
   // Check if the port already has a peer (of type ExtIface)
   // Subscribe to the peer parameter only if the peer is an netdev
   // (we are not interested in align different cubes' ports).
-  ExtIface* extiface = dynamic_cast<ExtIface*>(get_peer_iface());
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
   if (extiface)
     extiface->subscribe_parameter(uuid().str(), param_name, callback);
 }
 
 void Port::unsubscribe_peer_parameter(const std::string &param_name) {
-  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  std::lock_guard<std::mutex> lock(port_mutex_);
   // Remove event from the list
   subscription_list.erase(param_name);
 
   // Only unsubscribe if peer is ExtIface
-  ExtIface* extiface = dynamic_cast<ExtIface*>(get_peer_iface());
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
   if (extiface)
     extiface->unsubscribe_parameter(uuid().str(), param_name);
 }
 
 void Port::set_peer_parameter(const std::string &param_name,
                               const std::string &value) {
+  std::lock_guard<std::mutex> lock(port_mutex_);
   // Check if peer is a ExtIface
-  ExtIface* extiface = dynamic_cast<ExtIface*>(get_peer_iface());
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
   if (extiface)
     extiface->set_parameter(param_name, value);
 }

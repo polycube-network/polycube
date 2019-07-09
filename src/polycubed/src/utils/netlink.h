@@ -110,8 +110,10 @@ class Netlink {
 
   void notify(const Event &event, int ifindex, const std::string &ifname) {
     std::map<int, std::function<void(int, const std::string &)>> ob_copy;
-    std::lock_guard<std::mutex> lock(notify_mutex);
-    ob_copy.insert(observers_[event].begin(), observers_[event].end());
+    {
+      std::lock_guard<std::mutex> lock(notify_mutex);
+      ob_copy.insert(observers_[event].begin(), observers_[event].end());
+    }
 
     for (const auto &it : ob_copy) {
       auto obs = it.second;
