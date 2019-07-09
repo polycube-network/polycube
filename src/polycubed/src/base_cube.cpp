@@ -174,7 +174,7 @@ void BaseCube::do_reload(const std::string &code, int index, ProgramType type) {
   // create new ebpf program, telling to steal the maps of this program
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
-      new ebpf::BPF(0, nullptr, false, name_, &*programs->at(index)));
+      new ebpf::BPF(0, nullptr, false, name_, false, &*programs->at(index)));
 
   bcc_guard.unlock();
   compile(*new_bpf_program, code, index, type);
