@@ -1,9 +1,12 @@
-pcn-iptables: An iptables clone based on eBPF
-=============================================
+pcn-iptables: a clone of iptables based on eBPF
+===============================================
 
-Polycube comes with ``iptables`` application (in brief ``pcn-iptables``) that provides an iptables clone, with compatible syntax and semantic.
-The backend is based on `eBPF` programs, more efficient algorithms and runtime optimizations.
-The frontend provides same iptables CLI, users can setup security policies using same syntax.
+Polycube includes the ``pcn-iptables`` standalone application, a stateful firewall whose syntax and semantic are compatible with the well-known ``iptables`` Linux tool.
+
+The frontend provides the same CLI of iptables; users can set up security policies using the same syntax by simply executing ``pcn-iptables`` instead of ``iptables``.
+The backend is based on `eBPF` programs, more efficient classificaiton algorithms and runtime optimizations; the backend runs as a dedicated service in Polycube.
+
+
 
 Supported features
 ------------------
