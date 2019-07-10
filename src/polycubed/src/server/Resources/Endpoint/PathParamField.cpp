@@ -18,6 +18,8 @@
 #include <memory>
 #include <vector>
 
+#include "utils/utils.h"
+
 #include "../../Validators/EmptyValidator.h"
 #include "../../Validators/ValueValidator.h"
 
@@ -41,7 +43,7 @@ const std::string &PathParamField::Name() const {
 ErrorTag PathParamField::Validate(const Pistache::Rest::Request &value) const {
   if (!value.hasParam(name_))
     return kMissingElement;
-  const auto &param = value.param(name_).as<std::string>();
+  const auto &param = utils::decode_url(value.param(name_).as<std::string>());
   for (const auto &validator : validators_) {
     if (!validator->Validate(param))
       return ErrorTag::kBadElement;
