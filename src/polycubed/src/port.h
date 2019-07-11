@@ -122,7 +122,6 @@ class Port : public polycube::service::PortIface, public PeerIface {
   uint16_t calculate_index() const;
 
   std::unordered_map<std::string, ParameterEventCallback> subscription_list;
-  std::mutex subscription_list_mutex;
 };
 
 }  // namespace polycubed
