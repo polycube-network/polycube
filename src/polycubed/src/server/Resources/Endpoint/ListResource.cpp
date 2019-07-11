@@ -26,6 +26,7 @@
 #include "PathParamField.h"
 #include "Service.h"
 #include "rest_server.h"
+#include "utils/utils.h"
 
 #include "../Data/Lib/ListResource.h"
 
@@ -113,8 +114,10 @@ std::vector<Response> ListResource::RequestValidate(
 void ListResource::Keys(const Pistache::Rest::Request &request,
                         ListKeyValues &parsed) const {
   for (const auto &k : keys_) {
+    std::string param_ = request.param(':' + k.Name()).as<std::string>();
+    std::string param = utils::decode_url(param_);
     parsed.push_back(
-        {k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
+        {k.Name(), k.Type(), param});
   }
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, parsed);
 }
@@ -123,8 +126,10 @@ void ListResource::GetListKeys(const Pistache::Rest::Request &request,
                                ListKeyValues &parsed) const {
   for (const auto &k : keys_) {
     if (request.hasParam(':' + k.Name())) {
+      std::string param_ = request.param(':' + k.Name()).as<std::string>();
+      std::string param = utils::decode_url(param_);
       parsed.push_back(
-          {k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
+          {k.Name(), k.Type(), param});
     }
   }
 }
