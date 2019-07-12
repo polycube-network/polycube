@@ -53,6 +53,22 @@ class Config {
   std::string getLogFile() const;
   void setLogFile(const std::string &value);
 
+  // file where last topology is saved
+  std::string getCubesDumpFile() const;
+  void setCubesDumpFile(const std::string &value);
+
+  // set to get an empty topology
+  bool getCubesDumpCleanInit() const;
+  void setCubesDumpCleanInit();
+
+  // set to avoid daemon to dump updates to file
+  //bool getCubesNoDump() const;
+  //void setCubesNoDump();
+
+  // set to let daemon to dump updates to file
+  bool getCubesDumpEnabled() const;
+  void setCubesDumpEnabled();
+
   // path of certificate & key to be used in server
   std::string getCertPath() const;
   void setCertPath(const std::string &value);
@@ -80,11 +96,17 @@ class Config {
 
   spdlog::level::level_enum loglevel;
   bool daemon;
+  bool cubes_dump_clean_init;
+  //bool cubes_nodump;
+  bool cubes_dump_enabled;
+  // true if --cubes-dump-file flag is used
+  bool cubes_dump_file_flag;
   std::string pidfile;
   uint16_t server_port;
   std::string server_ip;
   std::string logfile;
   std::string configfile;
+  std::string cubes_dump_file;
   std::string cert_path, key_path;
   std::string cacert_path;
   std::string cert_whitelist_path;

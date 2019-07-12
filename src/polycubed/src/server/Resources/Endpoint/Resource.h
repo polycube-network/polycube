@@ -26,10 +26,12 @@
 
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 
-enum class Operation { kCreate, kReplace, kUpdate };
+enum class Operation { kCreate, kReplace, kUpdate, kDelete };
+enum class ResourceType {Service, ParentResource, ListResource, LeafResource};
 
 class Resource {
  public:
+
   explicit Resource(const std::string &rest_endpoint);
 
   virtual ~Resource() = default;
@@ -55,6 +57,8 @@ class Resource {
                                    bool update, bool initialization) = 0;
 
   static Operation OperationType(bool update, bool initialization);
+
+  static bool isOperationSuccessful(ErrorTag errorTag);
 
   virtual void Keys(const Pistache::Rest::Request &request,
                     ListKeyValues &parsed) const = 0;

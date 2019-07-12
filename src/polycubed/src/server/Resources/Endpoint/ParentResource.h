@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <spdlog/logger.h>
 
 #include "../Body/ParentResource.h"
 #include "Resource.h"
@@ -95,5 +96,7 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
   virtual void del(const Request &request, ResponseWriter response);
 
   void options(const Request &request, ResponseWriter response);
+
+  std::shared_ptr<spdlog::logger> logger;
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

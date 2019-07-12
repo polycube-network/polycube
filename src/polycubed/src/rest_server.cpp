@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "polycubed_core.h"
 #include "service_controller.h"
@@ -26,12 +27,16 @@
 #include "polycube/services/response.h"
 #include "server/Resources/Data/AbstractFactory.h"
 #include "server/Server/ResponseGenerator.h"
+#include "config.h"
+#include "cubes_dump.h"
 
 namespace polycube {
 namespace polycubed {
 
 std::string RestServer::whitelist_cert_path;
 std::string RestServer::blacklist_cert_path;
+
+const std::string RestServer::base = "/polycube/v1/";
 
 // start http server for Management APIs
 // Incapsultate a core object // TODO probably there are best ways...
@@ -148,6 +153,59 @@ void RestServer::shutdown() {
   try {
     httpEndpoint_->shutdown();
   } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+  }
+}
+
+void RestServer::create_cubes(json &cubes) {
+  /*
+   * This is possible that a cube's port has as peer another port
+   * of a cube that hasn't been created yet.  This logic removes all
+   * the peers from the request and sets them after all cubes have
+   * been created.
+   */
+  auto peers = utils::strip_port_peers(cubes);
+  std::vector<Response> resp = {{ErrorTag::kNoContent, nullptr}};
+  bool error = false;
+
+  for (auto &cube : cubes) {
+    auto &s = core.get_service_controller(cube["service-name"]);
+    auto res = s.get_management_interface()->get_service()
+            ->CreateReplaceUpdate(cube["name"], cube, false, true);
+
+    if (res.size() != 1 || res[0].error_tag != kCreated) {
+      std::string msg;
+      for (auto & r: res) {
+        //logger->debug("- {}", r.message);
+        msg += std::string(r.message) + " ";
+      }
+
+      throw std::runtime_error("Error creating cube: " + cube["name"].get<std::string>() + msg);
+    }
+  }
+
+  for (auto &[peer1, peer2] : peers) {
+    core.try_to_set_peer(peer1, peer2);
+  }
+}
+
+void RestServer::load_last_topology() {
+  logger->info("loading cubes from {}",
+               configuration::config.getCubesDumpFile());
+  std::ifstream topologyFile(configuration::config.getCubesDumpFile());
+  if (!topologyFile.is_open()) {
+    return;
+  }
+
+  std::stringstream buffer;
+  buffer << topologyFile.rdbuf();
+  topologyFile.close();
+  // parse the file and create and initialize each cube one by one
+  try {
+    json jcubes = json::parse(buffer.str());
+    logJson(jcubes);
+    create_cubes(jcubes);
+  } catch (const std::exception &e) {
     logger->error("{0}", e.what());
   }
 }
@@ -438,32 +496,7 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
   try {
     json cubes = json::parse(request.body());
     logJson(cubes);
-    /*
-     * This is possible that a cube's port has as peer another port
-     * of a cube that hasn't been created yet.  This logic removes all
-     * the peers from the request and sets them after all cubes have
-     * been created.
-     */
-    auto peers = utils::strip_port_peers(cubes);
-    std::vector<Response> resp = {{ErrorTag::kNoContent, nullptr}};
-    bool error = false;
-
-    for (auto &cube : cubes) {
-      resp = core.get_service_controller(cube["service-name"]).get_management_interface()->get_service()
-              ->CreateReplaceUpdate(cube["name"], cube, false, true);
-      if (!error && resp[0].error_tag != kCreated) {
-        Rest::Server::ResponseGenerator::Generate(std::move(resp), std::move(response));
-        error = true;
-      }
-    }
-
-    if (!error) {
-      Rest::Server::ResponseGenerator::Generate(std::move(resp), std::move(response));
-    }
-
-    for (auto &[peer1, peer2] : peers) {
-      core.try_to_set_peer(peer1, peer2);
-    }
+    create_cubes(cubes);
   } catch (const std::runtime_error &e) {
     logger->error("{0}", e.what());
     response.send(Pistache::Http::Code::Bad_Request, e.what());
