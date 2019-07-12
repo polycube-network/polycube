@@ -46,15 +46,16 @@ Bare Metal
 This is a more elaborated way only recommended for advance users.
 Please the :doc:`installation guide <installation>` to get detailed information about how to compile and install ``polycube`` and its dependencies.
 
-Once you have ``polcyube`` installed in your system, you can launch ``polycubed`` (the polycube daemon):
+Once you have ``polcyube`` installed in your system, you can start the ``polycubed`` service:
 
 ::
 
-    # Launch in attached mode (you'll be able to see the log directly in te terminal)
-    sudo polycubed
-    # Launch in detached mode (logs will be saved on files)
-    sudo polycubed -d
+    # start polycubed service
+    # (sudo service start polycubed will work in many distros as well)
+    sudo systemctl start polycubed
 
+    # check service status
+    sudo systemctl status polycubed
 
 Start interacting with the framework by using ``polycubectl``. Refer to :doc:`polycubectl CLI <polycubectl/polycubectl>`.
 
@@ -63,8 +64,8 @@ Start interacting with the framework by using ``polycubectl``. Refer to :doc:`po
     polycubectl --help
 
 
-In order to stop ``polycubed`` you can press ``Ctrl+C`` on the terminal it is running (if running in attached mode). You can also send the ``SIGTERM`` signal to the process:
+To stop the ``polycubed`` service use:
 
 ::
 
-    sudo pkill -SIGTERM polycubed
+    sudo systemctl stop polycubed

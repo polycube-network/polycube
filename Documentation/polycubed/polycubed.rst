@@ -13,6 +13,31 @@ It exposes a configuration mechanism of the different service instances through 
 It requires root privileges and only an instance can be launched system wide.
 
 
+Systemd integration
+^^^^^^^^^^^^^^^^^^^
+
+``polycubed`` can be managed as a systemd service.
+
+::
+
+    # start the service
+    sudo systemctl start polycubed
+
+    # stop the service
+    sudo systemctl stop polycubed
+
+    # restart the service
+    sudo systemctl reload-or-restart polycubed
+
+    # enable the service to be started at boot time
+    sudo systemctl enable polycubed
+
+    # see service status
+    sudo systemctl status polycubed
+
+    # check logs
+    journalctl -u polycubed // '-f' can be used to see a live version
+
 Usage
 ^^^^^
 
@@ -33,7 +58,6 @@ Usage
     --cert-black-list: path to black listed certificates
     --cert-white-list: path to white listed certificates
     -h, --help: print this message
-
 
 
 Configuration file
