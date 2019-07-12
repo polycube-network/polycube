@@ -220,22 +220,30 @@ void ServiceController::set_port_peer(Port &p, const std::string &peer_name) {
 
   std::lock_guard<std::mutex> guard(service_ctrl_mutex_);
 
-  std::unique_ptr<ExtIface> iface;
+  std::shared_ptr<ExtIface> iface;
   std::string cube_name, port_name;  // used if peer is cube:port syntax
 
   if (Netlink::getInstance().get_available_ifaces().count(peer_name) != 0) {
-    switch (p.get_type()) {
-    case PortType::TC:
-      iface.reset(new ExtIfaceTC(peer_name));
-      break;
-    case PortType::XDP:
-      PortXDP &port_xdp = dynamic_cast<PortXDP &>(p);
-      iface.reset(new ExtIfaceXDP(peer_name, port_xdp.get_attach_flags()));
-      break;
+    auto it = ports_to_ifaces.find(peer_name);
+    // if there is not entry for that iface create it
+    if (it == ports_to_ifaces.end()) {
+      switch (p.get_type()) {
+      case PortType::TC:
+        iface = std::make_shared<ExtIfaceTC>(peer_name);
+        break;
+      case PortType::XDP:
+        PortXDP &port_xdp = dynamic_cast<PortXDP &>(p);
+        iface = std::make_shared<ExtIfaceXDP>(peer_name, port_xdp.get_attach_flags());
+        break;
+      }
+      ports_to_ifaces.emplace(std::piecewise_construct,
+                              std::forward_as_tuple(peer_name),
+                              std::forward_as_tuple(std::move(iface)));
+    } else { // if the iface exist, check if this is used
+      if (it->second->get_peer_iface()) {
+        throw std::runtime_error("Iface already in use");
+      }
     }
-    ports_to_ifaces.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(peer_name),
-                            std::forward_as_tuple(std::move(iface)));
     Port::connect(p, *ports_to_ifaces.at(peer_name));
   } else if (parse_peer_name(peer_name, cube_name, port_name)) {
     auto iter = cubes.find(cube_name);

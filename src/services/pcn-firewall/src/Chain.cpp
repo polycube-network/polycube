@@ -138,10 +138,18 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
   ChainResetCountersOutputJsonObject result;
   try {
     std::vector<Firewall::Program *> *programs;
+
+    bool * horus_runtime_enabled_;
+    bool * horus_swap_;
+
     if (name == ChainNameEnum::INGRESS) {
       programs = &parent_.ingress_programs;
+      horus_runtime_enabled_ = &parent_.horus_runtime_enabled_ingress_;
+      horus_swap_ = &parent_.horus_swap_ingress_;
     } else if (name == ChainNameEnum::EGRESS) {
-       programs = &parent_.egress_programs;
+      programs = &parent_.egress_programs;
+      horus_runtime_enabled_ = &parent_.horus_runtime_enabled_egress_;
+      horus_swap_ = &parent_.horus_swap_egress_;
     } else {
       return result;
     }
@@ -153,12 +161,25 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
     auto actionProgram = dynamic_cast<Firewall::ActionLookup *>(
         programs->at(ModulesConstants::ACTION));
 
+    Firewall::Horus * horusProgram;
+
+    if (*horus_runtime_enabled_) {
+      if (!(*horus_swap_)) {
+        horusProgram = dynamic_cast<Firewall::Horus *>(programs->at(ModulesConstants::HORUS_INGRESS));
+      } else {
+        horusProgram = dynamic_cast<Firewall::Horus *>(programs->at(ModulesConstants::HORUS_INGRESS_SWAP));
+      }
+    }
+
     for (auto cr : rules_) {
       actionProgram->flushCounters(cr->getId());
+      if (*horus_runtime_enabled_){
+        horusProgram->flushCounters(cr->getId());
+      }
     }
 
     dynamic_cast<Firewall::DefaultAction *>(
-        programs->at(ModulesConstants::DEFAULTACTION))->flushCounters(name);
+            programs->at(ModulesConstants::DEFAULTACTION))->flushCounters();
 
     counters_.clear();
 
@@ -189,10 +210,17 @@ uint32_t Chain::getNrRules() {
 
 void Chain::updateChain() {
   std::vector<Firewall::Program *> *programs;
+  bool * horus_runtime_enabled_;
+  bool * horus_swap_;
+
   if (name == ChainNameEnum::INGRESS) {
     programs = &parent_.ingress_programs;
+    horus_runtime_enabled_ = &parent_.horus_runtime_enabled_ingress_;
+    horus_swap_ = &parent_.horus_swap_ingress_;
   } else if (name == ChainNameEnum::EGRESS) {
      programs = &parent_.egress_programs;
+    horus_runtime_enabled_ = &parent_.horus_runtime_enabled_egress_;
+    horus_swap_ = &parent_.horus_swap_egress_;
   } else {
     return;
   }
@@ -203,169 +231,279 @@ void Chain::updateChain() {
   // std::lock_guard<std::mutex> lkBpf(parent_.bpfInjectMutex);
   auto start = std::chrono::high_resolution_clock::now();
 
-  int index = 3 + (chainNumber * ModulesConstants::NR_MODULES);
+  int index = ModulesConstants::NR_INITIAL_MODULES + (chainNumber * ModulesConstants::NR_MODULES);
 
   int startingIndex = index;
   Firewall::Program *firstProgramLoaded;
-  std::vector<Firewall::Program *> newProgramsChain(3 + ModulesConstants::NR_MODULES + 2);
-  std::map<uint8_t, std::vector<uint64_t>> states;
-  std::map<struct IpAddr, std::vector<uint64_t>> ips;
-  std::map<uint16_t, std::vector<uint64_t>> ports;
-  std::map<int, std::vector<uint64_t>> protocols;
-  std::vector<std::vector<uint64_t>> flags;
+  std::vector<Firewall::Program *> newProgramsChain(ModulesConstants::NR_INITIAL_MODULES + ModulesConstants::NR_MODULES + 1);
+  std::map<uint8_t, std::vector<uint64_t>> conntrack_map;
+  std::map<struct IpAddr, std::vector<uint64_t>> ipsrc_map;
+  std::map<struct IpAddr, std::vector<uint64_t>> ipdst_map;
+  std::map<uint16_t, std::vector<uint64_t>> portsrc_map;
+  std::map<uint16_t, std::vector<uint64_t>> portdst_map;
+  std::map<int, std::vector<uint64_t>> protocol_map;
+  std::vector<std::vector<uint64_t>> flags_map;
 
-  // Looping through conntrack
-  conntrack_from_rules_to_map(states, rules_);
-  if (!states.empty()) {
-    // At least one rule requires a matching on conntrack, so it can be
-    // injected.
-    if (!parent_.isContrackActive()) {
-      logger()->error(
-          "[{0}] Conntrack is not active, please remember to activate it.",
-          parent_.getName());
-    }
-    Firewall::ConntrackMatch *conntrack =
-      new Firewall::ConntrackMatch(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::CONNTRACKMATCH] = conntrack;
-    // Now the program is loaded, populate it.
-    conntrack->updateMap(states);
+  std::map<struct HorusRule, struct HorusValue> horus;
 
-    // This check is not really needed here, it will always be the first module
-    // to be injected
-    if (index == startingIndex) {
-      firstProgramLoaded = conntrack;
+
+  /*
+   * HORUS - Homogeneous RUleset analySis
+   *
+   * Horus optimization allows to
+   * a) offload a group of contiguous rules matching on same field
+   * b) match the group of offloaded rules with complexity O(1) - single hashmap lookup
+   * c) dynamically adapting to different groups of rules, matching each
+   *    combination of ipsrc/dst, portsrc/dst, tcpflags
+   * d) dynamically check when the optimization is possible according to current
+   *    ruleset. It means check orthogonality
+   *    of rules before the offloaded group, respect to the group itself.
+   *
+   * each pkt received by the program, is looked-up vs the HORUS HASHMAP.
+   * hit ->
+   *  -DROP action: drop the packet;
+   *  -ACCEPT action: goto CTLABELING and CTTABLEUPDATE without going through pipeline
+   * miss ->
+   *  -GOTO all pipeline steps
+   */
+
+  *horus_runtime_enabled_ = false;
+
+  // Apply Horus optimization only if it is enabled
+  if (parent_.horus_enabled) {
+    // if len Chain >= MIN_RULES_HORUS_OPTIMIZATION
+    if (getRuleList().size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+      // calculate horus ruleset
+      horusFromRulesToMap(horus, getRuleList());
+
+      // if horus.size() >= MIN_RULES_HORUS_OPTIMIZATION
+      if (horus.size() >= HorusConst::MIN_RULE_SIZE_FOR_HORUS) {
+        logger()->info("Horus Optimization ENABLED for this rule-set");
+
+        *horus_runtime_enabled_ = true;
+
+        // SWAP indexes
+        *horus_swap_ = !(*horus_swap_);
+
+        uint8_t horus_index_new;
+        uint8_t horus_index_old;
+
+        // Apply Horus optimization
+
+        // Calculate current new/old indexes
+        if (*horus_swap_) {
+          horus_index_new = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_old = ModulesConstants::HORUS_INGRESS;
+        } else {
+          horus_index_old = ModulesConstants::HORUS_INGRESS_SWAP;
+          horus_index_new = ModulesConstants::HORUS_INGRESS;
+        }
+
+        // Compile and inject program
+
+        std::vector<Firewall::Program *> *prog;
+
+        if (name == ChainNameEnum::INGRESS) {
+          prog = &parent_.ingress_programs;
+        } else if (name == ChainNameEnum::EGRESS) {
+          prog = &parent_.egress_programs;
+        } else {
+          throw std::runtime_error("No ingress/egress chain");
+        }
+
+        Firewall::Horus * horusptr =
+                new Firewall::Horus(horus_index_new, parent_, name, horus);
+        prog->at(horus_index_new) = horusptr;
+
+        auto horusProgram = dynamic_cast<Firewall::Horus *>(
+                programs->at(horus_index_new));
+
+        horusProgram->updateMap(horus);
+
+        auto parserIngress = dynamic_cast<Firewall::Parser *>(programs->at(ModulesConstants::PARSER));
+        parserIngress->reload();
+
+        // Delete old Horus, if present
+
+        if (programs->at(horus_index_old) != nullptr) {
+          delete programs->at(horus_index_old);
+        }
+        programs->at(horus_index_old) = nullptr;
+      }
     }
-    ++index;
   }
-  states.clear();
-  // Done looping through conntrack
+  if (*horus_runtime_enabled_ == false) {
+    auto parserIngress = dynamic_cast<Firewall::Parser *>(programs->at(ModulesConstants::PARSER));
+    parserIngress->reload();
 
-  // Looping through IP source
-  ip_from_rules_to_map(SOURCE_TYPE, ips, rules_);
-  if (!ips.empty()) {
-    // At least one rule requires a matching on ipsource, so inject
-    // the module on the first available position
-    Firewall::IpLookup *iplookup =
-        new Firewall::IpLookup(index, name, SOURCE_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::IPSOURCE] = iplookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = iplookup;
-    }
-    ++index;
-
-    // Now the program is loaded, populate it.
-    iplookup->updateMap(ips);
+    // Delete old Horus, if present
+    delete programs->at(ModulesConstants::HORUS_INGRESS);
+    delete programs->at(ModulesConstants::HORUS_INGRESS_SWAP);
+    programs->at(ModulesConstants::HORUS_INGRESS) = nullptr;
+    programs->at(ModulesConstants::HORUS_INGRESS_SWAP) = nullptr;
   }
-  ips.clear();
-  // Done looping through IP source
 
-  // Looping through IP destination
-  ip_from_rules_to_map(DESTINATION_TYPE, ips, rules_);
 
-  if (!ips.empty()) {
-    // At least one rule requires a matching on ipdestination, so inject
-    // the module on the first available position
-    Firewall::IpLookup *iplookup =
-        new Firewall::IpLookup(index, name, DESTINATION_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::IPDESTINATION] = iplookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = iplookup;
+  // calculate bitvectors, and check if no wildcard is present.
+  // if no wildcard is present, we can early break the pipeline.
+  // so we put modules with _break flags_map, before the others in order
+  // to maximize probability to early break the pipeline.
+  bool conntrack_break = conntrackFromRulesToMap(conntrack_map, rules_);
+  bool ipsrc_break = ipFromRulesToMap(SOURCE_TYPE, ipsrc_map, rules_);
+  bool ipdst_break = ipFromRulesToMap(DESTINATION_TYPE, ipdst_map, rules_);
+  bool protocol_break = transportProtoFromRulesToMap(protocol_map, rules_);
+  bool portsrc_break = portFromRulesToMap(SOURCE_TYPE, portsrc_map, rules_);
+  bool portdst_break = portFromRulesToMap(DESTINATION_TYPE, portdst_map, rules_);
+  bool flags_break = flagsFromRulesToMap(flags_map, rules_);
+
+  logger()->debug(
+          "Early break of pipeline conntrack:{0} ipsrc:{1} ipdst:{2} protocol:{3} "
+          "portstc:{4} portdst:{5} flags_map:{6} ",
+          conntrack_break, ipsrc_break, ipdst_break, protocol_break, portsrc_break,
+          portdst_break, flags_break);
+
+  // first loop iteration pushes program that could early break the pipeline
+  // second iteration, push others programs
+
+  bool second = false;
+
+  for (int j = 0; j < 2; j++) {
+    if (j == 1)
+      second = true;
+
+    // Looping through conntrack
+    if (!conntrack_map.empty() && conntrack_break ^ second) {
+      // At least one rule requires a matching on conntrack, so it can be
+      // injected.
+      if (!parent_.isContrackActive()) {
+        logger()->error(
+                "[{0}] Conntrack is not active, please remember to activate it.",
+                parent_.getName());
+      }
+      Firewall::ConntrackMatch *conntrack =
+              new Firewall::ConntrackMatch(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::CONNTRACKMATCH] = conntrack;
+      // Now the program is loaded, populate it.
+      conntrack->updateMap(conntrack_map);
+
+      // This check is not really needed here, it will always be the first module
+      // to be injected
+      if (index == startingIndex) {
+        firstProgramLoaded = conntrack;
+      }
+      ++index;
     }
-    ++index;
+    // Done looping through conntrack
 
-    // Now the program is loaded, populate it.
-    iplookup->updateMap(ips);
-  }
-  ips.clear();
-  // Done looping through IP destination
+    // Looping through IP source
+    if (!ipsrc_map.empty() && (ipsrc_break ^ second)) {
+      // At least one rule requires a matching on ipsource, so inject
+      // the module on the first available position
+      Firewall::IpLookup *iplookup =
+              new Firewall::IpLookup(index, name, SOURCE_TYPE, this->parent_);
+      newProgramsChain[ModulesConstants::IPSOURCE] = iplookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = iplookup;
+      }
+      ++index;
 
-  // Looping through l4 protocol
-  transportproto_from_rules_to_map(protocols, rules_);
-
-  if (!protocols.empty()) {
-    // At least one rule requires a matching on
-    // source ports, so inject the module
-    // on the first available position
-    Firewall::L4ProtocolLookup *protocollookup =
-        new Firewall::L4ProtocolLookup(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::L4PROTO] = protocollookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = protocollookup;
+      // Now the program is loaded, populate it.
+      iplookup->updateMap(ipsrc_map);
     }
-    ++index;
+    // Done looping through IP source
 
-    // Now the program is loaded, populate it.
-    protocollookup->updateMap(protocols);
-  }
-  protocols.clear();
-  // Done looping through l4 protocol
+    // Looping through IP destination
+    if (!ipdst_map.empty() && ipdst_break ^ second) {
+      // At least one rule requires a matching on ipdestination, so inject
+      // the module on the first available position
+      Firewall::IpLookup *iplookup =
+              new Firewall::IpLookup(index, name, DESTINATION_TYPE, this->parent_);
+      newProgramsChain[ModulesConstants::IPDESTINATION] = iplookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = iplookup;
+      }
+      ++index;
 
-  // Looping through source port
-  port_from_rules_to_map(SOURCE_TYPE, ports, rules_);
-
-  if (!ports.empty()) {
-    // At least one rule requires a matching on  source ports,
-    // so inject the  module  on the first available position
-    Firewall::L4PortLookup *portlookup =
-        new Firewall::L4PortLookup(index, name, SOURCE_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::PORTSOURCE] = portlookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = portlookup;
+      // Now the program is loaded, populate it.
+      iplookup->updateMap(ipdst_map);
     }
-    ++index;
+    // Done looping through IP destination
 
-    // Now the program is loaded, populate it.
-    portlookup->updateMap(ports);
-  }
-  ports.clear();
-  // Done looping through source port
+    // Looping through l4 protocol
+    if (!protocol_map.empty() && protocol_break ^ second) {
+      // At least one rule requires a matching on
+      // source port__map, so inject the module
+      // on the first available position
+      Firewall::L4ProtocolLookup *protocollookup =
+              new Firewall::L4ProtocolLookup(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::L4PROTO] = protocollookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = protocollookup;
+      }
+      ++index;
 
-  // Looping through destination port
-  port_from_rules_to_map(DESTINATION_TYPE, ports, rules_);
-
-  if (!ports.empty()) {
-    // At least one rule requires a matching on source ports,
-    // so inject the module  on the first available position
-    Firewall::L4PortLookup *portlookup =
-        new Firewall::L4PortLookup(index, name, DESTINATION_TYPE, this->parent_);
-    newProgramsChain[ModulesConstants::PORTDESTINATION] = portlookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = portlookup;
+      // Now the program is loaded, populate it.
+      protocollookup->updateMap(protocol_map);
     }
-    ++index;
+    // Done looping through l4 protocol
 
-    // Now the program is loaded, populate it.
-    portlookup->updateMap(ports);
-  }
-  ports.clear();
-  // Done looping through destination port
+    // Looping through source port
+    if (!portsrc_map.empty() && portsrc_break ^ second) {
+      // At least one rule requires a matching on  source port__map,
+      // so inject the  module  on the first available position
+      Firewall::L4PortLookup *portlookup =
+              new Firewall::L4PortLookup(index, name, SOURCE_TYPE, this->parent_, portsrc_map);
+      newProgramsChain[ModulesConstants::PORTSOURCE] = portlookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = portlookup;
+      }
+      ++index;
 
-  // Looping through tcp flags
-  flags_from_rules_to_map(flags, rules_);
-
-  if (!flags.empty()) {
-    // At least one rule requires a matching on flags,
-    // so inject the  module in the first available position
-    Firewall::TcpFlagsLookup *tcpflagslookup =
-        new Firewall::TcpFlagsLookup(index, name, this->parent_);
-    newProgramsChain[ModulesConstants::TCPFLAGS] = tcpflagslookup;
-    // If this is the first module, adjust parsing to forward to it.
-    if (index == startingIndex) {
-      firstProgramLoaded = tcpflagslookup;
+      // Now the program is loaded, populate it.
+      portlookup->updateMap(portsrc_map);
     }
-    ++index;
+    // Done looping through source port
 
-    // Now the program is loaded, populate it.
-    tcpflagslookup->updateMap(flags);
+    // Looping through destination port
+    if (!portdst_map.empty() && portdst_break ^ second) {
+      // At least one rule requires a matching on source port__map,
+      // so inject the module  on the first available position
+      Firewall::L4PortLookup *portlookup =
+              new Firewall::L4PortLookup(index, name, DESTINATION_TYPE, this->parent_, portdst_map);
+      newProgramsChain[ModulesConstants::PORTDESTINATION] = portlookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = portlookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      portlookup->updateMap(portdst_map);
+    }
+    // Done looping through destination port
+
+    // Looping through tcp flags_map
+    if (!flags_map.empty() && flags_break ^ second) {
+      // At least one rule requires a matching on flags_map,
+      // so inject the  module in the first available position
+      Firewall::TcpFlagsLookup *tcpflagslookup =
+              new Firewall::TcpFlagsLookup(index, name, this->parent_);
+      newProgramsChain[ModulesConstants::TCPFLAGS] = tcpflagslookup;
+      // If this is the first module, adjust parsing to forward to it.
+      if (index == startingIndex) {
+        firstProgramLoaded = tcpflagslookup;
+      }
+      ++index;
+
+      // Now the program is loaded, populate it.
+      tcpflagslookup->updateMap(flags_map);
+    }
+    // Done looping through tcp flags_map
   }
-  flags.clear();
-
-  // Done looping through tcp flags
 
   // Adding bitscan
   Firewall::BitScan *bitscan =
@@ -385,7 +523,6 @@ void Chain::updateChain() {
   if (index == startingIndex) {
     firstProgramLoaded = actionlookup;
   }
-  ++index;
 
   for (auto &rule : rules_) {
     actionlookup->updateTableValue(rule->getId(),
@@ -505,8 +642,7 @@ std::vector<std::shared_ptr<ChainRule>> Chain::getRuleList() {
   defaultRule.setDescription("Default Policy");
   defaultRule.setId(rules_.size());
 
-  rules.push_back(
-      std::shared_ptr<ChainRule>(new ChainRule(*this, defaultRule)));
+  rules.push_back(std::make_shared<ChainRule>(*this, defaultRule));
 
   return rules;
 }
@@ -525,7 +661,7 @@ void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
   if (newRule == nullptr) {
     // Totally useless, but it is needed to avoid the compiler making wrong
     // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
+    throw std::runtime_error("I won't be thrown");
 
   } else if (rules_.size() <= id && newRule != nullptr) {
     rules_.resize(rules_.size() + 1);
@@ -637,7 +773,7 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   if (newRule == nullptr) {
     // Totally useless, but it is needed to avoid the compiler making wrong
     // assumptions and reordering
-    throw new std::runtime_error("I won't be thrown");
+    throw std::runtime_error("I won't be thrown");
 
   } else if (rules_.size() >= id && newRule != nullptr) {
     rules_.resize(rules_.size() + 1);

@@ -48,6 +48,11 @@ class Cube : public BaseCube {
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
 
+  const bool get_shadow() const;
+  const bool get_span() const;
+  void set_span(const bool value);
+
+  const std::string get_veth_name_from_index(const int ifindex);
  private:
   std::shared_ptr<CubeIface> cube_;  // pointer to the cube in polycubed
   packet_in_cb handle_packet_in;
@@ -115,6 +120,19 @@ std::shared_ptr<PortType> Cube<PortType>::add_port(const std::string &port_name,
 
     std::tie(iter, inserted) = ports_by_name_.emplace(port_name, port);
     ports_by_id_.emplace(port->index(), port);
+    /*
+     * When a transparent cube is attached to a port, it can query the service
+     * to get some port parameters (e.g., MAC address). If the transparent cube
+     * is attached while the port is being created these parameters will be not
+     * configured yet.
+     * This workaround first creates the port and then passes the configuration
+     * to attach the transparent cubes. The configuration that is passed
+     * in the constructor is ignored in the daemon.
+     * The solution for this workaround would be to implement the notification
+     * mechanishm, so when the parameters are configured those are pushed to the
+     * transparent cube.
+     */
+    port->set_conf(conf.getBase());
     return iter->second;
   } catch (const std::exception &ex) {
     cube_->remove_port(port_name);
@@ -172,6 +190,26 @@ void Cube<PortType>::set_conf(const nlohmann::json &conf) {
 template <class PortType>
 nlohmann::json Cube<PortType>::to_json() const {
   return cube_->to_json();
+}
+
+template <class PortType>
+const bool Cube<PortType>::get_shadow() const {
+  return cube_->get_shadow();
+}
+
+template <class PortType>
+const bool Cube<PortType>::get_span() const {
+  return cube_->get_span();
+}
+
+template <class PortType>
+void Cube<PortType>::set_span(const bool value) {
+  return cube_->set_span(value);
+}
+
+template <class PortType>
+const std::string Cube<PortType>::get_veth_name_from_index(const int ifindex) {
+  return cube_->get_veth_name_from_index(ifindex);
 }
 
 }  // namespace service

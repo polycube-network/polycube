@@ -48,41 +48,8 @@ LeafListResource::LeafListResource(
       Body::LeafListResource(name, description, cli_example, parent, core,
                              nullptr, node_fields, configuration,
                              init_only_config, mandatory, type,
-                             std::move(default_value)) {
-  using Pistache::Rest::Routes::bind;
-  auto router = core_->get_rest_server()->get_router();
-  router->get(rest_endpoint_ + "/:entry",
-              bind(&LeafListResource::get_entry, this));
-}
+                             std::move(default_value)) {}
 
-LeafListResource::~LeafListResource() {
-  using Pistache::Http::Method;
-  auto router = core_->get_rest_server()->get_router();
-  router->removeRoute(Method::Get, rest_endpoint_ + "/:entry");
-}
+LeafListResource::~LeafListResource() {}
 
-void LeafListResource::get_entry(const Request &request,
-                                 ResponseWriter response) {
-  std::vector<Response> errors;
-  if (parent_ != nullptr) {
-    auto rerrors =
-        dynamic_cast<const ParentResource *const>(parent_)->RequestValidate(
-            request, name_);
-    errors.reserve(rerrors.size());
-    std::move(std::begin(rerrors), std::end(rerrors),
-              std::back_inserter(errors));
-  }
-  auto value = nlohmann::json::parse(request.param(":entry").as<std::string>());
-
-  const auto cube_name = Service::Cube(request);
-  ListKeyValues keys{};
-  dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
-  auto body = LeafResource::BodyValidate(cube_name, keys, value, false);
-  errors.reserve(errors.size() + body.size());
-  std::move(std::begin(body), std::end(body), std::back_inserter(errors));
-  if (errors.empty()) {
-    errors.push_back({kOk, nullptr});
-  }
-  Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
-}
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

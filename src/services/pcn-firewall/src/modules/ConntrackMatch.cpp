@@ -21,6 +21,7 @@ Firewall::ConntrackMatch::ConntrackMatch(const int &index,
                                          const ChainNameEnum &direction,
                                          Firewall &outer)
     : Firewall::Program(firewall_code_conntrackmatch, index, direction, outer) {
+
   load();
 }
 
@@ -30,7 +31,7 @@ std::string Firewall::ConntrackMatch::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules)));
 
   /*Replacing hops*/
   replaceAll(noMacroCode, "_NEXT_HOP_1", std::to_string(index + 1));
@@ -53,7 +54,8 @@ bool Firewall::ConntrackMatch::updateTableValue(
 
   try {
     auto table = firewall.get_raw_table(tableName, index, getProgramType());
-    table.set(&status, value.data());
+    uint32_t s = status;
+    table.set(&s, value.data());
   } catch (...) {
     return false;
   }

@@ -31,6 +31,7 @@
 using polycube::service::CubeIface;
 using polycube::service::PortStatus;
 using polycube::service::PortType;
+using polycube::service::ParameterEventCallback;
 
 namespace polycube {
 namespace polycubed {
@@ -57,7 +58,6 @@ class Port : public polycube::service::PortIface, public PeerIface {
   void set_next_index(uint16_t index) override;
   void set_peer_iface(PeerIface *peer) override;
   PeerIface *get_peer_iface() override;
-  std::string get_parameter(const std::string &parameter) override;
 
   // TODO: rename this
   uint16_t index() const;
@@ -70,6 +70,7 @@ class Port : public polycube::service::PortIface, public PeerIface {
   const std::string &peer() const;
   void send_packet_out(const std::vector<uint8_t> &packet,
                        bool recirculate = false);
+  void send_packet_ns(const std::vector<uint8_t> &packet);
   PortStatus get_status() const;
   PortType get_type() const;
 
@@ -78,6 +79,23 @@ class Port : public polycube::service::PortIface, public PeerIface {
 
   static void connect(PeerIface &p1, PeerIface &p2);
   static void unconnect(PeerIface &p1, PeerIface &p2);
+
+  // Implementation of parameter subscription in PeerIface.
+  void subscribe_parameter(const std::string &caller,
+                           const std::string &param_name,
+                           ParameterEventCallback &callback) override;
+  void unsubscribe_parameter(const std::string &caller,
+                             const std::string &param_name) override;
+  std::string get_parameter(const std::string &param_name) override;
+  void set_parameter(const std::string &param_name,
+                     const std::string &value) override;
+
+  // API exposed to services (PortIface)
+  void subscribe_peer_parameter(const std::string &param_name,
+                                ParameterEventCallback &callback);
+  void unsubscribe_peer_parameter(const std::string &param_name);
+  void set_peer_parameter(const std::string &param_name,
+                          const std::string &value);
 
  protected:
   void update_indexes() override;
@@ -100,7 +118,10 @@ class Port : public polycube::service::PortIface, public PeerIface {
   std::shared_ptr<spdlog::logger> logger;
 
  private:
-  uint16_t __get_index() const;
+  uint16_t port_index_; // ebpf id used by other modules to call this port
+  uint16_t calculate_index() const;
+
+  std::unordered_map<std::string, ParameterEventCallback> subscription_list;
 };
 
 }  // namespace polycubed

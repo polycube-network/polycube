@@ -31,6 +31,8 @@
 #include <tins/ethernetII.h>
 #include <tins/tins.h>
 
+#include "../../../polycubed/src/utils/netlink.h"
+
 using namespace io::swagger::server::model;
 using namespace Tins;
 using namespace polycube::service;
@@ -138,6 +140,18 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
 
   void remove_all_routes();
 
+  /* Netlink */
+  std::mutex router_mutex;
+  polycube::polycubed::Netlink &netlink_instance_router_;
+  int netlink_notification_index_route_added;
+  int netlink_notification_index_route_deleted;
+  int netlink_notification_index_link_deleted;
+  int netlink_notification_index_new_address;
+  void netlink_notification_route_added(int ifindex, const std::string &info_route);
+  void netlink_notification_route_deleted(int ifindex, const std::string &info_route);
+  void netlink_notification_link_deleted(int ifindex, const std::string &iface);
+  void netlink_notification_new_address(int ifindex, const std::string &info_address);
+
  private:
   // The following variables have been added by hand
   std::map<std::tuple<std::string, std::string, std::string>, Route> routes_;
@@ -166,4 +180,11 @@ class Router : public polycube::service::Cube<Ports>, public RouterInterface {
   void find_new_active_nexthop(const std::string &network,
                                const std::string &netmask,
                                const std::string &nexthop);
+
+  /* Netlink */
+  void add_linux_route(const std::string &network, const std::string &prefix,
+                      const std::string &nexthop, const std::string &port_name,
+                      const int port_index);
+  void remove_linux_route(const std::string &network, const std::string &netmask_length,
+                      const std::string &nexthop, const std::string &port_name);
 };

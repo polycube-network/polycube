@@ -1,5 +1,5 @@
-Tutorial 3: Creating a complex service that includes bridges and routers
-========================================================================
+Tutorial 3: creating a service chain with bridges and routers
+=============================================================
 
 This tutorial shows how to create a complex service by means of a topology that includes two routers, two bridges and five virtual interfaces (simulating five hosts).
 Each host is a part of a different network and it sends packets to its default gateway, which forwards them to the proper interface based on the (static) routing table.

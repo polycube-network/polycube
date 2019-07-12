@@ -395,5 +395,5 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel, version.All)
+	skel.PluginMain(cmdAdd, nil, cmdDel, version.All, "Polycube CNI plugin")
 }

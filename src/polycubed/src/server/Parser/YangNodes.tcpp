@@ -395,10 +395,13 @@ void Yang::ParseLeafList(
   }
   std::shared_ptr<Resources::Body::LeafListResource> resource;
   if (generate_endpoint) {
+    auto base_model = base_model_factory_->IsBaseModel(parsed_names);
+    auto &&factory__ = base_model ? dynamic_cast<Resources::Data::AbstractFactory*>(base_model_factory_.get()) : factory_.get();
+
     const auto &e_parent =
         std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
     auto endpoint = e_parent->Endpoint() + '/' + leaflist->name;
-    resource = factory_->RestLeafList(
+    resource = factory__->RestLeafList(
         std::move(parsed_names), leaflist->name, description, cli_example,
         endpoint, parent.get(), std::move(value_field), node_fields,
         configuration, init_only_config, mandatory,

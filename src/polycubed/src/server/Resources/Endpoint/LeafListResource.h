@@ -27,7 +27,7 @@ namespace polycube::polycubed::Rest::Resources::Endpoint {
 using Pistache::Http::ResponseWriter;
 using Pistache::Rest::Request;
 
-class LeafListResource : public LeafResource, public Body::LeafListResource {
+class LeafListResource : public LeafResource, virtual public Body::LeafListResource {
  public:
   LeafListResource(const std::string &name, const std::string &description,
                    const std::string &cli_example,
@@ -41,11 +41,5 @@ class LeafListResource : public LeafResource, public Body::LeafListResource {
                    std::vector<std::string> &&default_value);
 
   ~LeafListResource() override;
-
-  virtual std::shared_ptr<LeafResource> &Entry(
-      const std::string &value) const = 0;
-
- private:
-  void get_entry(const Request &request, ResponseWriter response);
 };
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

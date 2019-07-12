@@ -43,6 +43,7 @@ load_file_as_variable(pcn-firewall datapaths/Firewall_L4PortLookup_dp.c firewall
 load_file_as_variable(pcn-firewall datapaths/Firewall_L4ProtocolLookup_dp.c firewall_code_l4protolookup)
 load_file_as_variable(pcn-firewall datapaths/Firewall_Parser_dp.c firewall_code_parser)
 load_file_as_variable(pcn-firewall datapaths/Firewall_TcpFlagsLookup_dp.c firewall_code_tcpflagslookup)
+load_file_as_variable(pcn-firewall datapaths/Firewall_Horus_dp.c firewall_code_horus)
 
 # load datamodel in a variable
 load_file_as_variable(pcn-firewall

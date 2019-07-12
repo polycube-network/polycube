@@ -277,6 +277,36 @@ std::string get_netmask_from_string(const std::string &ipv) {
   return ipv_net.substr(pos + 1, std::string::npos);
 }
 
+uint32_t get_netmask_length(const std::string &netmask_string) {
+  struct in_addr buf;
+  char address[100];
+  int res = inet_pton(
+      AF_INET, netmask_string.c_str(),
+      &buf); /*convert ip address in binary form in network byte order */
+
+  if (res == 1) {
+    uint32_t counter = 0;
+    int n = buf.s_addr;
+    while (n) {
+      counter++;
+      n &= (n - 1);
+    }
+    return counter;
+  } else
+    throw std::runtime_error("IP Address is not in a valid format");
+}
+
+std::string get_netmask_from_CIDR(const int cidr) {
+  uint32_t ipv4Netmask;
+
+  ipv4Netmask = 0xFFFFFFFF;
+  ipv4Netmask <<= 32 - cidr;
+  ipv4Netmask = ntohl(ipv4Netmask);
+  struct in_addr addr = {ipv4Netmask};
+
+  return inet_ntoa(addr);
+}
+
 }  // namespace utils
 }  // namespace service
 }  // namespace polycube

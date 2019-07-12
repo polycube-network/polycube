@@ -24,11 +24,13 @@
 #include <unordered_map>
 
 #include "base_model.h"
+#include "cubes_dump.h"
 #include "polycube/services/guid.h"
 #include "polycube/services/json.hpp"
 #include "service_controller.h"
 
 #include "cube_factory_impl.h"
+#include "port.h"
 //#include "extiface_info.h"
 
 using json = nlohmann::json;
@@ -39,6 +41,7 @@ namespace polycubed {
 class RestServer;
 
 class PolycubedCore {
+  friend class RestServer;
  public:
   PolycubedCore(BaseModel *base_model);
   ~PolycubedCore();
@@ -71,6 +74,15 @@ class PolycubedCore {
   void set_polycubeendpoint(std::string &polycube);
   std::string get_polycubeendpoint();
 
+  void cube_port_parameter_subscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter,
+    ParameterEventCallback &cb);
+
+  void cube_port_parameter_unsubscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter);
+
   std::string get_cube_port_parameter(const std::string &cube,
                                       const std::string &port_name,
                                       const std::string &parameter);
@@ -78,20 +90,40 @@ class PolycubedCore {
                                  const std::string &parameter,
                                  const std::string &value);
 
+  void notify_port_subscribers(const std::string &cube,
+                               const std::string &port_name,
+                               const std::string &parameter,
+                               const std::string &value);
+
   std::vector<std::string> get_all_ports();
 
   void set_rest_server(RestServer *rest_server);
   RestServer *get_rest_server();
+
+  void set_cubes_dump(CubesDump *cubes_dump);
+  CubesDump *get_cubes_dump();
+
   BaseModel *base_model();
 
  private:
   bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
+
+  // map of maps of callbacks
+  // key of outer map is cube_name:port_name:param_name
+  // key of the inner map is the calle id
+  std::unordered_map<std::string,
+      std::unordered_map<std::string, ParameterEventCallback>>
+      cubes_port_event_callbacks_;
+
+  std::mutex cubes_port_event_mutex_;
 
   std::unordered_map<std::string, ServiceController> servicectrls_map_;
   std::string polycubeendpoint_;
   std::shared_ptr<spdlog::logger> logger;
   RestServer *rest_server_;
   BaseModel *base_model_;
+  // This manages the cubes configuration in memory and the dump to file
+  CubesDump *cubes_dump_;
 };
 
 }  // namespace polycubed

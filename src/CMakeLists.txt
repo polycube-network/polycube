@@ -1,5 +1,7 @@
 find_package(LibYANG REQUIRED)
 
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/include/uapi)
+
 option(INSTALL_CLI "installs the polycube CLI" ON)
 option(HAVE_POLYCUBE_TOOLS "uses the polycube-tools package" OFF)
 option(ENABLE_PCN_IPTABLES "enables the pcn-iptables" OFF)

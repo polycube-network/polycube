@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"net/url"
 
 	"os"
 	"bufio"
@@ -304,22 +305,22 @@ func ParseCLIArgs(args []string) (*CLIArgs, error) {
 }
 
 func (cli *CLIArgs) buildURL() string {
-	var url string
+	var url_str string
 
 	for _, str := range cli.PathArgs {
-		url += str + "/"
+		url_str += url.PathEscape(str) + "/"
 	}
 
 	if cli.IsHelp {
 		// TODO: is this check really needed?
-		if len(url) > 0 {
-			url = url[:len(url)-1] + cli.getHelpQueryParam()
+		if len(url_str) > 0 {
+			url_str = url_str[:len(url_str)-1] + cli.getHelpQueryParam()
 		} else {
-			url = cli.getHelpQueryParam()
+			url_str = cli.getHelpQueryParam()
 		}
 	}
 
-	return url
+	return url_str
 }
 
 func (cli *CLIArgs) buildBody() []byte {

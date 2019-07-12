@@ -40,6 +40,7 @@ class Port {
   Port(std::shared_ptr<PortIface> port);
   ~Port();
   void send_packet_out(EthernetII &packet, bool recirculate = false);
+  void send_packet_ns(EthernetII &packet);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);
@@ -54,6 +55,12 @@ class Port {
   // The code generation depends on this function, that's the reason why
   // this uses a different naming convention
   std::string getName() const;
+
+  void subscribe_peer_parameter(const std::string &param_name,
+                                ParameterEventCallback &callback);
+  void unsubscribe_peer_parameter(const std::string &param_name);
+  void set_peer_parameter(const std::string &param_name,
+                          const std::string &value);
 
  private:
   class impl;

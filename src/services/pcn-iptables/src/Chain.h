@@ -127,7 +127,7 @@ class Chain : public ChainInterface {
       std::map<struct HorusRule, struct HorusValue> &horus,
       const std::vector<std::shared_ptr<ChainRule>> &rules);
 
-  static void fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
+  static bool fromRuleToHorusKeyValue(std::shared_ptr<ChainRule> rule,
                                       struct HorusRule &key,
                                       struct HorusValue &value);
 };

@@ -7,6 +7,7 @@ aux_source_directory(default-src SRC_SOURCES)
 include_directories(serializer)
 include_directories(interface)
 include_directories(default-src)
+include_directories(/usr/include/libnl3)
 
 # Needed to load files as variables
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

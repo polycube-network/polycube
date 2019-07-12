@@ -60,11 +60,6 @@ TransparentCube::~TransparentCube() {
   factory_->destroy_cube(get_name());
 }
 
-std::string TransparentCube::get_parent_parameter(
-    const std::string &parameter) {
-  return cube_->get_parent_parameter(parameter);
-}
-
 void TransparentCube::send_packet_out(EthernetII &packet, Sense sense,
                                       bool recirculate) {
   cube_->send_packet_out(packet.serialize(), sense, recirculate);
@@ -79,6 +74,21 @@ nlohmann::json TransparentCube::to_json() const  {
 }
 
 void TransparentCube::attach() {}
+
+void TransparentCube::subscribe_parent_parameter(
+    const std::string &param_name, ParameterEventCallback &callback) {
+  cube_->subscribe_parent_parameter(param_name, callback);
+}
+
+void TransparentCube::unsubscribe_parent_parameter(
+    const std::string &param_name) {
+  cube_->unsubscribe_parent_parameter(param_name);
+}
+
+std::string TransparentCube::get_parent_parameter(
+    const std::string &param_name) {
+  return cube_->get_parent_parameter(param_name);
+}
 
 }  // namespace service
 }  // namespace polycube

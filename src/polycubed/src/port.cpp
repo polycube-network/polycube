@@ -23,6 +23,8 @@
 #include "polycubed_core.h"
 extern polycube::polycubed::PolycubedCore *core;
 
+const std::string prefix_port = "ns_port_";
+
 namespace polycube {
 namespace polycubed {
 
@@ -49,11 +51,10 @@ uint16_t Port::index() const {
 }
 
 uint16_t Port::get_index() const {
-  std::lock_guard<std::mutex> guard(port_mutex_);
-  return __get_index();
+  return port_index_;
 }
 
-uint16_t Port::__get_index() const {
+uint16_t Port::calculate_index() const {
   // check if there is ingress-enabled transparent cube
   for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
     auto index = (*it)->get_index(ProgramType::INGRESS);
@@ -92,10 +93,6 @@ void Port::set_peer_iface(PeerIface *peer) {
 PeerIface *Port::get_peer_iface() {
   std::lock_guard<std::mutex> guard(port_mutex_);
   return peer_port_;
-}
-
-std::string Port::get_parameter(const std::string &parameter) {
-  return core->get_cube_port_parameter(parent_.get_name(), name(), parameter);
 }
 
 const Guid &Port::uuid() const {
@@ -137,11 +134,26 @@ void Port::set_peer(const std::string &peer) {
     if (peer_ == peer) {
       return;
     }
+
+    // if previous peer was an iface, remove subscriptions
+    if (auto extiface_old = dynamic_cast<ExtIface*>(peer_port_)) {
+      // Subscribe to the list of events
+      for (auto &it : subscription_list)
+        extiface_old->unsubscribe_parameter(uuid().str(), it.first);
+    }
   }
+
   ServiceController::set_port_peer(*this, peer);
 
   std::lock_guard<std::mutex> guard(port_mutex_);
   peer_ = peer;
+
+  // Check if peer is a ExtIface
+  if (auto extiface = dynamic_cast<ExtIface*>(peer_port_)) {
+    // Subscribe to the list of events
+    for (auto &it : subscription_list)
+      extiface->subscribe_parameter(uuid().str(), it.first, it.second);
+  }
 }
 
 const std::string &Port::peer() const {
@@ -162,6 +174,13 @@ void Port::set_conf(const nlohmann::json &conf) {
   if (conf.count("peer")) {
     set_peer(conf.at("peer").get<std::string>());
   }
+
+  // attach transparent cubes present on the port
+  if (conf.count("tcubes")) {
+    for (auto &cube : conf.at("tcubes")) {
+      core->attach(cube.get<std::string>(), get_path(), "last", "");
+    }
+  }
 }
 
 nlohmann::json Port::to_json() const {
@@ -171,6 +190,11 @@ nlohmann::json Port::to_json() const {
   val["uuid"] = uuid().str();
   val["status"] = port_status_to_string(get_status());
   val["peer"] = peer();
+
+  const auto &cubes_names = get_cubes_names();
+  if (cubes_names.size()) {
+    val["tcubes"] = cubes_names;
+  }
 
   return val;
 }
@@ -198,6 +222,12 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
     module = peer_port_->get_index();
   }
   c.send_packet_to_cube(module, port, packet);
+}
+
+void Port::send_packet_ns(const std::vector<uint8_t> &packet) {
+  std::string name_ns_port = prefix_port + name_;
+  std::shared_ptr<PortIface> port_ns = parent_.get_port(name_ns_port);
+  port_ns->send_packet_out(packet);
 }
 
 void Port::update_indexes() {
@@ -230,9 +260,11 @@ void Port::update_indexes() {
     }
   }
 
+  port_index_ = calculate_index();
+
   // CASE4: peer -> cube[N-1]
   if (peer_port_) {
-    peer_port_->set_next_index(__get_index());
+    peer_port_->set_next_index(port_index_);
   }
 
   // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
@@ -276,6 +308,63 @@ void Port::connect(PeerIface &p1, PeerIface &p2) {
 void Port::unconnect(PeerIface &p1, PeerIface &p2) {
   p1.set_peer_iface(nullptr);
   p2.set_peer_iface(nullptr);
+}
+
+void Port::subscribe_peer_parameter(const std::string &param_name,
+                                    ParameterEventCallback &callback) {
+  std::lock_guard<std::mutex> lock(port_mutex_);
+  // Add event to the list
+  subscription_list.emplace(param_name, callback);
+
+  // Check if the port already has a peer (of type ExtIface)
+  // Subscribe to the peer parameter only if the peer is an netdev
+  // (we are not interested in align different cubes' ports).
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
+  if (extiface)
+    extiface->subscribe_parameter(uuid().str(), param_name, callback);
+}
+
+void Port::unsubscribe_peer_parameter(const std::string &param_name) {
+  std::lock_guard<std::mutex> lock(port_mutex_);
+  // Remove event from the list
+  subscription_list.erase(param_name);
+
+  // Only unsubscribe if peer is ExtIface
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
+  if (extiface)
+    extiface->unsubscribe_parameter(uuid().str(), param_name);
+}
+
+void Port::set_peer_parameter(const std::string &param_name,
+                              const std::string &value) {
+  std::lock_guard<std::mutex> lock(port_mutex_);
+  // Check if peer is a ExtIface
+  ExtIface* extiface = dynamic_cast<ExtIface*>(peer_port_);
+  if (extiface)
+    extiface->set_parameter(param_name, value);
+}
+
+void Port::subscribe_parameter(const std::string &caller,
+                               const std::string &param_name,
+                               ParameterEventCallback &callback) {
+  core->cube_port_parameter_subscribe(parent_.get_name(), name_, caller,
+                                      param_name, callback);
+}
+
+void Port::unsubscribe_parameter(const std::string &caller,
+                                 const std::string &param_name) {
+  core->cube_port_parameter_unsubscribe(parent_.get_name(), name_, caller,
+                                        param_name);
+}
+
+std::string Port::get_parameter(const std::string &param_name) {
+  return core->get_cube_port_parameter(parent_.get_name(), name(), param_name);
+}
+
+void Port::set_parameter(const std::string &param_name,
+                         const std::string &value) {
+  // TODO: is this already implemented in core?
+  throw std::runtime_error("set_parameter not implemented in port");
 }
 
 }  // namespace polycubed

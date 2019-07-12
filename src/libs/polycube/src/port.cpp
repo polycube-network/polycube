@@ -32,6 +32,7 @@ class Port::impl {
   impl(Port &op);
   ~impl();
   void send_packet_out(EthernetII &packet, bool recirculate);
+  void send_packet_ns(EthernetII &packet);
   int index() const;
   std::string name() const;
   void set_peer(const std::string &peer);
@@ -42,6 +43,12 @@ class Port::impl {
 
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
+
+  void subscribe_peer_parameter(const std::string &param_name,
+                                ParameterEventCallback &callback);
+  void unsubscribe_peer_parameter(const std::string &param_name);
+  void set_peer_parameter(const std::string &param_name,
+                          const std::string &value);
 
  private:
   std::shared_ptr<PortIface> port_;  // port in polycubed
@@ -104,6 +111,24 @@ void Port::impl::send_packet_out(EthernetII &packet, bool recirculate) {
   port_->send_packet_out(packet.serialize(), recirculate);
 }
 
+void Port::impl::send_packet_ns(EthernetII &packet) {
+  port_->send_packet_ns(packet.serialize());
+}
+
+void Port::impl::subscribe_peer_parameter(const std::string &param_name,
+                                          ParameterEventCallback &callback) {
+  port_->subscribe_peer_parameter(param_name, callback);
+}
+
+void Port::impl::unsubscribe_peer_parameter(const std::string &param_name) {
+  port_->unsubscribe_peer_parameter(param_name);
+}
+
+void Port::impl::set_peer_parameter(const std::string &param_name,
+                                    const std::string &value) {
+  port_->set_peer_parameter(param_name, value);
+}
+
 PortStatus Port::impl::get_status() const {
   return port_->get_status();
 }
@@ -127,6 +152,24 @@ Port::~Port() {}
 
 void Port::send_packet_out(EthernetII &packet, bool recirculate) {
   return pimpl_->send_packet_out(packet, recirculate);
+}
+
+void Port::send_packet_ns(EthernetII &packet) {
+  return pimpl_->send_packet_ns(packet);
+}
+
+void Port::subscribe_peer_parameter(const std::string &param_name,
+                                    ParameterEventCallback &callback) {
+  return pimpl_->subscribe_peer_parameter(param_name, callback);
+}
+
+void Port::unsubscribe_peer_parameter(const std::string &param_name) {
+  return pimpl_->unsubscribe_peer_parameter(param_name);
+}
+
+void Port::set_peer_parameter(const std::string &param_name,
+                              const std::string &value) {
+  return pimpl_->set_peer_parameter(param_name, value);
 }
 
 int Port::index() const {

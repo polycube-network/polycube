@@ -1,5 +1,5 @@
-Powerful applications based on polycube
-=======================================
+Standalone applications based on polycube
+=========================================
 
 .. toctree::
     :maxdepth: 2

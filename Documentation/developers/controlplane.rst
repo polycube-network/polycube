@@ -95,6 +95,8 @@ Generating PacketOut events
 
 The ``Port`` class contains the ``send_packet_out(EthernetII &packet, bool recirculate = false)`` method that allows to inject packets into the datapath, the recirculate parameter allows to specify if the packet should be sent out of the port (`recirculate = false`) or received through the port (`recirculate = true`).
 
+Only in shadow services the ``Port`` class contains the ``send_packet_ns(EthernetII &packet)`` method that allows to send packets into the service namespace.
+
 A reference to a port can be got using the `get_port` function of the Cube base class.
 
 Debugging and logging in the control plane

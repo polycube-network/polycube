@@ -33,8 +33,8 @@ int PeerIface::calculate_cube_index(int index) {
 
 enum class Position { AUTO, FIRST, LAST };
 
-void PeerIface::add_cube(TransparentCube *cube, const std::string &position,
-                         const std::string &other) {
+int PeerIface::add_cube(TransparentCube *cube, const std::string &position,
+                        const std::string &other) {
   std::lock_guard<std::mutex> guard(mutex_);
   int index = 0;
   int other_index;
@@ -92,6 +92,7 @@ void PeerIface::add_cube(TransparentCube *cube, const std::string &position,
 
   cubes_.insert(cubes_.begin() + calculate_cube_index(index), cube);
   update_indexes();
+  return index;
 }
 
 void PeerIface::remove_cube(const std::string &cube_name) {
@@ -109,6 +110,18 @@ void PeerIface::remove_cube(const std::string &cube_name) {
 
   cubes_.erase(pos);
   update_indexes();
+}
+
+std::vector<std::string> PeerIface::get_cubes_names() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<std::string> cubes_names;
+
+  for (auto &cube : cubes_) {
+    cubes_names.push_back(cube->get_name());
+  }
+
+  return cubes_names;
 }
 
 PeerIface::CubePositionComparison PeerIface::compare_position(

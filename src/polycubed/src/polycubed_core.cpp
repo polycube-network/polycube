@@ -21,6 +21,7 @@
 
 #include "server/Resources/Body/ListResource.h"
 #include "server/Resources/Body/ParentResource.h"
+#include "server/Resources/Body/LeafResource.h"
 
 #include "server/Resources/Endpoint/ParentResource.h"
 
@@ -243,6 +244,10 @@ bool PolycubedCore::try_to_set_peer(const std::string &peer1,
     }
     auto port = cube->get_port(match[2]);
     port->set_peer(peer2);
+    // Update the peer of a port in the cubes configuration in memory
+    if (cubes_dump_) {
+      cubes_dump_->UpdatePortPeer(cube->get_name(), port->name(), peer2);
+    }
     return true;
   }
 
@@ -322,19 +327,21 @@ void PolycubedCore::attach(const std::string &cube_name,
 
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");
+  std::shared_ptr<CubeIface> cube2;
+  std::shared_ptr<PortIface> port;
 
   if (std::regex_match(port_name, match, rule)) {
     auto cube2_ = ServiceController::get_cube(match[1]);
     if (cube2_ == nullptr) {
       throw std::runtime_error("Port " + port_name + " does not exist");
     }
-    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
     if (!cube2) {
       throw std::runtime_error("Cube " + std::string(match[1]) +
                                " is transparent");
     }
 
-    auto port = cube2->get_port(match[2]);
+    port = cube2->get_port(match[2]);
     switch (port->get_type()) {
     case PortType::TC:
       if (cube->get_type() != CubeType::TC) {
@@ -343,7 +350,7 @@ void PolycubedCore::attach(const std::string &cube_name,
       }
       break;
     case PortType::XDP:
-      if (cube->get_type() != CubeType::XDP_DRV &&
+      if (cube->get_type() != CubeType::XDP_SKB &&
           cube->get_type() != CubeType::XDP_DRV) {
         throw std::runtime_error(cube_name + " and " + port_name +
                                  " have incompatible types");
@@ -378,8 +385,15 @@ void PolycubedCore::attach(const std::string &cube_name,
         ServiceController::ports_to_ifaces.at(port_name));
   }
 
+  int insertPosition = peer->add_cube(cube.get(), position, other);
   cube->set_parent(peer.get());
-  peer->add_cube(cube.get(), position, other);
+
+  // if it is a cube's transparent cube,
+  // add it to the cubes configuration in memory
+  if (!match.empty() && cubes_dump_) {
+    cubes_dump_->UpdatePortTCubes(cube2->get_name(), port->name(), cube_name,
+            insertPosition);
+  }
 }
 
 void PolycubedCore::detach(const std::string &cube_name,
@@ -399,19 +413,21 @@ void PolycubedCore::detach(const std::string &cube_name,
 
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");
+  std::shared_ptr<CubeIface> cube2;
+  std::shared_ptr<PortIface> port;
 
   if (std::regex_match(port_name, match, rule)) {
     auto cube2_ = ServiceController::get_cube(match[1]);
     if (cube2_ == nullptr) {
       throw std::runtime_error("Port " + port_name + " does not exist");
     }
-    auto cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
+    cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
     if (!cube2) {
       throw std::runtime_error("Cube " + std::string(match[1]) +
                                " is transparent");
     }
 
-    auto port = cube2->get_port(match[2]);
+    port = cube2->get_port(match[2]);
     peer = std::dynamic_pointer_cast<PeerIface>(port);
     peer->remove_cube(cube->get_name());
   } else {
@@ -427,6 +443,62 @@ void PolycubedCore::detach(const std::string &cube_name,
   }
 
   cube->set_parent(nullptr);
+  // if it is a cube's transparent cube,
+  // remove it from the cubes configuration in memory
+  if (!match.empty() && cubes_dump_) {
+    cubes_dump_->UpdatePortTCubes(cube2->get_name(), port->name(), cube_name,
+            -1);
+  }
+}
+
+void PolycubedCore::cube_port_parameter_subscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter,
+    ParameterEventCallback &cb) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+  cubes_port_event_callbacks_[outer_key][caller] = cb;
+
+  // send a first notification with the initial value
+  auto value = get_cube_port_parameter(cube, port_name, parameter);
+  cb(parameter, value);
+}
+
+void PolycubedCore::cube_port_parameter_unsubscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+
+  if (cubes_port_event_callbacks_.count(outer_key) > 0 &&
+      cubes_port_event_callbacks_[outer_key].count(caller) > 0) {
+    cubes_port_event_callbacks_[outer_key].erase(caller);
+  } else {
+    throw std::runtime_error("there is not subscription for " + parameter);
+  }
+}
+
+void PolycubedCore::notify_port_subscribers(
+    const std::string &cube, const std::string &port_name,
+    const std::string &parameter, const std::string &value) {
+  std::string outer_key(cube + ":" + port_name + ":" + parameter);
+
+  std::lock_guard<std::mutex> lock(cubes_port_event_mutex_);
+
+  // if there are not subscribers just return
+  if (cubes_port_event_callbacks_.count(outer_key) == 0) {
+    return;
+  }
+
+  // TODO: what are the implications of calling the callbacks while
+  // having the lock?, could it be a good idea to create a temporal copy
+  // of the callbacks to be invoked and call then with the lock released?
+
+  for (const auto &it: cubes_port_event_callbacks_[outer_key]) {
+    it.second(parameter, value);
+  }
 }
 
 std::string PolycubedCore::get_cube_port_parameter(
@@ -438,7 +510,8 @@ std::string PolycubedCore::get_cube_port_parameter(
   auto &ctrl = get_service_controller(service_name);
   auto res = ctrl.get_management_interface()->get_service()->Child("ports");
 
-  ListKeyValues k{{"ports_name", ListType::kString, port_name}};
+  ListKeyValues k{{"ports", "name", "ports_name", ListType::kString,
+                   port_name}};
 
   std::istringstream iss(port_name + "/" + parameter);
   for (std::string segment; std::getline(iss, segment, '/');) {
@@ -447,7 +520,8 @@ std::string PolycubedCore::get_cube_port_parameter(
       auto list = std::dynamic_pointer_cast<ListResource>(res);
       if (list != nullptr) {
         for (const auto &key : list->keys_) {
-          ListKeyValue v{key.Name(), key.Type(), segment};
+          ListKeyValue v{"ports", key.OriginalName(), key.Name(), key.Type(),
+                         segment};
           k.emplace_back(v);
           std::getline(iss, segment, '/');  // if null raise error
         }
@@ -461,12 +535,19 @@ std::string PolycubedCore::get_cube_port_parameter(
     }
   }
 
+  // support only leaf elements, maybe in the future we want to extend it
+  // to support complex elements
+  if (!std::dynamic_pointer_cast<LeafResource>(res)) {
+    throw std::runtime_error("Error getting port parameters: " + parameter);
+  }
+
   auto result = res->ReadValue(cube, k);
   std::string val(result.message);
+  val = val.substr(1, val.length() - 2); // remove qoutes
   ::free(result.message);
 
   if (result.error_tag != ErrorTag::kOk) {
-    throw std::runtime_error("Error getting port parameters: " + val);
+    throw std::runtime_error("Error getting port parameters: " + parameter);
   }
 
   return val;
@@ -506,6 +587,14 @@ RestServer *PolycubedCore::get_rest_server() {
 
 BaseModel *PolycubedCore::base_model() {
   return base_model_;
+}
+
+void PolycubedCore::set_cubes_dump(CubesDump *cubes_dump) {
+  cubes_dump_= cubes_dump;
+}
+
+CubesDump *PolycubedCore::get_cubes_dump() {
+  return cubes_dump_;
 }
 
 }  // namespace polycubed

@@ -179,4 +179,89 @@ Response BaseModel::set_port_peer(const std::string &cube_name,
   return Response{kOk, ::strdup("")};
 }
 
+Response BaseModel::get_shadow(const std::string &cube_name) const {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  // TODO: is this case even possible?
+  auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+  if (cube == nullptr) {
+    return Response{kNoContent, ::strdup("Cube is transparent")};
+  }
+
+  std::string _shadow;
+  if (cube->get_shadow()) {
+    _shadow = "true";
+  } else {
+    _shadow = "false";
+  }
+  auto shadow = "\"" + _shadow + "\"";
+
+  return Response{kOk, ::strdup(shadow.data())};
+}
+
+Response BaseModel::get_span(const std::string &cube_name) const {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  // TODO: is this case even possible?
+  auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+  if (cube == nullptr) {
+    return Response{kNoContent, ::strdup("Cube is transparent")};
+  }
+
+  std::string _span;
+  if (cube->get_span()) {
+    _span = "true";
+  } else {
+    _span = "false";
+  }
+  auto span = "\"" + _span + "\"";
+
+  return Response{kOk, ::strdup(span.data())};
+}
+
+Response BaseModel::set_span(const std::string &cube_name,
+                             const nlohmann::json &json) {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  // TODO: is this case even possible?
+  auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+  if (cube == nullptr) {
+    return Response{kNoContent, ::strdup("Cube is transparent")};
+  }
+
+  auto _span = json.get<bool>();
+  cube->set_span(_span);
+
+  return Response{kOk, ::strdup("")};
+}
+
+Response BaseModel::get_port_tcubes(const std::string &cube_name,
+                                    const std::string &port_name) const {
+  auto cube_ = ServiceController::get_cube(cube_name);
+  if (cube_ == nullptr) {
+    return Response{kNoContent, ::strdup("Cube does not exist")};
+  }
+
+  // TODO: is this case even possible?
+  auto cube = std::dynamic_pointer_cast<CubeIface>(cube_);
+  if (cube == nullptr) {
+    return Response{kNoContent, ::strdup("Cube is transparent")};
+  }
+
+  auto port_ = cube->get_port(port_name);
+  auto port = std::dynamic_pointer_cast<Port>(port_);
+  nlohmann::json j = port->get_cubes_names();
+
+  return Response{kOk, ::strdup(j.dump().c_str())};
+}
+
 }  // namespace polycube::polycubed

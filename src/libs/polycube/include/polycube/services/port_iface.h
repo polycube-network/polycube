@@ -23,6 +23,7 @@
 
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/guid.h"
+#include "polycube/services/types.h"
 
 namespace polycube {
 namespace service {
@@ -42,6 +43,7 @@ class PortIface {
  public:
   virtual void send_packet_out(const std::vector<uint8_t> &packet,
                                bool recirculate = false) = 0;
+  virtual void send_packet_ns(const std::vector<uint8_t> &packet) = 0;
   virtual uint16_t index() const = 0;
   virtual bool operator==(const PortIface &rhs) const = 0;
   virtual std::string name() const = 0;
@@ -54,6 +56,12 @@ class PortIface {
 
   virtual void set_conf(const nlohmann::json &conf) = 0;
   virtual nlohmann::json to_json() const = 0;
+
+  virtual void subscribe_peer_parameter(const std::string &param_name,
+                                        ParameterEventCallback &callback) = 0;
+  virtual void unsubscribe_peer_parameter(const std::string &param_name) = 0;
+  virtual void set_peer_parameter(const std::string &param_name,
+                                  const std::string &value) = 0;
 };
 }
 }

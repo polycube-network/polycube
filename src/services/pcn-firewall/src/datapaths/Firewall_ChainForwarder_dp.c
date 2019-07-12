@@ -22,6 +22,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: Receiving packet");
 #if defined(_INGRESS_LOGIC)
 #if _NR_ELEMENTS_INGRESS > 0
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: calling INGRESS chain _NEXT_HOP_INGRESS_1");
     call_ingress_program(ctx, _NEXT_HOP_INGRESS_1);
 #endif
     pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: No ingress chain");
@@ -30,6 +31,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
 #if defined(_EGRESS_LOGIC)
 #if _NR_ELEMENTS_EGRESS > 0
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: calling EGRESS chain _NEXT_HOP_EGRESS_1");
     call_egress_program(ctx, _NEXT_HOP_EGRESS_1);
 #endif
     pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ChainForwarder]: No egress chain");

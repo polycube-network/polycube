@@ -9,12 +9,13 @@ Prerequisites
 Before starting the tutorials, ``polycubed`` has to be running and ``polycubectl`` must be available.
 Please refer to the :doc:`Quickstart <../quickstart>` document to get those components ready.
 
-Tutorials list
---------------
+Available tutorials
+-------------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     tutorial1/tutorial1
     tutorial2/tutorial2
     tutorial3/tutorial3
+    

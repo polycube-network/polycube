@@ -123,8 +123,8 @@ const uint8_t DSTPORT = 4;
 
 // apply Horus mitigator optimization if there are at least # rules
 // matching the pattern, at ruleset begin
-const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
-const uint8_t MAX_RULE_SIZE_FOR_HORUS = -1;  // not used
+const uint32_t MIN_RULE_SIZE_FOR_HORUS = 1;
+const uint32_t MAX_RULE_SIZE_FOR_HORUS = 2048;
 
 // Enable Horus optimization
 // We want to disable Horus by default while we decide a policy to apply it or

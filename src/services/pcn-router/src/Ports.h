@@ -60,18 +60,21 @@ class Ports : public polycube::service::Port, public PortsInterface {
   /// </summary>
   std::string getIp() override;
   void setIp(const std::string &value) override;
+  void setIp_Netlink(const std::string &value);
 
   /// <summary>
   /// Netmask of the port
   /// </summary>
   std::string getNetmask() override;
   void setNetmask(const std::string &value) override;
+  void setNetmask_Netlink(const std::string &value);
 
   /// <summary>
   /// MAC address of the port
   /// </summary>
   std::string getMac() override;
   void setMac(const std::string &value) override;
+  void doSetMac(const std::string &value);
 
   /// <summary>
   /// Secondary IP address for the port

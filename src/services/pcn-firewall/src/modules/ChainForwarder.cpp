@@ -22,6 +22,7 @@ Firewall::ChainForwarder::ChainForwarder(const int &index,
                                          Firewall &outer)
     : Firewall::Program(firewall_code_chainforwarder, index, direction,
                         outer) {
+
   load();
 }
 
@@ -31,7 +32,7 @@ std::string Firewall::ChainForwarder::getCode() {
   std::string noMacroCode = code;
 
   /*Replacing the maximum number of rules*/
-  replaceAll(noMacroCode, "_MAXRULES", std::to_string(firewall.maxRules / 64));
+  replaceAll(noMacroCode, "_MAXRULES", std::to_string(FROM_NRULES_TO_NELEMENTS(firewall.maxRules / 64)));
   /*Replacing hops*/
   if (hops.find("_NEXT_HOP_INGRESS_1") == hops.end()) {
     /*Bootloading the ingress chain. Let the module loop on itself for now. */

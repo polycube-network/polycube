@@ -43,9 +43,11 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
   auto name = conf.at("name").get<std::string>();
   auto type = string_to_cube_type(conf.at("type").get<std::string>());
   auto level = stringLogLevel(conf.at("loglevel").get<std::string>());
+  auto shadow = conf.at("shadow").get<bool>();
+  auto span = conf.at("span").get<bool>();
 
   auto cube =
-      create_cube(name, ingress_code, egress_code, log_msg, type, cb, level);
+      create_cube(name, ingress_code, egress_code, log_msg, type, cb, level, shadow, span);
   auto base = std::dynamic_pointer_cast<BaseCube>(cube);
   base->set_log_level_cb(log_level_cb);
   return std::move(cube);
@@ -54,7 +56,7 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
 std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
     const std::string &name, const std::vector<std::string> &ingress_code,
     const std::vector<std::string> &egress_code, const log_msg_cb &log_msg,
-    const CubeType type, const packet_in_cb &cb, LogLevel level) {
+    const CubeType type, const packet_in_cb &cb, LogLevel level, bool shadow, bool span) {
   std::shared_ptr<CubeIface> cube;
   typename std::unordered_map<std::string,
                               std::shared_ptr<BaseCubeIface>>::iterator iter;
@@ -64,11 +66,11 @@ std::shared_ptr<CubeIface> CubeFactoryImpl::create_cube(
   case CubeType::XDP_SKB:
   case CubeType::XDP_DRV:
     cube = std::make_shared<CubeXDP>(name, service_name_, ingress_code,
-                                     egress_code, level, type);
+                                     egress_code, level, type, shadow, span);
     break;
   case CubeType::TC:
     cube = std::make_shared<CubeTC>(name, service_name_, ingress_code,
-                                    egress_code, level);
+                                    egress_code, level, shadow, span);
     break;
   default:
     throw std::runtime_error("invalid cube type");

@@ -23,6 +23,7 @@ Firewall::DefaultAction::DefaultAction(const int &index,
                                        Firewall &outer)
     : Firewall::Program(firewall_code_defaultaction, index, direction,
                         outer) {
+
   load();
 }
 
@@ -37,7 +38,7 @@ std::string Firewall::DefaultAction::getCode() {
   } else {
     replaceAll(noMacroCode, "_ACTION",
                "call_next_program(ctx, " +
-                   std::to_string(3 + ModulesConstants::NR_MODULES * 2 + 1) +
+                   std::to_string(ModulesConstants::CONNTRACKTABLEUPDATE) +
                    "); "
                    "return RX_DROP;");
   }
@@ -45,7 +46,7 @@ std::string Firewall::DefaultAction::getCode() {
   return noMacroCode;
 }
 
-uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
+uint64_t Firewall::DefaultAction::getPktsCount() {
   std::string tableName = "pktsCounter";
 
   try {
@@ -60,7 +61,7 @@ uint64_t Firewall::DefaultAction::getPktsCount(ChainNameEnum chain) {
   }
 }
 
-uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
+uint64_t Firewall::DefaultAction::getBytesCount() {
   std::string tableName = "bytesCounter";
 
   try {
@@ -76,7 +77,7 @@ uint64_t Firewall::DefaultAction::getBytesCount(ChainNameEnum chain) {
   }
 }
 
-void Firewall::DefaultAction::flushCounters(ChainNameEnum chain) {
+void Firewall::DefaultAction::flushCounters() {
   std::string pktsTableName = "pktsCounter";
   std::string bytesTableName = "bytesCounter";
 

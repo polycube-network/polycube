@@ -61,8 +61,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 mkdir -p $WORKDIR
 
 $SUDO apt update
-$SUDO apt install -y wget gnupg2
+$SUDO apt install -y wget gnupg2 software-properties-common
 
+# golang v1.12 still not available in repos
+$SUDO add-apt-repository ppa:longsleep/golang-backports -y
+
+# repo for libyang-dev
 $SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
 wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
 $SUDO apt-key add - < Release.key
@@ -90,19 +94,22 @@ if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" iproute2" # provides bridge command that is used to add entries in vxlan device
 fi
 
-$SUDO  apt install -y $PACKAGES
+# use non inreractive to avoid blocking the install script
+$SUDO bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -yq $PACKAGES"
 
 echo "Install pistache"
 cd $WORKDIR
 set +e
 if [ ! -d pistache ]; then
-  git clone https://github.com/oktal/pistache.git --depth=1
+  git clone https://github.com/oktal/pistache.git
 fi
 
 cd pistache
+# use last known working version
+git checkout 117db02eda9d63935193ad98be813987f6c32b33
 git submodule update --init
 mkdir -p build && cd build
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_SSL=ON ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_USE_SSL=ON ..
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
 

@@ -23,9 +23,13 @@
 #include "utils/netlink.h"
 
 #include <iostream>
+#include <net/if.h>
 
 namespace polycube {
 namespace polycubed {
+
+const std::string PARAMETER_MAC = "MAC";
+const std::string PARAMETER_IP = "IP";
 
 std::set<std::string> ExtIface::used_ifaces;
 
@@ -39,6 +43,9 @@ ExtIface::ExtIface(const std::string &iface)
   }
 
   used_ifaces.insert(iface);
+
+  // Save the ifindex
+  ifindex_iface = if_nametoindex(iface.c_str());
 }
 
 ExtIface::~ExtIface() {
@@ -147,10 +154,6 @@ PeerIface *ExtIface::get_peer_iface() {
   return peer_;
 }
 
-std::string ExtIface::get_parameter(const std::string &parameter) {
-  throw std::runtime_error("get parameter not implemented in netdev");
-}
-
 void ExtIface::set_next_index(uint16_t index) {
   std::lock_guard<std::mutex> guard(iface_mutex_);
   set_next(index, ProgramType::INGRESS);
@@ -252,6 +255,141 @@ bool ExtIface::is_used() const {
 
 std::string ExtIface::get_iface_name() const {
   return iface_;
+}
+
+/* Interfaces alignment */
+void ExtIface::subscribe_parameter(const std::string &caller,
+                                   const std::string &param_name,
+                                   ParameterEventCallback &callback) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    // lambda function netlink notification LINK_ADDED
+    std::function<void(int, const std::string &)> notification_new_link;
+    notification_new_link = [&](int ifindex, const std::string &iface) {
+      // Check if the iface in the notification is that of the ExtIface
+      if (get_iface_name() == iface) {
+        std::string mac_iface = Netlink::getInstance().get_iface_mac(iface);
+        for (auto &map_element : parameter_mac_event_callbacks) {
+          (map_element.second).first(iface, mac_iface);
+        }
+      }
+    };
+    // subscribe to the netlink event for MAC
+    int netlink_index = Netlink::getInstance().registerObserver(
+          Netlink::Event::LINK_ADDED, notification_new_link);
+
+    // Save key and value in the map
+    parameter_mac_event_callbacks.insert(
+          std::make_pair(caller, std::make_pair(callback, netlink_index)));
+
+    // send first notification with the Mac of the netdev
+    std::string mac_iface = Netlink::getInstance().get_iface_mac(iface_);
+    callback(iface_, mac_iface);
+  } else if (param_upper == PARAMETER_IP) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    // lambda function netlink notification NEW_ADDRESS
+    std::function<void(int, const std::string &)> notification_new_address;
+    notification_new_address = [&](int ifindex, const std::string &cidr) {
+      // Check if the iface in the notification is that of the ExtIface
+      if (ifindex == ifindex_iface) {
+        for (auto &map_element : parameter_ip_event_callbacks) {
+          (map_element.second).first(get_iface_name(), cidr);
+        }
+      }
+    };
+    // subscribe to the netlink event for Ip and Netmask
+    int netlink_index = Netlink::getInstance().registerObserver(
+          Netlink::Event::NEW_ADDRESS, notification_new_address);
+
+    // Save key and value in the map
+    parameter_ip_event_callbacks.insert(
+          std::make_pair(caller, std::make_pair(callback, netlink_index)));
+
+    // send first notification with the Ip/prefix of the netdev
+    std::string info_ip_address;
+    info_ip_address = get_parameter(PARAMETER_IP);
+    callback(iface_, info_ip_address);
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
+}
+
+void ExtIface::unsubscribe_parameter(const std::string &caller,
+                                     const std::string &param_name) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    auto map_element = parameter_mac_event_callbacks.find(caller);
+    if (map_element != parameter_mac_event_callbacks.end()) {
+      // unsubscribe to the netlink event
+      int netlink_index = (map_element->second).second;
+      Netlink::getInstance().unregisterObserver(
+            Netlink::Event::LINK_ADDED, netlink_index);
+      // remove element from the map
+      parameter_mac_event_callbacks.erase(map_element);
+    } else {
+      throw std::runtime_error("there was no subscription for the parameter " +
+                                param_upper + " by " + caller);
+    }
+  } else if (param_upper == PARAMETER_IP) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    auto map_element = parameter_ip_event_callbacks.find(caller);
+    if (map_element != parameter_ip_event_callbacks.end()) {
+      // unsubscribe to the netlink event
+      int netlink_index = (map_element->second).second;
+      Netlink::getInstance().unregisterObserver(
+            Netlink::Event::NEW_ADDRESS, netlink_index);
+      // remove element from the map
+      parameter_ip_event_callbacks.erase(map_element);
+    } else {
+      throw std::runtime_error("there was no subscription for the parameter " +
+                                param_upper + " by " + caller);
+    }
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
+}
+
+std::string ExtIface::get_parameter(const std::string &param_name) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    return Netlink::getInstance().get_iface_mac(iface_);
+  } else if(param_upper == PARAMETER_IP) {
+    try {
+      std::string ip = Netlink::getInstance().get_iface_ip(iface_);
+      std::string netmask = Netlink::getInstance().get_iface_netmask(iface_);
+      int prefix = polycube::service::utils::get_netmask_length(netmask);
+      std::string info_ip_address = ip + "/" + std::to_string(prefix);
+      return info_ip_address;
+    } catch  (...) {
+      // netdev does not have an Ip
+      return "";
+    }
+  } else {
+    throw std::runtime_error("parameter " + param_upper +
+                             " not available in extiface");
+  }
+}
+
+void ExtIface::set_parameter(const std::string &param_name,
+                             const std::string &value) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    Netlink::getInstance().set_iface_mac(iface_, value);
+  } else if(param_upper == PARAMETER_IP) {
+    Netlink::getInstance().set_iface_cidr(iface_, value);
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
 }
 
 }  // namespace polycubed

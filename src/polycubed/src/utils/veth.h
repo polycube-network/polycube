@@ -37,6 +37,7 @@ class VethPeer {
     void set_status(IFACE_STATUS status);
     void set_mac(const std::string &mac);
     void set_ip(const std::string &ip, const int prefix);
+    void set_ipv6(const std::string &ipv6);
 
   private:
     std::string name_;

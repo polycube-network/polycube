@@ -91,62 +91,59 @@ Install dependencies
 ::
 
     # Install polycube dependencies
-    sudo apt-get -y install bison build-essential cmake flex git libedit-dev libllvm5.0 \
-        llvm-5.0-dev libclang-5.0-dev python zlib1g-dev libelf-dev nmap \
-        software-properties-common libnl-route-3-dev libnl-genl-3-dev \
-        curl uuid-dev build-essential autoconf libtool
+    sudo apt-get -y install git build-essential cmake bison flex \
+        libelf-dev libllvm5.0 llvm-5.0-dev libclang-5.0-dev \
+        libnl-route-3-dev libnl-genl-3-dev uuid-dev pkg-config \
+        autoconf libtool m4 automake libssl-dev kmod jq bash-completion \
+        gnupg2
+
+Install libyang-dev
+###################
+
+::
+
+    sudo sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
+    wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_16.04/Release.key -O Release.key
+    sudo apt-key add - < Release.key
+    sudo apt-get update
+    sudo apt-get install libyang-dev
 
 
-Install libyang
-^^^^^^^^^^^^^^^^
-
-Please check the `libyang installation documentation <https://software.opensuse.org//download.html?project=home%3Aliberouter&package=libyang>`_.
+If you are using another operating system please check the `libyang installation documentation <https://software.opensuse.org//download.html?project=home%3Aliberouter&package=libyang>`_.
 
 Install pistache
-^^^^^^^^^^^^^^^^
+################
 
 ::
 
     # Install Pistache (a library to create web servers that is used in polycubed)
     git clone https://github.com/oktal/pistache.git
     cd pistache
+    # use last known working version
+    git checkout 117db02eda9d63935193ad98be813987f6c32b33
     git submodule update --init
     mkdir build &&  cd build
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_SSL=ON ..
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DPISTACHE_USE_SSL=ON ..
     make -j $(getconf _NPROCESSORS_ONLN)
     sudo make install
 
 
 Install libtins
-^^^^^^^^^^^^^^^
+###############
+
 ::
 
     # Install libtins (a library for network packet sniffing and crafting, used to create packets)
-    git clone https://github.com/mfontanini/libtins.git
+    git clone --branch v3.5 https://github.com/mfontanini/libtins.git
     cd libtins
     mkdir build && cd build
     cmake -DLIBTINS_ENABLE_CXX11=ON -DLIBTINS_BUILD_EXAMPLES=OFF \
-          -DLIBTINS_BUILD_TESTS=OFF -DLIBTINS_ENABLE_DOT11=OFF \
-          -DLIBTINS_ENABLE_PCAP=OFF -DLIBTINS_ENABLE_WPA2=OFF \
-          -DLIBTINS_ENABLE_WPA2_CALLBACKS=OFF
+        -DLIBTINS_BUILD_TESTS=OFF -DLIBTINS_ENABLE_DOT11=OFF \
+        -DLIBTINS_ENABLE_PCAP=OFF -DLIBTINS_ENABLE_WPA2=OFF \
+        -DLIBTINS_ENABLE_WPA2_CALLBACKS=OFF ..
     make -j $(getconf _NPROCESSORS_ONLN)
     sudo make install
     sudo ldconfig
-
-Install polycube-tools
-^^^^^^^^^^^^^^^^^^^^^^
-
-Install it only if you are a developer
-
-::
-
-    git clone https://github.com/mauriciovasquezbernal/polycube-tools
-    cd polycube-tools
-    mkdir build && cd build
-    cmake ..
-    make -j $(getconf _NPROCESSORS_ONLN)
-    sudo make install
-
 
 Installing polycube
 ^^^^^^^^^^^^^^^^^^^

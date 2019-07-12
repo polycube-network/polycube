@@ -20,6 +20,9 @@
 #include "Router.h"
 #include "UtilityMethods.h"
 
+#include "../../../polycubed/src/utils/netlink.h"
+#include "../../../polycubed/src/utils/ns.h"
+
 Ports::Ports(polycube::service::Cube<Ports> &parent,
              std::shared_ptr<polycube::service::PortIface> port,
              const PortsJsonObject &conf)
@@ -86,9 +89,68 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     PortsSecondaryip::createInControlPlane(*this, addr.getIp(),
                                            addr.getNetmask(), addr);
   }
+
+  // lambda function to align IP and Netmask between Port and ExtIface
+  ParameterEventCallback f_ip;
+  f_ip = [&](const std::string param_name, const std::string cidr) {
+    try {
+      if (!cidr.empty()) {
+        // set the ip address of the netdev on the port
+        // cidr = ip_address/prefix
+        std::istringstream split(cidr);
+        std::vector<std::string> info;
+
+        char split_char = '/';
+        for (std::string each; std::getline(split, each, split_char);
+             info.push_back(each))
+          ;
+        std::string new_ip = info[0];
+        std::string new_netmask =
+            utils::get_netmask_from_CIDR(std::stoi(info[1]));
+
+        std::string old_ip = getIp();
+        std::string old_netmask = getNetmask();
+
+        logger()->debug("Align ip and netmask of port {0}", name());
+
+        if (old_ip != new_ip)
+          setIp_Netlink(new_ip);
+        if (old_netmask != new_netmask)
+          setNetmask_Netlink(new_netmask);
+      }
+    } catch (std::exception &e) {
+      logger()->trace("iface_ip_notification - False ip notification: {0}",
+                      e.what());
+    }
+  };
+
+  // lambda function to align MAC between Port and ExtIface
+  ParameterEventCallback f_mac;
+  f_mac = [&](const std::string param_name, const std::string mac) {
+    try {
+      if (mac_ != mac) {
+        logger()->debug("Align mac of port {0}", name());
+        doSetMac(mac);
+      }
+    } catch (std::exception &e) {
+      logger()->trace("iface_mac_notification - False mac notification: {0}",
+                      e.what());
+    }
+  };
+
+  if (!parent_.get_shadow()) {
+    // Register the new port to IP and MAC notifications arriving from ExtIface
+    subscribe_peer_parameter("IP", f_ip);
+    subscribe_peer_parameter("MAC", f_mac);
+  }
 }
 
-Ports::~Ports() {}
+Ports::~Ports() {
+  if (!parent_.get_shadow()) {
+    unsubscribe_peer_parameter("IP");
+    unsubscribe_peer_parameter("MAC");
+  }
+}
 
 void Ports::update(const PortsJsonObject &conf) {
   // This method updates all the object/parameter in Ports object specified in
@@ -142,7 +204,61 @@ std::string Ports::getIp() {
 
 void Ports::setIp(const std::string &value) {
   // This method set the ip value.
-  throw std::runtime_error("[Ports]: Method setIp not implemented");
+  if (ip_ != value) {
+    // unset old ip
+    if (parent_.get_shadow()) {
+      int prefix = get_netmask_length(getNetmask());
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
+      polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+      namespace_.execute(doThis);
+    }
+
+    setIp_Netlink(value);
+
+    // set new ip
+    if (parent_.get_shadow()) {
+      int prefix = get_netmask_length(getNetmask());
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), value, prefix);
+      };
+      polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+      namespace_.execute(doThis);
+    }
+
+    // Align Port with the peer interface
+    int prefix = get_netmask_length(getNetmask());
+    std::string cidr = ip_ + "/" + std::to_string(prefix);
+    set_peer_parameter("IP", cidr);
+  }
+}
+
+void Ports::setIp_Netlink(const std::string &value) {
+  // This method set the ip value.
+  if (ip_ != value) {
+    std::string new_ip = value;
+    /* Update the port in the datapath */
+    uint16_t index = this->index();
+    auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
+
+    try {
+      r_port value = router_port.get(index);
+      value.ip = utils::ip_string_to_be_uint(new_ip);
+    } catch (...) {
+      logger()->error("Port {0} not found in the data path", this->name());
+    }
+
+    logger()->debug(
+        "Updated IP port: {0} (index: {4}) [mac: {1} - ip: {2} - netmask: {3}]",
+        getName(), getMac(), new_ip, getNetmask(), index);
+
+    /* Update routes in the routing table */
+    parent_.remove_local_route(ip_, getNetmask(), getName());
+    parent_.add_local_route(new_ip, getNetmask(), getName(), index);
+
+    ip_ = new_ip;
+  }
 }
 
 std::string Ports::getNetmask() {
@@ -152,7 +268,61 @@ std::string Ports::getNetmask() {
 
 void Ports::setNetmask(const std::string &value) {
   // This method set the netmask value.
-  throw std::runtime_error("[Ports]: Method setNetmask not implemented");
+  if (netmask_ != value) {
+    // unset old netmask
+    if (parent_.get_shadow()) {
+      int prefix = get_netmask_length(netmask_);
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.delete_iface_ip(getName(), ip_, prefix);
+      };
+      polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+      namespace_.execute(doThis);
+    }
+
+    setNetmask_Netlink(value);
+
+    // set new netmask
+    if (parent_.get_shadow()) {
+      int prefix = get_netmask_length(value);
+      std::function<void()> doThis = [&]{
+        parent_.netlink_instance_router_.add_iface_ip(getName(), getIp(), prefix);
+      };
+      polycube::polycubed::Namespace namespace_ = polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+      namespace_.execute(doThis);
+    }
+
+    // Align Port with the peer interface
+    int prefix = get_netmask_length(value);
+    std::string cidr = getIp() + "/" + std::to_string(prefix);
+    set_peer_parameter("IP", cidr);
+  }
+}
+
+void Ports::setNetmask_Netlink(const std::string &value) {
+  // This method set the netmask value.
+  if (netmask_ != value) {
+    std::string new_netmask = value;
+    /* Update the port in the datapath */
+    uint16_t index = this->index();
+    auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
+
+    try {
+      r_port value = router_port.get(index);
+      value.netmask = utils::ip_string_to_be_uint(new_netmask);
+    } catch (...) {
+      logger()->error("Port {0} not found in the data path", this->name());
+    }
+
+    logger()->debug(
+        "Updated netmask port: {0} (index: {4}) [mac: {1} - ip: {2} - netmask: {3}]",
+        getName(), getMac(), getIp(), new_netmask, index);
+
+    /* Update routes in the routing table */
+    parent_.remove_local_route(getIp(), netmask_, getName());
+    parent_.add_local_route(getIp(), new_netmask, getName(), index);
+
+    netmask_ = new_netmask;
+  }
 }
 
 std::string Ports::getMac() {
@@ -162,7 +332,39 @@ std::string Ports::getMac() {
 
 void Ports::setMac(const std::string &value) {
   // This method set the mac value.
-  throw std::runtime_error("[Ports]: Method setMac not implemented");
+  doSetMac(value);
+
+  if (parent_.get_shadow()) {
+    std::function<void()> doThis = [&]{
+      parent_.netlink_instance_router_.set_iface_mac(getName(), mac_);
+    };
+    polycube::polycubed::Namespace namespace_ =
+            polycube::polycubed::Namespace::open("pcn-" + parent_.get_name());
+    namespace_.execute(doThis);
+  }
+
+  // Align Port with the peer interface
+  set_peer_parameter("MAC", value);
+}
+
+void Ports::doSetMac(const std::string &new_mac) {
+  if (mac_ == new_mac) {
+    return;
+  }
+
+  /* Update the port in the datapath */
+  uint16_t index = this->index();
+  auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
+
+  r_port map_value = router_port.get(index);
+  map_value.mac = utils::mac_string_to_be_uint(new_mac);
+  router_port.set(index, map_value);
+
+  logger()->debug(
+      "Updated mac port: {0} (index: {4}) [mac: {1} - ip: {2} - netmask: {3}]",
+      getName(), new_mac, getIp(), getNetmask(), index);
+
+  mac_ = new_mac;
 }
 
 std::shared_ptr<spdlog::logger> Ports::logger() {

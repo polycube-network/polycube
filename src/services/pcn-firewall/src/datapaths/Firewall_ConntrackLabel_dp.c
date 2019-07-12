@@ -56,16 +56,21 @@ struct icmphdr {
 };
 
 enum {
-  WILDCARD,
   NEW,
   ESTABLISHED,
   RELATED,
   INVALID,
   SYN_SENT,
   SYN_RECV,
-  FIN_WAIT,
+  FIN_WAIT_1,
+  FIN_WAIT_2,
   LAST_ACK,
   TIME_WAIT
+};
+
+enum {
+  FORWARDING_NOT_SET,
+  FORWARDING_PASS_LABELING
 };
 
 struct packetHeaders {
@@ -78,7 +83,8 @@ struct packetHeaders {
   uint32_t seqN;
   uint32_t ackN;
   uint8_t connStatus;
-};
+  uint8_t forwardingDecision;
+} __attribute__((packed));
 
 struct ct_k {
   uint32_t srcIp;
@@ -86,18 +92,20 @@ struct ct_k {
   uint8_t l4proto;
   uint16_t srcPort;
   uint16_t dstPort;
-};
+} __attribute__((packed));
 
 struct ct_v {
   uint64_t ttl;
   uint8_t state;
+  uint8_t ipRev;
+  uint8_t portRev;
   uint32_t sequence;
-};
+} __attribute__((packed));
 
 #if defined(_INGRESS_LOGIC)
-BPF_TABLE_SHARED("hash", struct ct_k, struct ct_v, connections, 10240);
+BPF_TABLE_SHARED("lru_hash", struct ct_k, struct ct_v, connections, 65536);
 #elif defined(_EGRESS_LOGIC)
-BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 10240);
+BPF_TABLE("extern", struct ct_k, struct ct_v, connections, 65536);
 #else
 #error "_INGRESS_LOGIC or _EGRESS_LOGIC should be defined"
 #endif
@@ -114,182 +122,51 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   struct ct_k key = {0, 0, 0, 0, 0};
-  key.srcIp = pkt->srcIp;
-  key.dstIp = pkt->dstIp;
-  key.l4proto = pkt->l4proto;
-  key.srcPort = pkt->srcPort;
-  key.dstPort = pkt->dstPort;
+  uint8_t ipRev = 0;
+  uint8_t portRev = 0;
 
-  struct ct_k rev_key = {0, 0, 0, 0, 0};
-  rev_key.srcIp = pkt->dstIp;
-  rev_key.dstIp = pkt->srcIp;
-  rev_key.l4proto = pkt->l4proto;
-  rev_key.srcPort = pkt->dstPort;
-  rev_key.dstPort = pkt->srcPort;
+  if (pkt->srcIp <= pkt->dstIp) {
+    key.srcIp = pkt->srcIp;
+    key.dstIp = pkt->dstIp;
+    ipRev = 0;
+  } else {
+    key.srcIp = pkt->dstIp;
+    key.dstIp = pkt->srcIp;
+    ipRev = 1;
+  }
+
+  key.l4proto = pkt->l4proto;
+
+  if (pkt->srcPort < pkt->dstPort) {
+    key.srcPort = pkt->srcPort;
+    key.dstPort = pkt->dstPort;
+    portRev = 0;
+  } else if (pkt->srcPort > pkt->dstPort) {
+    key.srcPort = pkt->dstPort;
+    key.dstPort = pkt->srcPort;
+    portRev = 1;
+  } else {
+    key.srcPort = pkt->srcPort;
+    key.dstPort = pkt->dstPort;
+    portRev = ipRev;
+  }
 
   struct ct_v *value;
-
-  struct ct_v newEntry = {0, 0, 0};
-
-  /* == UDP == */
-  if (pkt->l4proto == IPPROTO_UDP) {
-    value = connections.lookup(&key);
-    if (value != NULL) {
-      // Found in forward direction
-      if (value->ttl <= bpf_ktime_get_ns()) {
-        // Entry expired, so now it is to be treated as NEW.
-        pkt->connStatus = NEW;
-        goto action;
-      } else {
-        // Valid entry
-        if (value->state == NEW) {
-          // An entry was already present with the NEW state. This means that
-          // there has been no answer, from the other side. Connection is still
-          // NEW.
-          pkt->connStatus = NEW;
-          goto action;
-        } else {
-          // value->state == ESTABLISHED
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        }
-      }
-    }
-    // If it gets here, the entry in the forward direction was not present
-
-    // Checking if the entry is present in the reverse direction
-    value = connections.lookup(&rev_key);
-    if (value != NULL) {
-      // Found in the reverse direction.
-      if (value->ttl <= bpf_ktime_get_ns()) {
-        // Entry expired, so now it is to be treated as NEW.
-        pkt->connStatus = NEW;
-        goto action;
-      } else {
-        if (value->state == NEW) {
-          // An entry was present in the rev direction with the NEW state. This
-          // means that this is an answer, from the other side. Connection is
-          // now ESTABLISHED.
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        } else {
-          // value->state == ESTABLISHED
-          pkt->connStatus = ESTABLISHED;
-          goto action;
-        }
-      }
-    }
-    // No entry found in both directions. Create one.
-    pkt->connStatus = NEW;
-    goto action;
-  }
-
-  /* == ICMP  == */
-  if (pkt->l4proto == IPPROTO_ICMP) {
-    void *data = (void *)(long)ctx->data;
-    void *data_end = (void *)(long)ctx->data_end;
-    // 34 = sizeof(eth_hdr) + sizeof(ip_hdr)
-    if (data + 34 + sizeof(struct icmphdr) > data_end) {
-      return RX_DROP;
-    }
-    struct icmphdr *icmp = data + 34;
-    if (icmp->type == ICMP_ECHO) {
-      // Echo request is always treated as the first of the connection
-      pkt->connStatus = NEW;
-      goto action;
-    }
-    if (icmp->type == ICMP_ECHOREPLY) {
-      value = connections.lookup(&rev_key);
-      if (value != NULL) {
-        if (value->ttl <= bpf_ktime_get_ns()) {
-          // The reply is not valid anymore.
-          // TODO: drop it?
-          pkt->connStatus = INVALID;
-          goto action;
-        }
-        pkt->connStatus = ESTABLISHED;
-        goto action;
-      } else {
-        // A reply without a request
-        // TODO drop it?
-        pkt->connStatus = INVALID;
-        goto action;
-      }
-    }
-    if (icmp->type == ICMP_TIMESTAMP || icmp->type == ICMP_TIMESTAMPREPLY ||
-        icmp->type == ICMP_INFO_REQUEST || icmp->type == ICMP_INFO_REPLY ||
-        icmp->type == ICMP_ADDRESS || icmp->type == ICMP_ADDRESSREPLY) {
-      // Not yet supported
-      pkt->connStatus = INVALID;
-      goto action;
-    }
-
-    // Here there are only ICMP errors
-    // Error messages always include a copy of the offending IP header and up to
-    // 8 bytes of the data that caused the host or gateway to send the error
-    // message.
-    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) > data_end) {
-      return RX_DROP;
-    }
-    struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
-    key.srcIp = encapsulatedIp->saddr;
-    key.dstIp = encapsulatedIp->daddr;
-    key.l4proto = encapsulatedIp->protocol;
-    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8 >
-        data_end) {
-      return RX_DROP;
-    }
-    uint16_t *temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr);
-    key.srcPort = *temp;
-    temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
-    key.dstPort = *temp;
-
-    value = connections.lookup(&key);
-    if (value != NULL && value->ttl > bpf_ktime_get_ns()) {
-      pkt->connStatus = RELATED;
-      goto action;
-    }
-
-    rev_key.srcIp = key.dstIp;
-    rev_key.dstIp = key.srcIp;
-    rev_key.l4proto = key.l4proto;
-    rev_key.srcPort = key.dstPort;
-    rev_key.dstPort = key.srcPort;
-    value = connections.lookup(&rev_key);
-    if (value != NULL && value->ttl > bpf_ktime_get_ns()) {
-      pkt->connStatus = RELATED;
-      goto action;
-    }
-
-    // If it gets here, this error is an answer to a packet not known or to an
-    // expired connection.
-    // TODO: drop it?
-    pkt->connStatus = INVALID;
-    goto action;
-  }
+  struct ct_v newEntry = {0, 0, 0, 0, 0};
 
   /* == TCP  == */
   if (pkt->l4proto == IPPROTO_TCP) {
     value = connections.lookup(&key);
     if (value != NULL) {
-      // Found in forward direction
-      if (value->ttl <= bpf_ktime_get_ns()) {
-        // TODO: I am not sure this is the right way to go for TCP
-        connections.delete(&key);
-        // New entry. It has to be a SYN.
-        if ((pkt->flags & TCPHDR_SYN) != 0 &&
-            (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
-          pkt->connStatus = NEW;
-          goto action;
-        } else {
-          // Validation failed
-          // TODO: drop it?
-          pkt->connStatus = INVALID;
-          goto action;
-        }
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+        goto TCP_FORWARD;
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+        goto TCP_REVERSE;
+      } else {
+        goto TCP_MISS;
       }
 
-      // Valid entry
+    TCP_FORWARD:;
 
       // If it is a RST, label it as established.
       if ((pkt->flags & TCPHDR_RST) != 0) {
@@ -302,7 +179,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
           // Another SYN. It is valid, probably a retransmission.
-          connections.delete(&key);
+          // connections.delete(&key);
           pkt->connStatus = NEW;
           goto action;
         } else {
@@ -330,39 +207,30 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         }
       }
 
-      if (value->state == ESTABLISHED || value->state == FIN_WAIT ||
-          value->state == LAST_ACK || value->state == TIME_WAIT) {
+      if (value->state == ESTABLISHED || value->state == FIN_WAIT_1 ||
+          value->state == FIN_WAIT_2 || value->state == LAST_ACK) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
 
-      // Unexpected situation
-      pcn_log(ctx, LOG_DEBUG,
-              "[_CHAIN_NAME][ConntrackLabel]: Should not get here. Flags: %d. State: %d",
-              pkt->flags, value->state);
-      pkt->connStatus = INVALID;
-      goto action;
-    }
-
-    // If it gets here, the entry in the forward direction was not present
-    value = connections.lookup(&rev_key);
-    if (value != NULL) {
-      // Found in reverse direction
-      if (value->ttl <= bpf_ktime_get_ns()) {
-        // TODO: I am not sure this is the right way to go for TCP
-        connections.delete(&rev_key);
-        // New entry. It has to be a SYN.
+      if (value->state == TIME_WAIT) {
+        // If the state is TIME_WAIT but we receive a new SYN the connection is
+        // considered NEW
         if ((pkt->flags & TCPHDR_SYN) != 0 &&
             (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
           pkt->connStatus = NEW;
           goto action;
-        } else {
-          // Validation failed
-          // TODO: drop it?
-          pkt->connStatus = INVALID;
-          goto action;
         }
       }
+
+      // Unexpected situation
+      pcn_log(ctx, LOG_DEBUG,
+              "[FW_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              pkt->flags, value->state);
+      pkt->connStatus = INVALID;
+      goto action;
+
+    TCP_REVERSE:;
 
       // If it is a RST, label it as established.
       if ((pkt->flags & TCPHDR_RST) != 0) {
@@ -400,17 +268,31 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
         goto action;
       }
 
-      if (value->state == ESTABLISHED || value->state == FIN_WAIT ||
-          value->state == LAST_ACK || value->state == TIME_WAIT) {
+      if (value->state == ESTABLISHED || value->state == FIN_WAIT_1 ||
+          value->state == FIN_WAIT_2 || value->state == LAST_ACK) {
         pkt->connStatus = ESTABLISHED;
         goto action;
       }
+
+      if (value->state == TIME_WAIT) {
+        // If the state is TIME_WAIT but we receive a new SYN the connection is
+        // considered NEW
+        if ((pkt->flags & TCPHDR_SYN) != 0 &&
+            (pkt->flags | TCPHDR_SYN) == TCPHDR_SYN) {
+          pkt->connStatus = NEW;
+          goto action;
+        }
+      }
+
       pcn_log(ctx, LOG_DEBUG,
-              "[REV_DIRECTION] Should not get here. Flags: %d. State: %d. ",
+              "[ConntrackLabel] [REV_DIRECTION] Should not get here. Flags: "
+              "%d. State: %d. ",
               pkt->flags, value->state);
       pkt->connStatus = INVALID;
       goto action;
     }
+
+  TCP_MISS:;
 
     // New entry. It has to be a SYN.
     if ((pkt->flags & TCPHDR_SYN) != 0 &&
@@ -425,7 +307,153 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }
   }
 
-  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack does not support the l4proto= %d",
+  /* == UDP == */
+  if (pkt->l4proto == IPPROTO_UDP) {
+    value = connections.lookup(&key);
+    if (value != NULL) {
+      if ((value->ipRev == ipRev) && (value->portRev == portRev)) {
+        goto UDP_FORWARD;
+      } else if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+        goto UDP_REVERSE;
+      } else {
+        goto UDP_MISS;
+      }
+
+    UDP_FORWARD:;
+
+      // Valid entry
+      if (value->state == NEW) {
+        // An entry was already present with the NEW state. This means that
+        // there has been no answer, from the other side. Connection is still
+        // NEW.
+        pkt->connStatus = NEW;
+        goto action;
+      } else {
+        // value->state == ESTABLISHED
+        pkt->connStatus = ESTABLISHED;
+        goto action;
+      }
+
+    UDP_REVERSE:;
+
+      if (value->state == NEW) {
+        // An entry was present in the rev direction with the NEW state. This
+        // means that this is an answer, from the other side. Connection is
+        // now ESTABLISHED.
+        pkt->connStatus = ESTABLISHED;
+        goto action;
+      } else {
+        // value->state == ESTABLISHED
+        pkt->connStatus = ESTABLISHED;
+        goto action;
+      }
+    }
+
+  UDP_MISS:;
+
+    // No entry found in both directions. Create one.
+    pkt->connStatus = NEW;
+    goto action;
+  }
+
+  /* == ICMP  == */
+  if (pkt->l4proto == IPPROTO_ICMP) {
+    void *data = (void *)(long)ctx->data;
+    void *data_end = (void *)(long)ctx->data_end;
+    // 34 = sizeof(eth_hdr) + sizeof(ip_hdr)
+    if (data + 34 + sizeof(struct icmphdr) > data_end) {
+      return RX_DROP;
+    }
+    struct icmphdr *icmp = data + 34;
+    if (icmp->type == ICMP_ECHO) {
+      // Echo request is always treated as the first of the connection
+      pkt->connStatus = NEW;
+      goto action;
+    }
+
+    if (icmp->type == ICMP_ECHOREPLY) {
+      value = connections.lookup(&key);
+      if (value != NULL) {
+        if ((value->ipRev != ipRev) && (value->portRev != portRev)) {
+          goto ICMP_REVERSE;
+        } else {
+          goto ICMP_MISS;
+        }
+
+      ICMP_REVERSE:;
+
+        pkt->connStatus = ESTABLISHED;
+        goto action;
+      } else {
+        // A reply without a request
+        // TODO drop it?
+        pkt->connStatus = INVALID;
+        goto action;
+      }
+    }
+
+  ICMP_MISS:;
+
+    if (icmp->type == ICMP_TIMESTAMP || icmp->type == ICMP_TIMESTAMPREPLY ||
+        icmp->type == ICMP_INFO_REQUEST || icmp->type == ICMP_INFO_REPLY ||
+        icmp->type == ICMP_ADDRESS || icmp->type == ICMP_ADDRESSREPLY) {
+      // Not yet supported
+      pkt->connStatus = INVALID;
+      goto action;
+    }
+
+    // Here there are only ICMP errors
+    // Error messages always include a copy of the offending IP header and up to
+    // 8 bytes of the data that caused the host or gateway to send the error
+    // message.
+    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) > data_end) {
+      return RX_DROP;
+    }
+    struct iphdr *encapsulatedIp = data + 34 + sizeof(struct icmphdr);
+    if (encapsulatedIp->saddr <= encapsulatedIp->daddr) {
+      key.srcIp = encapsulatedIp->saddr;
+      key.dstIp = encapsulatedIp->daddr;
+      ipRev = 0;
+    } else {
+      key.srcIp = encapsulatedIp->daddr;
+      key.dstIp = encapsulatedIp->saddr;
+      ipRev = 1;
+    }
+
+    key.l4proto = encapsulatedIp->protocol;
+
+    if (data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8 >
+        data_end) {
+      return RX_DROP;
+    }
+    uint16_t *temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr);
+    key.srcPort = *temp;
+    temp = data + 34 + sizeof(struct icmphdr) + sizeof(struct iphdr) + 2;
+    key.dstPort = *temp;
+
+    if (key.srcPort <= key.dstPort) {
+      portRev = 0;
+    } else {
+      *temp = key.srcPort;
+      key.srcPort = key.dstPort;
+      key.dstPort = *temp;
+      portRev = 1;
+    }
+
+    value = connections.lookup(&key);
+    if (value != NULL) {
+      pkt->connStatus = RELATED;
+      goto action;
+    }
+
+    // If it gets here, this error is an answer to a packet not known or to an
+    // expired connection.
+    // TODO: drop it?
+    pkt->connStatus = INVALID;
+    goto action;
+  }
+
+  pcn_log(ctx, LOG_DEBUG, "Conntrack does not support the l4proto= %d",
           pkt->l4proto);
 
   // If it gets here, the protocol is not yet supported.
@@ -435,14 +463,29 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 action:
 #if _CONNTRACK_MODE == 1
   // Manual mode
-  call_next_program(ctx, _NEXT_HOP_1);
+  if (pkt->forwardingDecision == FORWARDING_PASS_LABELING) {
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 1 FORWARDING_PASS_LABELING calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE", pkt->connStatus);
+    call_next_program(ctx, _CONNTRACKTABLEUPDATE);
+  } else {
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 1 calling CHAINFORWARDER _CHAINFORWARDER", pkt->connStatus);
+    call_next_program(ctx, _CHAINFORWARDER);
+  }
   return RX_DROP;
 #elif _CONNTRACK_MODE == 2
   // Automatic mode: if established, forward directly
+  pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ");
+
   if (pkt->connStatus == ESTABLISHED) {
+    pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE");
     call_next_program(ctx, _CONNTRACKTABLEUPDATE);
   } else {
-    call_next_program(ctx, _NEXT_HOP_1);
+    if (pkt->forwardingDecision == FORWARDING_PASS_LABELING) {
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel][Label=%d] Conntrack mode == 2 FORWARDING_PASS_LABELING calling CONNTRACKTABLEUPDATE _CONNTRACKTABLEUPDATE", pkt->connStatus);
+      call_next_program(ctx, _CONNTRACKTABLEUPDATE);
+    } else {
+      pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Conntrack mode == 2 ESTABLISHED calling CHAINFORWARDER _CHAINFORWARDER");
+      call_next_program(ctx, _CHAINFORWARDER);
+    }
   }
   pcn_log(ctx, LOG_DEBUG, "[_CHAIN_NAME][ConntrackLabel]: Something went wrong.");
   return RX_DROP;

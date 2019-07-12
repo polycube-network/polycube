@@ -30,23 +30,23 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
   addChain(ChainNameEnum::EGRESS, chain);
   logger()->debug("Ingress and Egress chain added");
 
-  ingress_programs.resize(3 + ModulesConstants::NR_MODULES + 2, nullptr);
-  egress_programs.resize(3 + ModulesConstants::NR_MODULES + 2, nullptr);
+  ingress_programs.resize(ModulesConstants::NR_INITIAL_MODULES + ModulesConstants::NR_MODULES, nullptr);
+  egress_programs.resize(ModulesConstants::NR_INITIAL_MODULES + ModulesConstants::NR_MODULES, nullptr);
 
   /* Initialize ingress programs */
   ingress_programs[ModulesConstants::PARSER] =
-    new Firewall::Parser(0, ChainNameEnum::INGRESS, *this);
+    new Firewall::Parser(ModulesConstants::PARSER, ChainNameEnum::INGRESS, *this);
   ingress_programs[ModulesConstants::CONNTRACKLABEL] =
-    new Firewall::ConntrackLabel(1, ChainNameEnum::INGRESS, *this);
+    new Firewall::ConntrackLabel(ModulesConstants::CONNTRACKLABEL, ChainNameEnum::INGRESS, *this);
   ingress_programs[ModulesConstants::CHAINFORWARDER] =
-    new Firewall::ChainForwarder(2, ChainNameEnum::INGRESS, *this);
+    new Firewall::ChainForwarder(ModulesConstants::CHAINFORWARDER, ChainNameEnum::INGRESS, *this);
 
   egress_programs[ModulesConstants::PARSER] =
-    new Firewall::Parser(0, ChainNameEnum::EGRESS, *this);
+    new Firewall::Parser(ModulesConstants::PARSER, ChainNameEnum::EGRESS, *this);
   egress_programs[ModulesConstants::CONNTRACKLABEL] =
-    new Firewall::ConntrackLabel(1, ChainNameEnum::EGRESS, *this);
+    new Firewall::ConntrackLabel(ModulesConstants::CONNTRACKLABEL, ChainNameEnum::EGRESS, *this);
   egress_programs[ModulesConstants::CHAINFORWARDER] =
-    new Firewall::ChainForwarder(2, ChainNameEnum::EGRESS, *this);
+    new Firewall::ChainForwarder(ModulesConstants::CHAINFORWARDER, ChainNameEnum::EGRESS, *this);
 
   /*
    * 3 modules in the beginning
@@ -59,19 +59,19 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
    */
 
   ingress_programs[ModulesConstants::DEFAULTACTION] =
-    new Firewall::DefaultAction(3 + ModulesConstants::NR_MODULES * 2,
+    new Firewall::DefaultAction(ModulesConstants::DEFAULTACTION,
                                 ChainNameEnum::INGRESS,*this);
 
   ingress_programs[ModulesConstants::CONNTRACKTABLEUPDATE] =
-    new Firewall::ConntrackTableUpdate(3 + ModulesConstants::NR_MODULES * 2 + 1,
+    new Firewall::ConntrackTableUpdate(ModulesConstants::CONNTRACKTABLEUPDATE,
                                        ChainNameEnum::INGRESS, *this);
 
   egress_programs[ModulesConstants::DEFAULTACTION] =
-    new Firewall::DefaultAction(3 + ModulesConstants::NR_MODULES * 2,
+    new Firewall::DefaultAction(ModulesConstants::DEFAULTACTION,
                                 ChainNameEnum::EGRESS, *this);
 
   egress_programs[ModulesConstants::CONNTRACKTABLEUPDATE] =
-    new Firewall::ConntrackTableUpdate(3 + ModulesConstants::NR_MODULES * 2 + 1,
+    new Firewall::ConntrackTableUpdate(ModulesConstants::CONNTRACKTABLEUPDATE,
                                        ChainNameEnum::EGRESS, *this);
 }
 
@@ -126,7 +126,7 @@ FirewallAcceptEstablishedEnum Firewall::getAcceptEstablished() {
 void Firewall::setAcceptEstablished(
     const FirewallAcceptEstablishedEnum &value) {
   if (conntrackMode == ConntrackModes::DISABLED) {
-    throw new std::runtime_error("Please enable conntrack first.");
+    throw std::runtime_error("Please enable conntrack first.");
   }
 
   if (value == FirewallAcceptEstablishedEnum::ON &&

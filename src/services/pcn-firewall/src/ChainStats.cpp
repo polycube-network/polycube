@@ -97,11 +97,18 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
   pkts = 0;
   bytes = 0;
 
+  bool * horus_runtime_enabled_;
+  bool * horus_swap_;
+
   std::vector<Firewall::Program *> *programs;
   if (parent.name == ChainNameEnum::INGRESS) {
     programs = &parent.parent_.ingress_programs;
+    horus_runtime_enabled_ = &parent.parent_.horus_runtime_enabled_ingress_;
+    horus_swap_ = &parent.parent_.horus_swap_ingress_;
   } else if (parent.name == ChainNameEnum::EGRESS) {
      programs = &parent.parent_.egress_programs;
+    horus_runtime_enabled_ = &parent.parent_.horus_runtime_enabled_egress_;
+    horus_swap_ = &parent.parent_.horus_swap_egress_;
   } else {
     return;
   }
@@ -116,6 +123,24 @@ void ChainStats::fetchCounters(const Chain &parent, const uint32_t &id,
   bytes = actionProgram->getBytesCount(id);
   pkts = actionProgram->getPktsCount(id);
   actionProgram->flushCounters(id);
+
+  if (*horus_runtime_enabled_) {
+    if (!(*horus_swap_)) {
+      auto horusProgram = dynamic_cast<Firewall::Horus *>(
+              programs->at(ModulesConstants::HORUS_INGRESS));
+
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
+    } else {
+      auto horusProgram = dynamic_cast<Firewall::Horus *>(
+              programs->at(ModulesConstants::HORUS_INGRESS_SWAP));
+
+      bytes += horusProgram->getBytesCount(id);
+      pkts += horusProgram->getPktsCount(id);
+      horusProgram->flushCounters(id);
+    }
+  }
 }
 
 std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
@@ -141,8 +166,8 @@ std::shared_ptr<ChainStats> ChainStats::getDefaultActionCounters(
   auto actionProgram = dynamic_cast<Firewall::DefaultAction *>(
       programs->at(ModulesConstants::DEFAULTACTION));
 
-  csj.setPkts(actionProgram->getPktsCount(parent.name));
-  csj.setBytes(actionProgram->getBytesCount(parent.name));
+  csj.setPkts(actionProgram->getPktsCount());
+  csj.setBytes(actionProgram->getBytesCount());
 
   return std::make_shared<ChainStats>(parent, csj);
 }
