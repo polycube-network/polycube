@@ -508,6 +508,7 @@ bool Config::load(int argc, char *argv[]) {
   }
 
   load_from_file(configfile);
+  cubes_dump_file_flag = false;
   load_from_cli(argc, argv);
   check();
 

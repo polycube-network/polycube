@@ -289,15 +289,13 @@ int main(int argc, char *argv[]) {
   if (config.getCubesDumpEnabled()) {
     cubesdump = new CubesDump();
     core->set_cubes_dump(cubesdump);
-  }
 
-  // In case the user does not want to initialize the Polycube virtual network,
-  // let's load the last topology that was present when the daemon was shut down.
-  if (!config.getCubesDumpCleanInit()) {
-    restserver->load_last_topology();
-  }
+    // In case the user does not want to initialize the Polycube virtual network,
+    // let's load the last topology that was present when the daemon was shut down.
+    if (!config.getCubesDumpCleanInit()) {
+      restserver->load_last_topology();
+    }
 
-  if (config.getCubesDumpEnabled()) {
     // start to saving topology only after it has been loaded
     cubesdump->Enable();
   }
