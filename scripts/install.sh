@@ -142,6 +142,10 @@ if [ "$INSTALL_CLEAN_POLYCUBE" == true ] ; then
   $SUDO rm -rf build
 fi
 
+# Update submodules; useful in case you are re-running
+#   this script on an existing install
+git submodule update --init --recursive
+
 mkdir -p build && cd build
 git log -1
 
