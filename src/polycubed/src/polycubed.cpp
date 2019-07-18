@@ -173,6 +173,12 @@ int main(int argc, char *argv[]) {
       exit(EXIT_SUCCESS);
     }
   } catch (const std::exception &e) {
+
+    // The problem of the error in loading the config file may be due to
+    // polycubed executed as normal user
+    if (getuid())
+      logger->critical("polycubed should be executed with root privileges");
+
     logger->critical("Error loading config: {}", e.what());
     exit(EXIT_FAILURE);
   }
@@ -182,7 +188,7 @@ int main(int argc, char *argv[]) {
   logger->set_level(config.getLogLevel());
 
   if (getuid()) {
-    logger->critical("please run polycubed as root");
+    logger->critical("polycubed should be executed with root privileges");
     exit(EXIT_FAILURE);
   }
 
