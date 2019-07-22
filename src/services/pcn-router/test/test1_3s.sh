@@ -41,23 +41,23 @@ set -e
 add_routers 1
 
 # Creates three ports on the router, each one attached to a different namespace
-router_add_port r1 to_veth1 10.0.0.120 255.255.255.0
-router_add_port r1 to_veth2 10.10.20.10 255.255.255.0
-router_add_port r1 to_veth3 10.30.10.10 255.255.255.0
+router_add_port r1 to_veth1 10.0.0.120/24
+router_add_port r1 to_veth2 10.10.20.10/24
+router_add_port r1 to_veth3 10.30.10.10/24
 
 # Configure secondary addresses on port veth1
-router_add_secondary r1 veth1 10.10.10.1 255.255.255.0
-router_add_secondary r1 veth1 10.10.21.2 255.255.255.0
+router_add_secondary r1 veth1 10.10.10.1/24
+router_add_secondary r1 veth1 10.10.21.2/24
 router_add_secondary_as_gateway r1 veth1 1
 
 # Configure secondary addresses on port veth2
-router_add_secondary r1 veth2 10.14.1.1 255.255.255.0
-router_add_secondary r1 veth2 10.1.15.2 255.255.255.0
+router_add_secondary r1 veth2 10.14.1.1/24
+router_add_secondary r1 veth2 10.1.15.2/24
 router_add_secondary_as_gateway r1 veth2 2
 
 # Configure secondary addresses on port veth3
-router_add_secondary r1 veth3 11.1.1.1 255.255.255.0
-router_add_secondary r1 veth3 12.1.1.1 255.255.255.0
+router_add_secondary r1 veth3 11.1.1.1/24
+router_add_secondary r1 veth3 12.1.1.1/24
 router_add_secondary_as_gateway r1 veth3 3
 
 #ns1 on port veth1

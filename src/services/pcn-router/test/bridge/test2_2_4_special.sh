@@ -46,16 +46,16 @@ bridge_add_port br1 veth2
 
 polycubectl simplebridge br1 ports add to_r2
 router_add_port_as_gateway r2 br2 2 br2
-router_add_port r2 to_br1 10.0.1.253 255.255.255.0
+router_add_port r2 to_br1 10.0.1.253/24
 
 bridge_add_port br2 veth3
 bridge_add_port br2 veth4
 
 polycubectl connect br1:to_r2 r2:to_br1
 
-router_add_route r1 10.0.2.0 255.255.255.0 10.0.1.253
+router_add_route r1 10.0.2.0/24 10.0.1.253
 
-router_add_route r2 10.0.1.0 255.255.255.0 10.0.1.254 #ignored, local entry is preferred
+router_add_route r2 10.0.1.0/24 10.0.1.254 #ignored, local entry is preferred
 
 sudo ip netns exec ns1 ping 10.0.1.2 -c 2 -i 0.5
 sudo ip netns exec ns1 ping 10.0.2.1 -c 2 -i 0.5
