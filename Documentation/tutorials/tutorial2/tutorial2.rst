@@ -77,14 +77,13 @@ Before trying to add a port, let's use the ``polycubectl`` help to get the info 
 
      Other parameters:
      peer=value          string   Peer name, such as a network interfaces (e.g., 'veth0') or another cube (e.g., 'br1:port2')
-     ip=value            string   IP address of the port
-     netmask=value       string   Netmask of the port
+     ip=value            string   IP address and prefix of the port
      mac=value           string   MAC address of the port
     Example:
-     polycubectl r1 ports add port1 peer=r0:port1 ip=207.46.130.1 netmask=255.255.255.0 mac=B3:23:45:F5:3A
+     polycubectl r1 ports add port1 peer=r0:port1 ip=207.46.130.1/24 mac=B3:23:45:F5:3A
 
 
-The output indicates that a port name is expected ``Keyword``, and following it the ``peer``, ``ip``, ``netmask`` and ``mac`` are supported parameters.
+The output indicates that a port name is expected ``Keyword``, and following it the ``peer``, ``ip`` and ``mac`` are supported parameters.
 
 
 **Connect** ``veth1`` **to** ``r1``
@@ -93,7 +92,7 @@ The output indicates that a port name is expected ``Keyword``, and following it 
 ::
 
     # create new port on r1 and set the IP parameters
-    polycubectl r1 ports add to_veth1 ip=10.0.1.254 netmask=255.255.255.0
+    polycubectl r1 ports add to_veth1 ip=10.0.1.254/24
     # connect port to netdev
     polycubectl connect r1:to_veth1 veth1
 
@@ -102,8 +101,8 @@ The router automatically adds a new local entry in the routing table.
 ::
 
     polycubectl r1 show route
-    interface  netmask        network   nexthop  pathcost
-    to_veth1   255.255.255.0  10.0.1.0  local    0
+    interface  network      nexthop  pathcost
+    to_veth1   10.0.1.0/24  local    0
 
 
 
@@ -112,7 +111,7 @@ The router automatically adds a new local entry in the routing table.
 ::
 
     # create new port on r1 and set the IP parameters
-    polycubectl r1 ports add to_veth2 ip=10.0.2.254 netmask=255.255.255.0
+    polycubectl r1 ports add to_veth2 ip=10.0.2.254/24
 
     # connect router port to netdev interface
     polycubectl r1 ports to_veth2 set peer=veth2
@@ -126,7 +125,7 @@ The router automatically adds a new local entry in the routing table.
 
     # create new port on r1 and set the IP parameters
     # notice that in this case 'peer' is also set so the port is also connected to the netdev
-    polycubectl r1 ports add to_veth3 ip=10.0.3.254 netmask=255.255.255.0 peer=veth3
+    polycubectl r1 ports add to_veth3 ip=10.0.3.254/24 peer=veth3
 
 
 Step 3: Check configuration
@@ -144,16 +143,16 @@ You should see an output similar to the next one, where ports are ``up`` and hav
     loglevel: info
 
     ports:
-     name      uuid                                  status  peer   ip          netmask        mac
-     to_veth3  c51bb0ed-9e6f-44ed-a096-b13bc1011331  up      veth3  10.0.3.254  255.255.255.0  72:59:a8:c2:c2:44
-     to_veth2  48f8d130-aa32-4354-a1b5-105df9a8ad7b  up      veth2  10.0.2.254  255.255.255.0  d6:42:7f:65:b4:40
-     to_veth1  46c685b9-4c80-4466-9d81-985598a07444  up      veth1  10.0.1.254  255.255.255.0  52:f0:5f:2c:a5:a7
+     name      uuid                                  status  peer   ip             mac
+     to_veth3  c51bb0ed-9e6f-44ed-a096-b13bc1011331  up      veth3  10.0.3.254/24  72:59:a8:c2:c2:44
+     to_veth2  48f8d130-aa32-4354-a1b5-105df9a8ad7b  up      veth2  10.0.2.254/24  d6:42:7f:65:b4:40
+     to_veth1  46c685b9-4c80-4466-9d81-985598a07444  up      veth1  10.0.1.254/24  52:f0:5f:2c:a5:a7
 
     route:
-     network   netmask        nexthop  interface  pathcost
-     10.0.1.0  255.255.255.0  local    to_veth1   0
-     10.0.2.0  255.255.255.0  local    to_veth2   0
-     10.0.3.0  255.255.255.0  local    to_veth3   0
+     network      nexthop  interface  pathcost
+     10.0.1.0/24  local    to_veth1   0
+     10.0.2.0/24  local    to_veth2   0
+     10.0.3.0/24  local    to_veth3   0
 
 
 Step 4: Test the connectivity between the namespaces and the router

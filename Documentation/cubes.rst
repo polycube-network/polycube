@@ -158,10 +158,10 @@ For instance:
   # create port2 on br1 (simplebridge), it doesn't require any further parameters
   polycubectl br1 ports add port2
 
-  # create portX on r1 (router), it requires ip and netmask parameters
-  polycubectl r1 ports add port1 ip=10.0.1.1 netmask=255.255.255.0
-  polycubectl r1 ports add port2 ip=10.0.2.1 netmask=255.255.255.0
-  polycubectl r1 ports add port1 ip=10.0.3.1 netmask=255.255.255.0
+  # create portX on r1 (router), it doesn't require mandatory parameters, but it is useful to assign an ip (during or after creation)
+  polycubectl r1 ports add port1 ip=10.0.1.1/24
+  polycubectl r1 ports add port2 ip=10.0.2.1/24
+  polycubectl r1 ports add port1 ip=10.0.3.1/24
 
 Connect Ports
 ^^^^^^^^^^^^^

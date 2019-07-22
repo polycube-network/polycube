@@ -103,7 +103,7 @@ Step 3: Add and connect ports on routers
 ::
 
     # Create new port on r1 and set the IP parameters
-    polycubectl r1 ports add to_br1 ip=10.0.1.254 netmask=255.255.255.0
+    polycubectl r1 ports add to_br1 ip=10.0.1.254/24
     # Create a bridge interface on br1
     polycubectl br1 ports add to_r1
     # Connect both ports
@@ -117,7 +117,7 @@ In order to permit more networks on the same router interface we need to add a s
 ::
 
     # Add a secondary address on r1 interface `to_br1`
-    polycubectl r1 ports to_br1 secondaryip add 10.0.2.254 255.255.255.0
+    polycubectl r1 ports to_br1 secondaryip add 10.0.2.254/24
 
 
 **Connect** ``r2`` **to** ``br2``
@@ -125,7 +125,7 @@ In order to permit more networks on the same router interface we need to add a s
 ::
 
     # Create new port on r2 and set the IP parameters
-    polycubectl r2 ports add to_br2 ip=10.0.3.254 netmask=255.255.255.0
+    polycubectl r2 ports add to_br2 ip=10.0.3.254/24
 
     # Create a bridge interface on br2
     polycubectl br2 ports add to_r2
@@ -139,8 +139,8 @@ In the router ``r2`` we have three different networks, so we need to add two sec
 ::
 
     # Add the secondary addresses on r2 interface `to_br2`
-    polycubectl r2 ports to_br2 secondaryip add 10.0.4.254 255.255.255.0
-    polycubectl r2 ports to_br2 secondaryip add 10.0.5.254 255.255.255.0
+    polycubectl r2 ports to_br2 secondaryip add 10.0.4.254/24
+    polycubectl r2 ports to_br2 secondaryip add 10.0.5.254/24
 
 **Connect the routers**
 
@@ -149,8 +149,8 @@ We need to create a point-to-point link between the routers to connect them. To 
 ::
 
     # Create new port on r1 and r2 and set the IP parameters
-    polycubectl r1 ports add to_r2 ip=10.1.0.1 netmask=255.255.255.252
-    polycubectl r2 ports add to_r1 ip=10.1.0.2 netmask=255.255.255.252
+    polycubectl r1 ports add to_r2 ip=10.1.0.1/30
+    polycubectl r2 ports add to_r1 ip=10.1.0.2/30
 
     # Connects the routers
     polycubectl connect r1:to_r2 r2:to_r1
@@ -164,9 +164,9 @@ We need to tell the router `r1` which are the networks reachable through `r2`
 
 ::
 
-    polycubectl r1 route add 10.0.3.0 255.255.255.0 10.1.0.2
-    polycubectl r1 route add 10.0.4.0 255.255.255.0 10.1.0.2
-    polycubectl r1 route add 10.0.5.0 255.255.255.0 10.1.0.2
+    polycubectl r1 route add 10.0.3.0/24 10.1.0.2
+    polycubectl r1 route add 10.0.4.0/24 10.1.0.2
+    polycubectl r1 route add 10.0.5.0/24 10.1.0.2
 
 
 **Add static entries in the routing table of router `r2`**
@@ -175,8 +175,8 @@ We need to do the same on the router `r2`
 
 ::
 
-    polycubectl r2 route add 10.0.1.0 255.255.255.0 10.1.0.1
-    polycubectl r2 route add 10.0.2.0 255.255.255.0 10.1.0.1
+    polycubectl r2 route add 10.0.1.0/24 10.1.0.1
+    polycubectl r2 route add 10.0.2.0/24 10.1.0.1
 
 
 **Show the routing tables of the routers**
