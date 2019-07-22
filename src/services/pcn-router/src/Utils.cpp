@@ -14,34 +14,15 @@
  * limitations under the License.
  */
 
-#include "UtilityMethods.h"
+#include "Utils.h"
 #include "Router.h"
 
 /*utility methods*/
 
-std::string from_int_to_hex(int t) {
+std::string int_to_hex(int t) {
   std::stringstream stream;
   stream << "0x" << std::hex << t;
   return stream.str();
-}
-
-uint32_t get_netmask_length(const std::string &netmask_string) {
-  struct in_addr buf;
-  char address[100];
-  int res = inet_pton(
-      AF_INET, netmask_string.c_str(),
-      &buf); /*convert ip address in binary form in network byte order */
-
-  if (res == 1) {
-    uint32_t counter = 0;
-    int n = buf.s_addr;
-    while (n) {
-      counter++;
-      n &= (n - 1);
-    }
-    return counter;
-  } else
-    throw std::runtime_error("IP Address is not in a valide format");
 }
 
 unsigned int ip_to_int(const char *ip) {

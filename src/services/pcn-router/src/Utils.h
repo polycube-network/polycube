@@ -18,16 +18,17 @@
 
 #include <string>
 
-std::string from_int_to_hex(int t);
-
-uint32_t get_netmask_length(const std::string &netmask_string);
-;
+/* Take in ingress any int and return the hex in the form "0x.." */
+std::string int_to_hex(int t);
 
 unsigned int ip_to_int(const char *ip);
 
+/* Take in ingress an ip, a netmask and a network and return true
+*  if the ip is part of the network */
 bool address_in_subnet(const std::string &ip, const std::string &netmask,
                        const std::string &network);
 
+/* Take in ingress an ip and a netmask and return the network */
 std::string get_network_from_ip(const std::string &ip,
                                 const std::string &netmask);
 

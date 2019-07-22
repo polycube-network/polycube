@@ -16,51 +16,32 @@
 
 #pragma once
 
-#include "../interface/PortsSecondaryipInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/PortsSecondaryipBase.h"
 
 class Ports;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class PortsSecondaryip : public PortsSecondaryipInterface {
+class PortsSecondaryip : public PortsSecondaryipBase {
  public:
   PortsSecondaryip(Ports &parent, const PortsSecondaryipJsonObject &conf);
   virtual ~PortsSecondaryip();
 
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const PortsSecondaryipJsonObject &conf) override;
-  PortsSecondaryipJsonObject toJsonObject() override;
-
   /// <summary>
-  /// Seconadary IP address of the port
+  /// Secondary IP address and prefix of the port
   /// </summary>
-  std::string getIp() const override;
-
-  /// <summary>
-  /// Secondary netmask of the port
-  /// </summary>
-  std::string getNetmask() const override;
+  std::string getIp() override;
 
   // The following methods have been added manually
 
   static void createInControlPlane(Ports &parent, const std::string &ip,
-                                   const std::string &netmask,
                                    const PortsSecondaryipJsonObject &conf);
 
   bool operator<(const PortsSecondaryip &p) const {
-    return std::tie(ip_, netmask_) < std::tie(p.ip_, p.netmask_);
+    return std::tie(ip_) < std::tie(p.ip_);
   }
 
-  static void updatePortInDataPath(Ports &parent);
-
  private:
-  Ports &parent_;
-
   // The following variables have been added manually
   std::string ip_;
-  std::string netmask_;
-
-  // The following methods have been added manually
 };

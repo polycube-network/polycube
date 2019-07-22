@@ -16,36 +16,28 @@
 
 #pragma once
 
-#include "../interface/ArpEntryInterface.h"
-#include "polycube/services/utils.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/ArpTableBase.h"
 
 class Router;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
 struct arp_entry {
   uint64_t mac;
   uint32_t port;
 } __attribute__((packed));
 
-class ArpEntry : public ArpEntryInterface {
+class ArpTable : public ArpTableBase {
  public:
-  ArpEntry(Router &parent, const ArpEntryJsonObject &conf);
-  ArpEntry(Router &parent, const std::string &mac, const std::string &ip,
-           const std::string &interface);
-  virtual ~ArpEntry();
-
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const ArpEntryJsonObject &conf) override;
-  ArpEntryJsonObject toJsonObject() override;
+  ArpTable(Router &parent, const ArpTableJsonObject &conf);
+  ArpTable(Router &parent, const std::string &mac, const std::string &ip,
+          const std::string &interface);
+  virtual ~ArpTable();
 
   /// <summary>
-  /// Outgoing interface
+  /// Destination IP address
   /// </summary>
-  std::string getInterface() override;
-  void setInterface(const std::string &value) override;
+  std::string getAddress() override;
 
   /// <summary>
   /// Destination MAC address
@@ -54,13 +46,12 @@ class ArpEntry : public ArpEntryInterface {
   void setMac(const std::string &value) override;
 
   /// <summary>
-  /// Destination IP address
+  /// Outgoing interface
   /// </summary>
-  std::string getAddress() override;
+  std::string getInterface() override;
+  void setInterface(const std::string &value) override;
 
  private:
-  Router &parent_;
-
   std::string mac_;
   std::string ip_;
   std::string interface_;

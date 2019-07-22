@@ -19,35 +19,19 @@ module router {
 
   uses "polycube-standard-base:standard-base-yang-module" {
      augment ports {
-       leaf ip {
-        type inet:ipv4-address;
-        mandatory true;
-        description "IP address of the port";
-        polycube-base:cli-example "207.46.130.1";
-      }
-
-      leaf netmask {
-        type inet:ipv4-address;
-        mandatory true;
-        description "Netmask of the port";
-        polycube-base:cli-example "255.255.255.0";
+      leaf ip {
+        type inet:ipv4-prefix;
+        description "IP address and prefix of the port";
+        polycube-base:cli-example "10.0.0.1/24";
       }
 
       list secondaryip {
-        description "Secondary IP address for the port";
-        key "ip netmask";
+        description "Additional IP addresses for the port";
+        key "ip";
         leaf ip {
-          type inet:ipv4-address;
-          mandatory true;
-          description "Seconadary IP address of the port";
-          polycube-base:cli-example "207.46.131.1";
-        }
-
-        leaf netmask {
-          type inet:ipv4-address;
-          mandatory true;
-          description "Secondary netmask of the port";
-          polycube-base:cli-example "255.255.255.0";
+          type inet:ipv4-prefix;
+          description "Secondary IP address and prefix of the port";
+          polycube-base:cli-example "10.0.0.2/24";
         }
       }
 
@@ -60,20 +44,13 @@ module router {
   }
 
   list route {
-    key "network netmask nexthop";
+    key "network nexthop";
     description "Entry associated with the routing table";
     leaf network {
-      type inet:ipv4-address;
+      type inet:ipv4-prefix;
       mandatory true;
       description "Destination network IP";
-      polycube-base:cli-example "123.13.34.0";
-    }
-
-    leaf netmask {
-      type inet:ipv4-address;
-      mandatory true;
-      description "Destination network netmask";
-      polycube-base:cli-example "255.255.255.0";
+      polycube-base:cli-example "10.0.0.0/24";
     }
 
     leaf nexthop {
@@ -99,7 +76,7 @@ module router {
     }
   }
 
-  list arp-entry {
+  list arp-table {
     key "address";
     description "Entry associated with the ARP table";
     leaf address {
@@ -110,7 +87,7 @@ module router {
     }
 
     leaf mac {
-      type string;
+      type yang:mac-address;
       mandatory true;
       description "Destination MAC address";
       polycube-base:cli-example "C5:13:2D:36:27:9B";
