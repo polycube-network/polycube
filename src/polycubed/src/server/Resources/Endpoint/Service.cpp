@@ -105,8 +105,8 @@ Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
       if (!update) {
         cube_names_.AddValue(name);
       }
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
+      if (configuration::config.getCubesDumpEnabled()) {
+        core_->get_cubes_dump()->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
                 body, k, op, ResourceType::Service);
       }
     }
@@ -218,9 +218,10 @@ void Service::del(const Pistache::Rest::Request &request,
   auto res = DeleteValue(name, k);
   Server::ResponseGenerator::Generate(std::vector<Response>{res},
                                       std::move(response));
-  if (auto d = core_->get_cubes_dump()) {
-    d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
-            nullptr, k, Operation::kDelete, ResourceType::Service);
+  if (configuration::config.getCubesDumpEnabled()) {
+    core_->get_cubes_dump()->UpdateCubesConfig(
+            RestServer::base + this->name_ + "/" + name + "/",nullptr, k,
+            Operation::kDelete, ResourceType::Service);
   }
 }
 

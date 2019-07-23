@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "../../config.h"
 #include "../../Server/ResponseGenerator.h"
 #include "../Body/JsonNodeField.h"
 #include "../Body/ListKey.h"
@@ -182,11 +183,10 @@ void ListResource::CreateReplaceUpdateWhole(
       errors.push_back(resp);
     }
     // check if the operation completed successfully and in case update the configuration
-    if (isOperationSuccessful(resp.error_tag)) {
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(request.resource(), jbody, keys, op,
-                ResourceType::ListResource);
-      }
+    if (isOperationSuccessful(resp.error_tag) &&
+        configuration::config.getCubesDumpEnabled()) {
+      core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), jbody,
+              keys, op, ResourceType::ListResource);
     }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
@@ -244,8 +244,8 @@ void ListResource::del_multiple(const Request &request,
     ListKeyValues keys{};
     dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
     errors.push_back(DeleteWhole(cube_name, keys));
-    if (auto d = core_->get_cubes_dump()) {
-      d->UpdateCubesConfig(request.resource(), nullptr, keys,
+    if (configuration::config.getCubesDumpEnabled()) {
+      core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), nullptr, keys,
               Operation::kDelete, ResourceType::ListResource);
     }
   }

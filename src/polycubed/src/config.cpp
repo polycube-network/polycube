@@ -299,8 +299,9 @@ void Config::create_configuration_file(const std::string &path) {
   file << "addr: " << server_ip << std::endl;
   file << "# file to save polycube logs" << std::endl;
   file << "logfile: " << logfile << std::endl;
-  file << "# file to save last topology" << std::endl;
-  file << "cubes-dump-file: " << cubes_dump_file << std::endl;
+  // uncomment when cubes dump is enabled as default behavior
+  //file << "# file to save last topology" << std::endl;
+  //file << "cubes-dump-file: " << cubes_dump_file << std::endl;
   file << "# Security related:" << std::endl;
   file << "# server certificate " << std::endl;
   file << "#cert: path_to_certificate_file" << std::endl;
@@ -508,7 +509,6 @@ bool Config::load(int argc, char *argv[]) {
   }
 
   load_from_file(configfile);
-  cubes_dump_file_flag = false;
   load_from_cli(argc, argv);
   check();
 

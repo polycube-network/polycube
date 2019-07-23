@@ -130,15 +130,14 @@ void ParentResource::CreateReplaceUpdate(
       errors.push_back(resp);
     }
     // check if the operation completed successfully and in case update the configuration
-    if (isOperationSuccessful(resp.error_tag)) {
-      if (auto d = core_->get_cubes_dump()) {
-        if (rpc_action_) {
-          logger->warn("An action has been received: it is not supported "
-                       "by polycube stateful functionalities yet.");
-        } else {
-          d->UpdateCubesConfig(request.resource(), jbody, keys, op,
-                  ResourceType::ParentResource);
-        }
+    if (isOperationSuccessful(resp.error_tag) &&
+        configuration::config.getCubesDumpEnabled()) {
+      if (rpc_action_) {
+        logger->warn("An action has been received: it is not supported "
+                     "by polycube stateful functionalities yet.");
+      } else {
+        core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), jbody,
+                keys, op, ResourceType::ParentResource);
       }
     }
   }
@@ -225,8 +224,8 @@ void ParentResource::del(const Request &request, ResponseWriter response) {
         std::vector<Response>{{ErrorTag::kNoContent, nullptr}},
         std::move(response));
     errors.push_back({ErrorTag::kCreated, nullptr});
-    if (auto d = core_->get_cubes_dump()) {
-      d->UpdateCubesConfig(request.resource(), nullptr, keys,
+    if (configuration::config.getCubesDumpEnabled()) {
+      core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), nullptr, keys,
               Operation::kDelete, ResourceType::ParentResource);
     }
   } else {
