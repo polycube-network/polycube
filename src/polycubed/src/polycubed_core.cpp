@@ -35,7 +35,8 @@ namespace polycube {
 namespace polycubed {
 
 PolycubedCore::PolycubedCore(BaseModel *base_model)
-    : base_model_(base_model), logger(spdlog::get("polycubed")) {}
+    : base_model_(base_model), logger(spdlog::get("polycubed")),
+      cubes_dump_(nullptr) {}
 
 PolycubedCore::~PolycubedCore() {
   servicectrls_map_.clear();
