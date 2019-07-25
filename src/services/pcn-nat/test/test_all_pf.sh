@@ -62,8 +62,8 @@ create_veth_net 2
 polycubectl nat add nat1
 polycubectl router add r1
 
-polycubectl router r1 ports add to_veth1 ip=$to_veth1_ip netmask=255.255.255.0 peer=veth1
-polycubectl router r1 ports add to_veth2 ip=$to_veth2_ip netmask=255.255.255.0 peer=veth2
+polycubectl router r1 ports add to_veth1 ip=$to_veth1_ip/24 peer=veth1
+polycubectl router r1 ports add to_veth2 ip=$to_veth2_ip/24 peer=veth2
 
 polycubectl attach nat1 r1:to_veth2 position=first
 

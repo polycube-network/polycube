@@ -44,7 +44,7 @@ polycubectl router add r2 type=$TYPE
 polycubectl simplebridge add br1 type=$TYPE
 polycubectl simplebridge add br2 type=$TYPE
 
-router_add_port r1 to_br1 10.10.2.1 255.255.255.0
+router_add_port r1 to_br1 10.10.2.1/24
 
 bridge_add_port br1 veth1
 bridge_add_port br1 veth2
@@ -57,9 +57,9 @@ bridge_add_port br2 veth4
 
 router_add_port_as_gateway r2 br2 2 br2
 
-router_add_route r1 10.0.2.0 255.255.255.0 10.1.0.2
-router_add_route r2 10.0.1.0 255.255.255.0 10.1.0.1
-router_add_route r2 10.10.2.1 255.255.255.255 10.1.0.1
+router_add_route r1 10.0.2.0/24 10.1.0.2
+router_add_route r2 10.0.1.0/24 10.1.0.1
+router_add_route r2 10.10.2.1/32 10.1.0.1
 
 #sleep 40s #for fill filtering database
 

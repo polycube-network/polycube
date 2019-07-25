@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-// Modify these methods with your own implementation
+// TODO: Modify these methods with your own implementation
 
 #include "Route.h"
 #include "Router.h"
 
-Route::Route(Router &parent, const RouteJsonObject &conf) : parent_(parent) {
+Route::Route(Router &parent, const RouteJsonObject &conf)
+    : RouteBase(parent) {
   logger()->info("Creating Route instance");
 
-  // TODO: check the validity of the netmask
-
-  netmask_ = conf.getNetmask();
   network_ = conf.getNetwork();
   nexthop_ = conf.getNexthop();
 
@@ -33,9 +31,8 @@ Route::Route(Router &parent, const RouteJsonObject &conf) : parent_(parent) {
   pathcost_ = conf.getPathcost();
 
   parent.logger()->debug(
-      "Adding route [network: {0} - netmask: {1} - nexthop: {2} - path cost: "
-      "{3}]",
-      network_, netmask_, nexthop_, pathcost_);
+      "Adding route [network: {0} - nexthop: {1} - path cost: {2}]",
+      network_, nexthop_, pathcost_);
 
   // identify the interface of the router to be used to reach the nexthop
   if (!conf.interfaceIsSet()) {
@@ -45,21 +42,18 @@ Route::Route(Router &parent, const RouteJsonObject &conf) : parent_(parent) {
   }
 
   parent.logger()->info(
-      "Adding route [network: {0} - netmask: {1} - nexthop: {2} - interface: "
-      "{3} - path cost: {4}]",
-      network_, netmask_, nexthop_, interface_, pathcost_);
+      "Adding route [network: {0} - nexthop: {1} - interface: {2} "
+      "- path cost: {3}]", network_, nexthop_, interface_, pathcost_);
 
   int port_id = parent.get_port(interface_)->index();
 
-  parent.add_active_nexthop_in_ebpf_map(network_, netmask_, nexthop_,
+  parent.add_active_nexthop_in_ebpf_map(network_, nexthop_,
                                         conf.getPathcost(), port_id);
 }
 
-Route::Route(Router &parent, std::string network, const std::string &netmask,
-             const std::string &nexthop, const std::string &interface,
-             const uint32_t pathcost)
-    : parent_(parent) {
-  netmask_ = netmask;
+Route::Route(Router &parent, std::string network, const std::string &nexthop,
+             const std::string &interface, const uint32_t pathcost)
+    : RouteBase(parent) {
   network_ = network;
   nexthop_ = nexthop;
   interface_ = interface;
@@ -69,40 +63,9 @@ Route::Route(Router &parent, std::string network, const std::string &netmask,
 
 Route::~Route() {}
 
-void Route::update(const RouteJsonObject &conf) {
-  // This method updates all the object/parameter in Route object specified in
-  // the conf JsonObject.
-  // You can modify this implementation.
-
-  if (conf.pathcostIsSet()) {
-    setPathcost(conf.getPathcost());
-  }
-}
-
-RouteJsonObject Route::toJsonObject() {
-  RouteJsonObject conf;
-
-  conf.setInterface(getInterface());
-
-  conf.setNetmask(getNetmask());
-
-  conf.setNexthop(getNexthop());
-
-  conf.setNetwork(getNetwork());
-
-  conf.setPathcost(getPathcost());
-
-  return conf;
-}
-
-std::string Route::getInterface() {
-  // This method retrieves the interface value.
-  return interface_;
-}
-
-std::string Route::getNetmask() {
-  // This method retrieves the netmask value.
-  return netmask_;
+std::string Route::getNetwork() {
+  // This method retrieves the network value.
+  return network_;
 }
 
 std::string Route::getNexthop() {
@@ -110,9 +73,9 @@ std::string Route::getNexthop() {
   return nexthop_;
 }
 
-std::string Route::getNetwork() {
-  // This method retrieves the network value.
-  return network_;
+std::string Route::getInterface() {
+  // This method retrieves the interface value.
+  return interface_;
 }
 
 uint32_t Route::getPathcost() {
@@ -121,12 +84,7 @@ uint32_t Route::getPathcost() {
 }
 
 void Route::setPathcost(const uint32_t &value) {
-  // This method set the pathcost value.
-  throw std::runtime_error("[Route]: Method setPathcost not implemented");
-}
-
-std::shared_ptr<spdlog::logger> Route::logger() {
-  return parent_.logger();
+  throw std::runtime_error("Route::setPathcost: Method not implemented");
 }
 
 bool Route::pathcostIsSet() {

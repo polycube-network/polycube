@@ -16,88 +16,69 @@
 
 #pragma once
 
-#include "../interface/PortsInterface.h"
+#include "../base/PortsBase.h"
 
-#include "polycube/services/cube.h"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
-
-#include <spdlog/spdlog.h>
 #include <set>
 
 #include "PortsSecondaryip.h"
+#include "Utils.h"
 
 class Router;
 
-#define SECONDARY_ADDRESS 5
+/* MAX_SECONDARY_ADDRESSES definition in datapath */
+#define MAX_SECONDARY_ADDRESSES 5
 
 /* Router Port definition in datapath*/
 struct r_port {
   uint32_t ip;
   uint32_t netmask;
-  uint32_t secondary_ip[SECONDARY_ADDRESS];
-  uint32_t secondary_netmask[SECONDARY_ADDRESS];
+  uint32_t secondary_ip[MAX_SECONDARY_ADDRESSES];
+  uint32_t secondary_netmask[MAX_SECONDARY_ADDRESSES];
   uint64_t mac : 48;
 } __attribute__((packed));
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
+using namespace polycube::service::utils;
 
-class Ports : public polycube::service::Port, public PortsInterface {
+class Ports : public PortsBase {
   friend class PortsSecondaryip;
 
  public:
   Ports(polycube::service::Cube<Ports> &parent,
-        std::shared_ptr<polycube::service::PortIface> port,
-        const PortsJsonObject &conf);
+      std::shared_ptr<polycube::service::PortIface> port,
+      const PortsJsonObject &conf);
   virtual ~Ports();
 
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const PortsJsonObject &conf) override;
-  PortsJsonObject toJsonObject() override;
-
   /// <summary>
-  /// IP address of the port
+  /// IP address and prefix of the port
   /// </summary>
   std::string getIp() override;
   void setIp(const std::string &value) override;
-  void setIp_Netlink(const std::string &value);
+  void doSetIp(const std::string &new_ip);
 
   /// <summary>
-  /// Netmask of the port
+  /// Additional IP addresses for the port
   /// </summary>
-  std::string getNetmask() override;
-  void setNetmask(const std::string &value) override;
-  void setNetmask_Netlink(const std::string &value);
+  std::shared_ptr<PortsSecondaryip> getSecondaryip(const std::string &ip) override;
+  std::vector<std::shared_ptr<PortsSecondaryip>> getSecondaryipList() override;
+  void addSecondaryip(const std::string &ip, const PortsSecondaryipJsonObject &conf) override;
+  void addSecondaryipList(const std::vector<PortsSecondaryipJsonObject> &conf) override;
+  void replaceSecondaryip(const std::string &ip, const PortsSecondaryipJsonObject &conf) override;
+  void delSecondaryip(const std::string &ip) override;
+  void delSecondaryipList() override;
 
   /// <summary>
   /// MAC address of the port
   /// </summary>
   std::string getMac() override;
   void setMac(const std::string &value) override;
-  void doSetMac(const std::string &value);
+  void doSetMac(const std::string &new_mac);
 
-  /// <summary>
-  /// Secondary IP address for the port
-  /// </summary>
-  std::shared_ptr<PortsSecondaryip> getSecondaryip(
-      const std::string &ip, const std::string &netmask) override;
-  std::vector<std::shared_ptr<PortsSecondaryip>> getSecondaryipList() override;
-  void addSecondaryip(const std::string &ip, const std::string &netmask,
-                      const PortsSecondaryipJsonObject &conf) override;
-  void addSecondaryipList(
-      const std::vector<PortsSecondaryipJsonObject> &conf) override;
-  void replaceSecondaryip(const std::string &ip, const std::string &netmask,
-                          const PortsSecondaryipJsonObject &conf) override;
-  void delSecondaryip(const std::string &ip,
-                      const std::string &netmask) override;
-  void delSecondaryipList() override;
+ protected:
+  void updatePortInDataPath();
 
  private:
-  Router &parent_;
-
   std::string mac_;
   std::string ip_;
-  std::string netmask_;
-
   std::set<PortsSecondaryip> secondary_ips_;
 };

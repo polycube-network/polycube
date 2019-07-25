@@ -65,7 +65,12 @@ uint32_t get_netmask_length(const std::string &netmask_string);
 
 /* Take in ingress a prefix length like 24 and return the
 * "netmask" -> 255.255.255.0 in this case */
-std::string get_netmask_from_CIDR(const int cidr);
+std::string get_netmask_from_prefixlength(const int prefixlength);
+
+/* Take in ingress an ip/prefix and return the ip address and the netmask
+*  in the variables ip_address and netmask passed by reference */
+void split_ip_and_prefix(const std::string &ip_and_prefix,
+                        std::string &ip_address, std::string &netmask);
 
 /*
  * formats a debug string, custom specifiers are evaluated by a

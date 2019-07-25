@@ -16,20 +16,12 @@
 
 #pragma once
 
-#include "../interface/RouteInterface.h"
-
-#include <spdlog/spdlog.h>
+#include "../base/RouteBase.h"
 
 #include <linux/version.h>
 
-#include "polycube/services/cube.h"
-#include "polycube/services/port.h"
-#include "polycube/services/utils.h"
-
-#include "ArpEntry.h"
+#include "ArpTable.h"
 #include "Ports.h"
-
-#include "UtilityMethods.h"
 
 #include "CircularBuffer.h"
 
@@ -47,47 +39,31 @@
 #define TYPE_NOLOCALINTERFACE 0  // used to compare the 'type' field in the rt_v
 #define TYPE_LOCALINTERFACE 1
 
-using polycube::service::CubeType;
-using namespace polycube::service;
-
-using namespace Tins;
-
 class Router;
 
-using namespace io::swagger::server::model;
+using namespace polycube::service::model;
 
-class Route : public RouteInterface {
+class Route : public RouteBase {
  public:
   Route(Router &parent, const RouteJsonObject &conf);
-  Route(Router &parent, const std::string network, const std::string &netmask,
-        const std::string &nexthop, const std::string &interface,
-        const uint32_t pathcost);
+  Route(Router &parent, const std::string network, const std::string &nexthop,
+        const std::string &interface, const uint32_t pathcost);
   virtual ~Route();
-
-  std::shared_ptr<spdlog::logger> logger();
-  void update(const RouteJsonObject &conf) override;
-  RouteJsonObject toJsonObject() override;
-
-  /// <summary>
-  /// Outgoing interface
-  /// </summary>
-  std::string getInterface() override;
-
-  /// <summary>
-  /// Destination network netmask
-  /// </summary>
-  std::string getNetmask() override;
-
-  /// <summary>
-  /// Next hop; if destination is local will be shown &#39;local&#39; instead of
-  /// the ip address
-  /// </summary>
-  std::string getNexthop() override;
 
   /// <summary>
   /// Destination network IP
   /// </summary>
   std::string getNetwork() override;
+
+  /// <summary>
+  /// Next hop; if destination is local will be shown &#39;local&#39; instead of the ip address
+  /// </summary>
+  std::string getNexthop() override;
+
+  /// <summary>
+  /// Outgoing interface
+  /// </summary>
+  std::string getInterface() override;
 
   /// <summary>
   /// Cost of this route
@@ -96,15 +72,11 @@ class Route : public RouteInterface {
   void setPathcost(const uint32_t &value) override;
 
   // The following methods have been added manually
-
   bool pathcostIsSet();
 
  private:
-  Router &parent_;
-
   // The following attributes have been added manually
   std::string network_;
-  std::string netmask_;
   std::string nexthop_;
   std::string interface_;
   uint32_t pathcost_;

@@ -296,15 +296,31 @@ uint32_t get_netmask_length(const std::string &netmask_string) {
     throw std::runtime_error("IP Address is not in a valid format");
 }
 
-std::string get_netmask_from_CIDR(const int cidr) {
+std::string get_netmask_from_prefixlength(const int prefixlength) {
   uint32_t ipv4Netmask;
 
+  if (prefixlength == 0) {
+    return "0.0.0.0";
+  }
+
   ipv4Netmask = 0xFFFFFFFF;
-  ipv4Netmask <<= 32 - cidr;
+  ipv4Netmask <<= 32 - prefixlength;
   ipv4Netmask = ntohl(ipv4Netmask);
   struct in_addr addr = {ipv4Netmask};
 
   return inet_ntoa(addr);
+}
+
+void split_ip_and_prefix(const std::string &ip_and_prefix,
+                        std::string &ip_address, std::string &netmask) {
+  // ip_and_prefix = ip_address/prefix
+  std::istringstream split(ip_and_prefix);
+  std::vector<std::string> info;
+  char split_char = '/';
+  for (std::string each; std::getline(split, each, split_char);
+       info.push_back(each));
+  ip_address = info[0];
+  netmask = get_netmask_from_prefixlength(std::atoi(info[1].c_str()));
 }
 
 }  // namespace utils

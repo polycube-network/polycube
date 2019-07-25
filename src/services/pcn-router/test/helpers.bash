@@ -27,7 +27,7 @@ function del_routers {
 }
 
 function router_add_port_as_gateway { #$3 network number #$4 bridge name
-  polycubectl router $1 ports add to_$2 ip=10.0.$3.254 netmask=255.255.255.0
+  polycubectl router $1 ports add to_$2 ip=10.0.$3.254/24
   if [[ $# -eq 4 ]] ; then
     polycubectl simplebridge $4 ports add to_$1
     polycubectl connect $4:to_$1 $1:to_$4
@@ -38,30 +38,30 @@ function router_add_port_as_gateway { #$3 network number #$4 bridge name
 
 }
 
-function router_add_port { #$3 ip $4 netmask
-  polycubectl router $1 ports add $2 ip=$3 netmask=$4
+function router_add_port { #$3 ip
+  polycubectl router $1 ports add $2 ip=$3
 }
 
 function connect_router_p_to_p { #$1 router name 1, $2 router name 2, $3 network point to point connection
-  polycubectl router $1 ports add to_$2 ip=10.$3.0.1 netmask=255.255.255.252
-  polycubectl router $2 ports add to_$1 ip=10.$3.0.2 netmask=255.255.255.252
+  polycubectl router $1 ports add to_$2 ip=10.$3.0.1/30
+  polycubectl router $2 ports add to_$1 ip=10.$3.0.2/30
   polycubectl connect $1:to_$2 $2:to_$1
 }
 
 function connect_router_secondary_p_to_p { #$1 router name 1, $2 router name 2, $3 network point to point connection
-  polycubectl router $1 ports to_$2 secondaryip add 10.$3.0.1 255.255.255.252
-  polycubectl router $2 ports to_$1 secondaryip add 10.$3.0.2 255.255.255.252
+  polycubectl router $1 ports to_$2 secondaryip add 10.$3.0.1/30
+  polycubectl router $2 ports to_$1 secondaryip add 10.$3.0.2/30
   polycubectl connect $1:to_$2 $2:to_$1
 }
 
 
 
 function router_add_secondary {
-  polycubectl router $1 ports to_$2 secondaryip add $3 $4
+  polycubectl router $1 ports to_$2 secondaryip add $3
 }
 
 function router_add_secondary_as_gateway {
-polycubectl router $1 ports to_$2 secondaryip add 10.0.$3.254 255.255.255.0
+polycubectl router $1 ports to_$2 secondaryip add 10.0.$3.254/24
   if [[ $# -eq 4 ]] ; then
     polycubectl simplebridge $4 ports add to_$1
     polycubectl connect $4:to_$1 $1:to_$4
@@ -72,10 +72,10 @@ polycubectl router $1 ports to_$2 secondaryip add 10.0.$3.254 255.255.255.0
 
 function router_add_route {
 
-  if [[ $# -eq 5 ]] ; then
-    polycubectl router $1 route add $2 $3 $4 pathcost=$5
+  if [[ $# -eq 4 ]] ; then
+    polycubectl router $1 route add $2 $3 pathcost=$4
   else
-  	polycubectl router $1 route add $2 $3 $4
+    polycubectl router $1 route add $2 $3
   fi
 
 }
