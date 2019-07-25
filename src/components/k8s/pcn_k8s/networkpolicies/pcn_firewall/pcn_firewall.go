@@ -39,6 +39,11 @@ type PcnFirewall interface {
 	Selector() (map[string]string, string)
 	// EnforcePolicy enforces the provided policy.
 	EnforcePolicy(policyName, policyType string, policyTime meta_v1.Time, ingress, egress []k8sfirewall.ChainRule)
+	// Destroy destroys the current firewall manager.
+	// This function should not be called manually, as it is called automatically
+	// after a certain time has passed while monitoring no pods.
+	// To destroy a particular firewall, see the Unlink function.
+	Destroy()
 }
 
 // FirewallManager is the implementation of the firewall manager.
@@ -733,4 +738,17 @@ func (d *FirewallManager) cleanFw(name string) (error, error) {
 func (d *FirewallManager) applyRules(firewall, direction string) (bool, error) {
 	out, _, err := d.fwAPI.CreateFirewallChainApplyRulesByID(nil, firewall, direction)
 	return out.Result, err
+}
+
+// Destroy destroys the current firewall manager.
+// This function should not be called manually, as it is called automatically
+// after a certain time has passed while monitoring no pods.
+// To destroy a particular firewall, see the Unlink function.
+func (d *FirewallManager) Destroy() {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	l := log.New().WithFields(log.Fields{"by": "FirewallManager-" + d.name, "method": "Destroy()"})
+
+	l.Infoln("Good bye!")
 }

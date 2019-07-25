@@ -3,6 +3,7 @@ package networkpolicies
 import (
 	"net"
 	"sync"
+	"time"
 
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_firewall "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
@@ -30,6 +31,16 @@ type NetworkPolicyManager struct {
 	lock sync.Mutex
 	// localFirewalls is a map of the firewall managers inside this node.
 	localFirewalls map[string]pcn_firewall.PcnFirewall
+	// unscheduleThreshold is the number of MINUTES after which a firewall manager
+	// should be deleted if no pods are assigned to it.
+	unscheduleThreshold int
+	// flaggedForDeletion contains ids of firewall managers
+	// that are scheduled to be deleted.
+	// Firewall managers will continue updating rules and parse policies even when
+	// they have no pods assigned to them anymore (they just won't inject rules).
+	// But if this situation persists for at least unscheduleThreshold minutes,
+	// then they are going to be deleted.
+	flaggedForDeletion map[string]*time.Timer
 	// linkedPods is a map linking local pods to local firewalls.
 	// It is used to check if a pod has changed and needs to be unlinked.
 	// It is a very rare situation, but it must be handled anyway.
@@ -52,12 +63,14 @@ func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string,
 	fwAPI := srK8firewall.FirewallApi
 
 	manager := NetworkPolicyManager{
-		podController:  podController,
-		nodeName:       nodeName,
-		localFirewalls: map[string]pcn_firewall.PcnFirewall{},
-		linkedPods:     map[k8s_types.UID]string{},
-		fwAPI:          fwAPI,
-		vPodsRange:     vPodsRange,
+		podController:       podController,
+		nodeName:            nodeName,
+		localFirewalls:      map[string]pcn_firewall.PcnFirewall{},
+		unscheduleThreshold: UnscheduleThreshold,
+		flaggedForDeletion:  map[string]*time.Timer{},
+		linkedPods:          map[k8s_types.UID]string{},
+		fwAPI:               fwAPI,
+		vPodsRange:          vPodsRange,
 	}
 
 	//-------------------------------------
@@ -100,6 +113,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 
 		if inserted {
 			manager.linkedPods[pod.UID] = fw.Name()
+			manager.unflagForDeletion(fw.Name())
 		}
 
 		// If the firewall manager already existed there is no point in going on:
@@ -146,7 +160,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 				l.Warningf("%s was not linked in previous firewall manager!", pod.UID)
 			} else {
 				if remaining == 0 {
-					l.Infof("Firewall Manager %s is now empty", prevFw.Name())
+					manager.flagForDeletion(prevFw.Name())
 				}
 				delete(manager.linkedPods, pod.UID)
 			}
@@ -165,6 +179,29 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 		return fw, true
 	}
 	return fw, false
+}
+
+// flagForDeletion flags a firewall for deletion
+func (manager *NetworkPolicyManager) flagForDeletion(fwKey string) {
+	_, wasFlagged := manager.flaggedForDeletion[fwKey]
+
+	// Was it flagged?
+	if !wasFlagged {
+		manager.flaggedForDeletion[fwKey] = time.AfterFunc(time.Minute*time.Duration(manager.unscheduleThreshold), func() {
+			manager.deleteFirewallManager(fwKey)
+		})
+	}
+}
+
+// unflagForDeletion unflags a firewall manager for deletion
+func (manager *NetworkPolicyManager) unflagForDeletion(fwKey string) {
+	timer, wasFlagged := manager.flaggedForDeletion[fwKey]
+
+	// Was it flagged?
+	if wasFlagged {
+		timer.Stop() // you're going to survive! Be happy!
+		delete(manager.flaggedForDeletion, fwKey)
+	}
 }
 
 // manageDeletedPod makes sure that the appropriate fw manager
@@ -201,6 +238,20 @@ func (manager *NetworkPolicyManager) manageDeletedPod(_ *core_v1.Pod, pod *core_
 	}
 
 	if remaining == 0 {
-		l.Infof("Firewall manager %s is now empty", fwKey)
+		manager.flagForDeletion(fwKey)
 	}
+}
+
+// deleteFirewallManager will delete a firewall manager.
+// Usually this function is called automatically when after a certain threshold.
+func (manager *NetworkPolicyManager) deleteFirewallManager(fwKey string) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	// The garbage collector will take care of destroying everything inside it
+	// now that no one points to it anymore.
+	// Goodbye!
+	manager.localFirewalls[fwKey].Destroy()
+	delete(manager.localFirewalls, fwKey)
+	delete(manager.flaggedForDeletion, fwKey)
 }
