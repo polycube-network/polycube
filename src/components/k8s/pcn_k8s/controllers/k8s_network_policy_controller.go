@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -277,6 +278,64 @@ func (npc *K8sNetworkPolicyController) retrievePolicyFromCache(obj interface{}, 
 	}
 
 	return policy, nil
+}
+
+// GetPolicies returns a list of network policies that match the specified
+// criteria. Returns an empty list if no network policies have been found
+// or an error occurred. The error is returned in this case.
+func (npc *K8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
+
+	//-------------------------------------
+	//	Basic query checks
+	//-------------------------------------
+
+	// The policy
+	if pQuery != nil {
+		if pQuery.By != "name" {
+			// Network policies can only be found by name.
+			return []networking_v1.NetworkPolicy{}, errors.New("Query type not supported")
+		}
+
+		if len(pQuery.Name) == 0 {
+			return []networking_v1.NetworkPolicy{}, errors.New("No name provided")
+		}
+	}
+
+	// The namespace
+	namespace := meta_v1.NamespaceAll
+	if nsQuery != nil {
+		if nsQuery.By != "name" {
+			// Policies cannot be applied to namespace labels, only to names.
+			return []networking_v1.NetworkPolicy{}, errors.New("Query type not supported")
+		}
+
+		if len(nsQuery.Name) == 0 {
+			return []networking_v1.NetworkPolicy{}, errors.New("No name provided")
+		}
+		namespace = nsQuery.Name
+	}
+
+	//-------------------------------------
+	//	Find by name
+	//-------------------------------------
+
+	lister := npc.clientset.NetworkingV1().NetworkPolicies(namespace)
+
+	//	All kubernetes policies?
+	if pQuery == nil {
+		list, err := lister.List(meta_v1.ListOptions{})
+		if err != nil {
+			return []networking_v1.NetworkPolicy{}, err
+		}
+		return list.Items, nil
+	}
+
+	//	Specific name?
+	list, err := lister.List(meta_v1.ListOptions{FieldSelector: "metadata.name=" + pQuery.Name})
+	if err != nil {
+		return []networking_v1.NetworkPolicy{}, err
+	}
+	return list.Items, nil
 }
 
 // Stop stops the controller
