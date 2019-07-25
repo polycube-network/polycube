@@ -34,6 +34,8 @@ type NetworkPolicyManager struct {
 	knpc *pcn_controllers.K8sNetworkPolicyController
 	// podController is the pod controller
 	podController pcn_controllers.PodController
+	// nsController is the namespace controller
+	nsController pcn_controllers.NamespaceController
 	// k8sPolicyParser is the instance of the default policy parser
 	k8sPolicyParser PcnK8sPolicyParser
 	// fwAPI is the firewall API
@@ -60,6 +62,14 @@ type NetworkPolicyManager struct {
 	linkedPods map[k8s_types.UID]string
 	// vPodsRange is the virtual IP range of the pods
 	vPodsRange *net.IPNet
+	// policyUnsubscriptors contains function to be used when unsubscribing
+	policyUnsubscriptors map[string]*nsUnsubscriptor
+}
+
+// nsUnsubscriptor contains information about namespace events that are
+// interesting for some policies.
+type nsUnsubscriptor struct {
+	nsUnsub map[string]func()
 }
 
 // startFirewall is a pointer to the StartFirewall method of the
@@ -67,24 +77,26 @@ type NetworkPolicyManager struct {
 var startFirewall = pcn_firewall.StartFirewall
 
 // StartNetworkPolicyManager will start a new network policy manager.
-func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string, knpc *pcn_controllers.K8sNetworkPolicyController, podController pcn_controllers.PodController) PcnNetworkPolicyManager {
+func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string, knpc *pcn_controllers.K8sNetworkPolicyController, podController pcn_controllers.PodController, nsController pcn_controllers.NamespaceController) PcnNetworkPolicyManager {
 	l := log.New().WithFields(log.Fields{"by": PM, "method": "StartNetworkPolicyManager()"})
-	l.Debugln("Starting Network Policy Manager")
+	l.Infoln("Starting Network Policy Manager")
 
 	cfgK8firewall := k8sfirewall.Configuration{BasePath: basePath}
 	srK8firewall := k8sfirewall.NewAPIClient(&cfgK8firewall)
 	fwAPI := srK8firewall.FirewallApi
 
 	manager := NetworkPolicyManager{
-		knpc:                knpc,
-		podController:       podController,
-		nodeName:            nodeName,
-		localFirewalls:      map[string]pcn_firewall.PcnFirewall{},
-		unscheduleThreshold: UnscheduleThreshold,
-		flaggedForDeletion:  map[string]*time.Timer{},
-		linkedPods:          map[k8s_types.UID]string{},
-		fwAPI:               fwAPI,
-		vPodsRange:          vPodsRange,
+		knpc:                 knpc,
+		podController:        podController,
+		nsController:         nsController,
+		nodeName:             nodeName,
+		localFirewalls:       map[string]pcn_firewall.PcnFirewall{},
+		unscheduleThreshold:  UnscheduleThreshold,
+		flaggedForDeletion:   map[string]*time.Timer{},
+		linkedPods:           map[k8s_types.UID]string{},
+		fwAPI:                fwAPI,
+		vPodsRange:           vPodsRange,
+		policyUnsubscriptors: map[string]*nsUnsubscriptor{},
 	}
 
 	//-------------------------------------
@@ -135,6 +147,17 @@ func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.Ne
 	if len(manager.localFirewalls) == 0 {
 		l.Infoln("There are no active firewall managers in this node. Will stop here.")
 		return
+	}
+
+	//-------------------------------------
+	// Unsubscribe from namespace changes
+	//-------------------------------------
+
+	if unsubs, exists := manager.policyUnsubscriptors[policy.Name]; exists {
+		for _, unsub := range unsubs.nsUnsub {
+			unsub()
+		}
+		delete(manager.policyUnsubscriptors, policy.Name)
 	}
 
 	//-------------------------------------
@@ -327,7 +350,97 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 		}(currentFwName)
 	}
 
+	// Loop through all firewall actions to get namespace labels. Why?
+	// Because if a policy wants to accept pods that are in a namespace
+	// with labels X and Y and, later, the admin changes those labels to
+	// Z and W then we have to remove all the pods that we were previously
+	// accepting!
+	// This may need to be improved later on, but since it is a very rare
+	// situation, it may stay like this.
+	for _, action := range fwActions {
+		if len(action.NamespaceLabels) > 0 {
+			if _, exists := manager.policyUnsubscriptors[policy.Name]; !exists {
+				manager.policyUnsubscriptors[policy.Name] = &nsUnsubscriptor{
+					nsUnsub: map[string]func(){},
+				}
+			}
+			// already there?
+			nsKey := utils.ImplodeLabels(action.NamespaceLabels, ",", false)
+			if _, exists := manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey]; exists {
+				continue
+			}
+
+			// Subscribe
+			unsub, err := manager.nsController.Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
+				manager.handleNamespaceUpdate(ns, prev, action, policy.Name, policy.Namespace)
+			})
+			if err == nil {
+				manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey] = unsub
+			}
+		}
+	}
+
 	waiter.Wait()
+}
+
+// handleNamespaceUpdate checks if a namespace has changed its labels.
+// If so, the appropriate firewall should update the policies as well.
+func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, action pcn_types.FirewallAction, policyName, policyNs string) {
+	l := log.New().WithFields(log.Fields{"by": PM, "method": "handleNamespaceUpdate(" + ns.Name + ")"})
+	l.Infof("Namespace %s has been updated", ns.Name)
+
+	// Function that checks if an update of the policy is needed.
+	// Done like this so we can use defer and keep the code more
+	// organized
+	needsUpdate := func() (*networking_v1.NetworkPolicy, bool) {
+		manager.lock.Lock()
+		defer manager.lock.Unlock()
+
+		if prev == nil {
+			return nil, false
+		}
+
+		// When should we update the firewalls in case of namespace updates?
+		// 1) When previously it had some labels that were ok and now are not.
+		// 2) The opposite of the 1): previously ok, now not-ok
+		// Anyway, on case 1) we must remove the pods previously allowed
+		// and on case 2) we must allow some new pods.
+		// This simply means checking the previous state vs the current.
+
+		previously := utils.AreLabelsContained(action.NamespaceLabels, prev.Labels)
+		currently := utils.AreLabelsContained(action.NamespaceLabels, ns.Labels)
+
+		if previously == currently {
+			return nil, false
+		}
+
+		l.Infof("%s's labels have changed", ns.Name)
+
+		policyQuery := utils.BuildQuery(policyName, nil)
+		nsQuery := utils.BuildQuery(policyNs, nil)
+		policies, err := manager.knpc.GetPolicies(policyQuery, nsQuery)
+		if err != nil {
+			l.Errorf("Could not load policies named %s on namespace %s. Error: %s", policyName, policyNs, err)
+			return nil, false
+		}
+		if len(policies) == 0 {
+			l.Errorf("Policiy named %s on namespace %s has not been found.", policyName, policyNs)
+			return nil, false
+		}
+		policy := policies[0]
+
+		return &policy, true
+	}
+
+	// Check it
+	policy, ok := needsUpdate()
+	if !ok {
+		return
+	}
+
+	// Remove that policy and redeploy it again
+	manager.RemoveK8sPolicy(nil, policy)
+	manager.DeployK8sPolicy(policy, nil)
 }
 
 // checkNewPod will perform some checks on the new pod just updated.
