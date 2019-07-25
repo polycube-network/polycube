@@ -24,9 +24,10 @@ type PcnFirewall interface {
 	// FALSE if it already existed or an error occurred
 	Link(pod *core_v1.Pod) bool
 	// Unlink removes the  pod from the list of monitored ones by this manager.
-	// It returns FALSE if the pod was not among the monitored ones,
+	// The second arguments specifies if the pod's firewall should be cleaned
+	// or destroyed. It returns FALSE if the pod was not among the monitored ones,
 	// and the number of remaining pods linked.
-	Unlink(pod *core_v1.Pod) (bool, int)
+	Unlink(pod *core_v1.Pod, then UnlinkOperation) (bool, int)
 	// LinkedPods returns a map of pods monitored by this firewall manager.
 	LinkedPods() map[k8s_types.UID]string
 	// IsPolicyEnforced returns true if this firewall enforces this policy
@@ -217,9 +218,10 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 }
 
 // Unlink removes the  pod from the list of monitored ones by this manager.
-// It returns FALSE if the pod was not among the monitored ones,
+// The second arguments specifies if the pod's firewall should be cleaned
+// or destroyed. It returns FALSE if the pod was not among the monitored ones,
 // and the number of remaining pods linked.
-func (d *FirewallManager) Unlink(pod *core_v1.Pod) (bool, int) {
+func (d *FirewallManager) Unlink(pod *core_v1.Pod, then UnlinkOperation) (bool, int) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -234,6 +236,24 @@ func (d *FirewallManager) Unlink(pod *core_v1.Pod) (bool, int) {
 	}
 
 	podIP := d.linkedPods[pod.UID]
+	name := "fw-" + podIP
+
+	// Should I also destroy its firewall?
+	switch then {
+	case CleanFirewall:
+		if i, e := d.cleanFw(name); i != nil || e != nil {
+			l.Warningln("Could not properly clean firewall for the provided pod.")
+		} else {
+			d.updateDefaultAction(name, "ingress", pcn_types.ActionForward)
+			d.applyRules(name, "ingress")
+			d.updateDefaultAction(name, "egress", pcn_types.ActionForward)
+			d.applyRules(name, "egress")
+		}
+	case DestroyFirewall:
+		if err := d.destroyFw(name); err != nil {
+			l.Warningln("Could not delete firewall for the provided pod:", err)
+		}
+	}
 
 	delete(d.linkedPods, podUID)
 	l.Infof("Pod %s unlinked.", podIP)
@@ -686,6 +706,27 @@ func (d *FirewallManager) updateDefaultAction(firewall, direction, to string) er
 	actualTo := "\"" + to + "\""
 	_, err := d.fwAPI.UpdateFirewallChainDefaultByID(nil, firewall, direction, actualTo)
 	return err
+}
+
+// destroyFw destroy a firewall linked by this firewall manager
+func (d *FirewallManager) destroyFw(name string) error {
+	_, err := d.fwAPI.DeleteFirewallByID(nil, name)
+	return err
+}
+
+// cleanFw cleans the firewall linked by this firewall manager
+func (d *FirewallManager) cleanFw(name string) (error, error) {
+	var iErr error
+	var eErr error
+
+	if _, err := d.fwAPI.DeleteFirewallChainRuleListByID(nil, name, "ingress"); err != nil {
+		iErr = err
+	}
+	if _, err := d.fwAPI.DeleteFirewallChainRuleListByID(nil, name, "egress"); err != nil {
+		eErr = err
+	}
+
+	return iErr, eErr
 }
 
 // applyRules is a wrapper for CreateFirewallChainApplyRulesByID method.
