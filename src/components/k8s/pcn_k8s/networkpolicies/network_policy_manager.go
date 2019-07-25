@@ -21,6 +21,11 @@ import (
 type PcnNetworkPolicyManager interface {
 	// DeployK8sPolicy deploys a kubernetes policy in the appropriate fw managers
 	DeployK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
+	// RemoveK8sPolicy removes (ceases) a kubernetes policy
+	// from the appropriate firewall managers
+	RemoveK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
+	// UpdateK8sPolicy updates a kubernetes policy in the appropriate fw managers
+	UpdateK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
 }
 
 // NetworkPolicyManager is the implementation of the policy manager
@@ -91,6 +96,12 @@ func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string,
 	// Deploy a new k8s policy
 	knpc.Subscribe(pcn_types.New, manager.DeployK8sPolicy)
 
+	// Remove a default policy
+	knpc.Subscribe(pcn_types.Delete, manager.RemoveK8sPolicy)
+
+	// Update a policy
+	knpc.Subscribe(pcn_types.Update, manager.UpdateK8sPolicy)
+
 	//-------------------------------------
 	// Subscribe to pod events
 	//-------------------------------------
@@ -110,6 +121,107 @@ func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.Ne
 	l.Infof("K8s policy %s has been deployed", policy.Name)
 
 	manager.deployK8sPolicyToFw(policy, "")
+}
+
+// RemoveK8sPolicy removes (ceases) a kubernetes policy
+// from the appropriate firewall managers
+func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.NetworkPolicy) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	l := log.New().WithFields(log.Fields{"by": PM, "method": "RemoveK8sPolicy(" + policy.Name + ")"})
+	l.Infof("K8s policy %s is going to be removed", policy.Name)
+
+	if len(manager.localFirewalls) == 0 {
+		l.Infoln("There are no active firewall managers in this node. Will stop here.")
+		return
+	}
+
+	//-------------------------------------
+	// Cease this policy
+	//-------------------------------------
+
+	// Get the names of the fw managers that are enforcing this.
+	// This is done to avoid launching unnecessary go routines
+	fws := []string{}
+	for _, fwManager := range manager.localFirewalls {
+		if fwManager.IsPolicyEnforced(policy.Name) {
+			fws = append(fws, fwManager.Name())
+		}
+	}
+
+	if len(fws) == 0 {
+		l.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
+		return
+	}
+
+	var waiter sync.WaitGroup
+	waiter.Add(len(fws))
+
+	// Loop through all firewall managers and make them cease this policy
+	// if they were enforcing it.
+	for _, fwName := range fws {
+		go func(fw string) {
+			defer waiter.Done()
+			manager.localFirewalls[fw].CeasePolicy(policy.Name)
+		}(fwName)
+	}
+
+	// We have to wait, otherwise other policies may conflict with this
+	waiter.Wait()
+}
+
+// UpdateK8sPolicy updates a kubernetes policy in the appropriate fw managers
+func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.NetworkPolicy) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	l := log.New().WithFields(log.Fields{"by": PM, "method": "UpdateK8sPolicy(" + policy.Name + ")"})
+	l.Infof("K8s policy %s has been updated. Going to parse it again", policy.Name)
+
+	// Updating a policy is no trivial task.
+	// We don't know what changed from its previous state:
+	// we are forced to re-parse it to know it.
+	// Instead of parsing and checking what's changed and what's stayed,
+	// we're going to remove the policy and
+	// redeploy it.
+
+	if len(manager.localFirewalls) == 0 {
+		l.Infoln("There are no active firewall managers in this node. Will stop here.")
+		return
+	}
+
+	//-------------------------------------
+	// Remove and redeploy
+	//-------------------------------------
+
+	// Get the names of the fw managers that are enforcing this.
+	// This is done to avoid launching unnecessary go routines
+	fws := []string{}
+	for _, fwManager := range manager.localFirewalls {
+		if fwManager.IsPolicyEnforced(policy.Name) {
+			fws = append(fws, fwManager.Name())
+		}
+	}
+
+	if len(fws) == 0 {
+		l.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
+		return
+	}
+
+	var waiter sync.WaitGroup
+	waiter.Add(len(fws))
+
+	for _, fwName := range fws {
+		go func(fw string) {
+			defer waiter.Done()
+			fwManager := manager.localFirewalls[fw]
+			fwManager.CeasePolicy(policy.Name)
+			manager.deployK8sPolicyToFw(policy, fwManager.Name())
+		}(fwName)
+	}
+
+	waiter.Wait()
 }
 
 // deployK8sPolicyToFw actually deploys the provided kubernetes policy
