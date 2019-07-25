@@ -27,6 +27,7 @@ import (
 	k8switch "github.com/polycube-network/polycube/src/components/k8s/utils/k8switch"
 
 	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/kv/etcd"
+	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
 
 	// importing controllers
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
@@ -80,6 +81,8 @@ var (
 	podController         pcn_controllers.PodController
 	nsController          pcn_controllers.NamespaceController
 	// --- /Controllers
+
+	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
 
 	stop bool
 )
@@ -263,6 +266,11 @@ func main() {
 
 	// Start the pod controller
 	go podController.Run()
+
+	vPodsCIDR := k8sNode.VPodCIDR
+
+	// Start the policy manager
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(vPodsCIDR, basePath, nodeName, k8sPoliciesController, podController, nsController)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
