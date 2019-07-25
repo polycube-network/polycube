@@ -1,9 +1,7 @@
 Helloworld
 ==========
 
-**Note**: documentation of the current release is focused on the final user and not in developers. This service is intended to be used only by developers, so this documentation could be incomplete and have some inacuracies.
-
-This service demonstrates how to create a minimal cube, which includes both the dataplane `fast path` and the control/management `slow path` parts
+This service is oriented to demonstrate to developers how to create a minimal cube, which includes both the dataplane `fast path` and the control/management `slow path`.
 
 Helloworld is a simple service that receives the traffic on a network interface and can either:
 
@@ -18,8 +16,10 @@ How to use
 
 ::
 
-    # create network namespaces
-    # TODO.
+    # create network namespaces with usual commands
+    #   we assume you have two interfaces (veth1 
+    #   and veth2 already working here)
+
 
     # create the instance
     polycubectl helloworld add hw0
@@ -33,7 +33,7 @@ How to use
 
     # send packets to the service
 
-    # try another actions, forward, slowpath
+    # try another action, such as forward
     polycubectl hw0 set action=forward
 
 
@@ -48,6 +48,7 @@ Helloworld includes the minimum amount of code that a service requires to be run
 - **src/[default-src, interface, serializer]** contain different pieces of the services that do not need to be modified by the developer.
 - **src/helloworld-lib.cpp** contains the implementation of interface that is used when the service is compiled as a shared library.
 - **datamodel/helloworld.yang** contains the service datamodel.
+
 
 Compile and install
 -------------------
