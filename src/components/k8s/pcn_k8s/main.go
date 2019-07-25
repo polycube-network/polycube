@@ -28,10 +28,14 @@ import (
 
 	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/kv/etcd"
 
+	// importing controllers
+	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+
 	//"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -39,18 +43,18 @@ import (
 )
 
 const (
-	basePath           = "http://127.0.0.1:9000/polycube/v1"
-	vxlanInterface     = "pcn_vxlan"
-	stackInterface     = "pcn_stack"
-	routerInterface    = "pcn_router"
+	basePath             = "http://127.0.0.1:9000/polycube/v1"
+	vxlanInterface       = "pcn_vxlan"
+	stackInterface       = "pcn_stack"
+	routerInterface      = "pcn_router"
 	polycubeK8sInterface = "pcn_k8s"
 	polycubeLBInterface  = "pcn_lb"
-	k8switchName       = "k8switch0"
+	k8switchName         = "k8switch0"
 
-	vPodsRangeDefault = "10.10.0.0/16"
-	vtepsRangeDefault = "10.18.0.0/16"
+	vPodsRangeDefault            = "10.10.0.0/16"
+	vtepsRangeDefault            = "10.18.0.0/16"
 	serviceClusterIPRangeDefault = "10.96.0.0/12"
-	serviceNodePortRangeDefault = "30000-32767"
+	serviceNodePortRangeDefault  = "30000-32767"
 )
 
 var (
@@ -71,6 +75,12 @@ var (
 	endpointsWatcher watch.Interface
 	nodesWatcher     watch.Interface
 
+	// --- Controllers
+	k8sPoliciesController *pcn_controllers.K8sNetworkPolicyController
+	podController         pcn_controllers.PodController
+	nsController          pcn_controllers.NamespaceController
+	// --- /Controllers
+
 	stop bool
 )
 
@@ -83,6 +93,16 @@ func cleanup() {
 
 	if endpointsWatcher != nil {
 		endpointsWatcher.Stop()
+	}
+
+	if k8sPoliciesController != nil {
+		k8sPoliciesController.Stop()
+	}
+	if podController != nil {
+		podController.Stop()
+	}
+	if nsController != nil {
+		nsController.Stop()
 	}
 }
 
@@ -119,7 +139,7 @@ func main() {
 	// creates the in-cluster config
 	//config, err := rest.InClusterConfig()
 	//if err != nil {
-	//	panic(err.Error())
+	// panic(err.Error())
 	//}
 	// creates the clientset
 	var err1 error
@@ -223,8 +243,26 @@ func main() {
 		panic(err0.Error())
 	}
 
+	// Set up the network policy controller (for the kubernetes policies)
+	k8sPoliciesController = pcn_controllers.NewK8sNetworkPolicyController(clientset)
+
+	// Get the namespace controller
+	nsController = pcn_controllers.NewNsController(clientset)
+
+	// Get the pod controller
+	podController = pcn_controllers.NewPodController(clientset, nsController)
+
 	// kv handler
 	go kvM.Loop()
+
+	// Start the default network policy controller
+	go k8sPoliciesController.Run()
+
+	// Start the namespace controller
+	go nsController.Run()
+
+	// Start the pod controller
+	go podController.Run()
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
@@ -257,6 +295,12 @@ func main() {
 			processNode(&got)
 		}
 	}
+
+	// Stop the controllers. After some tests, it resulted that it was better
+	// to stop them *before* closing the others
+	k8sPoliciesController.Stop()
+	nsController.Stop()
+	podController.Stop()
 
 	deleteNodes()
 	k8sNode.Uninit()
