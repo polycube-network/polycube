@@ -262,7 +262,16 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 
 	var parsed pcn_types.ParsedRules
 	fwActions := []pcn_types.FirewallAction{}
-	parsed = manager.k8sPolicyParser.ParseRules(ingress, egress, policy.Namespace)
+	barrier := make(chan struct{})
+
+	// Get the rules
+	go func() {
+		defer close(barrier)
+		parsed = manager.k8sPolicyParser.ParseRules(ingress, egress, policy.Namespace)
+	}()
+
+	// Get the actions/templates
+	fwActions = manager.k8sPolicyParser.BuildActions(ingress, egress, policy.Namespace)
 
 	// Firewall is transparent: we need to reverse the directions
 	oppositePolicyType := policyType
@@ -273,6 +282,9 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 			oppositePolicyType = "ingress"
 		}
 	}
+
+	// At this point I can't go on without the rules.
+	<-barrier
 
 	//-------------------------------------
 	// Enforce the policy
