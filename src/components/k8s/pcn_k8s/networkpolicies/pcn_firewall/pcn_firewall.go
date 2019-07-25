@@ -4,12 +4,14 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
 )
 
@@ -35,7 +37,7 @@ type PcnFirewall interface {
 	// monitored by this firewall manager
 	Selector() (map[string]string, string)
 	// EnforcePolicy enforces the provided policy.
-	EnforcePolicy(policyName, policyType string, ingress, egress []k8sfirewall.ChainRule)
+	EnforcePolicy(policyName, policyType string, policyTime meta_v1.Time, ingress, egress []k8sfirewall.ChainRule)
 }
 
 // FirewallManager is the implementation of the firewall manager.
@@ -67,8 +69,17 @@ type FirewallManager struct {
 	policyTypes map[string]string
 	// selector defines what kind of pods this firewall is monitoring
 	selector selector
+	// priorities is the list of priorities
+	priorities []policyPriority
 	// vPodsRange
 	vPodsRange *net.IPNet
+}
+
+// policyPriority is the priority of this policy.
+// Most recently deployed policies take precedence over the older ones.
+type policyPriority struct {
+	policyName string
+	timestamp  time.Time
 }
 
 // selector is the selector for the pods this firewall manager is managing
@@ -106,6 +117,8 @@ func StartFirewall(API *k8sfirewall.FirewallApiService, podController pcn_contro
 		// The default actions
 		ingressDefaultAction: pcn_types.ActionForward,
 		egressDefaultAction:  pcn_types.ActionForward,
+		// The priorities
+		priorities: []policyPriority{},
 		// vPodsRange
 		vPodsRange: vPodsRange,
 	}
@@ -188,7 +201,7 @@ func (d *FirewallManager) Name() string {
 }
 
 // EnforcePolicy enforces the provided policy.
-func (d *FirewallManager) EnforcePolicy(policyName, policyType string, ingress, egress []k8sfirewall.ChainRule) {
+func (d *FirewallManager) EnforcePolicy(policyName, policyType string, policyTime meta_v1.Time, ingress, egress []k8sfirewall.ChainRule) {
 	// Only one policy at a time, please
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -210,6 +223,13 @@ func (d *FirewallManager) EnforcePolicy(policyName, policyType string, ingress, 
 	// we can enforce isolation mode correctly
 	d.policyTypes[policyName] = policyType
 	d.updateCounts("increase", policyType)
+
+	//-------------------------------------
+	// Set its priority
+	//-------------------------------------
+	// By setting its priority, we know where to start injecting rules from
+	iStartFrom, eStartFrom := d.setPolicyPriority(policyName, policyTime)
+
 	//-------------------------------------
 	// Inject the rules on each firewall
 	//-------------------------------------
@@ -224,9 +244,81 @@ func (d *FirewallManager) EnforcePolicy(policyName, policyType string, ingress, 
 
 	for _, ip := range d.linkedPods {
 		name := "fw-" + ip
-		go d.injecter(name, ingressIDs, egressIDs, &injectWaiter, 0, 0)
+		go d.injecter(name, ingressIDs, egressIDs, &injectWaiter, iStartFrom, eStartFrom)
 	}
 	injectWaiter.Wait()
+}
+
+// setPolicyPriority sets the priority of the policy in the rules list
+func (d *FirewallManager) setPolicyPriority(policyName string, policyTime meta_v1.Time) (int32, int32) {
+	// Ingress and egress first useful ids
+	iStartFrom := 0
+	eStartFrom := 0
+
+	// NOTE: we can't use a map for this operation,
+	// because we need to know how many rules to skip.
+	// calculateInsertionIDs has an example of this.
+
+	// Loop through all policies
+	i := 0
+	newPriorities := make([]policyPriority, len(d.priorities)+1)
+	found := false
+	for _, currentPolicy := range d.priorities {
+		// If the policy we're going to enforce has been deployed AFTER the one
+		// we're checking, then it tkes precedence
+		if policyTime.After(currentPolicy.timestamp) && !found {
+			newPriorities[i] = policyPriority{
+				policyName: policyName,
+				timestamp:  policyTime.Time,
+			}
+			i++
+			found = true
+		}
+
+		// This is done whether the policy is inserted or not in i-th place
+		newPriorities[i] = currentPolicy
+		i++
+
+		// jump the rules
+		if !found {
+			iStartFrom += len(d.ingressRules[currentPolicy.policyName])
+			eStartFrom += len(d.egressRules[currentPolicy.policyName])
+		}
+	}
+
+	// If you looped through all of them and still not inserted this policy,
+	// it means it must be the last
+	if !found {
+		newPriorities[i] = policyPriority{
+			policyName: policyName,
+			timestamp:  policyTime.Time,
+		}
+	}
+
+	// Update the priorities
+	d.priorities = newPriorities
+
+	return int32(iStartFrom), int32(eStartFrom)
+}
+
+// removePolicyPriority removes the policy from the list of the priorities
+// and reformats it.
+func (d *FirewallManager) removePolicyPriority(policyName string) {
+	l := log.New().WithFields(log.Fields{"by": "FirewallManager-" + d.name, "method": "removePolicyPriority"})
+
+	// Loop through all policies to find it
+	i := 0
+	newPriorities := make([]policyPriority, len(d.priorities)-1)
+	for _, currentPolicy := range d.priorities {
+		if currentPolicy.policyName != policyName {
+			newPriorities[i] = currentPolicy
+			l.Infof("%s removed from policy priorities", policyName)
+		}
+		i++
+	}
+
+	// Update the priorities
+	d.priorities = newPriorities
 }
 
 // updateCounts updates the internal counts of policies types enforced,
