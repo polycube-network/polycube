@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
+	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
 	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
@@ -26,6 +27,8 @@ type PcnFirewall interface {
 	Unlink(pod *core_v1.Pod) (bool, int)
 	// LinkedPods returns a map of pods monitored by this firewall manager.
 	LinkedPods() map[k8s_types.UID]string
+	// IsPolicyEnforced returns true if this firewall enforces this policy
+	IsPolicyEnforced(name string) bool
 	// Name returns the name of this firewall manager
 	Name() string
 	// Selector returns the namespace and labels of the pods
@@ -51,6 +54,17 @@ type FirewallManager struct {
 	name string
 	// lock is firewall manager's main lock
 	lock sync.Mutex
+	// ingressDefaultAction is the default action for ingress
+	ingressDefaultAction string
+	// egressDefaultAction is the default action for egress
+	egressDefaultAction string
+	// ingressPoliciesCount is the count of ingress policies enforced
+	ingressPoliciesCount int
+	// egressPoliciesCount is the count of egress policies enforced
+	egressPoliciesCount int
+	// policyTypes is a map of policies types enforced.
+	// Used to know how the default action should be handled.
+	policyTypes map[string]string
 	// selector defines what kind of pods this firewall is monitoring
 	selector selector
 	// vPodsRange
@@ -82,8 +96,16 @@ func StartFirewall(API *k8sfirewall.FirewallApiService, podController pcn_contro
 			namespace: namespace,
 			labels:    labels,
 		},
+		// The counts
+		ingressPoliciesCount: 0,
+		egressPoliciesCount:  0,
+		// Policy types
+		policyTypes: map[string]string{},
 		// Linked pods
 		linkedPods: map[k8s_types.UID]string{},
+		// The default actions
+		ingressDefaultAction: pcn_types.ActionForward,
+		egressDefaultAction:  pcn_types.ActionForward,
 		// vPodsRange
 		vPodsRange: vPodsRange,
 	}
@@ -181,6 +203,14 @@ func (d *FirewallManager) EnforcePolicy(policyName, policyType string, ingress, 
 	ingressIDs, egressIDs := d.storeRules(policyName, "", ingress, egress)
 
 	//-------------------------------------
+	// Update default actions
+	//-------------------------------------
+
+	// update the policy type, so that later - if this policy is removed -
+	// we can enforce isolation mode correctly
+	d.policyTypes[policyName] = policyType
+	d.updateCounts("increase", policyType)
+	//-------------------------------------
 	// Inject the rules on each firewall
 	//-------------------------------------
 
@@ -197,6 +227,168 @@ func (d *FirewallManager) EnforcePolicy(policyName, policyType string, ingress, 
 		go d.injecter(name, ingressIDs, egressIDs, &injectWaiter, 0, 0)
 	}
 	injectWaiter.Wait()
+}
+
+// updateCounts updates the internal counts of policies types enforced,
+// making sure default actions are respected. This is just a convenient method
+// used to keep core methods (EnforcePolicy and CeasePolicy) as clean and
+// as readable as possible. When possible, this function is used in place of
+// increaseCount or decreaseCount, as it is preferrable to do it like this.
+func (d *FirewallManager) updateCounts(operation, policyType string) {
+	l := log.New().WithFields(log.Fields{"by": "FirewallManager-" + d.name, "method": "updateCounts(" + operation + "," + policyType + ")"})
+
+	// BRIEF: read increaseCounts and decreaseCounts for an explanation
+	// of when and why these functions are called.
+
+	//-------------------------------------
+	// Increase
+	//-------------------------------------
+
+	increase := func() {
+		directions := []string{}
+
+		// -- Increase the counts and append the directions to update accordingly.
+		if (policyType == "ingress" || policyType == "*") && d.increaseCount("ingress") {
+			directions = append(directions, "ingress")
+		}
+		if (policyType == "egress" || policyType == "*") && d.increaseCount("egress") {
+			directions = append(directions, "egress")
+		}
+
+		if len(directions) == 0 {
+			return
+		}
+
+		// -- Let's now update the default actions.
+		for _, ip := range d.linkedPods {
+			name := "fw-" + ip
+			for _, direction := range directions {
+				err := d.updateDefaultAction(name, direction, pcn_types.ActionDrop)
+				if err != nil {
+					l.Errorf("Could not update default action for firewall %s: %s", name, direction)
+				} else {
+					if _, err := d.applyRules(name, direction); err != nil {
+						l.Errorf("Could not apply rules for firewall %s: %s", name, direction)
+					}
+				}
+			}
+		}
+	}
+
+	//-------------------------------------
+	// Decrease
+	//-------------------------------------
+
+	decrease := func() {
+		directions := []string{}
+
+		// -- Decrease the counts and append the directions to update accordingly.
+		if (policyType == "ingress" || policyType == "*") && d.decreaseCount("ingress") {
+			directions = append(directions, "ingress")
+		}
+		if (policyType == "egress" || policyType == "*") && d.decreaseCount("egress") {
+			directions = append(directions, "egress")
+		}
+
+		if len(directions) == 0 {
+			return
+		}
+
+		// -- Let's now update the default actions.
+		for _, ip := range d.linkedPods {
+			name := "fw-" + ip
+			for _, direction := range directions {
+				err := d.updateDefaultAction(name, direction, pcn_types.ActionForward)
+				if err != nil {
+					l.Errorf("Could not update default action for firewall %s: %s", name, direction)
+				} else {
+					if _, err := d.applyRules(name, direction); err != nil {
+						l.Errorf("Could not apply rules for firewall %s: %s", name, direction)
+					}
+				}
+			}
+		}
+	}
+
+	switch operation {
+	case "increase":
+		increase()
+	case "decrease":
+		decrease()
+	}
+}
+
+// increaseCount increases the count of policies enforced
+// and changes the default action for the provided direction, if needed.
+// It returns TRUE if the corresponding action should be updated
+func (d *FirewallManager) increaseCount(which string) bool {
+	// BRIEF: this function is called when a new policy is deployed
+	// with the appropriate direction.
+	// If there are no policies, the default action is FORWARD.
+	// If there is at least one, then the default action should be updated to DROP
+	// because only what is allowed is forwarded. This function returns true when
+	// there is only one policy, because that's when we should actually switch
+	// to DROP (we were in FORWARD)
+
+	// Ingress
+	if which == "ingress" {
+		d.ingressPoliciesCount++
+
+		if d.ingressPoliciesCount > 0 {
+			d.ingressDefaultAction = pcn_types.ActionDrop
+			// If this is the *first* ingress policy, then switch to drop,
+			// otherwise no need to do that (it's already DROP)
+			if d.ingressPoliciesCount == 1 {
+				return true
+			}
+		}
+	}
+
+	// Egress
+	if which == "egress" {
+		d.egressPoliciesCount++
+
+		if d.egressPoliciesCount > 0 {
+			d.egressDefaultAction = pcn_types.ActionDrop
+
+			if d.egressPoliciesCount == 1 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// decreaseCount decreases the count of policies enforced and changes
+// the default action for the provided direction, if needed.
+// It returns TRUE if the corresponding action should be updated
+func (d *FirewallManager) decreaseCount(which string) bool {
+	// BRIEF: this function is called when a policy must be ceased.
+	// If - after ceasing it - we have no policies enforced,
+	// then the default action must be FORWARD.
+	// If there is at least one, then the default action should remain DROP
+	// This function returns true when there are no policies enforced,
+	// because that's when we should actually switch to FORWARD (we were in DROP)
+
+	if which == "ingress" {
+		d.ingressPoliciesCount--
+		// Return to default=FORWARD only if there are no policies anymore
+		// after removing this
+		if d.ingressPoliciesCount == 0 {
+			d.ingressDefaultAction = pcn_types.ActionForward
+			return true
+		}
+	}
+
+	if which == "egress" {
+		if d.egressPoliciesCount--; d.egressPoliciesCount == 0 {
+			d.egressDefaultAction = pcn_types.ActionForward
+			return true
+		}
+	}
+
+	return false
 }
 
 // storeRules stores rules in memory according to their policy
@@ -315,6 +507,15 @@ func (d *FirewallManager) injectRules(firewall, direction string, rules []k8sfir
 	}
 
 	return nil
+}
+
+// IsPolicyEnforced returns true if this firewall enforces this policy
+func (d *FirewallManager) IsPolicyEnforced(name string) bool {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	_, exists := d.policyTypes[name]
+	return exists
 }
 
 // Selector returns the namespace and labels of the pods
