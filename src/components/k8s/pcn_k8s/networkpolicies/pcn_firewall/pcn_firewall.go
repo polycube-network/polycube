@@ -154,6 +154,59 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 	}
 
 	//-------------------------------------
+	// Extract the rules
+	//-------------------------------------
+	// We are going to get all rules regardless of the policy they belong to
+	ingressRules := []k8sfirewall.ChainRule{}
+	egressRules := []k8sfirewall.ChainRule{}
+
+	if len(d.ingressRules) > 0 || len(d.egressRules) > 0 {
+		// -- Ingress
+		for _, rules := range d.ingressRules {
+			ingressRules = append(ingressRules, rules...)
+		}
+
+		// -- Egress
+		for _, rules := range d.egressRules {
+			egressRules = append(egressRules, rules...)
+		}
+	}
+
+	//-------------------------------------
+	// Inject rules and change default actions
+	//-------------------------------------
+	if len(ingressRules) > 0 || len(egressRules) > 0 {
+		if err := d.injecter(name, ingressRules, egressRules, nil, 0, 0); err != nil {
+			// injecter fails only if pod's firewall is not ok (it is dying
+			// or crashed or not found) so there's no point in going on.
+			l.Warningf("Injecter encountered an error upon linking the pod: %s. Will stop here.", err)
+			return false
+		}
+	}
+
+	// -- ingress
+	err := d.updateDefaultAction(name, "ingress", d.ingressDefaultAction)
+	if err != nil {
+		l.Errorf("Could not update the default ingress action: %s", err)
+	} else {
+		_, err := d.applyRules(name, "ingress")
+		if err != nil {
+			l.Errorf("Could not apply ingress rules: %s", err)
+		}
+	}
+
+	// -- egress
+	err = d.updateDefaultAction(name, "egress", d.egressDefaultAction)
+	if err != nil {
+		l.Errorf("Could not update the default egress action: %s", err)
+	} else {
+		_, err := d.applyRules(name, "egress")
+		if err != nil {
+			l.Errorf("Could not apply egress rules: %s", err)
+		}
+	}
+
+	//-------------------------------------
 	// Finally, link it
 	//-------------------------------------
 	// From now on, when this firewall manager will react to events,
