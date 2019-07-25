@@ -257,7 +257,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 	ingress, egress, policyType := manager.k8sPolicyParser.ParsePolicyTypes(&spec)
 
 	var parsed pcn_types.ParsedRules
-
+	fwActions := []pcn_types.FirewallAction{}
 	parsed = manager.k8sPolicyParser.ParseRules(ingress, egress, policy.Namespace)
 
 	// Firewall is transparent: we need to reverse the directions
@@ -277,7 +277,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 	// -- To a single firewall manager
 	if len(fwName) > 0 {
 		fw := manager.localFirewalls[fwName]
-		fw.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress)
+		fw.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress, fwActions)
 		return
 	}
 
@@ -311,7 +311,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 		go func(fw string) {
 			defer waiter.Done()
 			fwManager := manager.localFirewalls[fw]
-			fwManager.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress)
+			fwManager.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress, fwActions)
 		}(currentFwName)
 	}
 
