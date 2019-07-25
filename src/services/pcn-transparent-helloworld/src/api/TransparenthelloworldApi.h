@@ -19,7 +19,7 @@
 
 #pragma once
 
-#define POLYCUBE_SERVICE_NAME "transparenthelloworld"
+#define POLYCUBE_SERVICE_NAME "trhelloworld"
 
 
 #include "polycube/services/response.h"
