@@ -216,7 +216,6 @@ func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) erro
 		if err != nil {
 			return err
 		}
-		l.Infof("Retrieved policy %s in its current state", policy.Name)
 	}
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*networking_v1.NetworkPolicy)
@@ -225,7 +224,20 @@ func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) erro
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
-		l.Infof("Retrieved policy %s in its previous state", prev.Name)
+	}
+
+	//-------------------------------------
+	//	Dispatch the event
+	//-------------------------------------
+
+	switch event.Type {
+
+	case pcn_types.New:
+		npc.dispatchers.new.Dispatch(policy, nil)
+	case pcn_types.Update:
+		npc.dispatchers.update.Dispatch(policy, prev)
+	case pcn_types.Delete:
+		npc.dispatchers.delete.Dispatch(nil, policy)
 	}
 
 	return nil
@@ -283,4 +295,83 @@ func (npc *K8sNetworkPolicyController) Stop() {
 	npc.dispatchers.delete.CleanUp()
 
 	l.Infoln("K8s network policy controller exited.")
+}
+
+// Subscribe executes the function consumer when the event event is triggered.
+// It returns an error if the event type does not exist.
+// It returns a function to call when you want to stop tracking that event.
+func (npc *K8sNetworkPolicyController) Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy, *networking_v1.NetworkPolicy)) (func(), error) {
+
+	//	Prepare the function to be executed
+	consumerFunc := (func(current, prev interface{}) {
+		//------------------------------------------
+		// Init
+		//------------------------------------------
+		var currentState *networking_v1.NetworkPolicy
+		var prevState *networking_v1.NetworkPolicy
+
+		// First, cast the item to a pod, so that the consumer will receive exactly
+		// what it wants...
+		if current != nil {
+			currentState = current.(*networking_v1.NetworkPolicy)
+		}
+		if prev != nil {
+			prevState = prev.(*networking_v1.NetworkPolicy)
+		}
+
+		//------------------------------------------
+		// Execute
+		//------------------------------------------
+
+		// Then, execute the consumer in a separate thread.
+		// NOTE: this step can also be done in the event dispatcher,
+		// but I want them to be oblivious of the type they're handling.
+		// This way, the event dispatcher is as general as possible.
+		// (also, it is not their concern to cast objects.)
+		go consumer(currentState, prevState)
+	})
+
+	//	What event are you subscribing to?
+	switch event {
+
+	//-------------------------------------
+	//	New event
+	//-------------------------------------
+
+	case pcn_types.New:
+		id := npc.dispatchers.new.Add(consumerFunc)
+
+		return func() {
+			npc.dispatchers.new.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Update event
+	//-------------------------------------
+
+	case pcn_types.Update:
+		id := npc.dispatchers.update.Add(consumerFunc)
+
+		return func() {
+			npc.dispatchers.update.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Delete Event
+	//-------------------------------------
+
+	case pcn_types.Delete:
+		id := npc.dispatchers.delete.Add(consumerFunc)
+
+		return func() {
+			npc.dispatchers.delete.Remove(id)
+		}, nil
+
+	//-------------------------------------
+	//	Undefined event
+	//-------------------------------------
+
+	default:
+		return nil, fmt.Errorf("Undefined event type")
+	}
 }
