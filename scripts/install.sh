@@ -138,16 +138,16 @@ fi
 
 echo "Install polycube"
 cd $DIR/..
-if [ "$INSTALL_CLEAN_POLYCUBE" == true ] ; then
+if [ "$BUILD_CLEAN" == true ] ; then
   $SUDO rm -rf build
-#else
-  # The above commands are executed only in case of a manual install;
-  #   Jenkins runs this script with "$INSTALL_CLEAN_POLYCUBE" = true
-  # The above commands are useful in case you are re-running this
-  #   script on an existing install, i.e., update source code and
-  #   all the submodules
-  #git pull
-  #git submodule update --init --recursive
+fi
+
+if [ "$JENKINS_RUNNING" != true ] ; then
+  # Commands below are executed only in case of a manual install;
+  # These are useful in case you are re-running this script on an
+  # existing install, i.e., update source code and all the submodules
+  git pull
+  git submodule update --init --recursive
 fi
 
 mkdir -p build && cd build

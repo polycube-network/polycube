@@ -127,7 +127,7 @@ pipeline {
             }
             steps {
                 echo 'Start building polycube on testing machine'
-                sh 'export INSTALL_CLEAN_POLYCUBE=true && ./scripts/install.sh'
+                sh 'export BUILD_CLEAN=true && export JENKINS_RUNNING=true && ./scripts/install.sh'
 
                 echo 'Start testing polycube services'
                 sh 'cd tests/ && ./run-tests.sh'
