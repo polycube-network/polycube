@@ -28,13 +28,15 @@ namespace polycube {
 namespace service {
 namespace utils {
 
-/* ip (a.b.c.d) to string and viceversa in big endian */
-uint32_t ip_string_to_be_uint(const std::string &ip);
-std::string be_uint_to_ip_string(uint32_t ip);
+/* ip (a.b.c.d) to string and viceversa
+ * Number is in network byte order (nbo), i.e., big endian */
+uint32_t ip_string_to_nbo_uint(const std::string &ip);
+std::string nbo_uint_to_ip_string(uint32_t ip);
 
-/* mac (aa:bb:cc:dd:ee:ff) to string and vicersa in big endian */
-uint64_t mac_string_to_be_uint(const std::string &mac);
-std::string be_uint_to_mac_string(uint64_t mac);
+/* mac (aa:bb:cc:dd:ee:ff) to string and vicersa
+ * Number is in network byte order (nbo), i.e., big endian */
+uint64_t mac_string_to_nbo_uint(const std::string &mac);
+std::string nbo_uint_to_mac_string(uint64_t mac);
 
 /* transforms an ipv4 dotted representation into a hexadecimal big endian */
 /* deprecated */

@@ -541,11 +541,11 @@ std::vector<std::shared_ptr<SessionTable>> Iptables::getSessionTableList() {
     auto value = connection.second;
 
     if (value.ipRev) {
-      conf.setSrc(utils::be_uint_to_ip_string(key.dstIp));
-      conf.setDst(utils::be_uint_to_ip_string(key.srcIp));
+      conf.setSrc(utils::nbo_uint_to_ip_string(key.dstIp));
+      conf.setDst(utils::nbo_uint_to_ip_string(key.srcIp));
     } else {
-      conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
-      conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
+      conf.setSrc(utils::nbo_uint_to_ip_string(key.srcIp));
+      conf.setDst(utils::nbo_uint_to_ip_string(key.dstIp));
     }
 
     conf.setL4proto(ChainRule::protocolFromIntToString(key.l4proto));

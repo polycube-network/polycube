@@ -87,7 +87,7 @@ void Backend::addPool(const uint32_t &id, const BackendPoolJsonObject &conf) {
     logger()->info("mac: {0}", conf.getMac());
 
     config_table.set(0, pools_.size());
-    config_table.set(id, utils::mac_string_to_be_uint(conf.getMac()));
+    config_table.set(id, utils::mac_string_to_nbo_uint(conf.getMac()));
   } catch (std::exception &e) {
     logger()->error("[BackendPool] Error while creating the backend pool {0}",
                     id);

@@ -83,7 +83,7 @@ RuleMasqueradeEnableOutputJsonObject RuleMasquerade::enable() {
   uint32_t ip = 0;
 
   try {
-    ip = utils::ip_string_to_be_uint(
+    ip = utils::ip_string_to_nbo_uint(
                        parent_.getParent().getExternalIpString());
   } catch(...) {
     output.setResult(false);

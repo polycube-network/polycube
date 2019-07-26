@@ -37,7 +37,7 @@ Nat::Nat(const std::string name, const NatJsonObject &conf)
     logger()->debug("parent IP has been updated to {}", value);
     external_ip_ = value;
     if (rule_->getMasquerade()->getEnabled()) {
-      rule_->getMasquerade()->inject(utils::ip_string_to_be_uint(external_ip_));
+      rule_->getMasquerade()->inject(utils::ip_string_to_nbo_uint(external_ip_));
     }
   };
   subscribe_parent_parameter("ip", cb);
@@ -160,8 +160,8 @@ std::shared_ptr<NattingTable> Nat::getNattingTable(
   try {
     auto table = get_hash_table<st_k, st_v>("egress_session_table");
     st_k map_key{
-        .src_ip = utils::ip_string_to_be_uint(internalSrc),
-        .dst_ip = utils::ip_string_to_be_uint(internalDst),
+        .src_ip = utils::ip_string_to_nbo_uint(internalSrc),
+        .dst_ip = utils::ip_string_to_nbo_uint(internalDst),
         .src_port = htons(internalSport),
         .dst_port = htons(internalDport),
         .proto = uint8_t(std::stol(proto)),
@@ -169,7 +169,7 @@ std::shared_ptr<NattingTable> Nat::getNattingTable(
 
     st_v value = table.get(map_key);
 
-    std::string newIp = utils::be_uint_to_ip_string(value.new_ip);
+    std::string newIp = utils::nbo_uint_to_ip_string(value.new_ip);
     uint16_t newPort = value.new_port;
     uint8_t originatingRule = value.originating_rule_type;
     ;
@@ -192,10 +192,10 @@ std::vector<std::shared_ptr<NattingTable>> Nat::getNattingTableList() {
       auto value = pair.second;
 
       auto entry = std::make_shared<NattingTable>(
-          *this, utils::be_uint_to_ip_string(key.src_ip),
-          utils::be_uint_to_ip_string(key.dst_ip), ntohs(key.src_port),
+          *this, utils::nbo_uint_to_ip_string(key.src_ip),
+          utils::nbo_uint_to_ip_string(key.dst_ip), ntohs(key.src_port),
           ntohs(key.dst_port), key.proto,
-          utils::be_uint_to_ip_string(value.new_ip), ntohs(value.new_port),
+          utils::nbo_uint_to_ip_string(value.new_ip), ntohs(value.new_port),
           value.originating_rule_type);
 
       entries.push_back(entry);

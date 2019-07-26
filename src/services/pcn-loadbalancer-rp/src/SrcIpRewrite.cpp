@@ -75,12 +75,12 @@ void SrcIpRewrite::update(const SrcIpRewriteJsonObject &conf) {
 
   src_ip_r_key key{
       .netmask_len = uint32_t(std::stoi(old_mask_len)),
-      .network = utils::ip_string_to_be_uint(old_ip_net),
+      .network = utils::ip_string_to_nbo_uint(old_ip_net),
   };
 
   src_ip_r_value value{
       .sense = FROM_BACKEND,
-      .net = utils::ip_string_to_be_uint(new_ip_net),
+      .net = utils::ip_string_to_nbo_uint(new_ip_net),
       .mask = new_mask_dec,
   };
 
@@ -89,12 +89,12 @@ void SrcIpRewrite::update(const SrcIpRewriteJsonObject &conf) {
   // create entry for packets comming from the service
   src_ip_r_key key0{
       .netmask_len = uint32_t(std::stoi(new_mask_len)),
-      .network = utils::ip_string_to_be_uint(new_ip_net),
+      .network = utils::ip_string_to_nbo_uint(new_ip_net),
   };
 
   src_ip_r_value value0{
       .sense = FROM_BACKEND,  // TODO: is this value right?
-      .net = utils::ip_string_to_be_uint(old_ip_net),
+      .net = utils::ip_string_to_nbo_uint(old_ip_net),
       .mask = old_mask_dec,
   };
 
