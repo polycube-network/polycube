@@ -6,7 +6,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Start building polycube'
-                sh 'cd ${POLYCUBE_WORKSPACE} && ./start.sh ${WORKSPACE}'
+                sh 'cd ${POLYCUBE_WORKSPACE} && export JENKINS_RUNNING=true && ./start.sh ${WORKSPACE}'
             }
         }
     }
