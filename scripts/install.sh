@@ -28,14 +28,16 @@ function success_message {
 trap error_message ERR
 
 function show_help() {
-usage="$(basename "$0") [mode]
+usage="$(basename "$0") [option]
 Polycube installation script
 
-mode:
+option:
   pcn-iptables: install only pcn-iptables service and related components
-  pcn-k8s: install only pcn-k8s (Only to be used with docker build)
+  pcn-k8s: install only pcn-k8s (only to be used with docker build)
+  update: updates the source code of polycube before *default* install
   default: install all available polycube services"
 echo "$usage"
+echo
 }
 
 while getopts h option; do
@@ -46,13 +48,18 @@ while getopts h option; do
   esac
 done
 
+echo "Use 'install.sh -h' to show advanced installation options."
+
+
 MODE=$1
 
 [ -z ${SUDO+x} ] && SUDO='sudo'
 [ -z ${WORKDIR+x} ] && WORKDIR=$HOME/dev
 [ -z ${MODE+x} ] && MODE='default'
 
+# print bash commands and their arguments as they are executed
 set -x
+# exit immediately if a command exits with a non-zero status
 set -e
 
 # script's path
@@ -142,10 +149,11 @@ if [ "$BUILD_CLEAN" == true ] ; then
   $SUDO rm -rf build
 fi
 
-if [ "$JENKINS_RUNNING" != true ] ; then
-  # Commands below are executed only in case of a manual install;
-  # These are useful in case you are re-running this script on an
-  # existing install, i.e., update source code and all the submodules
+if [ "$MODE" == "update" ] ; then
+  echo "Update to the latest polycube source code"
+  # Commands below update also the code in this repository and
+  # all the submodules, so that you install the most recent code
+  # from the current branch (default: master)
   git pull
   git submodule update --init --recursive
 fi
