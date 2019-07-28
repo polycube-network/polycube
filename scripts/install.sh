@@ -33,9 +33,11 @@ Polycube installation script
 
 mode:
   pcn-iptables: install only pcn-iptables service and related components
-  pcn-k8s: install only pcn-k8s (Only to be used with docker build)
+  pcn-k8s: install only pcn-k8s (only to be used with docker build)
+  update: updates the source code of polycube before *default* install
   default: install all available polycube services"
 echo "$usage"
+echo
 }
 
 while getopts h option; do
@@ -43,8 +45,10 @@ while getopts h option; do
  h|\?)
   show_help
   exit 0
-  esac
+ esac
 done
+
+echo "Use 'install.sh -h' to show advanced installation options."
 
 MODE=$1
 
@@ -52,7 +56,9 @@ MODE=$1
 [ -z ${WORKDIR+x} ] && WORKDIR=$HOME/dev
 [ -z ${MODE+x} ] && MODE='default'
 
+# print bash commands and their arguments as they are executed
 set -x
+# exit immediately if a command exits with a non-zero status
 set -e
 
 # script's path
@@ -140,14 +146,15 @@ echo "Install polycube"
 cd $DIR/..
 if [ "$INSTALL_CLEAN_POLYCUBE" == true ] ; then
   $SUDO rm -rf build
-#else
-  # The above commands are executed only in case of a manual install;
-  #   Jenkins runs this script with "$INSTALL_CLEAN_POLYCUBE" = true
-  # The above commands are useful in case you are re-running this
-  #   script on an existing install, i.e., update source code and
-  #   all the submodules
-  #git pull
-  #git submodule update --init --recursive
+fi
+
+if [ "$MODE" == "update" ] ; then
+  echo "Update to the latest polycube source code"
+  # Commands below update also the code in this repository and
+  # all the submodules, so that you install the most recent code
+  # from the current branch (default: master)
+  git pull
+  git submodule update --init --recursive
 fi
 
 mkdir -p build && cd build
