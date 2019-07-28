@@ -127,7 +127,7 @@ pipeline {
             }
             steps {
                 echo 'Start building polycube on testing machine'
-                sh 'export BUILD_CLEAN=true && export JENKINS_RUNNING=true && ./scripts/install.sh pcn-iptables'
+                sh 'export BUILD_CLEAN=true && ./scripts/install.sh pcn-iptables'
 
                 echo 'Start testing polycube services'
                 sh 'cd tests/ && ./run-tests-iptables.sh'
