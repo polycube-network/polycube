@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 ARG MODE=default
 RUN --mount=target=/polycube cp -r /polycube /tmp/polycube && \
 cd /tmp/polycube && \
-SUDO="" WORKDIR="/tmp/dev" ./scripts/install.sh $MODE && \
+SUDO="" USER="root" WORKDIR="/tmp/dev" ./scripts/install.sh $MODE && \
 # install pcn-kubernetes only components
 if [ "$MODE" = "pcn-k8s" ] ; then \
     cd /tmp && mkdir -p tmp && cd tmp && \
