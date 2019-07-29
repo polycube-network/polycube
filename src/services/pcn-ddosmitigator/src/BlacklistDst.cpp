@@ -32,7 +32,7 @@ BlacklistDst::~BlacklistDst() {
       parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
   logger()->debug("BlacklistDst Destructor. ip {0} ", ip_);
   try {
-    dstblacklist.remove(utils::ip_string_to_be_uint(ip_));
+    dstblacklist.remove(utils::ip_string_to_nbo_uint(ip_));
   } catch (...) {
   }
 }
@@ -71,7 +71,7 @@ uint64_t BlacklistDst::getDropPkts() {
   try {
     auto dstblacklist =
         parent_.get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
-    auto values = dstblacklist.get(utils::ip_string_to_be_uint(ip_));
+    auto values = dstblacklist.get(utils::ip_string_to_nbo_uint(ip_));
 
     pkts = std::accumulate(values.begin(), values.end(), pkts);
 

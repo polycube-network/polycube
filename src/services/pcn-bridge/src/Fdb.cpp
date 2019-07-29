@@ -58,7 +58,7 @@ std::shared_ptr<FdbEntry> Fdb::getEntry(const uint16_t &vlan,
   auto fwdtable = parent_.get_hash_table<fwd_key, fwd_entry>("fwdtable");
   fwd_key key{
       .vlan = vlan,
-      .mac = polycube::service::utils::mac_string_to_be_uint(mac),
+      .mac = polycube::service::utils::mac_string_to_nbo_uint(mac),
   };
 
   try {
@@ -136,7 +136,7 @@ void Fdb::addEntry(const uint16_t &vlan, const std::string &mac,
 
   fwd_key key{
       .vlan = vlan,
-      .mac = polycube::service::utils::mac_string_to_be_uint(mac),
+      .mac = polycube::service::utils::mac_string_to_nbo_uint(mac),
   };
 
   fwd_entry value{
@@ -181,7 +181,7 @@ void Fdb::delEntry(const uint16_t &vlan, const std::string &mac) {
 
   fwd_key key{
       .vlan = vlan,
-      .mac = polycube::service::utils::mac_string_to_be_uint(mac),
+      .mac = polycube::service::utils::mac_string_to_nbo_uint(mac),
   };
 
   try {

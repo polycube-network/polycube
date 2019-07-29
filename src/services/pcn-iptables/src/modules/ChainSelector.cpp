@@ -100,7 +100,7 @@ void Iptables::ChainSelector::updateLocalIps() {
       iptables_.logger()->info("ip: {0} was not present. ++ ADDING",
                                new_ip.first);
       try {
-        uint32_t ip_be = polycube::service::utils::ip_string_to_be_uint(
+        uint32_t ip_be = polycube::service::utils::ip_string_to_nbo_uint(
             removeNetFromIp(new_ip.first));
         auto localip_table =
             iptables_.get_hash_table<uint32_t, int>("localip", getIndex());
@@ -117,7 +117,7 @@ void Iptables::ChainSelector::updateLocalIps() {
       iptables_.logger()->info("ip: {0} is not present. -- REMOVING",
                                (*old_ip).first);
       try {
-        uint32_t ip_be = polycube::service::utils::ip_string_to_be_uint(
+        uint32_t ip_be = polycube::service::utils::ip_string_to_nbo_uint(
             removeNetFromIp((*old_ip).first));
         auto localipTable =
             iptables_.get_hash_table<uint32_t, int>("localip", getIndex());

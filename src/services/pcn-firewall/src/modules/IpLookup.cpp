@@ -76,7 +76,7 @@ void Firewall::IpLookup::updateTableValue(uint8_t netmask, std::string ip,
   tableName += "Trie";
 
   lpm_k key{
-      .netmask_len = netmask, .ip = utils::ip_string_to_be_uint(ip),
+      .netmask_len = netmask, .ip = utils::ip_string_to_nbo_uint(ip),
   };
 
   auto table = firewall.get_raw_table(tableName, index, getProgramType());

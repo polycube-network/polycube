@@ -190,7 +190,7 @@ void Ddosmitigator::addBlacklistSrc(const std::string &ip,
 
     auto srcblacklist =
         get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
-    srcblacklist.set(utils::ip_string_to_be_uint(ip), 0);
+    srcblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
   } catch (...) {
     throw std::runtime_error("unable to add element to map");
   }
@@ -277,7 +277,7 @@ void Ddosmitigator::addBlacklistDst(const std::string &ip,
 
     auto dstblacklist =
         get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
-    dstblacklist.set(utils::ip_string_to_be_uint(ip), 0);
+    dstblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
   } catch (...) {
     throw std::runtime_error("unable to add element to map");
   }

@@ -123,7 +123,7 @@ void Service::removeServiceFromKernelMap() {
 
   for (uint16_t index = 0; index < backend_size_ * BACKEND_REPLICAS; index++) {
     vip service_key{
-        .ip = utils::ip_string_to_be_uint(getVip()),
+        .ip = utils::ip_string_to_nbo_uint(getVip()),
         .port = htons(getVport()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
         .index = index,
@@ -176,7 +176,7 @@ void Service::updateKernelServiceMap(
   uint16_t index = 0;
 
   vip service_key{
-      .ip = utils::ip_string_to_be_uint(getVip()),
+      .ip = utils::ip_string_to_nbo_uint(getVip()),
       .port = htons(getVport()),
       .proto = htons(Service::convertProtoToNumber(getProto())),
       .index = index,
@@ -186,7 +186,7 @@ void Service::updateKernelServiceMap(
   // pool.
   // In doesn't indicate a real backend
   backend service_value{
-      .ip = utils::ip_string_to_be_uint(getVip()),
+      .ip = utils::ip_string_to_nbo_uint(getVip()),
       .port = uint16_t(consistent_array.size()),
       .proto = 0,
   };
@@ -199,14 +199,14 @@ void Service::updateKernelServiceMap(
     auto bck = getBackend(backend_ip);
 
     vip key{
-        .ip = utils::ip_string_to_be_uint(getVip()),
+        .ip = utils::ip_string_to_nbo_uint(getVip()),
         .port = htons(getVport()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
         .index = index,
     };
 
     backend value{
-        .ip = utils::ip_string_to_be_uint(bck->getIp()),
+        .ip = utils::ip_string_to_nbo_uint(bck->getIp()),
         .port = htons(bck->getPort()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
     };
