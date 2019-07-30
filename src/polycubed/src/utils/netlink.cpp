@@ -983,7 +983,7 @@ std::string Netlink::get_iface_mac(const std::string &iface) {
 
   uint64_t mac_;
   memcpy(&mac_, mac, sizeof mac_);
-  return polycube::service::utils::be_uint_to_mac_string(mac_);
+  return polycube::service::utils::nbo_uint_to_mac_string(mac_);
 }
 
 void Netlink::set_iface_cidr(const std::string &iface,

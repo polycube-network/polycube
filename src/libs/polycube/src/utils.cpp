@@ -40,7 +40,7 @@ namespace service {
 namespace utils {
 
 // new set of functions
-uint32_t ip_string_to_be_uint(const std::string &ip) {
+uint32_t ip_string_to_nbo_uint(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
   int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
@@ -52,14 +52,14 @@ uint32_t ip_string_to_be_uint(const std::string &ip) {
          uint32_t(a[0]);
 }
 
-std::string be_uint_to_ip_string(uint32_t ip) {
+std::string nbo_uint_to_ip_string(uint32_t ip) {
   struct in_addr ip_addr;
   ip_addr.s_addr = ip;
   return std::string(inet_ntoa(ip_addr));
 }
 
 /* https://stackoverflow.com/a/7326381 */
-uint64_t mac_string_to_be_uint(const std::string &mac) {
+uint64_t mac_string_to_nbo_uint(const std::string &mac) {
   uint8_t a[6];
   int last = -1;
   int rc = sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n", a + 0, a + 1,
@@ -71,7 +71,7 @@ uint64_t mac_string_to_be_uint(const std::string &mac) {
          uint64_t(a[2]) << 16 | uint64_t(a[1]) << 8 | uint64_t(a[0]);
 }
 
-std::string be_uint_to_mac_string(uint64_t mac) {
+std::string nbo_uint_to_mac_string(uint64_t mac) {
   uint8_t a[6];
   for (int i = 0; i < 6; i++) {
     a[i] = (mac >> i * 8) & 0xFF;

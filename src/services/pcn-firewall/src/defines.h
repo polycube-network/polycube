@@ -68,7 +68,7 @@ struct IpAddr {
   uint8_t netmask;
   uint32_t ruleId;
   std::string toString() const {
-    return utils::be_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
+    return utils::nbo_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
   }
   void fromString(std::string ipnetmask) {
     std::string ip_;
@@ -86,7 +86,7 @@ struct IpAddr {
       throw std::runtime_error("Netmask can't be bigger than 32");
 
     ip_ = ipnetmask.substr(0, found);
-    ip = utils::ip_string_to_be_uint(ip_);
+    ip = utils::ip_string_to_nbo_uint(ip_);
     netmask = netmask_;
   }
   bool operator<(const IpAddr &that) const {

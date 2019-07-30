@@ -237,13 +237,13 @@ void Router::delRouteList() {
 }
 
 std::shared_ptr<ArpTable> Router::getArpTable(const std::string &address) {
-  uint32_t ip_key = ip_string_to_be_uint(address);
+  uint32_t ip_key = ip_string_to_nbo_uint(address);
 
   try {
     auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
 
     arp_entry entry = arp_table.get(ip_key);
-    std::string mac = be_uint_to_mac_string(entry.mac);
+    std::string mac = nbo_uint_to_mac_string(entry.mac);
     auto port = get_port(entry.port);
 
     return std::make_shared<ArpTable>(
@@ -267,8 +267,8 @@ std::vector<std::shared_ptr<ArpTable>> Router::getArpTableList() {
       auto key = entry.first;
       auto value = entry.second;
 
-      std::string ip = be_uint_to_ip_string(key);
-      std::string mac = be_uint_to_mac_string(value.mac);
+      std::string ip = nbo_uint_to_ip_string(key);
+      std::string mac = nbo_uint_to_mac_string(value.mac);
 
       auto port = get_port(value.port);
 
@@ -291,12 +291,12 @@ void Router::addArpTable(const std::string &address,
   logger()->debug("Creating ARP entry [ip: {0} - mac: {1} - interface: {2}",
                   address, conf.getMac(), conf.getInterface());
 
-  uint64_t mac = mac_string_to_be_uint(conf.getMac());
+  uint64_t mac = mac_string_to_nbo_uint(conf.getMac());
   uint32_t index = get_port(conf.getInterface())->index();
 
   // FIXME: Check if entry already exists?
   auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
-  arp_table.set(ip_string_to_be_uint(address),
+  arp_table.set(ip_string_to_nbo_uint(address),
                arp_entry{.mac = mac, .port = index});
 }
 
@@ -324,7 +324,7 @@ void Router::delArpTable(const std::string &address) {
     throw std::runtime_error("ARP table entry not found");
   }
 
-  uint32_t key = ip_string_to_be_uint(address);
+  uint32_t key = ip_string_to_nbo_uint(address);
 
   auto arp_table = get_hash_table<uint32_t, arp_entry>("arp_table");
 
@@ -423,12 +423,12 @@ void Router::add_active_nexthop_in_ebpf_map(const std::string &network,
 
   rt_k key{
       .netmask_len = get_netmask_length(netmask_route),
-      .network = ip_string_to_be_uint(ip_route),
+      .network = ip_string_to_nbo_uint(ip_route),
   };
 
   rt_v value{
       .port = uint32_t(index),
-      .nexthop = ip_string_to_be_uint(nexthop),
+      .nexthop = ip_string_to_nbo_uint(nexthop),
       .type = TYPE_NOLOCALINTERFACE,
   };
 
@@ -485,13 +485,13 @@ void Router::remove_all_routes() {
       split_ip_and_prefix(network, ip_route, netmask_route);
       try {
         rt_k key{
-            .netmask_len = ip_string_to_be_uint(netmask_route),
-            .network = ip_string_to_be_uint(ip_route),
+            .netmask_len = ip_string_to_nbo_uint(netmask_route),
+            .network = ip_string_to_nbo_uint(ip_route),
         };
 
         rt_v value = routing_table.get(key);
 
-        if (value.nexthop == ip_string_to_be_uint(nexthop)) {
+        if (value.nexthop == ip_string_to_nbo_uint(nexthop)) {
           //  the nexthop in the fast path corresponds to that just removed in
           //  the control path
           //  then, the entry in the fast path is removed
@@ -531,7 +531,7 @@ void Router::add_local_route(const std::string &interface_ip,
 
   rt_k key{
       .netmask_len = 32, /* /32 -> 255.255.255.255 */
-      .network = ip_string_to_be_uint(ip_route),
+      .network = ip_string_to_nbo_uint(ip_route),
   };
 
   rt_v value{
@@ -552,9 +552,9 @@ void Router::add_local_route(const std::string &interface_ip,
   */
 
   // Add the route in the fast path
-  uint32_t networkDec = ip_string_to_be_uint(ip_route) &
-                        ip_string_to_be_uint(netmask_route);
-  std::string network = be_uint_to_ip_string(networkDec);
+  uint32_t networkDec = ip_string_to_nbo_uint(ip_route) &
+                        ip_string_to_nbo_uint(netmask_route);
+  std::string network = nbo_uint_to_ip_string(networkDec);
   rt_k key2{
       .netmask_len = get_netmask_length(netmask_route),
       .network = networkDec,
@@ -670,7 +670,7 @@ void Router::remove_local_route(const std::string &interface_ip,
 
   struct rt_k key {
     .netmask_len = 32, /* /32 -> 255.255.255.255 */
-    .network = ip_string_to_be_uint(ip_route),
+    .network = ip_string_to_nbo_uint(ip_route),
   };
 
   routing_table.remove(key);
@@ -689,11 +689,11 @@ void Router::find_new_active_nexthop(const std::string &network,
 
   rt_k key{
       .netmask_len = get_netmask_length(netmask_route),
-      .network = ip_string_to_be_uint(ip_route),
+      .network = ip_string_to_nbo_uint(ip_route),
   };
   rt_v value = routing_table.get(key);
 
-  if (value.nexthop == ip_string_to_be_uint(ip_route)) {
+  if (value.nexthop == ip_string_to_nbo_uint(ip_route)) {
     //  the nexthop in the fast path corresponds to that just removed in the
     //  control path
     //  then, the entry in the fast path is removed if no other nexthop is
@@ -744,7 +744,7 @@ void Router::find_new_active_nexthop(const std::string &network,
       int port_id =
           get_port(search_interface_from_nexthop(new_nexthop))->index();
       routing_table.set(key, rt_v{.port = uint32_t(port_id),
-                                  .nexthop = ip_string_to_be_uint(new_nexthop),
+                                  .nexthop = ip_string_to_nbo_uint(new_nexthop),
                                   .type = TYPE_NOLOCALINTERFACE});
     }
   } else
@@ -1054,13 +1054,13 @@ void Router::add_linux_route(const std::string &network,
 
   rt_k key{
       .netmask_len = prefix_,
-      .network = ip_string_to_be_uint(network),
+      .network = ip_string_to_nbo_uint(network),
   };
 
   try {
     rt_v value1 = routing_table.get(key);
 
-    if (value1.nexthop == ip_string_to_be_uint(nexthop)) {
+    if (value1.nexthop == ip_string_to_nbo_uint(nexthop)) {
       logger()->trace("This route already exists, it is not added");
       return;
     } else
@@ -1072,7 +1072,7 @@ void Router::add_linux_route(const std::string &network,
   // add route because not found in the data path
   rt_v value{
       .port = uint32_t(port_index),
-      .nexthop = ip_string_to_be_uint(nexthop),
+      .nexthop = ip_string_to_nbo_uint(nexthop),
       .type = TYPE_NOLOCALINTERFACE,
   };
   routing_table.set(key, value);
@@ -1100,13 +1100,13 @@ void Router::remove_linux_route(const std::string &network,
 
   rt_k key{
     .netmask_len = prefix_,
-    .network = ip_string_to_be_uint(network),
+    .network = ip_string_to_nbo_uint(network),
   };
 
   try {
     rt_v value = routing_table.get(key);
 
-    if (value.nexthop == ip_string_to_be_uint(nexthop)) {
+    if (value.nexthop == ip_string_to_nbo_uint(nexthop)) {
       routing_table.remove(key);
     } else {
       logger()->trace("Route not found in the data path");

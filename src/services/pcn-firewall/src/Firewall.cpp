@@ -238,8 +238,8 @@ std::vector<std::shared_ptr<SessionTable>> Firewall::getSessionTableList() {
     auto key = connection.first;
     auto value = connection.second;
 
-    conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
-    conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
+    conf.setSrc(utils::nbo_uint_to_ip_string(key.srcIp));
+    conf.setDst(utils::nbo_uint_to_ip_string(key.dstIp));
     conf.setL4proto(ChainRule::protocol_from_int_to_string(key.l4proto));
     conf.setSport(ntohs(key.srcPort));
     conf.setDport(ntohs(key.dstPort));

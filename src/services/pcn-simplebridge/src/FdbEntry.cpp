@@ -45,7 +45,7 @@ std::shared_ptr<FdbEntry> FdbEntry::constructFromMap(Fdb &parent,
   clock_gettime(CLOCK_MONOTONIC, &now_timespec);
   uint32_t now = now_timespec.tv_sec;
 
-  uint64_t key = utils::mac_string_to_be_uint(address);
+  uint64_t key = utils::mac_string_to_nbo_uint(address);
   uint32_t timestamp = value.timestamp;
 
   //Here I'm going to check if the entry in the filtering database is too old.\
@@ -82,7 +82,7 @@ void FdbEntry::setPort(const std::string &value) {
     throw std::runtime_error("Port " + value + " doesn't exist");
   }
 
-  uint64_t map_key = utils::mac_string_to_be_uint(address_);
+  uint64_t map_key = utils::mac_string_to_nbo_uint(address_);
   fwd_entry map_value{
       .timestamp = 0, .port = port_index,
   };

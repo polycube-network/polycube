@@ -34,7 +34,7 @@ Ports::~Ports() {
       auto map_entry = pair.second;
       if (map_entry.port == index()) {
         fwdtable.remove(map_key);
-        std::string mac_address = utils::be_uint_to_mac_string(map_key);
+        std::string mac_address = utils::nbo_uint_to_mac_string(map_key);
         logger()->debug("Removing entry {0} associated to port {1}",
                         mac_address, name());
       }

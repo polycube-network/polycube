@@ -268,7 +268,7 @@ void Service::removeServiceFromKernelMap() {
 
   for (uint16_t index = 0; index < backend_size_ * BACKEND_REPLICAS; index++) {
     vip key{
-        .ip = utils::ip_string_to_be_uint(getVip()),
+        .ip = utils::ip_string_to_nbo_uint(getVip()),
         .port = htons(getVport()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
         .index = index,
@@ -285,7 +285,7 @@ void Service::removeServiceFromKernelMap() {
         parent_.get_hash_table<backend, vip>(EBPF_BACKEND_TO_SERVICE_MAP);
     for (auto &bck : service_backends_) {
       backend key{
-          .ip = utils::ip_string_to_be_uint(bck.second.getIp()),
+          .ip = utils::ip_string_to_nbo_uint(bck.second.getIp()),
           .port = htons(bck.second.getPort()),
           .proto = htons(Service::convertProtoToNumber(getProto())),
       };
@@ -314,7 +314,7 @@ void Service::updateKernelServiceMap() {
   uint16_t index = 0;
 
   vip key{
-      .ip = utils::ip_string_to_be_uint(getVip()),
+      .ip = utils::ip_string_to_nbo_uint(getVip()),
       .port = htons(getVport()),
       .proto = htons(Service::convertProtoToNumber(getProto())),
       .index = index,
@@ -324,7 +324,7 @@ void Service::updateKernelServiceMap() {
   // pool.
   // In doesn't indicate a real backend
   backend value{
-      .ip = utils::ip_string_to_be_uint(getVip()),
+      .ip = utils::ip_string_to_nbo_uint(getVip()),
       .port = uint8_t(consistent_array.size()),
       .proto = 0,
   };
@@ -341,14 +341,14 @@ void Service::updateKernelServiceMap() {
     auto &bck = service_backends_.at(key);
 
     vip backend_key{
-        .ip = utils::ip_string_to_be_uint(getVip()),
+        .ip = utils::ip_string_to_nbo_uint(getVip()),
         .port = htons(getVport()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
         .index = index,
     };
 
     backend backend_value{
-        .ip = utils::ip_string_to_be_uint(bck.getIp()),
+        .ip = utils::ip_string_to_nbo_uint(bck.getIp()),
         .port = htons(bck.getPort()),
         .proto = htons(Service::convertProtoToNumber(getProto())),
     };
@@ -540,7 +540,7 @@ std::vector<int> Service::getRandomIntVector(int vect_size) {
 
 void Service::insertAsKubeProxyService() {
   vip key{
-      .ip = utils::ip_string_to_be_uint(getVip()),
+      .ip = utils::ip_string_to_nbo_uint(getVip()),
       .port = htons(getVport()),
       .proto = htons(Service::convertProtoToNumber(getProto())),
       .index = 0,
@@ -549,7 +549,7 @@ void Service::insertAsKubeProxyService() {
   // This is a special value used to indicate that the service is implemented by
   // kube-proxy
   backend value{
-      .ip = utils::ip_string_to_be_uint(getVip()), .port = KUBE_PROXY_FLAG,
+      .ip = utils::ip_string_to_nbo_uint(getVip()), .port = KUBE_PROXY_FLAG,
   };
 
   auto services_map = parent_.get_hash_table<vip, backend>(EBPF_SERVICE_MAP);
