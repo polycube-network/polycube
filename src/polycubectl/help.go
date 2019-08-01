@@ -449,7 +449,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 	if cliArgs.Command == cliargs.AddCommand || cliArgs.Command == cliargs.DelCommand {
 		Buffer += fmt.Sprintf("\nExample: \n %s", example)
 	}
-	Buffer += "\n"
+	Buffer += "\n\n"
 }
 
 func getCubesList() map[string][]string {

@@ -18,7 +18,7 @@
 #include "Bridge.h"
 
 Fdb::Fdb(Bridge &parent, const FdbJsonObject &conf) : FdbBase(parent) {
-  logger()->info("Creating Fdb instance");
+  logger()->debug("[Fdb] Creating instance");
 
   agingTime_ = conf.getAgingTime();
 
@@ -28,7 +28,7 @@ Fdb::Fdb(Bridge &parent, const FdbJsonObject &conf) : FdbBase(parent) {
 }
 
 Fdb::~Fdb() {
-  logger()->info("Destroying Fdb instance");
+  logger()->debug("[Fdb] Destroying instance");
 }
 
 uint32_t Fdb::getAgingTime() {
