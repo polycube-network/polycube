@@ -30,6 +30,8 @@ namespace polycubed {
 
 const std::string PARAMETER_MAC = "MAC";
 const std::string PARAMETER_IP = "IP";
+const std::string PARAMETER_NAME = "PEER";
+
 
 std::set<std::string> ExtIface::used_ifaces;
 
@@ -372,6 +374,8 @@ std::string ExtIface::get_parameter(const std::string &param_name) {
       // netdev does not have an Ip
       return "";
     }
+  } else if (param_upper == PARAMETER_NAME) {
+    return iface_;
   } else {
     throw std::runtime_error("parameter " + param_upper +
                              " not available in extiface");
