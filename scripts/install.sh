@@ -73,21 +73,31 @@ $SUDO apt install -y wget gnupg2 software-properties-common
 $SUDO add-apt-repository ppa:longsleep/golang-backports -y
 
 # repo for libyang-dev
-$SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
-wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
-$SUDO apt-key add - < Release.key
+# Cannot add the repository to our machine, as the GPG key expired on Aug 2019 and Ubuntu refuses to install the software in there
+#$SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
+#wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
+#$SUDO apt-key add - < Release.key
+# So, installing the required package by downloading it manually
+wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang_0.14.81_amd64.deb -O libyang.deb
+wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang-dev_0.14.81_amd64.deb -O libyang-dev.deb
+$SUDO apt install -f ./libyang.deb
+$SUDO apt install -y -f ./libyang-dev.deb
+rm ./libyang.deb
+rm ./libyang-dev.deb
+
 $SUDO apt update
 
 PACKAGES=""
 PACKAGES+=" git" # needed to clone dependencies
 PACKAGES+=" build-essential cmake" # provides compiler and other compilation tools
 PACKAGES+=" bison flex libelf-dev" # bcc dependencies
-PACKAGES+=" libllvm5.0 llvm-5.0-dev libclang-5.0-dev" # bpf tools compilation tool chain
+PACKAGES+=" libllvm5.0 llvm-5.0-dev libclang-5.0-dev" # bpf tools compilation toolchain
 PACKAGES+=" libnl-route-3-dev libnl-genl-3-dev" # netlink library
 PACKAGES+=" uuid-dev"
 PACKAGES+=" golang-go" # needed for polycubectl and pcn-k8s
 PACKAGES+=" pkg-config"
-PACKAGES+=" libyang-dev"
+# Removed because of the comment at line L76 (GPG key expired); we had to install this manually
+#PACKAGES+=" libyang-dev"
 PACKAGES+=" autoconf libtool m4 automake"
 PACKAGES+=" libssl-dev" # needed for certificate based security
 PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
@@ -100,7 +110,7 @@ if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" iproute2" # provides bridge command that is used to add entries in vxlan device
 fi
 
-# use non inreractive to avoid blocking the install script
+# use non interactive to avoid blocking the install script
 $SUDO bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -yq $PACKAGES"
 
 echo "Install pistache"
