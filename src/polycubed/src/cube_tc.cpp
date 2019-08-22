@@ -137,6 +137,9 @@ void CubeTC::send_packet_ns_span_mode(void *cb_cookie, void *data, int data_size
 
   } catch(const std::exception &e) {
     // TODO: ignore the problem, what else can we do?
+    
+    // This function (i.e., send_packet_ns_span_mode() ) is static, so we cannot use 
+    // standard logging primitive (i.e., logger->warn() ) here.
     spdlog::get("polycubed")->warn("Error processing packet in span mode - event: {}", e.what());
   }
 }
