@@ -268,6 +268,52 @@ In case you hit any problems, please follow the next steps to recover from a fai
     #5. Reenable DNS
     kubectl -n kube-system scale --replicas=1 deployment/kube-dns
 
+Inspect cube status inside pcn-k8s
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``pcn-k8s`` is deployed as container in each node, sometimes it is helpful to inspect the cube(s) status
+within the container for debugging or other purposes. You can login into each node where the pcn-k8s container
+is running and get the information via :doc:`polycubectl<../../quickstart#docker>` command locally.
+
+A more convenient way to do that is using kubectl in k8s master node, first identify the name of pcn-k8s pod
+running in a particular node you are intereted by executing the following command:
+
+::
+    kubectl get pods -n kube-system -o wide
+
+You should see somthing like:
+
+::
+
+    NAME                               READY   STATUS             RESTARTS   AGE   IP                NODE       NOMINATED NODE   READINESS GATES
+    kube-proxy-dbjm6                   1/1     Running            0          28d   192.168.122.200   dev-ws12   <none>           <none>
+    kube-proxy-stlsc                   1/1     Running            0          28d   192.168.122.201   dev-ws13   <none>           <none>
+    kube-scheduler-dev-ws11            1/1     Running            1          28d   192.168.122.199   dev-ws11   <none>           <none>
+    polycube-8k25h                     2/2     Running            0          25d   192.168.122.200   dev-ws12   <none>           <none>
+    polycube-etcd-559fb856db-77kmr     1/1     Running            0          28d   192.168.122.199   dev-ws11   <none>           <none>
+    polycube-sddh5                     2/2     Running            0          25d   192.168.122.201   dev-ws13   <none>           <none>
+    polycube-zrdpx                     2/2     Running            0          25d   192.168.122.199   dev-ws11   <none>           <none>
+
+The pod name with prefix ``polycube-`` is pcn-k8s pod, there are a few of them in the output but only one for
+each node.  Let's assume you want to inspect the pcn-k8s in node dev-ws13, the following command can be
+executed in k8s master node
+
+::
+
+     kubectl exec -it polycube-sddh5 -n kube-system -c polycube-k8s polycubectl show cubesv
+
+Here is the output for example,
+
+::
+
+	k8sfilter:
+	 name  uuid                                  service-name  type  loglevel  shadow  span   ports
+	 k8sf  6258accd-c940-4431-947c-e7292d147447  k8sfilter     TC    INFO      false   false  [2 items]
+
+	k8switch:
+	 name       uuid                                  service-name  type  loglevel  shadow  span   ports
+	 k8switch0  c058b8fb-0e57-4ff6-be4d-5f3e99e71690  k8switch      TC    TRACE     false   false  [7 items]
+
+
 Developing
 ----------
 
