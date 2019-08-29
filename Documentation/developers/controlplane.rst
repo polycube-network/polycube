@@ -99,13 +99,7 @@ Only in shadow services the ``Port`` class contains the ``send_packet_ns(Etherne
 
 A reference to a port can be got using the `get_port` function of the Cube base class.
 
-Debugging and logging in the control plane
-******************************************
 
-In order to avoid the use of custom ``printf`` or similar primitives, which makes the code difficult to debug, polycube includes a logging system with a proper class.
-
-Usage example:
-
-::
-
-  logger()->info("Connected port {0}", port_name);
+Debugging the control plane
+***************************************
+See how to debug by :ref:`logging in the control plane <logging-in-the-control-plane>`.
