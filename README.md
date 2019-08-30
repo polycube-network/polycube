@@ -17,7 +17,7 @@ For more information, jump to the project [Documentation](https://polycube-netwo
  - [Introduction to Polycube](https://polycube-network.readthedocs.io/en/latest/intro.html)
  - [Quickstart](https://polycube-network.readthedocs.io/en/latest/quickstart.html)
  - [Documentation](https://polycube-network.readthedocs.io/en/latest/)
- - [pcn-k8s - The pod network provider for Kubernetes](https://polycube-network.readthedocs.io/en/latest/components/k8s/pcn-kubernetes.html)
+ - [pcn-k8s - The CNI network plugin for Kubernetes](https://polycube-network.readthedocs.io/en/latest/components/k8s/pcn-kubernetes.html)
  - [pcn-iptables - A clone of Iptables based on eBPF](https://polycube-network.readthedocs.io/en/latest/components/iptables/pcn-iptables.html)
 
 
