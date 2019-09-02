@@ -10,15 +10,15 @@
 
 Polycube services, called `cubes`, can be composed to build arbitrary **service chains** and provide custom network connectivity to **namespaces**, **containers**, **virtual machines**, and **physical hosts**.
 
-For more information, jump to the [Documentation](Documentation) section.
+For more information, jump to the project [Documentation](https://polycube-network.readthedocs.io/en/latest/).
 
 
 ## Quick links
- - [What is Polycube?](Documentation/intro.rst)
- - [Quickstart](Documentation/quickstart.rst)
- - [Documentation](Documentation)
- - [pcn-k8s - Kubernetes network provider](Documentation/components/k8s/pcn-kubernetes.rst)
- - [pcn-iptables - Iptables clone](Documentation/components/iptables/pcn-iptables.rst)
+ - [Introduction to Polycube](https://polycube-network.readthedocs.io/en/latest/intro.html)
+ - [Quickstart](https://polycube-network.readthedocs.io/en/latest/quickstart.html)
+ - [Documentation](https://polycube-network.readthedocs.io/en/latest/)
+ - [pcn-k8s - The CNI network plugin for Kubernetes](https://polycube-network.readthedocs.io/en/latest/components/k8s/pcn-kubernetes.html)
+ - [pcn-iptables - A clone of Iptables based on eBPF](https://polycube-network.readthedocs.io/en/latest/components/iptables/pcn-iptables.html)
 
 
 ## Licence

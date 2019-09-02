@@ -1,8 +1,10 @@
 # Polycube Documentation
 
-*The polycube documentation is not designed to be read on github, so please see our website: TODO: put link here*
+**The polycube documentation is available on [ReadTheDocs](https://polycube-network.readthedocs.io/en/latest/).**
 
-## Building the documentation
+The instructions below are intended if you want to generate the documentation locally.
+
+## Building the documentation locally
 
 ### Installing the dependencies
 
