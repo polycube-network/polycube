@@ -6,14 +6,16 @@ import (
 )
 
 var (
-	k8sPoliciesController *K8sNetworkPolicyController
+	k8sPoliciesController K8sNetworkPolicyController
 	podController         PodController
 	nsController          NamespaceController
 	clientset             kubernetes.Interface
-	l                     *log.Logger
+	logger                *log.Logger
 )
 
 const (
+	// maxRetries tells how many times the controller should attempt
+	// decoding an object from the queue
 	maxRetries                 int = 5
 	podControllerWorkers       int = 1
 	k8sPolicyControllerWorkers int = 1
@@ -22,23 +24,25 @@ const (
 
 func init() {
 
-	l = log.New()
+	logger = log.New()
 
 	// Only log the debug severity or above.
-	l.SetLevel(log.DebugLevel)
+	logger.SetLevel(log.DebugLevel)
 
 	// All logs will specify who the function that logged it
 	//l.SetReportCaller(true)
 }
 
 // Start starts all the controllers included
-func Start(clientset kubernetes.Interface) {
+func Start(cs kubernetes.Interface) {
+	clientset = cs
+
 	//--------------------------------
 	// Set up...
 	//--------------------------------
 
 	// Set up the network policy controller (for the kubernetes policies)
-	k8sPoliciesController = NewK8sNetworkPolicyController(clientset.(*kubernetes.Clientset))
+	k8sPoliciesController = createK8sNetworkPolicyController()
 
 	// Get the namespace controller
 	nsController = NewNsController(clientset)
@@ -86,7 +90,7 @@ func Pods() PodController {
 }
 
 // K8sPolicies returns the Kubernetes Network Policy Controller
-func K8sPolicies() *K8sNetworkPolicyController {
+func K8sPolicies() K8sNetworkPolicyController {
 	return k8sPoliciesController
 }
 

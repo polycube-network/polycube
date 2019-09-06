@@ -230,6 +230,9 @@ func main() {
 		panic(err0.Error())
 	}
 
+	// kv handler
+	go kvM.Loop()
+
 	// Start the controllers
 	pcn_controllers.Start(clientset)
 
@@ -243,13 +246,10 @@ func main() {
 	podController := pcn_controllers.Pods()
 	// -- /Temporary
 
-	// kv handler
-	go kvM.Loop()
-
 	vPodsCIDR := k8sNode.VPodCIDR
 
 	// Start the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(clientset, vPodsCIDR, basePath, nodeName, k8sPoliciesController, podController, nsController)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(vPodsCIDR, basePath, nodeName, k8sPoliciesController, podController, nsController)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so

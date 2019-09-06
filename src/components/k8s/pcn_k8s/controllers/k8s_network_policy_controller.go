@@ -6,46 +6,49 @@ import (
 	"time"
 
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
-
-	log "github.com/sirupsen/logrus"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	workqueue "k8s.io/client-go/util/workqueue"
 )
 
-// K8sNetworkPolicyController is the implementation of
+// K8sNetworkPolicyController is the interface of the Kubernetes Network
+// Policies Controller
+type K8sNetworkPolicyController interface {
+	// Run starts the controller
+	Run()
+	// Stop will stop the controller
+	Stop()
+	// Subscribe executes the function consumer when the event event is triggered.
+	// It returns an error if the event type does not exist.
+	// It returns a function to call when you want to stop tracking that event.
+	Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy, *networking_v1.NetworkPolicy)) (func(), error)
+	// GetPolicies gets policies according to a specific query
+	GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error)
+}
+
+// PcnK8sNetworkPolicyController is the implementation of
 // the k8s network policy controller
-type K8sNetworkPolicyController struct {
-	// clientset is the clientset of kubernetes
-	clientset *kubernetes.Clientset
+type PcnK8sNetworkPolicyController struct {
 	// queue contains the events to be processed
 	queue workqueue.RateLimitingInterface
-	// k8sNetworkPoliciesInformer is the informer that gets
+	// informer is the informer that gets
 	// the list of policies
-	k8sNetworkPoliciesInformer cache.SharedIndexInformer
-	// startedOn tells when the controller started working
-	startedOn time.Time
+	informer cache.SharedIndexInformer
 	// dispatchers is the structure that dispatches the event
 	// to the interested subscribers
 	dispatchers EventDispatchersContainer
 	// stopCh is the channel used to stop the controller
 	stopCh chan struct{}
-	// maxRetries tells how many times the controller should attempt
-	// decoding an object from the queue
-	maxRetries int
 }
 
-// NewK8sNetworkPolicyController creates a new policy controller.
+// createK8sNetworkPolicyController creates a new policy controller.
 // Meant to be a singleton.
-func NewK8sNetworkPolicyController(clientset *kubernetes.Clientset) *K8sNetworkPolicyController {
-	maxRetries := 5
-
+func createK8sNetworkPolicyController() K8sNetworkPolicyController {
 	//------------------------------------------------
 	// Set up the default network policies informer
 	//------------------------------------------------
@@ -120,36 +123,29 @@ func NewK8sNetworkPolicyController(clientset *kubernetes.Clientset) *K8sNetworkP
 	}
 
 	// Everything set up, return the controller
-	return &K8sNetworkPolicyController{
-		clientset:                  clientset,
-		queue:                      queue,
-		k8sNetworkPoliciesInformer: npcInformer,
-		dispatchers:                dispatchers,
-		maxRetries:                 maxRetries,
-		stopCh:                     make(chan struct{}),
+	return &PcnK8sNetworkPolicyController{
+		queue:       queue,
+		informer:    npcInformer,
+		dispatchers: dispatchers,
+		stopCh:      make(chan struct{}),
 	}
 }
 
 // Run starts the network policy controller
-func (npc *K8sNetworkPolicyController) Run() {
-	l := log.New().WithFields(log.Fields{"by": KNPC, "method": "Run()"})
-
+func (npc *PcnK8sNetworkPolicyController) Run() {
 	// Don't let panics crash the process
 	defer utilruntime.HandleCrash()
 
-	// Record when we started, it is going to be used later
-	npc.startedOn = time.Now().UTC()
-
 	// Let's go!
-	go npc.k8sNetworkPoliciesInformer.Run(npc.stopCh)
+	go npc.informer.Run(npc.stopCh)
 
 	// Make sure the cache is populated
-	if !cache.WaitForCacheSync(npc.stopCh, npc.k8sNetworkPoliciesInformer.HasSynced) {
+	if !cache.WaitForCacheSync(npc.stopCh, npc.informer.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
 
-	l.Infoln("Started...")
+	logger.Infoln("Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -158,13 +154,12 @@ func (npc *K8sNetworkPolicyController) Run() {
 }
 
 // work gets the item from the queue and attempts to process it.
-func (npc *K8sNetworkPolicyController) work() {
-	l := log.New().WithFields(log.Fields{"by": KNPC, "method": "work()"})
+func (npc *PcnK8sNetworkPolicyController) work() {
 	for {
 		// Get the item's key from the queue
 		_event, quit := npc.queue.Get()
 		if quit {
-			l.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln("Quit requested... worker going to exit.")
 			return
 		}
 
@@ -181,13 +176,13 @@ func (npc *K8sNetworkPolicyController) work() {
 			if err == nil {
 				// Then reset the ratelimit counters
 				npc.queue.Forget(_event)
-			} else if npc.queue.NumRequeues(_event) < npc.maxRetries {
+			} else if npc.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				l.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
 				npc.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				l.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf("Error processing %s (giving up): %v", key, err)
 				npc.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -200,9 +195,7 @@ func (npc *K8sNetworkPolicyController) work() {
 }
 
 // processPolicy will process the policy and dispatch it
-func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) error {
-	l := log.New().WithFields(log.Fields{"by": KNPC, "method": "processPolicy()"})
-
+func (npc *PcnK8sNetworkPolicyController) processPolicy(event pcn_types.Event) error {
 	var policy *networking_v1.NetworkPolicy
 	var prev *networking_v1.NetworkPolicy
 	var err error
@@ -221,7 +214,7 @@ func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) erro
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*networking_v1.NetworkPolicy)
 		if !ok {
-			l.Errorln("could not get previous state")
+			logger.Errorln("could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -232,7 +225,6 @@ func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) erro
 	//-------------------------------------
 
 	switch event.Type {
-
 	case pcn_types.New:
 		npc.dispatchers.new.Dispatch(policy, nil)
 	case pcn_types.Update:
@@ -244,15 +236,13 @@ func (npc *K8sNetworkPolicyController) processPolicy(event pcn_types.Event) erro
 	return nil
 }
 
-func (npc *K8sNetworkPolicyController) retrievePolicyFromCache(obj interface{}, key string) (*networking_v1.NetworkPolicy, error) {
-	l := log.New().WithFields(log.Fields{"by": KNPC, "method": "retrievePolicyFromCache()"})
-
+func (npc *PcnK8sNetworkPolicyController) retrievePolicyFromCache(obj interface{}, key string) (*networking_v1.NetworkPolicy, error) {
 	// Get the policy by querying the key that kubernetes has assigned to it
-	_policy, _, err := npc.k8sNetworkPoliciesInformer.GetIndexer().GetByKey(key)
+	_policy, _, err := npc.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -263,17 +253,17 @@ func (npc *K8sNetworkPolicyController) retrievePolicyFromCache(obj interface{}, 
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				l.Errorln("error decoding object, invalid type")
+				logger.Errorln("error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			policy, ok = tombstone.Obj.(*networking_v1.NetworkPolicy)
 			if !ok {
-				l.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln("error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			l.Infof("Recovered deleted object '%s' from tombstone", policy.GetName())
+			logger.Infof("Recovered deleted object '%s' from tombstone", policy.GetName())
 		}
 	}
 
@@ -283,8 +273,7 @@ func (npc *K8sNetworkPolicyController) retrievePolicyFromCache(obj interface{}, 
 // GetPolicies returns a list of network policies that match the specified
 // criteria. Returns an empty list if no network policies have been found
 // or an error occurred. The error is returned in this case.
-func (npc *K8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
-
+func (npc *PcnK8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
 	//-------------------------------------
 	//	Basic query checks
 	//-------------------------------------
@@ -319,7 +308,7 @@ func (npc *K8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.Ob
 	//	Find by name
 	//-------------------------------------
 
-	lister := npc.clientset.NetworkingV1().NetworkPolicies(namespace)
+	lister := clientset.NetworkingV1().NetworkPolicies(namespace)
 
 	//	All kubernetes policies?
 	if pQuery == nil {
@@ -339,9 +328,7 @@ func (npc *K8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.Ob
 }
 
 // Stop stops the controller
-func (npc *K8sNetworkPolicyController) Stop() {
-	l := log.New().WithFields(log.Fields{"by": KNPC, "method": "Stop()"})
-
+func (npc *PcnK8sNetworkPolicyController) Stop() {
 	// Make them know that exit has been requested
 	close(npc.stopCh)
 
@@ -353,14 +340,13 @@ func (npc *K8sNetworkPolicyController) Stop() {
 	npc.dispatchers.update.CleanUp()
 	npc.dispatchers.delete.CleanUp()
 
-	l.Infoln("K8s network policy controller exited.")
+	logger.Infoln("K8s network policy controller exited.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.
 // It returns an error if the event type does not exist.
 // It returns a function to call when you want to stop tracking that event.
-func (npc *K8sNetworkPolicyController) Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy, *networking_v1.NetworkPolicy)) (func(), error) {
-
+func (npc *PcnK8sNetworkPolicyController) Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy, *networking_v1.NetworkPolicy)) (func(), error) {
 	//	Prepare the function to be executed
 	consumerFunc := (func(current, prev interface{}) {
 		//------------------------------------------

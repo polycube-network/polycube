@@ -15,7 +15,6 @@ import (
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 )
 
 // PcnNetworkPolicyManager is a network policy manager
@@ -32,7 +31,7 @@ type PcnNetworkPolicyManager interface {
 // NetworkPolicyManager is the implementation of the policy manager
 type NetworkPolicyManager struct {
 	// knpc is the kubernetes policy controller
-	knpc *pcn_controllers.K8sNetworkPolicyController
+	knpc pcn_controllers.K8sNetworkPolicyController
 	// podController is the pod controller
 	podController pcn_controllers.PodController
 	// nsController is the namespace controller
@@ -78,7 +77,7 @@ type nsUnsubscriptor struct {
 var startFirewall = pcn_firewall.StartFirewall
 
 // StartNetworkPolicyManager will start a new network policy manager.
-func StartNetworkPolicyManager(clientset kubernetes.Interface, vPodsRange *net.IPNet, basePath, nodeName string, knpc *pcn_controllers.K8sNetworkPolicyController, podController pcn_controllers.PodController, nsController pcn_controllers.NamespaceController) PcnNetworkPolicyManager {
+func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string, knpc pcn_controllers.K8sNetworkPolicyController, podController pcn_controllers.PodController, nsController pcn_controllers.NamespaceController) PcnNetworkPolicyManager {
 	l := log.New().WithFields(log.Fields{"by": PM, "method": "StartNetworkPolicyManager()"})
 	l.Infoln("Starting Network Policy Manager")
 
@@ -104,7 +103,7 @@ func StartNetworkPolicyManager(clientset kubernetes.Interface, vPodsRange *net.I
 	// Subscribe to k8s policies events
 	//-------------------------------------
 
-	manager.k8sPolicyParser = newK8sPolicyParser(clientset, podController, nsController, vPodsRange)
+	manager.k8sPolicyParser = newK8sPolicyParser(podController, vPodsRange)
 
 	// Deploy a new k8s policy
 	knpc.Subscribe(pcn_types.New, manager.DeployK8sPolicy)
