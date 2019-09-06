@@ -9,6 +9,7 @@ var (
 	k8sPoliciesController K8sNetworkPolicyController
 	podController         PodController
 	nsController          NamespaceController
+	serviceController     ServiceController
 	clientset             kubernetes.Interface
 	logger                *log.Logger
 )
@@ -49,6 +50,9 @@ func Start(cs kubernetes.Interface) {
 	// Get the pod controller
 	podController = createPodController()
 
+	// Get the service controller
+	serviceController = createServiceController()
+
 	//--------------------------------
 	// ... and start
 	//--------------------------------
@@ -61,6 +65,9 @@ func Start(cs kubernetes.Interface) {
 
 	// Start the pod controller
 	go podController.Run()
+
+	// Start the service controller
+	go serviceController.Run()
 }
 
 // Stop stops all the controllers that have been started at once.
@@ -81,6 +88,11 @@ func Stop() {
 		nsController.Stop()
 		nsController = nil
 	}
+
+	if serviceController != nil {
+		serviceController.Stop()
+		serviceController = nil
+	}
 }
 
 // Pods returns the pod controller
@@ -96,4 +108,9 @@ func K8sPolicies() K8sNetworkPolicyController {
 // Namespaces returns the Namespace controller
 func Namespaces() NamespaceController {
 	return nsController
+}
+
+// Services returns the Service Controller
+func Services() ServiceController {
+	return serviceController
 }
