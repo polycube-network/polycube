@@ -45,7 +45,7 @@ func Start(cs kubernetes.Interface) {
 	k8sPoliciesController = createK8sNetworkPolicyController()
 
 	// Get the namespace controller
-	nsController = NewNsController(clientset)
+	nsController = createNsController()
 
 	// Get the pod controller
 	podController = NewPodController(clientset, nsController)

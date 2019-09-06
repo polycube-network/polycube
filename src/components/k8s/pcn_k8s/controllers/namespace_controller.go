@@ -4,20 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	"github.com/polycube-network/polycube/src/components/k8s/utils"
-	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	typed_core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	workqueue "k8s.io/client-go/util/workqueue"
 )
@@ -38,23 +34,14 @@ type NamespaceController interface {
 
 // PcnNamespaceController is the implementation of the Namespace Controller
 type PcnNamespaceController struct {
-	clientset   kubernetes.Interface
 	queue       workqueue.RateLimitingInterface
 	informer    cache.SharedIndexInformer
-	startedOn   time.Time
 	dispatchers EventDispatchersContainer
 	stopCh      chan struct{}
-	maxRetries  int
-	logBy       string
-	namespaces  map[string]*core_v1.Namespace
-	lock        sync.Mutex
-	nsInterface typed_core_v1.NamespaceInterface
 }
 
-// NewNsController returns a new Namespace Controller
-func NewNsController(clientset kubernetes.Interface) NamespaceController {
-	maxRetries := 5
-
+// createNsController returns a new Namespace Controller
+func createNsController() NamespaceController {
 	//------------------------------------------------
 	// Set up the Namespace Controller
 	//------------------------------------------------
@@ -130,25 +117,17 @@ func NewNsController(clientset kubernetes.Interface) NamespaceController {
 
 	// Everything set up, return the controller
 	return &PcnNamespaceController{
-		clientset:   clientset,
 		queue:       queue,
 		informer:    informer,
 		dispatchers: dispatchers,
-		maxRetries:  maxRetries,
 		stopCh:      make(chan struct{}),
-		nsInterface: clientset.CoreV1().Namespaces(),
 	}
 }
 
 // Run starts the namespace controller
 func (n *PcnNamespaceController) Run() {
-	l := log.New().WithFields(log.Fields{"by": NC, "method": "Run()"})
-
 	// Don't let panics crash the process
 	defer utilruntime.HandleCrash()
-
-	// Record when we started, it is going to be used later
-	n.startedOn = time.Now().UTC()
 
 	// Let's go!
 	go n.informer.Run(n.stopCh)
@@ -159,7 +138,7 @@ func (n *PcnNamespaceController) Run() {
 		return
 	}
 
-	l.Infoln("Started.")
+	logger.Infoln("Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -168,14 +147,12 @@ func (n *PcnNamespaceController) Run() {
 }
 
 func (n *PcnNamespaceController) work() {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "work()"})
-
 	for {
 		// Get the item's key from the queue
 		_event, quit := n.queue.Get()
 
 		if quit {
-			l.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln("Quit requested... worker going to exit.")
 			return
 		}
 
@@ -192,14 +169,13 @@ func (n *PcnNamespaceController) work() {
 			if err == nil {
 				// Then reset the ratelimit counters
 				n.queue.Forget(_event)
-				//l.Infof("Item with key %s has been forgotten from the queue", event.Key)
-			} else if n.queue.NumRequeues(_event) < n.maxRetries {
+			} else if n.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				l.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
 				n.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				l.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf("Error processing %s (giving up): %v", key, err)
 				n.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -213,8 +189,6 @@ func (n *PcnNamespaceController) work() {
 
 // process will process the event and dispatch the namespace event
 func (n *PcnNamespaceController) process(event pcn_types.Event) error {
-	l := log.New().WithFields(log.Fields{"by": NC, "method": "process()"})
-
 	var ns *core_v1.Namespace
 	var prev *core_v1.Namespace
 	var err error
@@ -233,7 +207,7 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*core_v1.Namespace)
 		if !ok {
-			l.Errorln("could not get previous state")
+			logger.Errorln("could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -258,14 +232,12 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 // retrieveNsFromCache retrieves the namespace from the cache.
 // It tries to recover it from the tombstone if deleted.
 func (n *PcnNamespaceController) retrieveNsFromCache(obj interface{}, key string) (*core_v1.Namespace, error) {
-	l := log.New().WithFields(log.Fields{"by": NC, "method": "retrieveNsFromCache()"})
-
 	// Get the namespace by querying the key that kubernetes has assigned to it
 	_ns, _, err := n.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -276,17 +248,17 @@ func (n *PcnNamespaceController) retrieveNsFromCache(obj interface{}, key string
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				l.Errorln("error decoding object, invalid type")
+				logger.Errorln("error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			ns, ok = tombstone.Obj.(*core_v1.Namespace)
 			if !ok {
-				l.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln("error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			l.Infof("Recovered deleted object '%s' from tombstone", ns.GetName())
+			logger.Infof("Recovered deleted object '%s' from tombstone", ns.GetName())
 		}
 	}
 
@@ -295,8 +267,6 @@ func (n *PcnNamespaceController) retrieveNsFromCache(obj interface{}, key string
 
 // Stop will stop the namespace controller
 func (n *PcnNamespaceController) Stop() {
-	l := log.New().WithFields(log.Fields{"by": NC, "method": "Stop()"})
-
 	// Make them know that exit has been requested
 	close(n.stopCh)
 
@@ -308,7 +278,7 @@ func (n *PcnNamespaceController) Stop() {
 	n.dispatchers.update.CleanUp()
 	n.dispatchers.delete.CleanUp()
 
-	l.Infoln("Stopped.")
+	logger.Infoln("Stopped.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.
@@ -383,13 +353,15 @@ func (n *PcnNamespaceController) Subscribe(event pcn_types.EventType, consumer f
 
 // GetNamespaces gets namespaces according to a specific namespace query
 func (n *PcnNamespaceController) GetNamespaces(query *pcn_types.ObjectQuery) ([]core_v1.Namespace, error) {
+	nsInterface := clientset.CoreV1().Namespaces()
+
 	//-------------------------------------
 	// All namespaces
 	//-------------------------------------
 
 	if query == nil {
 		listOptions := meta_v1.ListOptions{}
-		lister, err := n.nsInterface.List(listOptions)
+		lister, err := nsInterface.List(listOptions)
 		return lister.Items, err
 	}
 
@@ -405,7 +377,7 @@ func (n *PcnNamespaceController) GetNamespaces(query *pcn_types.ObjectQuery) ([]
 			return []core_v1.Namespace{}, errors.New("Namespace name not provided")
 		}
 
-		lister, err := n.nsInterface.List(meta_v1.ListOptions{
+		lister, err := nsInterface.List(meta_v1.ListOptions{
 			FieldSelector: "metadata.name=" + name,
 		})
 		return lister.Items, err
@@ -420,7 +392,7 @@ func (n *PcnNamespaceController) GetNamespaces(query *pcn_types.ObjectQuery) ([]
 			return []core_v1.Namespace{}, errors.New("Namespace labels is nil")
 		}
 
-		lister, err := n.nsInterface.List(meta_v1.ListOptions{
+		lister, err := nsInterface.List(meta_v1.ListOptions{
 			LabelSelector: utils.ImplodeLabels(labels, ",", false),
 		})
 
