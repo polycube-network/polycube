@@ -48,7 +48,7 @@ func Start(cs kubernetes.Interface) {
 	nsController = createNsController()
 
 	// Get the pod controller
-	podController = NewPodController(clientset, nsController)
+	podController = createPodController()
 
 	//--------------------------------
 	// ... and start

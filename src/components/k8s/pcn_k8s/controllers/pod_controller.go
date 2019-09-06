@@ -4,20 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/polycube-network/polycube/src/components/k8s/utils"
 
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
-	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	workqueue "k8s.io/client-go/util/workqueue"
 )
@@ -38,21 +35,14 @@ type PodController interface {
 
 // PcnPodController is the implementation of the pod controller
 type PcnPodController struct {
-	nsController NamespaceController
-	clientset    kubernetes.Interface
-	queue        workqueue.RateLimitingInterface
-	informer     cache.SharedIndexInformer
-	startedOn    time.Time
-	dispatchers  EventDispatchersContainer
-	stopCh       chan struct{}
-	maxRetries   int
-	lock         sync.Mutex
+	queue       workqueue.RateLimitingInterface
+	informer    cache.SharedIndexInformer
+	dispatchers EventDispatchersContainer
+	stopCh      chan struct{}
 }
 
-// NewPodController will start a new pod controller
-func NewPodController(clientset kubernetes.Interface, nsController NamespaceController) PodController {
-	maxRetries := 5
-
+// createPodController will start a new pod controller
+func createPodController() PodController {
 	//------------------------------------------------
 	// Set up the Pod Controller
 	//------------------------------------------------
@@ -128,25 +118,17 @@ func NewPodController(clientset kubernetes.Interface, nsController NamespaceCont
 
 	// Everything set up, return the controller
 	return &PcnPodController{
-		nsController: nsController,
-		clientset:    clientset,
-		queue:        queue,
-		informer:     informer,
-		dispatchers:  dispatchers,
-		maxRetries:   maxRetries,
-		stopCh:       make(chan struct{}),
+		queue:       queue,
+		informer:    informer,
+		dispatchers: dispatchers,
+		stopCh:      make(chan struct{}),
 	}
 }
 
 // Run starts the pod controller
 func (p *PcnPodController) Run() {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "Run()"})
-
 	// Don't let panics crash the process
 	defer utilruntime.HandleCrash()
-
-	// Record when we started, it is going to be used later
-	p.startedOn = time.Now().UTC()
 
 	// Let's go!
 	go p.informer.Run(p.stopCh)
@@ -157,7 +139,7 @@ func (p *PcnPodController) Run() {
 		return
 	}
 
-	l.Infoln("Started...")
+	logger.Infoln("Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -167,14 +149,12 @@ func (p *PcnPodController) Run() {
 
 // work gets the item from the queue and attempts to process it
 func (p *PcnPodController) work() {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "work()"})
-
 	for {
 		// Get the item's key from the queue
 		_event, quit := p.queue.Get()
 
 		if quit {
-			l.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln("Quit requested... worker going to exit.")
 			return
 		}
 
@@ -191,13 +171,13 @@ func (p *PcnPodController) work() {
 			if err == nil {
 				// Then reset the ratelimit counters
 				p.queue.Forget(_event)
-			} else if p.queue.NumRequeues(_event) < p.maxRetries {
+			} else if p.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				l.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
 				p.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				l.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf("Error processing %s (giving up): %v", key, err)
 				p.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -211,8 +191,6 @@ func (p *PcnPodController) work() {
 
 // process will process the event and dispatch the pod event
 func (p *PcnPodController) process(event pcn_types.Event) error {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "process()"})
-
 	var pod *core_v1.Pod
 	var prev *core_v1.Pod
 	var err error
@@ -231,7 +209,7 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*core_v1.Pod)
 		if !ok {
-			l.Errorln("could not get previous state")
+			logger.Errorln("could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -256,14 +234,12 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 // retrievePodFromCache retrieves the namespace from the cache.
 // It tries to recover it from the tombstone if deleted.
 func (p *PcnPodController) retrievePodFromCache(obj interface{}, key string) (*core_v1.Pod, error) {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "retrievePodFromCache()"})
-
 	// Get the pod by querying the key that kubernetes has assigned to it
 	_pod, _, err := p.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		l.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -274,17 +250,17 @@ func (p *PcnPodController) retrievePodFromCache(obj interface{}, key string) (*c
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				l.Errorln("error decoding object, invalid type")
+				logger.Errorln("error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			pod, ok = tombstone.Obj.(*core_v1.Pod)
 			if !ok {
-				l.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln("error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			l.Infof("Recovered deleted object '%s' from tombstone", pod.GetName())
+			logger.Infof("Recovered deleted object '%s' from tombstone", pod.GetName())
 		}
 	}
 
@@ -293,8 +269,6 @@ func (p *PcnPodController) retrievePodFromCache(obj interface{}, key string) (*c
 
 // Stop will stop the pod controller
 func (p *PcnPodController) Stop() {
-	l := log.New().WithFields(log.Fields{"by": PC, "method": "Stop()"})
-
 	// Make them know that exit has been requested
 	close(p.stopCh)
 
@@ -306,7 +280,7 @@ func (p *PcnPodController) Stop() {
 	p.dispatchers.update.CleanUp()
 	p.dispatchers.delete.CleanUp()
 
-	l.Infoln("Stopped.")
+	logger.Infoln("Stopped.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.
@@ -455,7 +429,7 @@ func (p *PcnPodController) podMeetsCriteria(pod *core_v1.Pod, podSpec, nsSpec, n
 			// Check the labels of the namespace
 			if len(nsSpec.Labels) > 0 {
 				// Get the list
-				nsList, err := p.nsController.GetNamespaces(&pcn_types.ObjectQuery{
+				nsList, err := Namespaces().GetNamespaces(&pcn_types.ObjectQuery{
 					By:     "labels",
 					Labels: nsSpec.Labels,
 				})
@@ -490,26 +464,6 @@ func (p *PcnPodController) podMeetsCriteria(pod *core_v1.Pod, podSpec, nsSpec, n
 		if !utils.AreLabelsContained(podSpec.Labels, pod.Labels) {
 			return false
 		}
-		/*labelsFound := 0
-		labelsToFind := len(podSpec.Labels)
-
-		for neededKey, neededValue := range podSpec.Labels {
-			if value, exists := pod.Labels[neededKey]; exists && value == neededValue {
-				labelsFound++
-				if labelsFound == labelsToFind {
-					break
-				}
-			} else {
-				// I didn't find this key or the value wasn't the one I wanted:
-				// it's pointless to go on checking the other labels.
-				break
-			}
-		}
-
-		// Did we find all labels we needed?
-		if labelsFound != labelsToFind {
-			return false
-		}*/
 	}
 
 	return true
@@ -525,7 +479,7 @@ func (p *PcnPodController) GetPods(queryPod, queryNs, queryNode *pcn_types.Objec
 	// Preliminary checks
 	//------------------------------------------------
 	// -- The namespace
-	nsList, err := p.nsController.GetNamespaces(queryNs)
+	nsList, err := Namespaces().GetNamespaces(queryNs)
 	if err != nil {
 		return []core_v1.Pod{}, err
 	}
@@ -566,7 +520,7 @@ func (p *PcnPodController) GetPods(queryPod, queryNs, queryNode *pcn_types.Objec
 
 		// Loop through all interested namespaces
 		for namespace := range ns {
-			lister, err := p.clientset.CoreV1().Pods(namespace).List(listOptions)
+			lister, err := clientset.CoreV1().Pods(namespace).List(listOptions)
 			if err == nil {
 				for _, currentPod := range lister.Items {
 					if queryNode == nil || (queryNode != nil && currentPod.Spec.NodeName == queryNode.Name) {
