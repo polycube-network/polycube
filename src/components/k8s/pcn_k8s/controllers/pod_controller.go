@@ -29,8 +29,8 @@ type PodController interface {
 	// It returns an error if the event type does not exist.
 	// It returns a function to call when you want to stop tracking that event.
 	Subscribe(event pcn_types.EventType, podspec, namespace, node *pcn_types.ObjectQuery, phase core_v1.PodPhase, consumer func(*core_v1.Pod, *core_v1.Pod)) (func(), error)
-	// GetPods gets pod according to a specific pod query and a namespace query
-	GetPods(queryPod, queryNs, queryNode *pcn_types.ObjectQuery) ([]core_v1.Pod, error)
+	// List gets pod according to a specific pod query and a namespace query
+	List(queryPod, queryNs, queryNode *pcn_types.ObjectQuery) ([]core_v1.Pod, error)
 }
 
 // PcnPodController is the implementation of the pod controller
@@ -429,7 +429,7 @@ func (p *PcnPodController) podMeetsCriteria(pod *core_v1.Pod, podSpec, nsSpec, n
 			// Check the labels of the namespace
 			if len(nsSpec.Labels) > 0 {
 				// Get the list
-				nsList, err := Namespaces().GetNamespaces(&pcn_types.ObjectQuery{
+				nsList, err := Namespaces().List(&pcn_types.ObjectQuery{
 					By:     "labels",
 					Labels: nsSpec.Labels,
 				})
@@ -469,8 +469,8 @@ func (p *PcnPodController) podMeetsCriteria(pod *core_v1.Pod, podSpec, nsSpec, n
 	return true
 }
 
-// GetPods gets pod according to a specific pod query and a namespace query
-func (p *PcnPodController) GetPods(queryPod, queryNs, queryNode *pcn_types.ObjectQuery) ([]core_v1.Pod, error) {
+// List gets pod according to a specific pod query and a namespace query
+func (p *PcnPodController) List(queryPod, queryNs, queryNode *pcn_types.ObjectQuery) ([]core_v1.Pod, error) {
 	// The namespaces the pods must be found on
 	// If this stays empty it means that I don't care about the namespace they are in
 	ns := map[string]bool{}
@@ -479,7 +479,7 @@ func (p *PcnPodController) GetPods(queryPod, queryNs, queryNode *pcn_types.Objec
 	// Preliminary checks
 	//------------------------------------------------
 	// -- The namespace
-	nsList, err := Namespaces().GetNamespaces(queryNs)
+	nsList, err := Namespaces().List(queryNs)
 	if err != nil {
 		return []core_v1.Pod{}, err
 	}

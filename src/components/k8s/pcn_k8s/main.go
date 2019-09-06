@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/polycube-network/polycube/src/components/k8s/utils"
+
 	k8sfilter "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfilter"
 	k8switch "github.com/polycube-network/polycube/src/components/k8s/utils/k8switch"
 
@@ -233,23 +235,14 @@ func main() {
 	// kv handler
 	go kvM.Loop()
 
-	// Start the controllers
+	// Start the controllers and set up stuff that is needed for the
+	// network policies functionality.
 	pcn_controllers.Start(clientset)
-
-	//	-- Temporary, just to support what's already implemented
-	k8sPoliciesController := pcn_controllers.K8sPolicies()
-
-	// Get the namespace controller
-	nsController := pcn_controllers.Namespaces()
-
-	// Get the pod controller
-	podController := pcn_controllers.Pods()
-	// -- /Temporary
-
-	vPodsCIDR := k8sNode.VPodCIDR
+	utils.SetVPodsRange(k8sNode.VPodCIDR)
+	networkpolicies.SetBasePath(basePath)
 
 	// Start the policy manager
-	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(vPodsCIDR, basePath, nodeName, k8sPoliciesController, podController, nsController)
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(nodeName)
 
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
@@ -283,6 +276,7 @@ func main() {
 		}
 	}
 
+	pcn_controllers.Stop()
 	deleteNodes()
 	k8sNode.Uninit()
 	log.Debugf("Bye bye")

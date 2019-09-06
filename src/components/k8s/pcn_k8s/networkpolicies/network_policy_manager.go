@@ -1,7 +1,6 @@
 package networkpolicies
 
 import (
-	"net"
 	"sync"
 	"time"
 
@@ -9,8 +8,6 @@ import (
 	pcn_firewall "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	"github.com/polycube-network/polycube/src/components/k8s/utils"
-	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
-	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,25 +27,12 @@ type PcnNetworkPolicyManager interface {
 
 // NetworkPolicyManager is the implementation of the policy manager
 type NetworkPolicyManager struct {
-	// knpc is the kubernetes policy controller
-	knpc pcn_controllers.K8sNetworkPolicyController
-	// podController is the pod controller
-	podController pcn_controllers.PodController
-	// nsController is the namespace controller
-	nsController pcn_controllers.NamespaceController
 	// k8sPolicyParser is the instance of the default policy parser
 	k8sPolicyParser PcnK8sPolicyParser
-	// fwAPI is the firewall API
-	fwAPI *k8sfirewall.FirewallApiService
-	// nodeName is the name of the node in which we are running
-	nodeName string
 	// lock is the main lock used in the manager
 	lock sync.Mutex
 	// localFirewalls is a map of the firewall managers inside this node.
 	localFirewalls map[string]pcn_firewall.PcnFirewall
-	// unscheduleThreshold is the number of MINUTES after which a firewall manager
-	// should be deleted if no pods are assigned to it.
-	unscheduleThreshold int
 	// flaggedForDeletion contains ids of firewall managers
 	// that are scheduled to be deleted.
 	// Firewall managers will continue updating rules and parse policies even when
@@ -60,8 +44,6 @@ type NetworkPolicyManager struct {
 	// It is used to check if a pod has changed and needs to be unlinked.
 	// It is a very rare situation, but it must be handled anyway.
 	linkedPods map[k8s_types.UID]string
-	// vPodsRange is the virtual IP range of the pods
-	vPodsRange *net.IPNet
 	// policyUnsubscriptors contains function to be used when unsubscribing
 	policyUnsubscriptors map[string]*nsUnsubscriptor
 }
@@ -77,25 +59,13 @@ type nsUnsubscriptor struct {
 var startFirewall = pcn_firewall.StartFirewall
 
 // StartNetworkPolicyManager will start a new network policy manager.
-func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string, knpc pcn_controllers.K8sNetworkPolicyController, podController pcn_controllers.PodController, nsController pcn_controllers.NamespaceController) PcnNetworkPolicyManager {
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "StartNetworkPolicyManager()"})
-	l.Infoln("Starting Network Policy Manager")
-
-	cfgK8firewall := k8sfirewall.Configuration{BasePath: basePath}
-	srK8firewall := k8sfirewall.NewAPIClient(&cfgK8firewall)
-	fwAPI := srK8firewall.FirewallApi
+func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
+	logger.Infoln("Starting Network Policy Manager")
 
 	manager := NetworkPolicyManager{
-		knpc:                 knpc,
-		podController:        podController,
-		nsController:         nsController,
-		nodeName:             nodeName,
 		localFirewalls:       map[string]pcn_firewall.PcnFirewall{},
-		unscheduleThreshold:  UnscheduleThreshold,
 		flaggedForDeletion:   map[string]*time.Timer{},
 		linkedPods:           map[k8s_types.UID]string{},
-		fwAPI:                fwAPI,
-		vPodsRange:           vPodsRange,
 		policyUnsubscriptors: map[string]*nsUnsubscriptor{},
 	}
 
@@ -103,23 +73,29 @@ func StartNetworkPolicyManager(vPodsRange *net.IPNet, basePath, nodeName string,
 	// Subscribe to k8s policies events
 	//-------------------------------------
 
-	manager.k8sPolicyParser = newK8sPolicyParser(podController, vPodsRange)
+	manager.k8sPolicyParser = newK8sPolicyParser()
 
 	// Deploy a new k8s policy
-	knpc.Subscribe(pcn_types.New, manager.DeployK8sPolicy)
+	pcn_controllers.K8sPolicies().Subscribe(pcn_types.New, manager.DeployK8sPolicy)
 
 	// Remove a default policy
-	knpc.Subscribe(pcn_types.Delete, manager.RemoveK8sPolicy)
+	pcn_controllers.K8sPolicies().Subscribe(pcn_types.Delete, manager.RemoveK8sPolicy)
 
 	// Update a policy
-	knpc.Subscribe(pcn_types.Update, manager.UpdateK8sPolicy)
+	pcn_controllers.K8sPolicies().Subscribe(pcn_types.Update, manager.UpdateK8sPolicy)
 
 	//-------------------------------------
 	// Subscribe to pod events
 	//-------------------------------------
 
-	podController.Subscribe(pcn_types.Update, nil, nil, &pcn_types.ObjectQuery{Name: nodeName}, pcn_types.PodRunning, manager.checkNewPod)
-	podController.Subscribe(pcn_types.Delete, nil, nil, &pcn_types.ObjectQuery{Name: nodeName}, pcn_types.PodAnyPhase, manager.manageDeletedPod)
+	pcn_controllers.Pods().Subscribe(pcn_types.Update, nil, nil, &pcn_types.ObjectQuery{Name: nodeName}, pcn_types.PodRunning, manager.checkNewPod)
+	pcn_controllers.Pods().Subscribe(pcn_types.Delete, nil, nil, &pcn_types.ObjectQuery{Name: nodeName}, pcn_types.PodAnyPhase, manager.manageDeletedPod)
+
+	//-------------------------------------
+	// Set up the firewall api
+	//-------------------------------------
+
+	pcn_firewall.SetFwAPI(basePath)
 
 	return &manager
 }
@@ -129,8 +105,7 @@ func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.Ne
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "DeployK8sPolicy(" + policy.Name + ")"})
-	l.Infof("K8s policy %s has been deployed", policy.Name)
+	logger.Infof("K8s policy %s has been deployed", policy.Name)
 
 	manager.deployK8sPolicyToFw(policy, "")
 }
@@ -141,11 +116,10 @@ func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.Ne
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "RemoveK8sPolicy(" + policy.Name + ")"})
-	l.Infof("K8s policy %s is going to be removed", policy.Name)
+	logger.Infof("K8s policy %s is going to be removed", policy.Name)
 
 	if len(manager.localFirewalls) == 0 {
-		l.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -174,7 +148,7 @@ func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.Ne
 	}
 
 	if len(fws) == 0 {
-		l.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
+		logger.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
 		return
 	}
 
@@ -199,8 +173,7 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "UpdateK8sPolicy(" + policy.Name + ")"})
-	l.Infof("K8s policy %s has been updated. Going to parse it again", policy.Name)
+	logger.Infof("K8s policy %s has been updated. Going to parse it again", policy.Name)
 
 	// Updating a policy is no trivial task.
 	// We don't know what changed from its previous state:
@@ -210,7 +183,7 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 	// redeploy it.
 
 	if len(manager.localFirewalls) == 0 {
-		l.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -228,7 +201,7 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 	}
 
 	if len(fws) == 0 {
-		l.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
+		logger.Infof("Policy %s was not enforced by anyone in this node. Will stop here.", policy.Name)
 		return
 	}
 
@@ -253,20 +226,19 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 	//-------------------------------------
 	// Start & basic checks
 	//-------------------------------------
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "deployK8sPolicyToFw(" + policy.Name + ", " + fwName + ")"})
 
 	// NOTE: This function must be called while holding a lock.
 	// That's also one of the reasons why it is un-exported.
 
 	if len(manager.localFirewalls) == 0 {
-		l.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
 	// Does it exist?
 	if len(fwName) > 0 {
 		if _, exists := manager.localFirewalls[fwName]; !exists {
-			l.Errorf("Firewall manager with name %s does not exists in this node. Will stop here.", fwName)
+			logger.Errorf("Firewall manager with name %s does not exists in this node. Will stop here.", fwName)
 			return
 		}
 	}
@@ -333,7 +305,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 	}
 
 	if len(fws) == 0 {
-		l.Infof("Policy %s does not affect anyone in this node. Will stop here.", policy.Name)
+		logger.Infof("Policy %s does not affect anyone in this node. Will stop here.", policy.Name)
 		return
 	}
 
@@ -371,7 +343,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 			}
 
 			// Subscribe
-			unsub, err := manager.nsController.Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
+			unsub, err := pcn_controllers.Namespaces().Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
 				manager.handleNamespaceUpdate(ns, prev, action, policy.Name, policy.Namespace)
 			})
 			if err == nil {
@@ -386,8 +358,7 @@ func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.N
 // handleNamespaceUpdate checks if a namespace has changed its labels.
 // If so, the appropriate firewall should update the policies as well.
 func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, action pcn_types.FirewallAction, policyName, policyNs string) {
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "handleNamespaceUpdate(" + ns.Name + ")"})
-	l.Infof("Namespace %s has been updated", ns.Name)
+	logger.Infof("Namespace %s has been updated", ns.Name)
 
 	// Function that checks if an update of the policy is needed.
 	// Done like this so we can use defer and keep the code more
@@ -414,17 +385,17 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 			return nil, false
 		}
 
-		l.Infof("%s's labels have changed", ns.Name)
+		logger.Infof("%s's labels have changed", ns.Name)
 
 		policyQuery := utils.BuildQuery(policyName, nil)
 		nsQuery := utils.BuildQuery(policyNs, nil)
-		policies, err := manager.knpc.GetPolicies(policyQuery, nsQuery)
+		policies, err := pcn_controllers.K8sPolicies().List(policyQuery, nsQuery)
 		if err != nil {
-			l.Errorf("Could not load policies named %s on namespace %s. Error: %s", policyName, policyNs, err)
+			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", policyName, policyNs, err)
 			return nil, false
 		}
 		if len(policies) == 0 {
-			l.Errorf("Policiy named %s on namespace %s has not been found.", policyName, policyNs)
+			logger.Errorf("Policiy named %s on namespace %s has not been found.", policyName, policyNs)
 			return nil, false
 		}
 		policy := policies[0]
@@ -446,15 +417,13 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 // checkNewPod will perform some checks on the new pod just updated.
 // Specifically, it will check if the pod needs to be protected.
 func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "checkNewPod(" + pod.Name + ")"})
-
 	//-------------------------------------
 	// Basic Checks
 	//-------------------------------------
 
 	// Is this pod from the kube-system?
 	if pod.Namespace == "kube-system" {
-		l.Infof("Pod %s belongs to the kube-system namespace: no point in checking for policies. Will stop here.", pod.Name)
+		logger.Infof("Pod %s belongs to the kube-system namespace: no point in checking for policies. Will stop here.", pod.Name)
 		return
 	}
 
@@ -494,7 +463,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 	//-------------------------------------
 	// Must this pod enforce any policy?
 	//-------------------------------------
-	k8sPolicies, _ := manager.knpc.GetPolicies(nil, &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace})
+	k8sPolicies, _ := pcn_controllers.K8sPolicies().List(nil, &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace})
 	for _, kp := range k8sPolicies {
 		if manager.k8sPolicyParser.DoesPolicyAffectPod(&kp, pod) {
 			manager.deployK8sPolicyToFw(&kp, fw.Name())
@@ -507,7 +476,6 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 // Returns the newly created/already existing firewall manager,
 // its key, and TRUE if it was just created.
 func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_v1.Pod) (pcn_firewall.PcnFirewall, bool) {
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "getOrCreateFirewallManager(" + pod.Name + ")"})
 	fwKey := pod.Namespace + "|" + utils.ImplodeLabels(pod.Labels, ",", true)
 
 	//-------------------------------------
@@ -525,7 +493,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 		if exists {
 			unlinked, remaining := prevFw.Unlink(pod, pcn_firewall.CleanFirewall)
 			if !unlinked {
-				l.Warningf("%s was not linked in previous firewall manager!", pod.UID)
+				logger.Warningf("%s was not linked in previous firewall manager!", pod.UID)
 			} else {
 				if remaining == 0 {
 					manager.flagForDeletion(prevFw.Name())
@@ -533,7 +501,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 				delete(manager.linkedPods, pod.UID)
 			}
 		} else {
-			l.Warningf("Could not find %s previous firewall manager!", pod.UID)
+			logger.Warningf("Could not find %s previous firewall manager!", pod.UID)
 		}
 	}
 
@@ -542,7 +510,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 	//-------------------------------------
 	fw, exists := manager.localFirewalls[fwKey]
 	if !exists {
-		manager.localFirewalls[fwKey] = startFirewall(manager.fwAPI, manager.podController, manager.vPodsRange, fwKey, pod.Namespace, pod.Labels)
+		manager.localFirewalls[fwKey] = startFirewall(fwKey, pod.Namespace, pod.Labels)
 		fw = manager.localFirewalls[fwKey]
 		return fw, true
 	}
@@ -555,7 +523,7 @@ func (manager *NetworkPolicyManager) flagForDeletion(fwKey string) {
 
 	// Was it flagged?
 	if !wasFlagged {
-		manager.flaggedForDeletion[fwKey] = time.AfterFunc(time.Minute*time.Duration(manager.unscheduleThreshold), func() {
+		manager.flaggedForDeletion[fwKey] = time.AfterFunc(time.Minute*time.Duration(UnscheduleThreshold), func() {
 			manager.deleteFirewallManager(fwKey)
 		})
 	}
@@ -578,10 +546,8 @@ func (manager *NetworkPolicyManager) manageDeletedPod(_ *core_v1.Pod, pod *core_
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	l := log.New().WithFields(log.Fields{"by": PM, "method": "manageDeletedPod(" + pod.Name + ")"})
-
 	if pod.Namespace == "kube-system" {
-		l.Infof("Pod %s belongs to the kube-system namespace: no point in checking its firewall manager. Will stop here.", pod.Name)
+		logger.Infof("Pod %s belongs to the kube-system namespace: no point in checking its firewall manager. Will stop here.", pod.Name)
 		return
 	}
 
@@ -594,14 +560,14 @@ func (manager *NetworkPolicyManager) manageDeletedPod(_ *core_v1.Pod, pod *core_
 	if !exists {
 		// The firewall manager for this pod does not exist.
 		// Then who managed it until now? This is a very improbable case.
-		l.Warningln("Could not find a firewall manager for dying pod", pod.UID, "!")
+		logger.Warningln("Could not find a firewall manager for dying pod", pod.UID, "!")
 		return
 	}
 
 	wasLinked, remaining := fw.Unlink(pod, pcn_firewall.DestroyFirewall)
 	if !wasLinked {
 		// This pod wasn't even linked to the firewall!
-		l.Warningln("Dying pod", pod.UID, "was not linked to its firewall manager", fwKey)
+		logger.Warningln("Dying pod", pod.UID, "was not linked to its firewall manager", fwKey)
 		return
 	}
 

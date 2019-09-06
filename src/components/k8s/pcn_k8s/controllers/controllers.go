@@ -23,7 +23,6 @@ const (
 )
 
 func init() {
-
 	logger = log.New()
 
 	// Only log the debug severity or above.

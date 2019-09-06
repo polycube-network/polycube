@@ -27,6 +27,10 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
+var (
+	vPodsRange *net.IPNet
+)
+
 // Describes the network configuration of the host
 type HostNetworkConf struct {
 	DefaultIface  string
@@ -71,6 +75,10 @@ func GetHostNetworkConf(NodeIP string) (conf HostNetworkConf, err error) {
 	}, nil
 }
 
+func SetVPodsRange(vrange *net.IPNet) {
+	vPodsRange = vrange
+}
+
 // BuildQuery builds a query to be sent to a controller
 func BuildQuery(name string, labels map[string]string) *pcn_types.ObjectQuery {
 	// All?
@@ -94,7 +102,7 @@ func BuildQuery(name string, labels map[string]string) *pcn_types.ObjectQuery {
 }
 
 // GetPodVirtualIP gets a pod's virtual IP starting from the IP assigned to it
-func GetPodVirtualIP(vPodsRange *net.IPNet, ip string) string {
+func GetPodVirtualIP(ip string) string {
 	l := log.New().WithFields(log.Fields{"by": "utils", "method": "GetPodVirtualIP"})
 
 	// transform the virtual pod ip range in bytes

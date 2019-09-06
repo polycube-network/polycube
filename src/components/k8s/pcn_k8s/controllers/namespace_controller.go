@@ -28,8 +28,8 @@ type NamespaceController interface {
 	// It returns an error if the event type does not exist.
 	// It returns a function to call when you want to stop tracking that event.
 	Subscribe(event pcn_types.EventType, consumer func(*core_v1.Namespace, *core_v1.Namespace)) (func(), error)
-	// GetNamespaces gets namespaces according to a specific namespace query
-	GetNamespaces(query *pcn_types.ObjectQuery) ([]core_v1.Namespace, error)
+	// List gets namespaces according to a specific namespace query
+	List(query *pcn_types.ObjectQuery) ([]core_v1.Namespace, error)
 }
 
 // PcnNamespaceController is the implementation of the Namespace Controller
@@ -351,8 +351,8 @@ func (n *PcnNamespaceController) Subscribe(event pcn_types.EventType, consumer f
 	}
 }
 
-// GetNamespaces gets namespaces according to a specific namespace query
-func (n *PcnNamespaceController) GetNamespaces(query *pcn_types.ObjectQuery) ([]core_v1.Namespace, error) {
+// List gets namespaces according to a specific namespace query
+func (n *PcnNamespaceController) List(query *pcn_types.ObjectQuery) ([]core_v1.Namespace, error) {
 	nsInterface := clientset.CoreV1().Namespaces()
 
 	//-------------------------------------

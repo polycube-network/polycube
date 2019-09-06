@@ -27,8 +27,8 @@ type K8sNetworkPolicyController interface {
 	// It returns an error if the event type does not exist.
 	// It returns a function to call when you want to stop tracking that event.
 	Subscribe(event pcn_types.EventType, consumer func(*networking_v1.NetworkPolicy, *networking_v1.NetworkPolicy)) (func(), error)
-	// GetPolicies gets policies according to a specific query
-	GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error)
+	// List gets policies according to a specific query
+	List(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error)
 }
 
 // PcnK8sNetworkPolicyController is the implementation of
@@ -270,10 +270,10 @@ func (npc *PcnK8sNetworkPolicyController) retrievePolicyFromCache(obj interface{
 	return policy, nil
 }
 
-// GetPolicies returns a list of network policies that match the specified
+// List returns a list of network policies that match the specified
 // criteria. Returns an empty list if no network policies have been found
 // or an error occurred. The error is returned in this case.
-func (npc *PcnK8sNetworkPolicyController) GetPolicies(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
+func (npc *PcnK8sNetworkPolicyController) List(pQuery, nsQuery *pcn_types.ObjectQuery) ([]networking_v1.NetworkPolicy, error) {
 	//-------------------------------------
 	//	Basic query checks
 	//-------------------------------------

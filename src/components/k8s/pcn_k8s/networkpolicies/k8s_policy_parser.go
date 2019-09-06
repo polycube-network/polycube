@@ -3,7 +3,6 @@ package networkpolicies
 import (
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 
 	"github.com/polycube-network/polycube/src/components/k8s/utils"
@@ -11,11 +10,9 @@ import (
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
-	log "github.com/sirupsen/logrus"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 // PcnK8sPolicyParser is the default policy (e.g.: kubernetes') parser
@@ -39,20 +36,11 @@ type PcnK8sPolicyParser interface {
 
 // K8sPolicyParser is the implementation of the default parser
 type K8sPolicyParser struct {
-	podController pcn_controllers.PodController
-	nsController  pcn_controllers.NamespaceController
-	vPodsRange    *net.IPNet
-	clientset     kubernetes.Interface
 }
 
 // newK8sPolicyParser starts a new k8s policy parser
-func newK8sPolicyParser(clientset kubernetes.Interface, podController pcn_controllers.PodController, nsController pcn_controllers.NamespaceController, vPodsRange *net.IPNet) *K8sPolicyParser {
-	return &K8sPolicyParser{
-		podController: podController,
-		nsController:  nsController,
-		vPodsRange:    vPodsRange,
-		clientset:     clientset,
-	}
+func newK8sPolicyParser() *K8sPolicyParser {
+	return &K8sPolicyParser{}
 }
 
 // ParseRules is a convenient method for parsing Ingress and Egress concurrently
@@ -103,11 +91,10 @@ func (d *K8sPolicyParser) ParseRules(ingress []networking_v1.NetworkPolicyIngres
 
 // ParseIngress parses the Ingress section of a policy
 func (d *K8sPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIngressRule, namespace string) pcn_types.ParsedRules {
-
 	//-------------------------------------
 	// Init
 	//-------------------------------------
-	l := log.New().WithFields(log.Fields{"by": KPP, "method": "ParseIngress"})
+
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
@@ -191,7 +178,7 @@ func (d *K8sPolicyParser) ParseIngress(rules []networking_v1.NetworkPolicyIngres
 						generatedEgressRules = append(generatedEgressRules, rulesGot.Egress...)
 					}
 				} else {
-					l.Errorf("Error while parsing selectors: %s", err)
+					logger.Errorf("Error while parsing selectors: %s", err)
 				}
 			}
 		}
@@ -212,7 +199,7 @@ func (d *K8sPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgressR
 	//-------------------------------------
 	// Init
 	//-------------------------------------
-	l := log.New().WithFields(log.Fields{"by": KPP, "method": "ParseEgress"})
+
 	parsed := pcn_types.ParsedRules{
 		Ingress: []k8sfirewall.ChainRule{},
 		Egress:  []k8sfirewall.ChainRule{},
@@ -286,7 +273,7 @@ func (d *K8sPolicyParser) ParseEgress(rules []networking_v1.NetworkPolicyEgressR
 						generatedEgressRules = append(generatedEgressRules, rulesGot.Egress...)
 					}
 				} else {
-					l.Errorf("Error while parsing selectors: %s", err)
+					logger.Errorf("Error while parsing selectors: %s", err)
 				}
 			}
 		}
@@ -324,7 +311,7 @@ func (d *K8sPolicyParser) insertPorts(generatedIngressRules, generatedEgressRule
 		rule := generatedIngressRules[i]
 		for _, generatedPort := range generatedPorts {
 			edited := rule
-			edited.Dport = generatedPort.Port
+			edited.Sport = generatedPort.Port
 			edited.L4proto = generatedPort.Protocol
 			parsed.Ingress = append(parsed.Ingress, edited)
 		}
@@ -335,7 +322,7 @@ func (d *K8sPolicyParser) insertPorts(generatedIngressRules, generatedEgressRule
 		rule := generatedEgressRules[i]
 		for _, generatedPort := range generatedPorts {
 			edited := rule
-			edited.Sport = generatedPort.Port
+			edited.Dport = generatedPort.Port
 			edited.L4proto = generatedPort.Protocol
 			parsed.Egress = append(parsed.Egress, edited)
 		}
@@ -517,20 +504,9 @@ func (d *K8sPolicyParser) parseSelectors(podSelector, namespaceSelector *meta_v1
 	}
 
 	// Now get the pods
-	podsFound, err := d.podController.GetPods(podQuery, nsQuery, nil)
+	podsFound, err := pcn_controllers.Pods().List(podQuery, nsQuery, nil)
 	if err != nil {
 		return rules, fmt.Errorf("Error while trying to get pods %s", err.Error())
-	}
-
-	// First, set the service cluster IP
-	if direction == pcn_types.Outgoing {
-		ips := d.getServiceClusterIPs(podQuery, nsQuery)
-
-		for _, ip := range ips {
-			_parsed := d.getConnectionTemplate(direction, "", ip, pcn_types.ActionForward, []pcn_types.ProtoPort{})
-			rules.Ingress = append(rules.Ingress, _parsed.Ingress...)
-			rules.Egress = append(rules.Egress, _parsed.Egress...)
-		}
 	}
 
 	// Now build the pods
@@ -538,16 +514,10 @@ func (d *K8sPolicyParser) parseSelectors(podSelector, namespaceSelector *meta_v1
 		if len(pod.Status.PodIP) == 0 {
 			continue
 		}
-
 		parsed := pcn_types.ParsedRules{}
-		podIPs := []string{pod.Status.PodIP}
-
-		if direction == pcn_types.Incoming {
-			podIPs = append(podIPs, utils.GetPodVirtualIP(d.vPodsRange, pod.Status.PodIP))
-		}
+		podIPs := []string{pod.Status.PodIP, utils.GetPodVirtualIP(pod.Status.PodIP)}
 
 		for _, podIP := range podIPs {
-
 			// Prepare the ips (these are defaults)
 			src := ""
 			dst := ""
@@ -569,42 +539,6 @@ func (d *K8sPolicyParser) parseSelectors(podSelector, namespaceSelector *meta_v1
 	}
 
 	return rules, nil
-}
-
-func (d *K8sPolicyParser) getServiceClusterIPs(podQuery, nsQuery *pcn_types.ObjectQuery) []string {
-	l := log.New().WithFields(log.Fields{"by": KPP, "method": "getServiceClusterIPs"})
-
-	// Get the namespaces
-	namespaces, err := d.nsController.GetNamespaces(nsQuery)
-	if err != nil {
-		l.Errorf("Could not find namespaces. Returning empty cluster IPs.")
-		return []string{}
-	}
-
-	ips := []string{}
-
-	// Get the cluster IPs
-	// NOTE: if port is specified, this will also get cluster ips that do not
-	// have anything to do with that port
-	for _, ns := range namespaces {
-		list, err := d.clientset.CoreV1().Services(ns.Name).List(meta_v1.ListOptions{})
-		if err != nil {
-			l.Errorf("Error while trying to get services for namespace %s: %s.", ns.Namespace, err)
-			continue
-		}
-
-		// Loop through all services
-		for _, service := range list.Items {
-			// Skip this if it doen't match
-			if podQuery != nil && !utils.AreLabelsContained(service.Spec.Selector, podQuery.Labels) {
-				continue
-			}
-
-			ips = append(ips, service.Spec.ClusterIP)
-		}
-	}
-
-	return ips
 }
 
 // buildPodQueries builds the queries to be directed to the pod controller,
