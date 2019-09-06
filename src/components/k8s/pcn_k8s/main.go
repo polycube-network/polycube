@@ -76,12 +76,6 @@ var (
 	endpointsWatcher watch.Interface
 	nodesWatcher     watch.Interface
 
-	// --- Controllers
-	k8sPoliciesController *pcn_controllers.K8sNetworkPolicyController
-	podController         pcn_controllers.PodController
-	nsController          pcn_controllers.NamespaceController
-	// --- /Controllers
-
 	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
 
 	stop bool
@@ -96,16 +90,6 @@ func cleanup() {
 
 	if endpointsWatcher != nil {
 		endpointsWatcher.Stop()
-	}
-
-	if k8sPoliciesController != nil {
-		k8sPoliciesController.Stop()
-	}
-	if podController != nil {
-		podController.Stop()
-	}
-	if nsController != nil {
-		nsController.Stop()
 	}
 }
 
@@ -246,26 +230,21 @@ func main() {
 		panic(err0.Error())
 	}
 
-	// Set up the network policy controller (for the kubernetes policies)
-	k8sPoliciesController = pcn_controllers.NewK8sNetworkPolicyController(clientset)
+	// Start the controllers
+	pcn_controllers.Start(clientset)
+
+	//	-- Temporary, just to support what's already implemented
+	k8sPoliciesController := pcn_controllers.K8sPolicies()
 
 	// Get the namespace controller
-	nsController = pcn_controllers.NewNsController(clientset)
+	nsController := pcn_controllers.Namespaces()
 
 	// Get the pod controller
-	podController = pcn_controllers.NewPodController(clientset, nsController)
+	podController := pcn_controllers.Pods()
+	// -- /Temporary
 
 	// kv handler
 	go kvM.Loop()
-
-	// Start the default network policy controller
-	go k8sPoliciesController.Run()
-
-	// Start the namespace controller
-	go nsController.Run()
-
-	// Start the pod controller
-	go podController.Run()
 
 	vPodsCIDR := k8sNode.VPodCIDR
 
@@ -303,12 +282,6 @@ func main() {
 			processNode(&got)
 		}
 	}
-
-	// Stop the controllers. After some tests, it resulted that it was better
-	// to stop them *before* closing the others
-	k8sPoliciesController.Stop()
-	nsController.Stop()
-	podController.Stop()
 
 	deleteNodes()
 	k8sNode.Uninit()
