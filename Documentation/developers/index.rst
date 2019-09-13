@@ -16,6 +16,10 @@ The process to create or update service could be summarized in these steps:
 Please note that steps (1) and (2) are needed only when there is a change to the the YANG data model.
 In case we have to slightly modify an existing service (e.g., fixing a bug in the code), only steps (3) and (4) are required.
 
+Debugging Polycube services
+---------------------------
+:doc:`See how to use the provided logging primitives <debugging>`
+
 Some hints for programmers
 --------------------------
 
