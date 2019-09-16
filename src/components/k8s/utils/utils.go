@@ -149,6 +149,11 @@ func ImplodeLabels(labels map[string]string, sep string, sortKeys bool) string {
 // in the second one and values are the same.
 // Basically checks if a map is a sub-map.
 func AreLabelsContained(needle map[string]string, haystack map[string]string) bool {
+	// A nil map means everything
+	if needle == nil {
+		return true
+	}
+
 	// Are both empty?
 	if len(needle) == 0 && len(haystack) == 0 {
 		return true
@@ -171,4 +176,21 @@ func AreLabelsContained(needle map[string]string, haystack map[string]string) bo
 	}
 
 	return true
+}
+
+// BuildObjectKey builds the key of an object based on its query
+func BuildObjectKey(obj *pcn_types.ObjectQuery, peerType string) string {
+	key := peerType
+
+	if obj == nil {
+		key += "Name:"
+	} else {
+		if len(obj.Name) > 0 {
+			key += "Name:" + obj.Name
+		} else {
+			key += "Labels:" + ImplodeLabels(obj.Labels, ",", true)
+		}
+	}
+
+	return key
 }

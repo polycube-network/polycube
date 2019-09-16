@@ -17,7 +17,7 @@ func init() {
 	logger.SetLevel(log.DebugLevel)
 
 	// All logs will specify who the function that logged it
-	logger.SetReportCaller(true)
+	//logger.SetReportCaller(true)
 }
 
 // SetFwAPI sets the firewall API on the package
