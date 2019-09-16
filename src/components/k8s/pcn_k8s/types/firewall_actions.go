@@ -8,9 +8,3 @@ type FirewallAction struct {
 	Key             string
 	Templates       ParsedRules
 }
-
-// Protoport defines the protocol and the port
-type ProtoPort struct {
-	Protocol string
-	Port     int32
-}

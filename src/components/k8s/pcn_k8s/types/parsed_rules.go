@@ -10,12 +10,16 @@ const (
 	ConnTrackNew         = "new"
 	ConnTrackEstablished = "established"
 	ConnTrackInvalid     = "invalid"
-	Incoming             = "egress"
-	Outgoing             = "ingress"
+	ChainIncoming        = "egress"
+	ChainOutgoing        = "ingress"
+	PolicyIncoming       = "ingress"
+	PolicyOutgoing       = "egress"
+	K8sProvider          = "k8s"
+	PcnProvider          = "pcn"
 )
 
 // ParsedRules contains a list of the rules parsed for each direction
 type ParsedRules struct {
-	Ingress []k8sfirewall.ChainRule
-	Egress  []k8sfirewall.ChainRule
+	Incoming []k8sfirewall.ChainRule
+	Outgoing []k8sfirewall.ChainRule
 }
