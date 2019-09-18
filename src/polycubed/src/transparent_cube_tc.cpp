@@ -99,7 +99,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
     case RX_DROP:
       return TC_ACT_SHOT;
     case RX_CONTROLLER:
-      skb->cb[0] = CUBE_ID | TYPE << 16;
+      skb->cb[0] = (skb->cb[0] & 0x8000) | CUBE_ID | TYPE << 16;
       return to_controller(skb, md.reason);
     case RX_OK:
 #if NEXT == 0xffff
