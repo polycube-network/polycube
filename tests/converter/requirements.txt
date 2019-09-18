@@ -1,0 +1,3 @@
+junit-xml==1.8
+junitparser==1.3.2
+six==1.12.0

@@ -33,10 +33,16 @@ failed=false
 polycubed_crash=false
 last_test_result=0
 
-polycubed="sudo polycubed "
-if $DEBUG ; then
-  polycubed=$polycubed"-d"
+if [ -z "$polycubed" ]
+then
+      polycubed="sudo polycubed"
+      if $DEBUG ; then
+         polycubed=$polycubed"-d"
+      fi
+else
+      echo "Polycube restart command is set to: $polycubed"
 fi
+
 
 test_results="test_results_"$(date +%Y%m%d_%H%M%S)
 test_log="test_log_"$(date +%Y%m%d_%H%M%S)

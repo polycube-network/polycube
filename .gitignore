@@ -4,3 +4,4 @@ build/*
 *.swagger-codegen
 swagger-codegen*
 .vscode/*
+.idea/*

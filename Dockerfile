@@ -1,6 +1,8 @@
 # syntax = tonistiigi/dockerfile:runmount20180618 # enables --mount option for run
-FROM ubuntu:18.04
-ARG MODE=default
+FROM polycubebot/base_image:latest
+ARG DEFAULT_MODE=default
+ENV MODE=$DEFAULT_MODE
+RUN echo "The mode is $MODE"
 RUN --mount=target=/polycube cp -r /polycube /tmp/polycube && \
 cd /tmp/polycube && \
 SUDO="" USER="root" WORKDIR="/tmp/dev" ./scripts/install.sh $MODE && \
