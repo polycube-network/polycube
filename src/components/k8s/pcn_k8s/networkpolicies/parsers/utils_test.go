@@ -226,7 +226,7 @@ func TestFillTemplates(t *testing.T) {
 	}
 	src := "10.10.10.10"
 	dst := "11.11.11.11"
-	result := fillTemplates(src, dst, rules)
+	result := FillTemplates(src, dst, rules)
 
 	assert.Len(result, len(rules))
 	for _, rule := range result {

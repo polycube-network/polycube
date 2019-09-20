@@ -14,8 +14,8 @@ import (
 	k8s_types "k8s.io/apimachinery/pkg/types"
 )
 
-// PcnFirewall is the interface of the firewall manager.
-type PcnFirewall interface {
+// PcnFirewallManager is the interface of the firewall manager.
+type PcnFirewallManager interface {
 	// Link adds a new pod to the list of pods that must be managed by this manager.
 	// Best practice is to only link similar pods
 	// (i.e.: same labels, same namespace, same node).
@@ -101,7 +101,7 @@ type subscriptions struct {
 }
 
 // StartFirewall will start a new firewall manager
-func StartFirewall(name, namespace string, labels map[string]string) PcnFirewall {
+func StartFirewall(name, namespace string, labels map[string]string) PcnFirewallManager {
 	logger.Infoln("Starting Firewall Manager, with name", name)
 
 	manager := &FirewallManager{
@@ -727,8 +727,8 @@ func (d *FirewallManager) definePolicyActions(policyName string, actions []pcn_t
 		if _, exists := d.policyActions[action.Key].actions[policyName]; !exists {
 			d.policyActions[action.Key].actions[policyName] = &pcn_types.ParsedRules{}
 		}
-		d.policyActions[action.Key].actions[policyName].Ingress = append(d.policyActions[action.Key].actions[policyName].Ingress, action.Templates.Ingress...)
-		d.policyActions[action.Key].actions[policyName].Egress = append(d.policyActions[action.Key].actions[policyName].Egress, action.Templates.Egress...)
+		//d.policyActions[action.Key].actions[policyName].Ingress = append(d.policyActions[action.Key].actions[policyName].Ingress, action.Templates.Ingress...)
+		//d.policyActions[action.Key].actions[policyName].Egress = append(d.policyActions[action.Key].actions[policyName].Egress, action.Templates.Egress...)
 
 		// ... And subscribe to events
 		if shouldSubscribe {
@@ -885,7 +885,7 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 
 			//	Then format the rules
 			for _, podIP := range podIPs {
-				ingressRules, egressRules := d.storeRules(policy, podIP, rules.Ingress, rules.Egress)
+				ingressRules, egressRules := d.storeRules(policy, podIP, rules.Incoming, rules.Outgoing)
 				ingress = append(ingress, ingressRules...)
 				egress = append(egress, egressRules...)
 			}

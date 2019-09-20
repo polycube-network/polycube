@@ -105,7 +105,7 @@ func buildRuleTemplates(direction, action string, ports []pcn_types.ProtoPort) p
 	return rulesToReturn
 }
 
-func fillTemplates(sourceIP, destinationIP string, rules []k8sfirewall.ChainRule) []k8sfirewall.ChainRule {
+func FillTemplates(sourceIP, destinationIP string, rules []k8sfirewall.ChainRule) []k8sfirewall.ChainRule {
 	if len(rules) == 0 {
 		return rules
 	}
@@ -123,3 +123,24 @@ func fillTemplates(sourceIP, destinationIP string, rules []k8sfirewall.ChainRule
 
 	return newRules
 }
+
+/*func PutPeer(ip string, rules []k8sfirewall.ChainRule, direction pcn_types.PolicyDirection) pcn_types.ParsedRules {
+	if len(rules) == 0 {
+		return rules
+	}
+
+	if len(ip) == 0 {
+		return rules
+	}
+
+	parsed := pcn_types.ParsedRules{}
+
+	newRules := make([]k8sfirewall.ChainRule, len(rules))
+	for i, rule := range rules {
+		newRules[i] = rule
+		newRules[i].Src = sourceIP
+		newRules[i].Dst = destinationIP
+	}
+
+	return newRules
+}*/

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"net"
 	"testing"
 
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
@@ -194,5 +195,40 @@ func TestImplodeLabels(t *testing.T) {
 	t.Run("values", func(t *testing.T) {
 		result := ImplodeLabels(labels, "!", true)
 		assert.Equal("applies-to=me!not-to=you", result)
+	})
+}
+
+func TestGetPodVirtualIP(t *testing.T) {
+	assert := assert.New(t)
+	ip := "192.168.133.78"
+
+	// --- 16
+	t.Run("16", func(t *testing.T) {
+		ipRange := "10.10.0.0/16"
+		_, v, _ := net.ParseCIDR(ipRange)
+
+		SetVPodsRange(v)
+		result := GetPodVirtualIP(ip)
+		assert.Equal("10.10.133.78", result)
+	})
+
+	// --- 24
+	t.Run("16", func(t *testing.T) {
+		ipRange := "10.10.0.0/24"
+		_, v, _ := net.ParseCIDR(ipRange)
+
+		SetVPodsRange(v)
+		result := GetPodVirtualIP(ip)
+		assert.Equal("10.10.0.78", result)
+	})
+
+	// --- 23
+	t.Run("16", func(t *testing.T) {
+		ipRange := "10.10.0.0/23"
+		_, v, _ := net.ParseCIDR(ipRange)
+
+		SetVPodsRange(v)
+		result := GetPodVirtualIP(ip)
+		assert.Equal("10.10.1.78", result)
 	})
 }
