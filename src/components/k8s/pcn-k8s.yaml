@@ -32,12 +32,16 @@ data:
   # This is a temporary workaroud and should be fixed in the near future.
   vtepsRange: "10.18.0.0/16"
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: polycube
   namespace: kube-system
 spec:
+  selector:
+    matchLabels:
+      k8s-app: polycube
+      kubernetes.io/cluster-service: "true"     
   template:
     metadata:
       labels:
