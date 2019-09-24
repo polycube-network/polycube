@@ -68,7 +68,7 @@ func ParseK8sIngress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPoli
 		// Build the templates
 		//-------------------------------------
 
-		templates := buildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
+		templates := BuildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
 
 		//-------------------------------------
 		// Set up common fields
@@ -88,7 +88,7 @@ func ParseK8sIngress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPoli
 		if rule.From == nil {
 			// From is nil: ALL resources are allowed
 			newPolicy.Name = reformatPolicyName(policy.Name, direction, ruleID, peerID)
-			newPolicy.Templates = buildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
+			newPolicy.Templates = BuildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
 			newPolicy.Action = "forward-all"
 			policies = append(policies, newPolicy)
 			peerID++
@@ -109,7 +109,7 @@ func ParseK8sIngress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPoli
 				if exceptions != nil {
 					exceptionsPolicy := newPolicy
 					exceptionsPolicy.Action = "drop"
-					exceptionsPolicy.Templates = buildRuleTemplates(direction, pcn_types.ActionDrop, generatedPorts)
+					exceptionsPolicy.Templates = BuildRuleTemplates(direction, pcn_types.ActionDrop, generatedPorts)
 					exceptionsPolicy.Peer = *exceptions
 					policies = append(policies, exceptionsPolicy)
 					peerID++
@@ -200,7 +200,7 @@ func ParseK8sEgress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPolic
 		// Build the templates
 		//-------------------------------------
 
-		templates := buildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
+		templates := BuildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
 
 		//-------------------------------------
 		// Set up common fields
@@ -220,7 +220,7 @@ func ParseK8sEgress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPolic
 		if rule.To == nil {
 			// To is nil: ALL resources are allowed
 			newPolicy.Name = reformatPolicyName(policy.Name, direction, ruleID, peerID)
-			newPolicy.Templates = buildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
+			newPolicy.Templates = BuildRuleTemplates(direction, pcn_types.ActionForward, generatedPorts)
 			newPolicy.Action = "forward-all"
 			policies = append(policies, newPolicy)
 			peerID++
@@ -241,7 +241,7 @@ func ParseK8sEgress(policy *networking_v1.NetworkPolicy) []pcn_types.ParsedPolic
 				if exceptions != nil {
 					exceptionsPolicy := newPolicy
 					exceptionsPolicy.Action = "drop"
-					exceptionsPolicy.Templates = buildRuleTemplates(direction, pcn_types.ActionDrop, generatedPorts)
+					exceptionsPolicy.Templates = BuildRuleTemplates(direction, pcn_types.ActionDrop, generatedPorts)
 					exceptionsPolicy.Peer = *exceptions
 					policies = append(policies, exceptionsPolicy)
 					peerID++
@@ -474,4 +474,34 @@ func parseProtocolAndPort(pp networking_v1.NetworkPolicyPort) (bool, string, int
 
 	// Not supported ¯\_(ツ)_/¯
 	return false, "", 0
+}
+
+// DoesK8sPolicyAffectPod checks if the provided policy affects the provided pod,
+// returning TRUE if it does
+func DoesK8sPolicyAffectPod(policy *networking_v1.NetworkPolicy, pod *core_v1.Pod) bool {
+
+	// MatchExpressions? (we don't support them yet)
+	if len(policy.Spec.PodSelector.MatchExpressions) > 0 {
+		return false
+	}
+
+	// Not in the same namespace?
+	if policy.Namespace != pod.Namespace {
+		return false
+	}
+
+	// No labels in the policy? (= must be applied by all pods)
+	if len(policy.Spec.PodSelector.MatchLabels) == 0 {
+		return true
+	}
+
+	// No labels in the pod?
+	// (if you're here, it means that there are labels in the policy.
+	// But this pod has no labels, so this policy does not apply to it)
+	if len(pod.Labels) == 0 {
+		return false
+	}
+
+	// Finally check the labels
+	return utils.AreLabelsContained(policy.Spec.PodSelector.MatchLabels, pod.Labels)
 }

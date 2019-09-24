@@ -40,32 +40,67 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 	}
 
 	// Is IPBlock?
-	if len(policy.Peer.IPBlock) > 0 {
+	ipbLock := func() pcn_types.ParsedRules {
+		rulesToReturn := pcn_types.ParsedRules{}
 		for _, ip := range policy.Peer.IPBlock {
 			if policy.Direction == pcn_types.PolicyIncoming {
-				rules.Incoming = append(rules.Incoming, parsers.FillTemplates(ip, "", policy.Templates.Incoming)...)
+				rulesToReturn.Incoming = append(rulesToReturn.Incoming, parsers.FillTemplates(ip, "", policy.Templates.Incoming)...)
 			} else {
-				rules.Outgoing = append(rules.Outgoing, parsers.FillTemplates("", ip, policy.Templates.Outgoing)...)
+				rulesToReturn.Outgoing = append(rulesToReturn.Outgoing, parsers.FillTemplates("", ip, policy.Templates.Outgoing)...)
 			}
 		}
-	} else {
+
+		return rulesToReturn
+	}
+
+	// Pod?
+	podPeer := func() pcn_types.ParsedRules {
+		rulesToReturn := pcn_types.ParsedRules{}
+
+		// Get its services, but only if outgoing
+		if policy.Direction == pcn_types.PolicyOutgoing {
+			services, err := pcn_controllers.Services().List(policy.Peer.Peer, policy.Peer.Namespace)
+			if err != nil {
+				logger.Warningf("Could not get services while building rules. Going to skip.")
+			} else {
+				// For each service that applies to this pod (usually one,
+				// but who knows), insert also the service's Cluster IP
+				for _, serv := range services {
+					rulesToReturn.Outgoing = append(rulesToReturn.Outgoing, parsers.FillTemplates("", serv.Spec.ClusterIP, policy.Templates.Outgoing)...)
+				}
+			}
+		}
+
+		// Get the pods list
 		pods, err := pcn_controllers.Pods().List(policy.Peer.Peer, policy.Peer.Namespace, nil)
 		if err != nil {
 			logger.Errorf("Could not find peers for policy %s. Will stop here.", policy.Name)
 			return pcn_types.ParsedRules{}
 		}
 
+		// For each pod found, generate the rules
 		for _, pod := range pods {
-			ips := []string{pod.Status.PodIP, utils.GetPodVirtualIP(pod.Status.PodIP)}
+			ips := []string{pod.Status.PodIP}
+			if policy.Direction == pcn_types.PolicyIncoming {
+				ips = append(ips, utils.GetPodVirtualIP(pod.Status.PodIP))
+			}
 
 			for _, ip := range ips {
 				if policy.Direction == pcn_types.PolicyIncoming {
-					rules.Incoming = append(rules.Incoming, parsers.FillTemplates(ip, "", policy.Templates.Incoming)...)
+					rulesToReturn.Incoming = append(rulesToReturn.Incoming, parsers.FillTemplates(ip, "", policy.Templates.Incoming)...)
 				} else {
-					rules.Outgoing = append(rules.Outgoing, parsers.FillTemplates("", ip, policy.Templates.Outgoing)...)
+					rulesToReturn.Outgoing = append(rulesToReturn.Outgoing, parsers.FillTemplates("", ip, policy.Templates.Outgoing)...)
 				}
 			}
 		}
+
+		return rulesToReturn
+	}
+
+	if len(policy.Peer.IPBlock) > 0 {
+		rules = ipbLock()
+	} else {
+		rules = podPeer()
 	}
 
 	return rules

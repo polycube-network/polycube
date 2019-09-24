@@ -132,18 +132,18 @@ func TestBuildRuleTemplates(t *testing.T) {
 
 	// --- Directions
 	t.Run("actions", func(t *testing.T) {
-		ing := buildRuleTemplates(pcn_types.PolicyIncoming, pcn_types.ActionForward, ports)
+		ing := BuildRuleTemplates(pcn_types.PolicyIncoming, pcn_types.ActionForward, ports)
 		assert.NotEmpty(ing.Incoming)
 		assert.Empty(ing.Outgoing)
 
-		eg := buildRuleTemplates(pcn_types.PolicyOutgoing, pcn_types.ActionForward, ports)
+		eg := BuildRuleTemplates(pcn_types.PolicyOutgoing, pcn_types.ActionForward, ports)
 		assert.NotEmpty(eg.Outgoing)
 		assert.Empty(eg.Incoming)
 	})
 
 	// --- Fields
 	t.Run("actions", func(t *testing.T) {
-		ing := buildRuleTemplates(pcn_types.PolicyIncoming, pcn_types.ActionForward, ports)
+		ing := BuildRuleTemplates(pcn_types.PolicyIncoming, pcn_types.ActionForward, ports)
 
 		for _, in := range ing.Incoming {
 			assert.Equal(in.Action, pcn_types.ActionForward)
@@ -178,7 +178,6 @@ func TestGetBasePolicyFromK8s(t *testing.T) {
 
 		assert.Equal(parent, result.ParentPolicy)
 		assert.Equal(result.Subject.Namespace, policyNs)
-		assert.False(result.Subject.IsService)
 		assert.Equal(int32(5), result.ParentPolicy.Priority)
 		assert.Equal(meta_v1.Time{
 			Time: now,

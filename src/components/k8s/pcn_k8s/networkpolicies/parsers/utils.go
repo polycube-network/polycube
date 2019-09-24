@@ -79,7 +79,7 @@ func insertPorts(rules []k8sfirewall.ChainRule, ports []pcn_types.ProtoPort) []k
 	return newRules
 }
 
-func buildRuleTemplates(direction, action string, ports []pcn_types.ProtoPort) pcn_types.ParsedRules {
+func BuildRuleTemplates(direction, action string, ports []pcn_types.ProtoPort) pcn_types.ParsedRules {
 	// The rules to return
 	rulesToReturn := pcn_types.ParsedRules{}
 

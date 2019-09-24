@@ -117,12 +117,12 @@ func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.Ne
 
 	// -- deploy all ingress policies
 	for _, in := range ingressPolicies {
-		manager.deployPolicytToFw(&in, "")
+		manager.deployPolicyToFw(&in, "")
 	}
 
 	// -- deploy all egress policies
 	for _, eg := range egressPolicies {
-		manager.deployPolicytToFw(&eg, "")
+		manager.deployPolicyToFw(&eg, "")
 	}
 }
 
@@ -218,7 +218,7 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 		for _, in := range ingressPolicies {
 			if fwManager.IsPolicyEnforced(in.Name) {
 				fwManager.CeasePolicy(in.Name)
-				manager.deployK8sPolicyToFw(policy, fwManager.Name())
+				manager.deployPolicyToFw(&in, fwManager.Name())
 			}
 		}
 
@@ -226,13 +226,13 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 		for _, eg := range egressPolicies {
 			if fwManager.IsPolicyEnforced(eg.Name) {
 				fwManager.CeasePolicy(eg.Name)
-				manager.deployK8sPolicyToFw(policy, fwManager.Name())
+				manager.deployPolicyToFw(&eg, fwManager.Name())
 			}
 		}
 	}
 }
 
-func (manager *NetworkPolicyManager) deployPolicytToFw(policy *pcn_types.ParsedPolicy, fwName string) {
+func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPolicy, fwName string) {
 	//-------------------------------------
 	// Start & basic checks
 	//-------------------------------------
@@ -283,161 +283,49 @@ func (manager *NetworkPolicyManager) deployPolicytToFw(policy *pcn_types.ParsedP
 	//-------------------------------------
 
 	// Temporarily commented to make the warnings shut up
-	//rules := buildRules(policy)
+	rules := buildRules(policy)
 
 	//-------------------------------------
 	// Enforce this on each fw manager
 	//-------------------------------------
 
-	// TODO
+	for _, applier := range appliers {
+		manager.localFirewalls[applier].EnforcePolicy(*policy, rules)
+	}
 
 	//-------------------------------------
 	// Subscribe to namespace changes
 	//-------------------------------------
 
-	if policy.Peer.Namespace != nil && len(policy.Peer.Namespace.Labels) > 0 {
-		//TODO
-	}
-}
-
-// deployK8sPolicyToFw actually deploys the provided kubernetes policy
-// to a fw manager. To all appropriate ones if second argument is empty.
-func (manager *NetworkPolicyManager) deployK8sPolicyToFw(policy *networking_v1.NetworkPolicy, fwName string) {
-	//-------------------------------------
-	// Start & basic checks
-	//-------------------------------------
-
-	// NOTE: This function must be called while holding a lock.
-	// That's also one of the reasons why it is un-exported.
-
-	/*if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+	if len(policy.Peer.Key) == 0 {
 		return
 	}
 
-	// Does it exist?
-	if len(fwName) > 0 {
-		if _, exists := manager.localFirewalls[fwName]; !exists {
-			logger.Errorf("Firewall manager with name %s does not exists in this node. Will stop here.", fwName)
+	if policy.Peer.Namespace != nil && len(policy.Peer.Namespace.Labels) > 0 {
+		if _, exists := manager.policyUnsubscriptors[policy.Name]; !exists {
+			manager.policyUnsubscriptors[policy.Name] = &nsUnsubscriptor{
+				nsUnsub: map[string]func(){},
+			}
+		}
+		// already there?
+		nsKey := utils.ImplodeLabels(policy.Peer.Namespace.Labels, ",", false)
+		if _, exists := manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey]; exists {
 			return
 		}
-	}
 
-	//-------------------------------------
-	// Parse the policy asynchronously
-	//-------------------------------------
-
-	// Get the spec, with the ingress & egress rules
-	spec := policy.Spec
-	ingress, egress, policyType := manager.k8sPolicyParser.ParsePolicyTypes(&spec)
-
-	var parsed pcn_types.ParsedRules
-	fwActions := []pcn_types.FirewallAction{}
-	barrier := make(chan struct{})
-
-	// Get the rules
-	go func() {
-		defer close(barrier)
-		parsed = manager.k8sPolicyParser.ParseRules(ingress, egress, policy.Namespace)
-	}()
-
-	// Get the actions/templates
-	fwActions = manager.k8sPolicyParser.BuildActions(ingress, egress, policy.Namespace)
-
-	// Firewall is transparent: we need to reverse the directions
-	oppositePolicyType := policyType
-	if oppositePolicyType != "*" {
-		if policyType == "ingress" {
-			oppositePolicyType = "egress"
-		} else {
-			oppositePolicyType = "ingress"
+		// Subscribe
+		unsub, err := pcn_controllers.Namespaces().Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
+			manager.handleNamespaceUpdate(ns, prev, policy.Peer.Namespace.Labels, policy.Name, policy.Subject.Namespace)
+		})
+		if err == nil {
+			manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey] = unsub
 		}
 	}
-
-	// At this point I can't go on without the rules.
-	<-barrier
-
-	//-------------------------------------
-	// Enforce the policy
-	//-------------------------------------
-
-	// -- To a single firewall manager
-	if len(fwName) > 0 {
-		fw := manager.localFirewalls[fwName]
-		fw.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress, fwActions)
-		return
-	}
-
-	// -- To all the appropriate ones
-	// Get their names
-	fws := []string{}
-	for _, fwManager := range manager.localFirewalls {
-		labels, ns := fwManager.Selector()
-		pod := core_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Namespace: ns,
-				Labels:    labels,
-			},
-		}
-		if manager.k8sPolicyParser.DoesPolicyAffectPod(policy, &pod) {
-			fws = append(fws, fwManager.Name())
-		}
-	}
-
-	if len(fws) == 0 {
-		logger.Infof("Policy %s does not affect anyone in this node. Will stop here.", policy.Name)
-		return
-	}
-
-	// -- Actually enforce it
-	var waiter sync.WaitGroup
-	waiter.Add(len(fws))
-
-	// Loop through all firewall managers that should enforce this policy
-	for _, currentFwName := range fws {
-		go func(fw string) {
-			defer waiter.Done()
-			fwManager := manager.localFirewalls[fw]
-			fwManager.EnforcePolicy(policy.Name, oppositePolicyType, policy.CreationTimestamp, parsed.Ingress, parsed.Egress, fwActions)
-		}(currentFwName)
-	}
-
-	// Loop through all firewall actions to get namespace labels. Why?
-	// Because if a policy wants to accept pods that are in a namespace
-	// with labels X and Y and, later, the admin changes those labels to
-	// Z and W then we have to remove all the pods that we were previously
-	// accepting!
-	// This may need to be improved later on, but since it is a very rare
-	// situation, it may stay like this.
-	for _, action := range fwActions {
-		if len(action.NamespaceLabels) > 0 {
-			if _, exists := manager.policyUnsubscriptors[policy.Name]; !exists {
-				manager.policyUnsubscriptors[policy.Name] = &nsUnsubscriptor{
-					nsUnsub: map[string]func(){},
-				}
-			}
-			// already there?
-			nsKey := utils.ImplodeLabels(action.NamespaceLabels, ",", false)
-			if _, exists := manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey]; exists {
-				continue
-			}
-
-			// Subscribe
-			unsub, err := pcn_controllers.Namespaces().Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
-				manager.handleNamespaceUpdate(ns, prev, action, policy.Name, policy.Namespace)
-			})
-			if err == nil {
-				manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey] = unsub
-			}
-		}
-	}
-
-	waiter.Wait()*/
 }
 
 // handleNamespaceUpdate checks if a namespace has changed its labels.
 // If so, the appropriate firewall should update the policies as well.
-func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, action pcn_types.FirewallAction, policyName, policyNs string) {
+func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, nsLabels map[string]string, policyName, policyNs string) {
 	logger.Infof("Namespace %s has been updated", ns.Name)
 
 	// Function that checks if an update of the policy is needed.
@@ -458,8 +346,8 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 		// and on case 2) we must allow some new pods.
 		// This simply means checking the previous state vs the current.
 
-		previously := utils.AreLabelsContained(action.NamespaceLabels, prev.Labels)
-		currently := utils.AreLabelsContained(action.NamespaceLabels, ns.Labels)
+		previously := utils.AreLabelsContained(nsLabels, prev.Labels)
+		currently := utils.AreLabelsContained(nsLabels, ns.Labels)
 
 		if previously == currently {
 			return nil, false
@@ -534,8 +422,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 		return justCreated, fw
 	}
 
-	//shouldInit, fw := linkPod()
-	shouldInit, _ := linkPod()
+	shouldInit, fw := linkPod()
 	if !shouldInit {
 		// Firewall is already inited. You can stop here.
 		return
@@ -544,12 +431,23 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 	//-------------------------------------
 	// Must this pod enforce any policy?
 	//-------------------------------------
-	/*k8sPolicies, _ := pcn_controllers.K8sPolicies().List(nil, &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace})
+	k8sPolicies, _ := pcn_controllers.K8sPolicies().List(nil, &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace})
 	for _, kp := range k8sPolicies {
-		if manager.k8sPolicyParser.DoesPolicyAffectPod(&kp, pod) {
-			manager.deployK8sPolicyToFw(&kp, fw.Name())
+		if parsers.DoesK8sPolicyAffectPod(&kp, pod) {
+			ingressPolicies := parsers.ParseK8sIngress(&kp)
+			egressPolicies := parsers.ParseK8sEgress(&kp)
+
+			// -- deploy all ingress policies
+			for _, in := range ingressPolicies {
+				manager.deployPolicyToFw(&in, fw.Name())
+			}
+
+			// -- deploy all egress policies
+			for _, eg := range egressPolicies {
+				manager.deployPolicyToFw(&eg, fw.Name())
+			}
 		}
-	}*/
+	}
 }
 
 // getOrCreateFirewallManager gets a local firewall manager
