@@ -95,7 +95,7 @@ ERROR:
 const std::string CTRL_TC_RX = R"(
 #include <bcc/helpers.h>
 #include <bcc/proto.h>
-#include <linux/kernel.h>
+#include <uapi/linux/bpf.h>
 #include <linux/skbuff.h>
 
 #include <linux/rcupdate.h>
