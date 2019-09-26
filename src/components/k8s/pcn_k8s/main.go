@@ -235,9 +235,8 @@ func main() {
 	// kv handler
 	go kvM.Loop()
 
-	// Start the controllers and set up stuff that is needed for the
-	// network policies functionality.
-	pcn_controllers.Start(clientset)
+	// Start the controllers
+	pcn_controllers.Start(clientset, config)
 	utils.SetVPodsRange(k8sNode.VPodCIDR)
 	networkpolicies.SetBasePath(basePath)
 

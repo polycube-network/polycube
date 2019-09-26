@@ -1,17 +1,21 @@
 package controllers
 
 import (
+	pnp_clientset "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 var (
 	k8sPoliciesController K8sNetworkPolicyController
+	pcnPoliciesController PcnNetworkPolicyController
 	podController         PodController
 	nsController          NamespaceController
 	serviceController     ServiceController
 	clientset             kubernetes.Interface
 	logger                *log.Logger
+	pnpclientset          *pnp_clientset.Clientset
 )
 
 const (
@@ -34,8 +38,13 @@ func init() {
 }
 
 // Start starts all the controllers included
-func Start(cs kubernetes.Interface) {
+func Start(cs kubernetes.Interface, conf *rest.Config) {
 	clientset = cs
+	pclientset, err := pnp_clientset.NewForConfig(conf)
+	if err != nil {
+		log.Fatalf("getClusterConfig: %v", err)
+	}
+	pnpclientset = pclientset
 
 	//--------------------------------
 	// Set up...
@@ -53,11 +62,15 @@ func Start(cs kubernetes.Interface) {
 	// Get the service controller
 	serviceController = createServiceController()
 
+	if pclientset != nil {
+		pcnPoliciesController = createPnpController()
+	}
+
 	//--------------------------------
 	// ... and start
 	//--------------------------------
 
-	// Start the default network policy controller
+	// Start thek8s network policy controller
 	go k8sPoliciesController.Run()
 
 	// Start the namespace controller
@@ -68,6 +81,9 @@ func Start(cs kubernetes.Interface) {
 
 	// Start the service controller
 	go serviceController.Run()
+
+	// Start the polycube network policy controller
+	go pcnPoliciesController.Run()
 }
 
 // Stop stops all the controllers that have been started at once.
@@ -103,6 +119,11 @@ func Pods() PodController {
 // K8sPolicies returns the Kubernetes Network Policy Controller
 func K8sPolicies() K8sNetworkPolicyController {
 	return k8sPoliciesController
+}
+
+// PcnPolicies returns the Polycube Network Policy Controller
+func PcnPolicies() PcnNetworkPolicyController {
+	return pcnPoliciesController
 }
 
 // Namespaces returns the Namespace controller
