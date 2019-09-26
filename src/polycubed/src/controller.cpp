@@ -100,11 +100,16 @@ const std::string CTRL_TC_RX = R"(
 
 #include <linux/rcupdate.h>
 
+/* TODO: move the definition to a file shared by control & data path*/
+#define MD_PKT_FROM_CONTROLLER  (1UL << 0)
+#define MD_EGRESS_CONTEXT       (1UL << 1)
+
 BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
 
 struct metadata {
 	u16 module_index;
 	u16 port_id;
+    u32 flags;
 };
 
 BPF_TABLE("array", u32, struct metadata, md_map_rx, MD_MAP_SIZE);
@@ -136,8 +141,19 @@ int controller_module_rx(struct __sk_buff *ctx) {
 
 	u16 in_port = md->port_id;
 	u16 module_index = md->module_index;
+    u32 flags = md->flags;
 
 	ctx->cb[0] = in_port << 16 | module_index;
+    ctx->cb[2] = flags;
+    if (module_index == 0xffff) {
+        pcn_log(ctx, LOG_INFO, "[tc-decapsulator]: NH is stack, flags: 0x%x", flags);
+        if (flags & MD_EGRESS_CONTEXT) {
+            return bpf_redirect(in_port, 0);
+        } else {
+            return 0;
+        }
+    }
+
 	nodes.call(ctx, module_index);
   pcn_log(ctx, LOG_ERR, "[tc-decapsulator]: 'nodes.call'. Module is: %d", module_index);
 	return 2;
@@ -418,11 +434,15 @@ void Controller::unregister_cb(int id) {
 
 // caller must guarantee that module_index and port_id are valid
 void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
-                                     const std::vector<uint8_t> &packet) {
+                                     const std::vector<uint8_t> &packet,
+                                     service::Sense sense) {
   ctrl_rx_md_index_++;
   ctrl_rx_md_index_ %= MD_MAP_SIZE;
 
-  metadata md_temp = {module_index, port_id};
+  metadata md_temp = {module_index, port_id, MD_PKT_FROM_CONTROLLER};
+  if (sense == service::Sense::EGRESS) {
+      md_temp.flags |= MD_EGRESS_CONTEXT;
+  }
   metadata_table_->update_value(ctrl_rx_md_index_, md_temp);
 
   iface_->send(const_cast<std::vector<uint8_t> &>(packet));

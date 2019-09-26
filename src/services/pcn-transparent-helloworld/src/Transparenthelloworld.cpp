@@ -68,6 +68,8 @@ void Transparenthelloworld::packet_in(polycube::service::Sense sense,
     logger()->info("packet in event from egress program");
     break;
   }
+  EthernetII pkt(&packet[0], packet.size());
+  send_packet_out(pkt, sense, false);
 }
 
 void Transparenthelloworld::attach() {

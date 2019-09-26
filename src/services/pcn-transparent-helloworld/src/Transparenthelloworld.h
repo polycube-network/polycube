@@ -24,6 +24,7 @@
 #include "polycube/services/utils.h"
 
 #include <spdlog/spdlog.h>
+#include <tins/ethernetII.h>
 
 using namespace io::swagger::server::model;
 using polycube::service::ProgramType;
