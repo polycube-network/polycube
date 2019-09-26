@@ -4,11 +4,14 @@ import (
 	"testing"
 	"time"
 
+	v1beta "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/pkg/apis/polycube.network/v1beta"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
 	"github.com/stretchr/testify/assert"
+	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestReformatName(t *testing.T) {
@@ -208,6 +211,61 @@ func TestGetBasePolicyFromK8s(t *testing.T) {
 	})
 }
 
+func TestGetBasePolicyFromPcn(t *testing.T) {
+	assert := assert.New(t)
+	policyName := "policy-name"
+	policyNs := "policy-ns"
+	now := time.Now()
+	policy := v1beta.PolycubeNetworkPolicy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      policyName,
+			Namespace: policyNs,
+			CreationTimestamp: meta_v1.Time{
+				Time: now,
+			},
+		},
+	}
+	parent := pcn_types.ParentPolicy{
+		Name:     policyName,
+		Priority: 7,
+		Provider: pcn_types.PcnProvider,
+	}
+
+	// --- Base Parst
+	t.Run("base-parts", func(t *testing.T) {
+		result := getBasePolicyFromPcn(&policy)
+
+		assert.Equal(parent.Name, result.ParentPolicy.Name)
+		assert.Equal(parent.Provider, result.ParentPolicy.Provider)
+		assert.Equal(result.Subject.Namespace, policyNs)
+		assert.False(result.Subject.IsService)
+		assert.Equal(defaultPriority, result.ParentPolicy.Priority)
+		assert.Equal(meta_v1.Time{
+			Time: now,
+		}, result.CreationTime)
+	})
+
+	// --- explicit-priority
+	t.Run("explicit-priority", func(t *testing.T) {
+		policy.Priority = 7
+		result := getBasePolicyFromPcn(&policy)
+
+		assert.Equal(parent, result.ParentPolicy)
+		assert.Equal(result.Subject.Namespace, policyNs)
+		assert.False(result.Subject.IsService)
+		assert.Equal(meta_v1.Time{
+			Time: now,
+		}, result.CreationTime)
+	})
+
+	// --- Applies to any
+	t.Run("any", func(t *testing.T) {
+		result := getBasePolicyFromPcn(&policy)
+
+		assert.Nil(result.Subject.Query)
+	})
+}
+
 func TestFillTemplates(t *testing.T) {
 	assert := assert.New(t)
 	rules := []k8sfirewall.ChainRule{
@@ -232,4 +290,99 @@ func TestFillTemplates(t *testing.T) {
 		assert.Equal(src, rule.Src)
 		assert.Equal(dst, rule.Dst)
 	}
+}
+
+func TestConvertServiceProtocols(t *testing.T) {
+	assert := assert.New(t)
+
+	// --- normal
+	t.Run("normal", func(t *testing.T) {
+		ports := []core_v1.ServicePort{
+			core_v1.ServicePort{
+				Protocol: core_v1.ProtocolUDP,
+				TargetPort: intstr.IntOrString{
+					IntVal: int32(5050),
+				},
+			},
+		}
+
+		result := convertServiceProtocols(ports)
+		assert.Len(result, 1)
+		assert.Equal(int32(5050), result[0].DPort)
+		assert.Equal("udp", result[0].Protocol)
+	})
+
+	// --- no-protocol
+	t.Run("no-protocol", func(t *testing.T) {
+		ports := []core_v1.ServicePort{
+			core_v1.ServicePort{
+				TargetPort: intstr.IntOrString{
+					IntVal: int32(5050),
+				},
+			},
+		}
+
+		result := convertServiceProtocols(ports)
+		assert.Equal("tcp", result[0].Protocol)
+	})
+}
+
+func TestPcnIngressIsFilled(t *testing.T) {
+	assert := assert.New(t)
+
+	// --len-ok
+	t.Run("len-ok", func(t *testing.T) {
+		in := v1beta.PolycubeNetworkPolicyIngressRuleContainer{
+			Rules: []v1beta.PolycubeNetworkPolicyIngressRule{
+				v1beta.PolycubeNetworkPolicyIngressRule{
+					Action: v1beta.ForwardAction,
+				},
+			},
+		}
+		result := pcnIngressIsFilled(in)
+		assert.True(result)
+	})
+
+	// --drop-all
+	t.Run("drop-all", func(t *testing.T) {
+		in := v1beta.PolycubeNetworkPolicyIngressRuleContainer{}
+		result := pcnIngressIsFilled(in)
+		assert.False(result)
+
+		trueVal := true
+		in.DropAll = &trueVal
+		result = pcnIngressIsFilled(in)
+		assert.True(result)
+	})
+
+	// --allow-all
+	t.Run("allow-all", func(t *testing.T) {
+		in := v1beta.PolycubeNetworkPolicyIngressRuleContainer{}
+		result := pcnIngressIsFilled(in)
+		assert.False(result)
+
+		trueVal := true
+		in.AllowAll = &trueVal
+		result = pcnIngressIsFilled(in)
+		assert.True(result)
+	})
+}
+
+func TestConvertPcnAction(t *testing.T) {
+	assert := assert.New(t)
+
+	// --drop
+	t.Run("drop", func(t *testing.T) {
+		d := []v1beta.PolycubeNetworkPolicyRuleAction{v1beta.DropAction, v1beta.BlockAction, v1beta.ForbidAction, v1beta.ProhibitAction}
+		for _, action := range d {
+			result := convertPcnAction(action)
+			assert.Equal(pcn_types.ActionDrop, result)
+		}
+
+		f := []v1beta.PolycubeNetworkPolicyRuleAction{v1beta.AllowAction, v1beta.PassAction, v1beta.PermitAction, v1beta.ForwardAction}
+		for _, action := range f {
+			result := convertPcnAction(action)
+			assert.Equal(pcn_types.ActionForward, result)
+		}
+	})
 }

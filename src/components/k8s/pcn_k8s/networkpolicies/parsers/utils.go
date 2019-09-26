@@ -3,8 +3,11 @@ package parsers
 import (
 	"strconv"
 
+	v1beta "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/pkg/apis/polycube.network/v1beta"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
+	"github.com/polycube-network/polycube/src/components/k8s/utils"
 	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
+	core_v1 "k8s.io/api/core/v1"
 	networking_v1 "k8s.io/api/networking/v1"
 )
 
@@ -29,12 +32,11 @@ func getBasePolicyFromK8s(policy *networking_v1.NetworkPolicy) pcn_types.ParsedP
 		ParentPolicy: pcn_types.ParentPolicy{
 			Name:     policy.Name,
 			Provider: pcn_types.K8sProvider,
-			Priority: int32(5),
+			Priority: int32(defaultPriority),
 		},
 	}
 
 	// Who to apply to?
-	// Hmm can policy.
 	if len(policy.Spec.PodSelector.MatchLabels) > 0 {
 		basePolicy.Subject.Query = &pcn_types.ObjectQuery{
 			By:     "labels",
@@ -46,6 +48,87 @@ func getBasePolicyFromK8s(policy *networking_v1.NetworkPolicy) pcn_types.ParsedP
 	basePolicy.CreationTime = policy.ObjectMeta.CreationTimestamp
 
 	return basePolicy
+}
+
+func getBasePolicyFromPcn(policy *v1beta.PolycubeNetworkPolicy) pcn_types.ParsedPolicy {
+	priority := policy.Priority
+	if policy.Priority == 0 {
+		priority = v1beta.PolycubeNetworkPolicyPriority(defaultPriority)
+	}
+
+	basePolicy := pcn_types.ParsedPolicy{
+		ParentPolicy: pcn_types.ParentPolicy{
+			Name:     policy.Name,
+			Provider: pcn_types.PcnProvider,
+			Priority: int32(priority),
+		},
+	}
+
+	basePolicy.Subject.Namespace = policy.Namespace
+	basePolicy.CreationTime = policy.ObjectMeta.CreationTimestamp
+
+	return basePolicy
+}
+
+func convertServiceProtocols(servPorts []core_v1.ServicePort) []pcn_types.ProtoPort {
+	protoPorts := []pcn_types.ProtoPort{}
+
+	for _, port := range servPorts {
+		proto := "tcp"
+		if port.Protocol == core_v1.ProtocolUDP {
+			proto = "udp"
+		}
+
+		protoPorts = append(protoPorts, pcn_types.ProtoPort{
+			DPort:    port.TargetPort.IntVal,
+			Protocol: proto,
+		})
+	}
+
+	return protoPorts
+}
+
+func pcnIngressIsFilled(ingress v1beta.PolycubeNetworkPolicyIngressRuleContainer) bool {
+	if len(ingress.Rules) > 0 {
+		return true
+	}
+
+	if ingress.DropAll != nil && *ingress.DropAll {
+		return true
+	}
+
+	if ingress.AllowAll != nil && *ingress.AllowAll {
+		return true
+	}
+
+	return false
+}
+
+func pcnEgressIsFilled(egress v1beta.PolycubeNetworkPolicyEgressRuleContainer) bool {
+	if len(egress.Rules) > 0 {
+		return true
+	}
+
+	if egress.DropAll != nil && *egress.DropAll {
+		return true
+	}
+
+	if egress.AllowAll != nil && *egress.AllowAll {
+		return true
+	}
+
+	return false
+}
+
+func convertPcnAction(action v1beta.PolycubeNetworkPolicyRuleAction) string {
+	converted := pcn_types.ActionDrop
+
+	switch action {
+	case v1beta.AllowAction, v1beta.ForwardAction, v1beta.PassAction, v1beta.PermitAction:
+		converted = pcn_types.ActionForward
+	}
+
+	return converted
 }
 
 func swapPortsDirection(ports pcn_types.ProtoPort) pcn_types.ProtoPort {
@@ -124,23 +207,16 @@ func FillTemplates(sourceIP, destinationIP string, rules []k8sfirewall.ChainRule
 	return newRules
 }
 
-/*func PutPeer(ip string, rules []k8sfirewall.ChainRule, direction pcn_types.PolicyDirection) pcn_types.ParsedRules {
-	if len(rules) == 0 {
-		return rules
+func getNamespacesList(onNs *v1beta.PolycubeNetworkPolicyNamespaceSelector) []*pcn_types.ObjectQuery {
+	nsQueries := []*pcn_types.ObjectQuery{}
+
+	if len(onNs.WithNames) > 0 {
+		for _, ns := range onNs.WithNames {
+			nsQueries = append(nsQueries, utils.BuildQuery(ns, nil))
+		}
+	} else {
+		nsQueries = append(nsQueries, utils.BuildQuery("", onNs.WithLabels))
 	}
 
-	if len(ip) == 0 {
-		return rules
-	}
-
-	parsed := pcn_types.ParsedRules{}
-
-	newRules := make([]k8sfirewall.ChainRule, len(rules))
-	for i, rule := range rules {
-		newRules[i] = rule
-		newRules[i].Src = sourceIP
-		newRules[i].Dst = destinationIP
-	}
-
-	return newRules
-}*/
+	return nsQueries
+}
