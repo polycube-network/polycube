@@ -46,12 +46,22 @@ type NetworkPolicyManager struct {
 	linkedPods map[k8s_types.UID]string
 	// policyUnsubscriptors contains function to be used when unsubscribing
 	policyUnsubscriptors map[string]*nsUnsubscriptor
+	// servPolicies contains function to be used when unsubscribing
+	servPolicies map[string]*servPolicy
 }
 
 // nsUnsubscriptor contains information about namespace events that are
 // interesting for some policies.
 type nsUnsubscriptor struct {
 	nsUnsub map[string]func()
+}
+
+// servPolicy contains information about service events that are
+// interesting for some policies.
+type servPolicy struct {
+	new map[string]bool
+	upd map[string]bool
+	del map[string]bool
 }
 
 // startFirewall is a pointer to the StartFirewall method of the
@@ -67,6 +77,7 @@ func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
 		flaggedForDeletion:   map[string]*time.Timer{},
 		linkedPods:           map[k8s_types.UID]string{},
 		policyUnsubscriptors: map[string]*nsUnsubscriptor{},
+		servPolicies:         map[string]*servPolicy{},
 	}
 
 	//-------------------------------------
@@ -94,6 +105,19 @@ func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
 
 	// Update a policy
 	pcn_controllers.PcnPolicies().Subscribe(pcn_types.Update, manager.UpdatePcnPolicy)
+
+	//-------------------------------------
+	// Subscribe to services events
+	//-------------------------------------
+
+	// check new service
+	pcn_controllers.Services().Subscribe(pcn_types.New, manager.CheckNewService)
+
+	// check removed
+	pcn_controllers.Services().Subscribe(pcn_types.Delete, manager.CheckRemovedService)
+
+	// checkUpdate
+	pcn_controllers.Services().Subscribe(pcn_types.Update, manager.CheckUpdatedService)
 
 	//-------------------------------------
 	// Subscribe to pod events
@@ -156,6 +180,18 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 		// Get it
 		sQuery := utils.BuildQuery(policy.ApplyTo.WithName, nil)
 		nQuery := utils.BuildQuery(policy.Namespace, nil)
+
+		// Let's first create the service entry for this service.
+		// So, when the service is udated, the policy is updated too.
+		key := utils.BuildObjectKey(nQuery, "ns") + "|" + utils.BuildObjectKey(sQuery, "serv")
+		if _, exists := manager.servPolicies[key]; !exists {
+			manager.servPolicies[key] = &servPolicy{
+				new: map[string]bool{},
+				upd: map[string]bool{},
+				del: map[string]bool{},
+			}
+		}
+
 		servList, err := pcn_controllers.Services().List(sQuery, nQuery)
 
 		if err != nil {
@@ -163,7 +199,11 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 			return
 		}
 		if len(servList) == 0 {
-			logger.Infof("Service with name %s was not found. Stopping now.", policy.ApplyTo.WithName)
+			logger.Infof("Service with name %s was not found. The policy will be parsed when it is deployed.", policy.ApplyTo.WithName)
+
+			// Let's deploy this policy when the service is created.
+			// It is useless to do it now
+			manager.servPolicies[key].new[policy.Name] = true
 			return
 		}
 		if len(servList[0].Spec.Selector) == 0 {
@@ -172,6 +212,10 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 		}
 
 		serv = &servList[0]
+
+		// We need to modify this policy when the service is updated
+		manager.servPolicies[key].upd[policy.Name] = true
+		manager.servPolicies[key].del[policy.Name] = true
 	}
 
 	//--------------------------------------
@@ -284,6 +328,22 @@ func (manager *NetworkPolicyManager) RemovePcnPolicy(_, policy *v1beta.PolycubeN
 	}
 
 	//-------------------------------------
+	// Delete serv
+	//-------------------------------------
+
+	if policy.ApplyTo.Target == v1beta.ServiceTarget {
+		sQuery := utils.BuildQuery(policy.ApplyTo.WithName, nil)
+		nQuery := utils.BuildQuery(policy.Namespace, nil)
+		key := utils.BuildObjectKey(nQuery, "ns") + "|" + utils.BuildObjectKey(sQuery, "serv")
+
+		if pols, exists := manager.servPolicies[key]; exists {
+			delete(pols.upd, policy.Name)
+			delete(pols.new, policy.Name)
+			delete(pols.del, policy.Name)
+		}
+	}
+
+	//-------------------------------------
 	// Cease this policy
 	//-------------------------------------
 
@@ -341,16 +401,16 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 		for _, in := range ingressPolicies {
 			if fwManager.IsPolicyEnforced(in.Name) {
 				fwManager.CeasePolicy(in.Name)
-				manager.deployPolicyToFw(&in, fwManager.Name())
 			}
+			manager.deployPolicyToFw(&in, fwManager.Name())
 		}
 
 		// -- Egress
 		for _, eg := range egressPolicies {
 			if fwManager.IsPolicyEnforced(eg.Name) {
 				fwManager.CeasePolicy(eg.Name)
-				manager.deployPolicyToFw(&eg, fwManager.Name())
 			}
+			manager.deployPolicyToFw(&eg, fwManager.Name())
 		}
 	}
 }
@@ -421,18 +481,107 @@ func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeN
 		for _, in := range ingressPolicies {
 			if fwManager.IsPolicyEnforced(in.Name) {
 				fwManager.CeasePolicy(in.Name)
-				manager.deployPolicyToFw(&in, fwManager.Name())
 			}
+			manager.deployPolicyToFw(&in, fwManager.Name())
 		}
 
 		// -- Egress
 		for _, eg := range egressPolicies {
 			if fwManager.IsPolicyEnforced(eg.Name) {
 				fwManager.CeasePolicy(eg.Name)
-				manager.deployPolicyToFw(&eg, fwManager.Name())
 			}
+			manager.deployPolicyToFw(&eg, fwManager.Name())
 		}
 	}
+}
+
+func (manager *NetworkPolicyManager) checkService(serv *core_v1.Service, eventType string) {
+	// First, build the key
+	sQuery := utils.BuildQuery(serv.Name, nil)
+	nQuery := utils.BuildQuery(serv.Namespace, nil)
+	key := utils.BuildObjectKey(nQuery, "ns") + "|" + utils.BuildObjectKey(sQuery, "serv")
+
+	// is it there?
+	polNames := func() map[string]bool {
+		manager.lock.Lock()
+		defer manager.lock.Unlock()
+
+		events, exists := manager.servPolicies[key]
+		if !exists {
+			return nil
+		}
+
+		names := map[string]bool{}
+		switch eventType {
+		case "new":
+			names = events.new
+		case "update":
+			names = events.upd
+		case "delete":
+			names = events.del
+		}
+
+		return names
+	}()
+
+	for polName := range polNames {
+		pQuery := utils.BuildQuery(polName, nil)
+
+		// Find them
+		found, err := pcn_controllers.PcnPolicies().List(pQuery, nQuery)
+		if err != nil {
+			logger.Errorf("Could not get policy %s on namespace %s.", polName, serv.Namespace)
+			continue
+		}
+		if len(found) == 0 {
+			logger.Infof("No policies found with name %s namespaces %s.", polName, serv.Namespace)
+			continue
+		}
+
+		pol := found[0]
+
+		switch eventType {
+		case "new":
+			manager.DeployPcnPolicy(&pol, nil)
+			func() {
+				manager.lock.Lock()
+				defer manager.lock.Unlock()
+				delete(manager.servPolicies[key].new, polName)
+				manager.servPolicies[key].upd[polName] = true
+				manager.servPolicies[key].del[polName] = true
+			}()
+		case "delete":
+			manager.RemovePcnPolicy(nil, &pol)
+			func() {
+				manager.lock.Lock()
+				defer manager.lock.Unlock()
+				delete(manager.servPolicies[key].upd, polName)
+				delete(manager.servPolicies[key].del, polName)
+				manager.servPolicies[key].new[polName] = true
+			}()
+		case "update":
+			manager.RemovePcnPolicy(nil, &pol)
+			manager.DeployPcnPolicy(&pol, nil)
+		}
+	}
+}
+
+// CheckNewService checks if this service needs to be protected
+func (manager *NetworkPolicyManager) CheckNewService(serv, _ *core_v1.Service) {
+	logger.Infof("Service %s has been deployed. Going to check for policies...", serv.Name)
+	manager.checkService(serv, "new")
+}
+
+// CheckRemovedService checks if this service needs to be protected
+func (manager *NetworkPolicyManager) CheckRemovedService(_, serv *core_v1.Service) {
+	logger.Infof("Service %s has been removed. Going to check for policies...", serv.Name)
+	manager.checkService(serv, "delete")
+}
+
+// CheckUpdatedService checks if this service needs to be protected
+func (manager *NetworkPolicyManager) CheckUpdatedService(serv, prev *core_v1.Service) {
+	logger.Infof("Service %s has been updated. Going to check for policies...", serv.Name)
+	manager.checkService(serv, "update")
 }
 
 func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPolicy, fwName string) {
