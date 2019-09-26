@@ -8,6 +8,7 @@ import (
 
 	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 	pcn_firewall "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies/pcn_firewall"
+	v1beta "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/pkg/apis/polycube.network/v1beta"
 	pcn_types "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/types"
 	"github.com/polycube-network/polycube/src/components/k8s/utils"
 	core_v1 "k8s.io/api/core/v1"
@@ -28,8 +29,6 @@ type PcnNetworkPolicyManager interface {
 
 // NetworkPolicyManager is the implementation of the policy manager
 type NetworkPolicyManager struct {
-	// k8sPolicyParser is the instance of the default policy parser
-	//k8sPolicyParser PcnK8sPolicyParser
 	// lock is the main lock used in the manager
 	lock sync.Mutex
 	// localFirewalls is a map of the firewall managers inside this node.
@@ -74,8 +73,6 @@ func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
 	// Subscribe to k8s policies events
 	//-------------------------------------
 
-	//manager.k8sPolicyParser = newK8sPolicyParser()
-
 	// Deploy a new k8s policy
 	pcn_controllers.K8sPolicies().Subscribe(pcn_types.New, manager.DeployK8sPolicy)
 
@@ -84,6 +81,19 @@ func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
 
 	// Update a policy
 	pcn_controllers.K8sPolicies().Subscribe(pcn_types.Update, manager.UpdateK8sPolicy)
+
+	//-------------------------------------
+	// Subscribe to policy policies events
+	//-------------------------------------
+
+	// Deploy a new policy policy
+	pcn_controllers.PcnPolicies().Subscribe(pcn_types.New, manager.DeployPcnPolicy)
+
+	// Remove a default policy
+	pcn_controllers.PcnPolicies().Subscribe(pcn_types.Delete, manager.RemovePcnPolicy)
+
+	// Update a policy
+	pcn_controllers.PcnPolicies().Subscribe(pcn_types.Update, manager.UpdatePcnPolicy)
 
 	//-------------------------------------
 	// Subscribe to pod events
@@ -114,6 +124,62 @@ func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.Ne
 
 	ingressPolicies := parsers.ParseK8sIngress(policy)
 	egressPolicies := parsers.ParseK8sEgress(policy)
+
+	// -- deploy all ingress policies
+	for _, in := range ingressPolicies {
+		manager.deployPolicyToFw(&in, "")
+	}
+
+	// -- deploy all egress policies
+	for _, eg := range egressPolicies {
+		manager.deployPolicyToFw(&eg, "")
+	}
+}
+
+// DeployPcnPolicy deploys a kubernetes policy in the appropriate fw managers
+func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeNetworkPolicy) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	logger.Infof("Pcn policy %s has been deployed", policy.Name)
+
+	//--------------------------------------
+	// Has a service?
+	//--------------------------------------
+	var serv *core_v1.Service
+	if policy.ApplyTo.Target == v1beta.ServiceTarget {
+		if policy.ApplyTo.Any != nil && *policy.ApplyTo.Any {
+			logger.Infof("Cannot set any when targeting services. Stopping now.")
+			return
+		}
+
+		// Get it
+		sQuery := utils.BuildQuery(policy.ApplyTo.WithName, nil)
+		nQuery := utils.BuildQuery(policy.Namespace, nil)
+		servList, err := pcn_controllers.Services().List(sQuery, nQuery)
+
+		if err != nil {
+			logger.Errorf("Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+		if len(servList) == 0 {
+			logger.Infof("Service with name %s was not found. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+		if len(servList[0].Spec.Selector) == 0 {
+			logger.Infof("Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+
+		serv = &servList[0]
+	}
+
+	//--------------------------------------
+	// Split to mini-policies & deploy
+	//--------------------------------------
+
+	ingressPolicies := parsers.ParsePcnIngress(policy, serv)
+	egressPolicies := parsers.ParsePcnEgress(policy, serv)
 
 	// -- deploy all ingress policies
 	for _, in := range ingressPolicies {
@@ -183,6 +249,63 @@ func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.Ne
 	}
 }
 
+// RemovePcnPolicy removes (ceases) a kubernetes policy
+// from the appropriate firewall managers
+func (manager *NetworkPolicyManager) RemovePcnPolicy(_, policy *v1beta.PolycubeNetworkPolicy) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	logger.Infof("Pcn policy %s is going to be removed", policy.Name)
+
+	if len(manager.localFirewalls) == 0 {
+		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		return
+	}
+
+	//--------------------------------------
+	// Split to mini-policies & deploy
+	//--------------------------------------
+
+	ingressPolicies := parsers.ParsePcnIngress(policy, nil)
+	egressPolicies := parsers.ParsePcnEgress(policy, nil)
+
+	//-------------------------------------
+	// Unsubscribe from namespace changes
+	//-------------------------------------
+
+	// This is the function that will do it
+	unsubFunc := func(name string) {
+		if unsubs, exists := manager.policyUnsubscriptors[policy.Name]; exists {
+			for _, unsub := range unsubs.nsUnsub {
+				unsub()
+			}
+			delete(manager.policyUnsubscriptors, policy.Name)
+		}
+	}
+
+	//-------------------------------------
+	// Cease this policy
+	//-------------------------------------
+
+	for _, fwManager := range manager.localFirewalls {
+		// -- Ingress
+		for _, in := range ingressPolicies {
+			if fwManager.IsPolicyEnforced(in.Name) {
+				unsubFunc(in.Name)
+				fwManager.CeasePolicy(in.Name)
+			}
+		}
+
+		// -- Egress
+		for _, eg := range egressPolicies {
+			if fwManager.IsPolicyEnforced(eg.Name) {
+				unsubFunc(eg.Name)
+				fwManager.CeasePolicy(eg.Name)
+			}
+		}
+	}
+}
+
 // UpdateK8sPolicy updates a kubernetes policy in the appropriate fw managers
 func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.NetworkPolicy) {
 	manager.lock.Lock()
@@ -208,6 +331,86 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 
 	ingressPolicies := parsers.ParseK8sIngress(policy)
 	egressPolicies := parsers.ParseK8sEgress(policy)
+
+	//-------------------------------------
+	// Remove and redeploy
+	//-------------------------------------
+
+	for _, fwManager := range manager.localFirewalls {
+		// -- Ingress
+		for _, in := range ingressPolicies {
+			if fwManager.IsPolicyEnforced(in.Name) {
+				fwManager.CeasePolicy(in.Name)
+				manager.deployPolicyToFw(&in, fwManager.Name())
+			}
+		}
+
+		// -- Egress
+		for _, eg := range egressPolicies {
+			if fwManager.IsPolicyEnforced(eg.Name) {
+				fwManager.CeasePolicy(eg.Name)
+				manager.deployPolicyToFw(&eg, fwManager.Name())
+			}
+		}
+	}
+}
+
+// UpdatePcnPolicy updates a kubernetes policy in the appropriate fw managers
+func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeNetworkPolicy) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	logger.Infof("Pcn policy %s has been updated. Going to parse it again", policy.Name)
+
+	// Updating a policy is no trivial task.
+	// We don't know what changed from its previous state:
+	// we are forced to re-parse it to know it.
+	// Instead of parsing and checking what's changed and what's stayed,
+	// we're going to remove the policy and
+	// redeploy it.
+
+	if len(manager.localFirewalls) == 0 {
+		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		return
+	}
+
+	//--------------------------------------
+	// Has a service?
+	//--------------------------------------
+	var serv *core_v1.Service
+	if policy.ApplyTo.Target == v1beta.ServiceTarget {
+		if policy.ApplyTo.Any != nil && *policy.ApplyTo.Any {
+			logger.Infof("Cannot set any when targeting services. Stopping now.")
+			return
+		}
+
+		// Get it
+		sQuery := utils.BuildQuery(policy.ApplyTo.WithName, nil)
+		nQuery := utils.BuildQuery(policy.Namespace, nil)
+		servList, err := pcn_controllers.Services().List(sQuery, nQuery)
+
+		if err != nil {
+			logger.Errorf("Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+		if len(servList) == 0 {
+			logger.Infof("Service with name %s was not found. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+		if len(servList[0].Spec.Selector) == 0 {
+			logger.Infof("Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
+			return
+		}
+
+		serv = &servList[0]
+	}
+
+	//--------------------------------------
+	// Split to mini-policies & deploy
+	//--------------------------------------
+
+	ingressPolicies := parsers.ParsePcnIngress(policy, serv)
+	egressPolicies := parsers.ParsePcnEgress(policy, serv)
 
 	//-------------------------------------
 	// Remove and redeploy
