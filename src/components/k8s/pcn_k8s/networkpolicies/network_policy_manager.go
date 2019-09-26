@@ -783,7 +783,17 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 	//-------------------------------------
 	// Must this pod enforce any policy?
 	//-------------------------------------
-	k8sPolicies, _ := pcn_controllers.K8sPolicies().List(nil, &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace})
+
+	manager.checkIfPodNeedsProtection(pod, fw)
+}
+
+func (manager *NetworkPolicyManager) checkIfPodNeedsProtection(pod *core_v1.Pod, fw pcn_firewall.PcnFirewallManager) {
+	nsQuery := &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace}
+
+	//-------------------------------------
+	// Kubernetes network policies
+	//-------------------------------------
+	k8sPolicies, _ := pcn_controllers.K8sPolicies().List(nil, nsQuery)
 	for _, kp := range k8sPolicies {
 		if parsers.DoesK8sPolicyAffectPod(&kp, pod) {
 			ingressPolicies := parsers.ParseK8sIngress(&kp)
@@ -798,6 +808,50 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 			for _, eg := range egressPolicies {
 				manager.deployPolicyToFw(&eg, fw.Name())
 			}
+		}
+	}
+
+	//-------------------------------------
+	// Polycube network policies
+	//-------------------------------------
+	pcnPolicies, _ := pcn_controllers.PcnPolicies().List(nil, nsQuery)
+	podServices, _ := pcn_controllers.Services().List(&pcn_types.ObjectQuery{By: "labels", Labels: pod.Labels}, nsQuery)
+
+	for _, pol := range pcnPolicies {
+		deploy := false
+		var polService *core_v1.Service
+
+		// Does this policy apply to the pod's service?
+		if pol.ApplyTo.Target == v1beta.ServiceTarget {
+			for _, serv := range podServices {
+				if serv.Name == pol.ApplyTo.WithName {
+					deploy = true
+					polService = &serv
+				}
+			}
+		} else {
+			// this policy does not target a service, but a pod.
+			// Does it apply to this pod, though?
+			if (pol.ApplyTo.Any != nil && *pol.ApplyTo.Any) || utils.AreLabelsContained(pol.ApplyTo.WithLabels, pod.Labels) {
+				deploy = true
+			}
+		}
+
+		if !deploy {
+			continue
+		}
+
+		ingressPolicies := parsers.ParsePcnIngress(&pol, polService)
+		egressPolicies := parsers.ParsePcnEgress(&pol, polService)
+
+		// -- deploy all ingress policies
+		for _, in := range ingressPolicies {
+			manager.deployPolicyToFw(&in, fw.Name())
+		}
+
+		// -- deploy all egress policies
+		for _, eg := range egressPolicies {
+			manager.deployPolicyToFw(&eg, fw.Name())
 		}
 	}
 }
