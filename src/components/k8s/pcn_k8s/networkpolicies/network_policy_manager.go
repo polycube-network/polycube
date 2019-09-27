@@ -1,6 +1,7 @@
 package networkpolicies
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -667,7 +668,7 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 
 		// Subscribe
 		unsub, err := pcn_controllers.Namespaces().Subscribe(pcn_types.Update, func(ns, prev *core_v1.Namespace) {
-			manager.handleNamespaceUpdate(ns, prev, policy.Peer.Namespace.Labels, policy.Name, policy.Subject.Namespace)
+			manager.handleNamespaceUpdate(ns, prev, policy.Peer.Namespace.Labels, policy.Name, policy.Subject.Namespace, policy.ParentPolicy.Provider)
 		})
 		if err == nil {
 			manager.policyUnsubscriptors[policy.Name].nsUnsub[nsKey] = unsub
@@ -677,18 +678,18 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 
 // handleNamespaceUpdate checks if a namespace has changed its labels.
 // If so, the appropriate firewall should update the policies as well.
-func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, nsLabels map[string]string, policyName, policyNs string) {
+func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, nsLabels map[string]string, policyName, policyNs, policyProvider string) {
 	logger.Infof("Namespace %s has been updated", ns.Name)
 
 	// Function that checks if an update of the policy is needed.
 	// Done like this so we can use defer and keep the code more
 	// organized
-	needsUpdate := func() (*networking_v1.NetworkPolicy, bool) {
+	needsUpdate := func() bool {
 		manager.lock.Lock()
 		defer manager.lock.Unlock()
 
 		if prev == nil {
-			return nil, false
+			return false
 		}
 
 		// When should we update the firewalls in case of namespace updates?
@@ -702,36 +703,63 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 		currently := utils.AreLabelsContained(nsLabels, ns.Labels)
 
 		if previously == currently {
-			return nil, false
+			return false
 		}
 
 		logger.Infof("%s's labels have changed", ns.Name)
-
-		policyQuery := utils.BuildQuery(policyName, nil)
-		nsQuery := utils.BuildQuery(policyNs, nil)
-		policies, err := pcn_controllers.K8sPolicies().List(policyQuery, nsQuery)
-		if err != nil {
-			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", policyName, policyNs, err)
-			return nil, false
-		}
-		if len(policies) == 0 {
-			logger.Errorf("Policiy named %s on namespace %s has not been found.", policyName, policyNs)
-			return nil, false
-		}
-		policy := policies[0]
-
-		return &policy, true
+		return true
 	}
 
 	// Check it
-	policy, ok := needsUpdate()
-	if !ok {
+	if !needsUpdate() {
 		return
 	}
 
-	// Remove that policy and redeploy it again
-	manager.RemoveK8sPolicy(nil, policy)
-	manager.DeployK8sPolicy(policy, nil)
+	parentPolicyName := strings.Split(policyName, "#")[0]
+	policyQuery := utils.BuildQuery(parentPolicyName, nil)
+	nsQuery := utils.BuildQuery(policyNs, nil)
+
+	// Function that handles kubernetes policies
+	k8s := func() {
+		policies, err := pcn_controllers.K8sPolicies().List(policyQuery, nsQuery)
+		if err != nil {
+			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
+			return
+		}
+		if len(policies) == 0 {
+			logger.Errorf("Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
+			return
+		}
+		policy := policies[0]
+		// Remove that policy and redeploy it again
+		// It's a lot easier to do it like this than see what's to change :(
+		manager.RemoveK8sPolicy(nil, &policy)
+		manager.DeployK8sPolicy(&policy, nil)
+	}
+
+	// Function that handles pcn policies
+	pcn := func() {
+		policies, err := pcn_controllers.PcnPolicies().List(policyQuery, nsQuery)
+		if err != nil {
+			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
+			return
+		}
+		if len(policies) == 0 {
+			logger.Errorf("Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
+			return
+		}
+		policy := policies[0]
+		// Remove that policy and redeploy it again
+		manager.RemovePcnPolicy(nil, &policy)
+		manager.DeployPcnPolicy(&policy, nil)
+	}
+
+	// What to update
+	if policyProvider == pcn_types.K8sProvider {
+		k8s()
+	} else {
+		pcn()
+	}
 }
 
 // checkNewPod will perform some checks on the new pod just updated.
