@@ -12,7 +12,9 @@ import (
 	core_v1 "k8s.io/api/core/v1"
 )
 
-func checkFwManger(policy *pcn_types.ParsedPolicy, fw pcn_fw.PcnFirewallManager) bool {
+// checkFwManager checks if the provided policy should be enforced
+// by the provided the firewall manager
+func checkFwManager(policy *pcn_types.ParsedPolicy, fw pcn_fw.PcnFirewallManager) bool {
 	podLabels, ns := fw.Selector()
 
 	// If the namespaces are different, then skip this
@@ -26,6 +28,7 @@ func checkFwManger(policy *pcn_types.ParsedPolicy, fw pcn_fw.PcnFirewallManager)
 		return true
 	}
 
+	// Are the labels ok?
 	if utils.AreLabelsContained(policy.Subject.Query.Labels, podLabels) {
 		return true
 	}
@@ -33,6 +36,8 @@ func checkFwManger(policy *pcn_types.ParsedPolicy, fw pcn_fw.PcnFirewallManager)
 	return false
 }
 
+// buildRules gets the pod or the ips from the policy, and generates the rules
+// by filling the templates.
 func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 	rules := pcn_types.ParsedRules{}
 
@@ -41,7 +46,13 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 		return policy.Templates
 	}
 
-	// Is IPBlock?
+	// To keep the function more clean and polished, two internal funcs are
+	// created.
+
+	//----------------------------------
+	// IP block
+	//----------------------------------
+
 	ipbLock := func() pcn_types.ParsedRules {
 		rulesToReturn := pcn_types.ParsedRules{}
 		for _, ip := range policy.Peer.IPBlock {
@@ -55,7 +66,10 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 		return rulesToReturn
 	}
 
-	// Pod?
+	//----------------------------------
+	// Pods
+	//----------------------------------
+
 	podPeer := func() pcn_types.ParsedRules {
 		rulesToReturn := pcn_types.ParsedRules{}
 
@@ -99,6 +113,10 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 		return rulesToReturn
 	}
 
+	//----------------------------------
+	// What to do?
+	//----------------------------------
+
 	if len(policy.Peer.IPBlock) > 0 {
 		rules = ipbLock()
 	} else {
@@ -108,7 +126,9 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 	return rules
 }
 
+// getPoliciesForServ gets all the policies for a certain service
 func getPoliciesForServ(serv *core_v1.Service) []v1beta.PolycubeNetworkPolicy {
+	// The solution does not protect pods in kube-system
 	if serv.Namespace == "kube-system" {
 		logger.Infof("Service %s belongs to kube-system, so it is going to be skipped. Stopping here.", serv.Name)
 		return nil
@@ -131,6 +151,7 @@ func getPoliciesForServ(serv *core_v1.Service) []v1beta.PolycubeNetworkPolicy {
 		return nil
 	}
 
+	// Loop through all the found policies and check which one applies to this
 	policiesList := []v1beta.PolycubeNetworkPolicy{}
 	for _, pol := range policies {
 		if pol.ApplyTo.Target == v1beta.ServiceTarget && pol.ApplyTo.WithName == serv.Name {

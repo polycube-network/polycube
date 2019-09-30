@@ -25,24 +25,6 @@ func TestReformatName(t *testing.T) {
 	assert.Equal(t, result, "allow-api#2ip5")
 }
 
-func TestSwapPortsDirection(t *testing.T) {
-	assert := assert.New(t)
-
-	// --- Both ports
-	t.Run("both-ports", func(t *testing.T) {
-		ports := pcn_types.ProtoPort{
-			Protocol: "TCP",
-			SPort:    int32(8080),
-			DPort:    int32(5566),
-		}
-		result := swapPortsDirection(ports)
-
-		assert.Equal(result.Protocol, ports.Protocol)
-		assert.Equal(result.DPort, ports.SPort)
-		assert.Equal(result.SPort, ports.DPort)
-	})
-}
-
 func TestInsertPorts(t *testing.T) {
 	assert := assert.New(t)
 	rules := []k8sfirewall.ChainRule{

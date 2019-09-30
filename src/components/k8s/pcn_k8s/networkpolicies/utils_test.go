@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckFwManger(t *testing.T) {
+func TestCheckFwManager(t *testing.T) {
 	assert := assert.New(t)
 	policy := pcn_types.ParsedPolicy{
 		Subject: pcn_types.PolicySubject{},
@@ -25,7 +25,7 @@ func TestCheckFwManger(t *testing.T) {
 			"applies-to": "me",
 		})
 
-		result := checkFwManger(&p, fw)
+		result := checkFwManager(&p, fw)
 		assert.True(result)
 	})
 
@@ -38,7 +38,7 @@ func TestCheckFwManger(t *testing.T) {
 			"applies-to": "me",
 		})
 
-		result := checkFwManger(&p, fw)
+		result := checkFwManager(&p, fw)
 		assert.False(result)
 	})
 
@@ -56,7 +56,7 @@ func TestCheckFwManger(t *testing.T) {
 			"applies-to": "me",
 		})
 
-		result := checkFwManger(&p, fw)
+		result := checkFwManager(&p, fw)
 		assert.False(result)
 	})
 }

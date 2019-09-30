@@ -133,7 +133,7 @@ func (p *PNPController) Run() {
 		return
 	}
 
-	logger.Infoln("Started...")
+	logger.Infoln("[Polycube Network Policies Controller](Run) Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -143,12 +143,13 @@ func (p *PNPController) Run() {
 
 // work gets the item from the queue and attempts to process it
 func (p *PNPController) work() {
+	f := "[Polycube Network Policies Controller](work) "
 	for {
 		// Get the item's key from the queue
 		_event, quit := p.queue.Get()
 
 		if quit {
-			logger.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln(f + "Quit requested... worker going to exit.")
 			return
 		}
 
@@ -167,11 +168,11 @@ func (p *PNPController) work() {
 				p.queue.Forget(_event)
 			} else if p.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf(f+"Error processing item with key %s (will retry): %v", key, err)
 				p.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				logger.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf(f+"Error processing %s (giving up): %v", key, err)
 				p.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -203,7 +204,7 @@ func (p *PNPController) process(event pcn_types.Event) error {
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*v1beta.PolycubeNetworkPolicy)
 		if !ok {
-			logger.Errorln("could not get previous state")
+			logger.Errorln("[Polycube Network Policies Controller](process) could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -228,12 +229,13 @@ func (p *PNPController) process(event pcn_types.Event) error {
 // retrievePolicyFromCache retrieves the namespace from the cache.
 // It tries to recover it from the tombstone if deleted.
 func (p *PNPController) retrievePolicyFromCache(obj interface{}, key string) (*v1beta.PolycubeNetworkPolicy, error) {
+	f := "[Polycube Network Policies Controller](retrievePolicyFromCache) "
 	// Get the policy by querying the key that kubernetes has assigned to it
 	_pol, _, err := p.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf(f+"An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -244,17 +246,17 @@ func (p *PNPController) retrievePolicyFromCache(obj interface{}, key string) (*v
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				logger.Errorln("error decoding object, invalid type")
+				logger.Errorln(f + "error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			pol, ok = tombstone.Obj.(*v1beta.PolycubeNetworkPolicy)
 			if !ok {
-				logger.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln(f + "error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			logger.Infof("Recovered deleted object '%s' from tombstone", pol.GetName())
+			logger.Infof(f+"Recovered deleted object '%s' from tombstone", pol.GetName())
 		}
 	}
 
@@ -274,7 +276,7 @@ func (p *PNPController) Stop() {
 	p.dispatchers.update.CleanUp()
 	p.dispatchers.delete.CleanUp()
 
-	logger.Infoln("Stopped.")
+	logger.Infoln("[Polycube Network Policies Controller](Stop) Stopped.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.

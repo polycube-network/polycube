@@ -22,18 +22,12 @@
 package pcnfirewall
 
 const (
-	// FWM is the short name of a Firewall Manager
-	FWM = "Firewall Manager"
 	// CleanFirewall specifies the clean action
 	CleanFirewall UnlinkOperation = "clean"
 	// DestroyFirewall specifies the destroy action
 	DestroyFirewall UnlinkOperation = "destroy"
 	// DoNothing specifies that no action should be taken
 	DoNothing UnlinkOperation = "nothing"
-	// IncomingChain is the chain for incoming rules
-	IncomingChain = "egress"
-	// OutgoingChain is the chain for outgoing rules
-	OutgoingChain = "ingress"
 )
 
 // UnlinkOperation is the operation that should be performed

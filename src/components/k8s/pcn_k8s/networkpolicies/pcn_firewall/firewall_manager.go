@@ -146,6 +146,7 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
+	f := "[FwManager-" + d.name + "](Link) "
 	podIP := pod.Status.PodIP
 	podUID := pod.UID
 	name := "fw-" + podIP
@@ -154,7 +155,7 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 	// Check firewall health and pod presence
 	//-------------------------------------
 	if ok, err := d.isFirewallOk(name); !ok {
-		logger.Errorf("Could not link firewall for pod %s: %s", name, err.Error())
+		logger.Errorf(f+"Could not link firewall for pod %s: %s", name, err.Error())
 		return false
 	}
 	_, alreadyLinked := d.linkedPods[podUID]
@@ -188,7 +189,7 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 		if err := d.injecter(name, ingressRules, egressRules, nil, 0, 0); err != nil {
 			// injecter fails only if pod's firewall is not ok (it is dying
 			// or crashed or not found) so there's no point in going on.
-			logger.Warningf("Injecter encountered an error upon linking the pod: %s. Will stop here.", err)
+			logger.Warningf(f+"Injecter encountered an error upon linking the pod: %s. Will stop here.", err)
 			return false
 		}
 	}
@@ -196,22 +197,22 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 	// -- ingress
 	err := d.updateDefaultAction(name, "ingress", d.ingressDefaultAction)
 	if err != nil {
-		logger.Errorf("Could not update the default ingress action: %s", err)
+		logger.Errorf(f+"Could not update the default ingress action: %s", err)
 	} else {
 		_, err := d.applyRules(name, "ingress")
 		if err != nil {
-			logger.Errorf("Could not apply ingress rules: %s", err)
+			logger.Errorf(f+"Could not apply ingress rules: %s", err)
 		}
 	}
 
 	// -- egress
 	err = d.updateDefaultAction(name, "egress", d.egressDefaultAction)
 	if err != nil {
-		logger.Errorf("Could not update the default egress action: %s", err)
+		logger.Errorf(f+"Could not update the default egress action: %s", err)
 	} else {
 		_, err := d.applyRules(name, "egress")
 		if err != nil {
-			logger.Errorf("Could not apply egress rules: %s", err)
+			logger.Errorf(f+"Could not apply egress rules: %s", err)
 		}
 	}
 
@@ -221,7 +222,7 @@ func (d *FirewallManager) Link(pod *core_v1.Pod) bool {
 	// From now on, when this firewall manager will react to events,
 	// this pod's firewall will be updated as well.
 	d.linkedPods[podUID] = podIP
-	logger.Infof("Pod %s linked.", podIP)
+	logger.Infof(f+"Pod %s linked.", podIP)
 	return true
 }
 
@@ -233,6 +234,7 @@ func (d *FirewallManager) Unlink(pod *core_v1.Pod, then UnlinkOperation) (bool, 
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
+	f := "[FwManager-" + d.name + "](Unlink) "
 	podUID := pod.UID
 	_, ok := d.linkedPods[podUID]
 	if !ok {
@@ -247,7 +249,7 @@ func (d *FirewallManager) Unlink(pod *core_v1.Pod, then UnlinkOperation) (bool, 
 	switch then {
 	case CleanFirewall:
 		if i, e := d.cleanFw(name); i != nil || e != nil {
-			logger.Warningln("Could not properly clean firewall for the provided pod.")
+			logger.Warningln(f + "Could not properly clean firewall for the provided pod.")
 		} else {
 			d.updateDefaultAction(name, "ingress", pcn_types.ActionForward)
 			d.applyRules(name, "ingress")
@@ -256,12 +258,12 @@ func (d *FirewallManager) Unlink(pod *core_v1.Pod, then UnlinkOperation) (bool, 
 		}
 	case DestroyFirewall:
 		if err := d.destroyFw(name); err != nil {
-			logger.Warningln("Could not delete firewall for the provided pod:", err)
+			logger.Warningln(f+"Could not delete firewall for the provided pod:", err)
 		}
 	}
 
 	delete(d.linkedPods, podUID)
-	logger.Infof("Pod %s unlinked.", podIP)
+	logger.Infof(f+"Pod %s unlinked.", podIP)
 	return true, len(d.linkedPods)
 }
 
@@ -283,12 +285,13 @@ func (d *FirewallManager) EnforcePolicy(policy pcn_types.ParsedPolicy, rules pcn
 	// Only one policy at a time, please
 	d.lock.Lock()
 	defer d.lock.Unlock()
+	f := "[FwManager-" + d.name + "](EnforcePolicy) "
 
 	if _, exists := d.policyDirections[policy.Name]; exists {
-		logger.Errorf("Policy %s is already enforced. Will stop here.", policy.Name)
+		logger.Errorf(f+"Policy %s is already enforced. Will stop here.", policy.Name)
 		return
 	}
-	logger.Infof("Enforcing policy %s...", policy.Name)
+	logger.Infof(f+"Enforcing policy %s...", policy.Name)
 
 	//-------------------------------------
 	// Define the actions
@@ -326,7 +329,7 @@ func (d *FirewallManager) EnforcePolicy(policy pcn_types.ParsedPolicy, rules pcn
 	//-------------------------------------
 
 	if len(d.linkedPods) == 0 {
-		logger.Infoln("There are no linked pods. Stopping here.")
+		logger.Infoln(f + "There are no linked pods. Stopping here.")
 		return
 	}
 
@@ -340,6 +343,7 @@ func (d *FirewallManager) EnforcePolicy(policy pcn_types.ParsedPolicy, rules pcn
 	injectWaiter.Wait()
 }
 
+// insertPriority insertes this policy in the priorities list
 func (d *FirewallManager) insertPriority(policy pcn_types.ParsedPolicy, offset int) {
 	newPriority := []policyPriority{
 		policyPriority{
@@ -354,9 +358,11 @@ func (d *FirewallManager) insertPriority(policy pcn_types.ParsedPolicy, offset i
 	d.priorities = append(d.priorities[:offset], append(newPriority, d.priorities[offset:]...)...)
 }
 
+// popPriority removes a policy from the list of the priorities
 func (d *FirewallManager) popPriority(policyName string) {
 	offset := -1
 
+	// Find it
 	for i, p := range d.priorities {
 		if p.policyName == policyName {
 			offset = i
@@ -364,7 +370,7 @@ func (d *FirewallManager) popPriority(policyName string) {
 	}
 
 	if offset == -1 {
-		logger.Errorf("Policy with name %s was not found in priorities list. Will stop here.", policyName)
+		logger.Errorf("[FwManager-"+d.name+"])(popPriority) Policy with name %s was not found in priorities list. Will stop here.", policyName)
 		return
 	}
 
@@ -410,6 +416,8 @@ func (d *FirewallManager) updateCounts(operation, policyType string) {
 	// BRIEF: read increaseCounts and decreaseCounts for an explanation
 	// of when and why these functions are called.
 
+	f := "[FwManager-" + d.name + "](updateCounts) "
+
 	//-------------------------------------
 	// Increase
 	//-------------------------------------
@@ -435,10 +443,10 @@ func (d *FirewallManager) updateCounts(operation, policyType string) {
 			for _, direction := range directions {
 				err := d.updateDefaultAction(name, direction, pcn_types.ActionDrop)
 				if err != nil {
-					logger.Errorf("Could not update default action for firewall %s: %s", name, direction)
+					logger.Errorf(f+"Could not update default action for firewall %s: %s", name, direction)
 				} else {
 					if _, err := d.applyRules(name, direction); err != nil {
-						logger.Errorf("Could not apply rules for firewall %s: %s", name, direction)
+						logger.Errorf(f+"Could not apply rules for firewall %s: %s", name, direction)
 					}
 				}
 			}
@@ -470,10 +478,10 @@ func (d *FirewallManager) updateCounts(operation, policyType string) {
 			for _, direction := range directions {
 				err := d.updateDefaultAction(name, direction, pcn_types.ActionForward)
 				if err != nil {
-					logger.Errorf("Could not update default action for firewall %s: %s", name, direction)
+					logger.Errorf(f+"Could not update default action for firewall %s: %s", name, direction)
 				} else {
 					if _, err := d.applyRules(name, direction); err != nil {
-						logger.Errorf("Could not apply rules for firewall %s: %s", name, direction)
+						logger.Errorf(f+"Could not apply rules for firewall %s: %s", name, direction)
 					}
 				}
 			}
@@ -534,6 +542,7 @@ func (d *FirewallManager) increaseCount(which string) bool {
 // the default action for the provided direction, if needed.
 // It returns TRUE if the corresponding action should be updated
 func (d *FirewallManager) decreaseCount(which string) bool {
+	f := "[FwManager-" + d.name + "](decreaseCount) "
 	// BRIEF: this function is called when a policy must be ceased.
 	// If - after ceasing it - we have no policies enforced,
 	// then the default action must be FORWARD.
@@ -543,7 +552,7 @@ func (d *FirewallManager) decreaseCount(which string) bool {
 
 	if which == "ingress" {
 		if d.ingressPoliciesCount == 0 {
-			logger.Errorf("Cannot further decrease ingress policies count (it is 0). Going to stop here.")
+			logger.Errorf(f + "Cannot further decrease ingress policies count (it is 0). Going to stop here.")
 			return true
 		}
 
@@ -557,6 +566,10 @@ func (d *FirewallManager) decreaseCount(which string) bool {
 	}
 
 	if which == "egress" {
+		if d.egressPoliciesCount == 0 {
+			logger.Errorf(f + "Cannot further decrease egress policies count (it is 0). Going to stop here.")
+			return true
+		}
 		if d.egressPoliciesCount--; d.egressPoliciesCount == 0 {
 			d.egressDefaultAction = pcn_types.ActionForward
 			return true
@@ -606,6 +619,7 @@ func (d *FirewallManager) storeRules(policyName, target string, ingress, egress 
 // injecter is a convenient method for injecting rules for a single firewall
 // for both directions
 func (d *FirewallManager) injecter(firewall string, ingressRules, egressRules []k8sfirewall.ChainRule, waiter *sync.WaitGroup, iStartFrom, eStartFrom int32) error {
+	f := "[FwManager-" + d.name + "](injecter) "
 	// Should I notify caller when I'm done?
 	if waiter != nil {
 		defer waiter.Done()
@@ -613,7 +627,7 @@ func (d *FirewallManager) injecter(firewall string, ingressRules, egressRules []
 
 	// Is firewall ok?
 	if ok, err := d.isFirewallOk(firewall); !ok {
-		logger.Errorf("Could not inject rules. Firewall is not ok: %s", err)
+		logger.Errorf(f+"Could not inject rules. Firewall is not ok: %s", err)
 		return err
 	}
 
@@ -633,6 +647,7 @@ func (d *FirewallManager) injecter(firewall string, ingressRules, egressRules []
 // injectRules is a wrapper for firewall's CreateFirewallChainRuleListByID
 // and CreateFirewallChainApplyRulesByID methods.
 func (d *FirewallManager) injectRules(firewall, direction string, rules []k8sfirewall.ChainRule, waiter *sync.WaitGroup, startFrom int32) error {
+	f := "[FwManager-" + d.name + "](injectRules) "
 	// Should I notify caller when I'm done?
 	if waiter != nil {
 		defer waiter.Done()
@@ -665,7 +680,7 @@ func (d *FirewallManager) injectRules(firewall, direction string, rules []k8sfir
 
 		_, response, err := fwAPI.CreateFirewallChainInsertByID(nil, firewall, direction, ruleToInsert)
 		if err != nil {
-			logger.Errorf("Error while trying to inject rule: %s, %+v", err, response)
+			logger.Errorf(f+"Error while trying to inject rule: %s, %+v", err, response)
 			// This rule had an error, but we still gotta push the other ones dude...
 			//return err
 		}
@@ -673,7 +688,7 @@ func (d *FirewallManager) injectRules(firewall, direction string, rules []k8sfir
 
 	// Now apply the changes
 	if response, err := d.applyRules(firewall, direction); err != nil {
-		logger.Errorf("Error while trying to apply rules: %s, %+v", err, response)
+		logger.Errorf(f+"Error while trying to apply rules: %s, %+v", err, response)
 		return err
 	}
 
@@ -683,8 +698,9 @@ func (d *FirewallManager) injectRules(firewall, direction string, rules []k8sfir
 // definePolicyActions subscribes to the appropriate events
 // and defines the actions to be taken when that event happens.
 func (d *FirewallManager) definePolicyActions(policy pcn_types.ParsedPolicy) {
+	f := "[FwManager-" + d.name + "](definePolicyActions) "
 	if len(policy.Peer.Key) == 0 {
-		logger.Infoln("Policy does not need to react to events. Stopping here.")
+		logger.Infoln(f + "Policy does not need to react to events. Stopping here.")
 		return
 	}
 
@@ -734,7 +750,7 @@ func (d *FirewallManager) definePolicyActions(policy pcn_types.ParsedPolicy) {
 		if err == nil {
 			d.policyActions[policy.Peer.Key].unsubscriptors = append(d.policyActions[policy.Peer.Key].unsubscriptors, unsub)
 		} else {
-			logger.Errorf("Could not subscribe to changes! %s", err)
+			logger.Errorf(f+"Could not subscribe to changes! %s", err)
 		}
 	}
 }
@@ -746,11 +762,11 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
+	f := "[FwManager-" + d.name + "](reactToPod) "
+
 	if len(pod.Status.PodIP) == 0 {
 		return
 	}
-
-	logger.Infof("Reacting to pod: name %s, IP %s, labels %v, namespace %s", pod.Name, pod.Status.PodIP, pod.Labels, pod.Namespace)
 
 	//-------------------------------------
 	//	Delete
@@ -758,6 +774,7 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 
 	del := func(ip string) {
 		virtualIP := utils.GetPodVirtualIP(ip)
+		logger.Infof("Reacting to deleted pod: name %s, IP %s, labels %v, namespace %s", pod.Name, pod.Status.PodIP, pod.Labels, pod.Namespace)
 
 		deleteIngress := func() {
 			//	For each policy, go get all the rules in which this ip was present.
@@ -776,7 +793,7 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 			}
 
 			if len(rulesToDelete) == 0 {
-				logger.Debugln("No rules to delete in ingress")
+				logger.Debugln(f + "No rules to delete in ingress")
 				return
 			}
 
@@ -805,7 +822,7 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 			}
 
 			if len(rulesToDelete) == 0 {
-				logger.Debugln("No rules to delete in egress")
+				logger.Debugln(f + "No rules to delete in egress")
 				return
 			}
 
@@ -825,14 +842,16 @@ func (d *FirewallManager) reactToPod(event pcn_types.EventType, pod *core_v1.Pod
 	//-------------------------------------
 
 	upd := func(ip string) {
+		logger.Infof(f+"Reacting to updated pod: name %s, IP %s, labels %v, namespace %s", pod.Name, pod.Status.PodIP, pod.Labels, pod.Namespace)
+
 		//	Basic checks
 		actions, exist := d.policyActions[actionKey]
 		if !exist {
-			logger.Warningln("Could not find any actions with this key")
+			logger.Warningln(f + "Could not find any actions with this key")
 			return
 		}
 		if len(actions.actions) == 0 {
-			logger.Warningln("There are no actions to be taken!")
+			logger.Warningln(f + "There are no actions to be taken!")
 			return
 		}
 
@@ -890,7 +909,7 @@ func (d *FirewallManager) deleteAllPolicyRules(policy string) {
 	// Ingress
 	//-------------------------------------
 
-	ingress := func() {
+	func() {
 		defer delete(d.ingressRules, policy)
 
 		rules := d.ingressRules[policy]
@@ -904,13 +923,13 @@ func (d *FirewallManager) deleteAllPolicyRules(policy string) {
 			d.deleteRules(name, "ingress", rules)
 			d.applyRules(name, "ingress")
 		}
-	}
+	}()
 
 	//-------------------------------------
 	// Egress
 	//-------------------------------------
 
-	egress := func() {
+	func() {
 		defer delete(d.egressRules, policy)
 		//defer waiter.Done()
 
@@ -925,10 +944,7 @@ func (d *FirewallManager) deleteAllPolicyRules(policy string) {
 			d.deleteRules(name, "egress", rules)
 			d.applyRules(name, "egress")
 		}
-	}
-
-	ingress()
-	egress()
+	}()
 }
 
 // deletePolicyActions delete all templates generated by a specific policy.
@@ -968,9 +984,10 @@ func (d *FirewallManager) deletePolicyActions(policy string) {
 func (d *FirewallManager) CeasePolicy(policyName string) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+	f := "[FwManager-" + d.name + "](CeasePolicy) "
 
 	if _, exists := d.policyDirections[policyName]; !exists {
-		logger.Errorf("Policy %s is not currently enforced. Will stop here.", policyName)
+		logger.Errorf(f+"Policy %s is not currently enforced. Will stop here.", policyName)
 		return
 	}
 
@@ -1001,7 +1018,7 @@ func (d *FirewallManager) CeasePolicy(policyName string) {
 		d.updateCounts("decrease", dirToChain(policyDir))
 		delete(d.policyDirections, policyName)
 	} else {
-		logger.Warningln(policyName, "was not listed among policy types!")
+		logger.Warningln(f+policyName, "was not listed among policy types!")
 	}
 }
 
@@ -1009,6 +1026,7 @@ func (d *FirewallManager) CeasePolicy(policyName string) {
 // deleting multiple rules.
 func (d *FirewallManager) deleteRules(fw, direction string, rules []k8sfirewall.ChainRule) error {
 	me := strings.Split(fw, "-")[1]
+	f := "[FwManager-" + d.name + "](deleteRules) "
 
 	// this is a fake deep copy-cast.
 	cast := func(rule k8sfirewall.ChainRule) k8sfirewall.ChainDeleteInput {
@@ -1040,7 +1058,7 @@ func (d *FirewallManager) deleteRules(fw, direction string, rules []k8sfirewall.
 		// Delete the rule not by its ID, but by the fields it is composed of.
 		response, err := fwAPI.CreateFirewallChainDeleteByID(nil, fw, direction, cast(rule))
 		if err != nil {
-			logger.Errorf("Error while trying to delete this rule: %+v, in %s for firewall %s. Error %s, response: %+v", rule, direction, fw, err.Error(), response)
+			logger.Errorf(f+"Error while trying to delete this rule: %+v, in %s for firewall %s. Error %s, response: %+v", rule, direction, fw, err.Error(), response)
 		}
 	}
 
@@ -1137,5 +1155,5 @@ func (d *FirewallManager) Destroy() {
 		delete(d.policyActions, key)
 	}
 
-	logger.Infoln("Good bye!")
+	logger.Infoln("[FwManager-" + d.name + "] Good bye!")
 }

@@ -139,7 +139,7 @@ func (p *PcnPodController) Run() {
 		return
 	}
 
-	logger.Infoln("Started...")
+	logger.Infoln("[Pods Controller](Run) Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -149,12 +149,13 @@ func (p *PcnPodController) Run() {
 
 // work gets the item from the queue and attempts to process it
 func (p *PcnPodController) work() {
+	f := "[Pods Controller](work) "
 	for {
 		// Get the item's key from the queue
 		_event, quit := p.queue.Get()
 
 		if quit {
-			logger.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln(f + "Quit requested... worker going to exit.")
 			return
 		}
 
@@ -173,11 +174,11 @@ func (p *PcnPodController) work() {
 				p.queue.Forget(_event)
 			} else if p.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf(f+"Error processing item with key %s (will retry): %v", key, err)
 				p.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				logger.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf(f+"Error processing %s (giving up): %v", key, err)
 				p.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -209,7 +210,7 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*core_v1.Pod)
 		if !ok {
-			logger.Errorln("could not get previous state")
+			logger.Errorln("[Pods Controller](process) could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -234,12 +235,13 @@ func (p *PcnPodController) process(event pcn_types.Event) error {
 // retrievePodFromCache retrieves the namespace from the cache.
 // It tries to recover it from the tombstone if deleted.
 func (p *PcnPodController) retrievePodFromCache(obj interface{}, key string) (*core_v1.Pod, error) {
+	f := "[Pods Controller](retrievePodFromCache) "
 	// Get the pod by querying the key that kubernetes has assigned to it
 	_pod, _, err := p.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf(f+"An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -250,17 +252,17 @@ func (p *PcnPodController) retrievePodFromCache(obj interface{}, key string) (*c
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				logger.Errorln("error decoding object, invalid type")
+				logger.Errorln(f + "error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			pod, ok = tombstone.Obj.(*core_v1.Pod)
 			if !ok {
-				logger.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln(f + "error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			logger.Infof("Recovered deleted object '%s' from tombstone", pod.GetName())
+			logger.Infof(f+"Recovered deleted object '%s' from tombstone", pod.GetName())
 		}
 	}
 
@@ -280,7 +282,7 @@ func (p *PcnPodController) Stop() {
 	p.dispatchers.update.CleanUp()
 	p.dispatchers.delete.CleanUp()
 
-	logger.Infoln("Stopped.")
+	logger.Infoln("[Pods Controller](Stop) Stopped.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.

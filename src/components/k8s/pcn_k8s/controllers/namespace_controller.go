@@ -138,7 +138,7 @@ func (n *PcnNamespaceController) Run() {
 		return
 	}
 
-	logger.Infoln("Started...")
+	logger.Infoln("[Namespaces Controller](Run) Started...")
 
 	// Work *until* something bad happens.
 	// If that's the case, wait one second and then re-work again.
@@ -147,12 +147,13 @@ func (n *PcnNamespaceController) Run() {
 }
 
 func (n *PcnNamespaceController) work() {
+	f := "[Namespaces Controller](work) "
 	for {
 		// Get the item's key from the queue
 		_event, quit := n.queue.Get()
 
 		if quit {
-			logger.Infoln("Quit requested... worker going to exit.")
+			logger.Infoln(f + "Quit requested... worker going to exit.")
 			return
 		}
 
@@ -171,11 +172,11 @@ func (n *PcnNamespaceController) work() {
 				n.queue.Forget(_event)
 			} else if n.queue.NumRequeues(_event) < maxRetries {
 				// Tried less than the maximum retries?
-				logger.Warningf("Error processing item with key %s (will retry): %v", key, err)
+				logger.Warningf(f+"Error processing item with key %s (will retry): %v", key, err)
 				n.queue.AddRateLimited(_event)
 			} else {
 				// Too many retries?
-				logger.Errorf("Error processing %s (giving up): %v", key, err)
+				logger.Errorf(f+"Error processing %s (giving up): %v", key, err)
 				n.queue.Forget(_event)
 				utilruntime.HandleError(err)
 			}
@@ -207,7 +208,7 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 	if event.OldObject != nil {
 		_prev, ok := event.OldObject.(*core_v1.Namespace)
 		if !ok {
-			logger.Errorln("could not get previous state")
+			logger.Errorln("[Namespaces Controller](process) could not get previous state")
 			return fmt.Errorf("could not get previous state")
 		}
 		prev = _prev
@@ -232,12 +233,13 @@ func (n *PcnNamespaceController) process(event pcn_types.Event) error {
 // retrieveNsFromCache retrieves the namespace from the cache.
 // It tries to recover it from the tombstone if deleted.
 func (n *PcnNamespaceController) retrieveNsFromCache(obj interface{}, key string) (*core_v1.Namespace, error) {
+	f := "[Namespaces Controller](retrieveNsFromCache) "
 	// Get the namespace by querying the key that kubernetes has assigned to it
 	_ns, _, err := n.informer.GetIndexer().GetByKey(key)
 
 	// Errors?
 	if err != nil {
-		logger.Errorf("An error occurred: cannot find cache element with key %s from store %v", key, err)
+		logger.Errorf(f+"An error occurred: cannot find cache element with key %s from store %v", key, err)
 		return nil, fmt.Errorf("An error occurred: cannot find cache element with key %s from ", key)
 	}
 
@@ -248,17 +250,17 @@ func (n *PcnNamespaceController) retrieveNsFromCache(obj interface{}, key string
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				logger.Errorln("error decoding object, invalid type")
+				logger.Errorln(f + "error decoding object, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
 				return nil, fmt.Errorf("error decoding object, invalid type")
 			}
 			ns, ok = tombstone.Obj.(*core_v1.Namespace)
 			if !ok {
-				logger.Errorln("error decoding object tombstone, invalid type")
+				logger.Errorln(f + "error decoding object tombstone, invalid type")
 				utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 				return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 			}
-			logger.Infof("Recovered deleted object '%s' from tombstone", ns.GetName())
+			logger.Infof(f+"Recovered deleted object '%s' from tombstone", ns.GetName())
 		}
 	}
 
@@ -278,7 +280,7 @@ func (n *PcnNamespaceController) Stop() {
 	n.dispatchers.update.CleanUp()
 	n.dispatchers.delete.CleanUp()
 
-	logger.Infoln("Stopped.")
+	logger.Infoln("[Namespaces Controller](Stop) Stopped.")
 }
 
 // Subscribe executes the function consumer when the event event is triggered.

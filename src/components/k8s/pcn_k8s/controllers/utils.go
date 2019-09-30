@@ -11,7 +11,7 @@ func buildEvent(new, old interface{}, eventType pcn_types.EventType) (pcn_types.
 		Type: eventType,
 	}
 
-	// The new object
+	// The new object structure
 	if new != nil {
 		key, err := cache.MetaNamespaceKeyFunc(new)
 		if err != nil {

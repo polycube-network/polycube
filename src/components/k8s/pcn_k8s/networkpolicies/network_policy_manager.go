@@ -21,11 +21,17 @@ import (
 type PcnNetworkPolicyManager interface {
 	// DeployK8sPolicy deploys a kubernetes policy in the appropriate fw managers
 	DeployK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
+	// DeployPcnPolicy deploys a polycube policy in the appropriate fw managers
+	DeployPcnPolicy(policy, prev *v1beta.PolycubeNetworkPolicy)
 	// RemoveK8sPolicy removes (ceases) a kubernetes policy
 	// from the appropriate firewall managers
 	RemoveK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
+	// RemovePcnPolicy will remove (cease) a polycube policy
+	RemovePcnPolicy(current, prev *v1beta.PolycubeNetworkPolicy)
 	// UpdateK8sPolicy updates a kubernetes policy in the appropriate fw managers
 	UpdateK8sPolicy(policy *networking_v1.NetworkPolicy, prev *networking_v1.NetworkPolicy)
+	// UpdatePcnPolicy will update a polycube policy
+	UpdatePcnPolicy(policy, prev *v1beta.PolycubeNetworkPolicy)
 }
 
 // NetworkPolicyManager is the implementation of the policy manager
@@ -71,7 +77,7 @@ var startFirewall = pcn_firewall.StartFirewall
 
 // StartNetworkPolicyManager will start a new network policy manager.
 func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
-	logger.Infoln("Starting Network Policy Manager")
+	logger.Infof("Starting Network Policy Manager on node %s.", nodeName)
 
 	manager := NetworkPolicyManager{
 		localFirewalls:       map[string]pcn_firewall.PcnFirewallManager{},
@@ -138,10 +144,11 @@ func StartNetworkPolicyManager(nodeName string) PcnNetworkPolicyManager {
 
 // DeployK8sPolicy deploys a kubernetes policy in the appropriate fw managers
 func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.NetworkPolicy) {
+	f := "[Network Policies Manager](DeployK8sPolicy) "
+
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
-
-	logger.Infof("K8s policy %s has been deployed", policy.Name)
+	logger.Infof(f+"K8s policy %s has been deployed.", policy.Name)
 
 	//--------------------------------------
 	// Split to mini-policies & deploy
@@ -163,10 +170,11 @@ func (manager *NetworkPolicyManager) DeployK8sPolicy(policy, _ *networking_v1.Ne
 
 // DeployPcnPolicy deploys a kubernetes policy in the appropriate fw managers
 func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeNetworkPolicy) {
+	f := "[Network Policies Manager](DeployK8sPolicy) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	logger.Infof("Pcn policy %s has been deployed", policy.Name)
+	logger.Infof(f+"Pcn policy %s has been deployed", policy.Name)
 
 	//--------------------------------------
 	// Has a service?
@@ -174,7 +182,7 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 	var serv *core_v1.Service
 	if policy.ApplyTo.Target == v1beta.ServiceTarget {
 		if policy.ApplyTo.Any != nil && *policy.ApplyTo.Any {
-			logger.Infof("Cannot set any when targeting services. Stopping now.")
+			logger.Infof(f + f + "Cannot set any when targeting services. Stopping now.")
 			return
 		}
 
@@ -196,11 +204,11 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 		servList, err := pcn_controllers.Services().List(sQuery, nQuery)
 
 		if err != nil {
-			logger.Errorf("Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
+			logger.Errorf(f+"Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
 			return
 		}
 		if len(servList) == 0 {
-			logger.Infof("Service with name %s was not found. The policy will be parsed when it is deployed.", policy.ApplyTo.WithName)
+			logger.Infof(f+"Service with name %s was not found. The policy will be parsed when it is deployed.", policy.ApplyTo.WithName)
 
 			// Let's deploy this policy when the service is created.
 			// It is useless to do it now
@@ -208,7 +216,7 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 			return
 		}
 		if len(servList[0].Spec.Selector) == 0 {
-			logger.Infof("Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
+			logger.Infof(f+"Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
 			return
 		}
 
@@ -240,13 +248,14 @@ func (manager *NetworkPolicyManager) DeployPcnPolicy(policy, _ *v1beta.PolycubeN
 // RemoveK8sPolicy removes (ceases) a kubernetes policy
 // from the appropriate firewall managers
 func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.NetworkPolicy) {
+	f := "[Network Policies Manager](RemoveK8sPolicy) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	logger.Infof("K8s policy %s is going to be removed", policy.Name)
+	logger.Infof(f+"K8s policy %s is going to be removed", policy.Name)
 
 	if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln(f + "There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -297,13 +306,14 @@ func (manager *NetworkPolicyManager) RemoveK8sPolicy(_, policy *networking_v1.Ne
 // RemovePcnPolicy removes (ceases) a kubernetes policy
 // from the appropriate firewall managers
 func (manager *NetworkPolicyManager) RemovePcnPolicy(_, policy *v1beta.PolycubeNetworkPolicy) {
+	f := "[Network Policies Manager](RemovePcnPolicy) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	logger.Infof("Pcn policy %s is going to be removed", policy.Name)
+	logger.Infof(f+"Pcn policy %s is going to be removed", policy.Name)
 
 	if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln(f + "There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -332,6 +342,8 @@ func (manager *NetworkPolicyManager) RemovePcnPolicy(_, policy *v1beta.PolycubeN
 	// Delete serv
 	//-------------------------------------
 
+	// If the policy targets a service, we need to remove it from the list,
+	// so that, when the service is updated, we won't have to look for this.
 	if policy.ApplyTo.Target == v1beta.ServiceTarget {
 		sQuery := utils.BuildQuery(policy.ApplyTo.WithName, nil)
 		nQuery := utils.BuildQuery(policy.Namespace, nil)
@@ -369,10 +381,11 @@ func (manager *NetworkPolicyManager) RemovePcnPolicy(_, policy *v1beta.PolycubeN
 
 // UpdateK8sPolicy updates a kubernetes policy in the appropriate fw managers
 func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.NetworkPolicy) {
+	f := "[Network Policies Manager](UpdateK8sPolicy) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	logger.Infof("K8s policy %s has been updated. Going to parse it again", policy.Name)
+	logger.Infof(f+"K8s policy %s has been updated. Going to parse it again", policy.Name)
 
 	// Updating a policy is no trivial task.
 	// We don't know what changed from its previous state:
@@ -382,7 +395,7 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 	// redeploy it.
 
 	if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln(f + "There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -418,10 +431,11 @@ func (manager *NetworkPolicyManager) UpdateK8sPolicy(policy, _ *networking_v1.Ne
 
 // UpdatePcnPolicy updates a kubernetes policy in the appropriate fw managers
 func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeNetworkPolicy) {
+	f := "[Network Policies Manager](UpdatePcnPolicy) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	logger.Infof("Pcn policy %s has been updated. Going to parse it again", policy.Name)
+	logger.Infof(f+"Pcn policy %s has been updated. Going to parse it again", policy.Name)
 
 	// Updating a policy is no trivial task.
 	// We don't know what changed from its previous state:
@@ -431,7 +445,7 @@ func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeN
 	// redeploy it.
 
 	if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln(f + "There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
@@ -441,7 +455,7 @@ func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeN
 	var serv *core_v1.Service
 	if policy.ApplyTo.Target == v1beta.ServiceTarget {
 		if policy.ApplyTo.Any != nil && *policy.ApplyTo.Any {
-			logger.Infof("Cannot set any when targeting services. Stopping now.")
+			logger.Infof(f + "Cannot set 'any' when targeting services. Stopping now.")
 			return
 		}
 
@@ -451,15 +465,15 @@ func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeN
 		servList, err := pcn_controllers.Services().List(sQuery, nQuery)
 
 		if err != nil {
-			logger.Errorf("Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
+			logger.Errorf(f+"Error occurred while trying to get service with name %s. Stopping now.", policy.ApplyTo.WithName)
 			return
 		}
 		if len(servList) == 0 {
-			logger.Infof("Service with name %s was not found. Stopping now.", policy.ApplyTo.WithName)
+			logger.Infof(f+"Service with name %s was not found. Stopping now.", policy.ApplyTo.WithName)
 			return
 		}
 		if len(servList[0].Spec.Selector) == 0 {
-			logger.Infof("Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
+			logger.Infof(f+"Service with name %s has no selectors. Stopping now.", policy.ApplyTo.WithName)
 			return
 		}
 
@@ -496,7 +510,10 @@ func (manager *NetworkPolicyManager) UpdatePcnPolicy(policy, _ *v1beta.PolycubeN
 	}
 }
 
+// checkService checks if the service needs to be protected, and, if so, gets
+// the appropriate policies.
 func (manager *NetworkPolicyManager) checkService(serv *core_v1.Service, eventType string) {
+	f := "[Network Policies Manager](checkService) "
 	// First, build the key
 	sQuery := utils.BuildQuery(serv.Name, nil)
 	nQuery := utils.BuildQuery(serv.Namespace, nil)
@@ -525,23 +542,30 @@ func (manager *NetworkPolicyManager) checkService(serv *core_v1.Service, eventTy
 		return names
 	}()
 
+	// Loop through all policies, or return.
 	for polName := range polNames {
 		pQuery := utils.BuildQuery(polName, nil)
 
 		// Find them
 		found, err := pcn_controllers.PcnPolicies().List(pQuery, nQuery)
 		if err != nil {
-			logger.Errorf("Could not get policy %s on namespace %s.", polName, serv.Namespace)
+			logger.Errorf(f+"Could not get policy %s on namespace %s.", polName, serv.Namespace)
 			continue
 		}
 		if len(found) == 0 {
-			logger.Infof("No policies found with name %s namespaces %s.", polName, serv.Namespace)
+			logger.Infof(f+"No policies found with name %s namespaces %s.", polName, serv.Namespace)
 			continue
 		}
 
 		pol := found[0]
 
+		//---------------------------------
+		//  What to do?
+		//---------------------------------
+
 		switch eventType {
+		// If the event is new, it means that we have to react to its updates
+		// and remove event. No need to react to new events
 		case "new":
 			manager.DeployPcnPolicy(&pol, nil)
 			func() {
@@ -551,6 +575,8 @@ func (manager *NetworkPolicyManager) checkService(serv *core_v1.Service, eventTy
 				manager.servPolicies[key].upd[polName] = true
 				manager.servPolicies[key].del[polName] = true
 			}()
+		// If the event is delete, it means that we only have to react to new
+		// events from now on.
 		case "delete":
 			manager.RemovePcnPolicy(nil, &pol)
 			func() {
@@ -569,23 +595,27 @@ func (manager *NetworkPolicyManager) checkService(serv *core_v1.Service, eventTy
 
 // CheckNewService checks if this service needs to be protected
 func (manager *NetworkPolicyManager) CheckNewService(serv, _ *core_v1.Service) {
-	logger.Infof("Service %s has been deployed. Going to check for policies...", serv.Name)
+	logger.Infof("[Network Policies Manager](CheckNewService) Service %s has been deployed. Going to check for policies...", serv.Name)
 	manager.checkService(serv, "new")
 }
 
 // CheckRemovedService checks if this service needs to be protected
 func (manager *NetworkPolicyManager) CheckRemovedService(_, serv *core_v1.Service) {
-	logger.Infof("Service %s has been removed. Going to check for policies...", serv.Name)
+	logger.Infof("[Network Policies Manager](CheckRemovedService) Service %s has been removed. Going to check for policies...", serv.Name)
 	manager.checkService(serv, "delete")
 }
 
 // CheckUpdatedService checks if this service needs to be protected
 func (manager *NetworkPolicyManager) CheckUpdatedService(serv, prev *core_v1.Service) {
-	logger.Infof("Service %s has been updated. Going to check for policies...", serv.Name)
+	logger.Infof("[Network Policies Manager](CheckUpdatedService) Service %s has been updated. Going to check for policies...", serv.Name)
 	manager.checkService(serv, "update")
 }
 
+// deployPolicyToFw deploys the provided policy to the provided
+// firewall manager or to all appropriate firewall managers if
+// second argument is blank.
 func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPolicy, fwName string) {
+	f := "[Network Policies Manager](deployPolicyToFw) "
 	//-------------------------------------
 	// Start & basic checks
 	//-------------------------------------
@@ -594,14 +624,14 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 	// That's also one of the reasons why it is un-exported.
 
 	if len(manager.localFirewalls) == 0 {
-		logger.Infoln("There are no active firewall managers in this node. Will stop here.")
+		logger.Infoln(f + "There are no active firewall managers in this node. Will stop here.")
 		return
 	}
 
 	// Does it exist?
 	if len(fwName) > 0 {
 		if _, exists := manager.localFirewalls[fwName]; !exists {
-			logger.Errorf("Firewall manager with name %s does not exists in this node. Will stop here.", fwName)
+			logger.Errorf(f+"Firewall manager with name %s does not exists in this node. Will stop here.", fwName)
 			return
 		}
 	}
@@ -615,12 +645,12 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 
 	if len(fwName) > 0 {
 		fw := manager.localFirewalls[fwName]
-		if checkFwManger(policy, fw) {
+		if checkFwManager(policy, fw) {
 			appliers = append(appliers, fw.Name())
 		}
 	} else {
 		for _, fw := range manager.localFirewalls {
-			if checkFwManger(policy, fw) {
+			if checkFwManager(policy, fw) {
 				appliers = append(appliers, fw.Name())
 			}
 		}
@@ -654,6 +684,8 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 		return
 	}
 
+	// If the policy peer specifies namespace by labels, then we need to react
+	// namespaces that changed their labels!
 	if policy.Peer.Namespace != nil && len(policy.Peer.Namespace.Labels) > 0 {
 		if _, exists := manager.policyUnsubscriptors[policy.Name]; !exists {
 			manager.policyUnsubscriptors[policy.Name] = &nsUnsubscriptor{
@@ -679,12 +711,16 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 // handleNamespaceUpdate checks if a namespace has changed its labels.
 // If so, the appropriate firewall should update the policies as well.
 func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Namespace, nsLabels map[string]string, policyName, policyNs, policyProvider string) {
-	logger.Infof("Namespace %s has been updated", ns.Name)
+	f := "[Network Policies Manager](handleNamespaceUpdate) "
+	logger.Infof(f+"Namespace %s has been updated", ns.Name)
 
-	// Function that checks if an update of the policy is needed.
-	// Done like this so we can use defer and keep the code more
-	// organized
+	//-------------------------------------
+	// Do we have to update a policy?
+	//-------------------------------------
+
 	needsUpdate := func() bool {
+		// Done in a separate func this so we can use defer
+		//and keep the code more organized
 		manager.lock.Lock()
 		defer manager.lock.Unlock()
 
@@ -706,7 +742,7 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 			return false
 		}
 
-		logger.Infof("%s's labels have changed", ns.Name)
+		logger.Infof(f+"%s's labels have changed", ns.Name)
 		return true
 	}
 
@@ -715,19 +751,23 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 		return
 	}
 
+	// Get the parent's policy name
 	parentPolicyName := strings.Split(policyName, "#")[0]
 	policyQuery := utils.BuildQuery(parentPolicyName, nil)
 	nsQuery := utils.BuildQuery(policyNs, nil)
 
-	// Function that handles kubernetes policies
+	//-------------------------------------
+	// K8s policies
+	//-------------------------------------
+
 	k8s := func() {
 		policies, err := pcn_controllers.K8sPolicies().List(policyQuery, nsQuery)
 		if err != nil {
-			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
+			logger.Errorf(f+"Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
 			return
 		}
 		if len(policies) == 0 {
-			logger.Errorf("Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
+			logger.Errorf(f+"Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
 			return
 		}
 		policy := policies[0]
@@ -737,15 +777,18 @@ func (manager *NetworkPolicyManager) handleNamespaceUpdate(ns, prev *core_v1.Nam
 		manager.DeployK8sPolicy(&policy, nil)
 	}
 
-	// Function that handles pcn policies
+	//-------------------------------------
+	// Pcn Policies
+	//-------------------------------------
+
 	pcn := func() {
 		policies, err := pcn_controllers.PcnPolicies().List(policyQuery, nsQuery)
 		if err != nil {
-			logger.Errorf("Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
+			logger.Errorf(f+"Could not load policies named %s on namespace %s. Error: %s", parentPolicyName, policyNs, err)
 			return
 		}
 		if len(policies) == 0 {
-			logger.Errorf("Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
+			logger.Errorf(f+"Policiy named %s on namespace %s has not been found.", parentPolicyName, policyNs)
 			return
 		}
 		policy := policies[0]
@@ -771,7 +814,7 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 
 	// Is this pod from the kube-system?
 	if pod.Namespace == "kube-system" {
-		logger.Infof("Pod %s belongs to the kube-system namespace: no point in checking for policies. Will stop here.", pod.Name)
+		logger.Infof("[Network Policies Manager](checkNewPod) Pod %s belongs to the kube-system namespace: no point in checking for policies. Will stop here.", pod.Name)
 		return
 	}
 
@@ -815,6 +858,8 @@ func (manager *NetworkPolicyManager) checkNewPod(pod, prev *core_v1.Pod) {
 	manager.checkIfPodNeedsProtection(pod, fw)
 }
 
+// checkIfcheckIfPodNeedsProtection checks if the *new* provided pod should
+// be protected. This is triggered when a firewall manager is just created.
 func (manager *NetworkPolicyManager) checkIfPodNeedsProtection(pod *core_v1.Pod, fw pcn_firewall.PcnFirewallManager) {
 	nsQuery := &pcn_types.ObjectQuery{By: "name", Name: pod.Namespace}
 
@@ -889,6 +934,7 @@ func (manager *NetworkPolicyManager) checkIfPodNeedsProtection(pod *core_v1.Pod,
 // Returns the newly created/already existing firewall manager,
 // its key, and TRUE if it was just created.
 func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_v1.Pod) (pcn_firewall.PcnFirewallManager, bool) {
+	f := "[Network Policies Manager](getOrCreateFirewallManager) "
 	fwKey := pod.Namespace + "|" + utils.ImplodeLabels(pod.Labels, ",", true)
 
 	//-------------------------------------
@@ -906,7 +952,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 		if exists {
 			unlinked, remaining := prevFw.Unlink(pod, pcn_firewall.CleanFirewall)
 			if !unlinked {
-				logger.Warningf("%s was not linked in previous firewall manager!", pod.UID)
+				logger.Warningf(f+"%s was not linked in previous firewall manager!", pod.UID)
 			} else {
 				if remaining == 0 {
 					manager.flagForDeletion(prevFw.Name())
@@ -914,7 +960,7 @@ func (manager *NetworkPolicyManager) getOrCreateFirewallManager(pod, prev *core_
 				delete(manager.linkedPods, pod.UID)
 			}
 		} else {
-			logger.Warningf("Could not find %s previous firewall manager!", pod.UID)
+			logger.Warningf(f+"Could not find %s previous firewall manager!", pod.UID)
 		}
 	}
 
@@ -956,11 +1002,12 @@ func (manager *NetworkPolicyManager) unflagForDeletion(fwKey string) {
 // manageDeletedPod makes sure that the appropriate fw manager
 // will destroy this pod's firewall
 func (manager *NetworkPolicyManager) manageDeletedPod(_ *core_v1.Pod, pod *core_v1.Pod) {
+	f := "[Network Policies Manager](manageDeletedPod) "
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
 	if pod.Namespace == "kube-system" {
-		logger.Infof("Pod %s belongs to the kube-system namespace: no point in checking its firewall manager. Will stop here.", pod.Name)
+		logger.Infof(f+"Pod %s belongs to the kube-system namespace: no point in checking its firewall manager. Will stop here.", pod.Name)
 		return
 	}
 
@@ -973,14 +1020,14 @@ func (manager *NetworkPolicyManager) manageDeletedPod(_ *core_v1.Pod, pod *core_
 	if !exists {
 		// The firewall manager for this pod does not exist.
 		// Then who managed it until now? This is a very improbable case.
-		logger.Warningln("Could not find a firewall manager for dying pod", pod.UID, "!")
+		logger.Warningln(f+"Could not find a firewall manager for dying pod", pod.UID, "!")
 		return
 	}
 
 	wasLinked, remaining := fw.Unlink(pod, pcn_firewall.DestroyFirewall)
 	if !wasLinked {
 		// This pod wasn't even linked to the firewall!
-		logger.Warningln("Dying pod", pod.UID, "was not linked to its firewall manager", fwKey)
+		logger.Warningln(f+"Dying pod", pod.UID, "was not linked to its firewall manager", fwKey)
 		return
 	}
 
