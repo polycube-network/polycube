@@ -8,6 +8,10 @@ const (
 	// UnscheduleThreshold is the maximum number of minutes
 	// a firewall manager should live with no pods monitored.
 	UnscheduleThreshold = 5
+	// RulesLenThreshold is the maximum number of allowed rules to be
+	// pushed in the same thread. When the generated rules are more
+	// than this, a new goroutine is going to be created for that.
+	RulesLenThreshold = 200
 )
 
 var (

@@ -673,7 +673,11 @@ func (manager *NetworkPolicyManager) deployPolicyToFw(policy *pcn_types.ParsedPo
 	//-------------------------------------
 
 	for _, applier := range appliers {
-		manager.localFirewalls[applier].EnforcePolicy(*policy, rules)
+		if len(rules.Incoming) > RulesLenThreshold || len(rules.Outgoing) > RulesLenThreshold {
+			go manager.localFirewalls[applier].EnforcePolicy(*policy, rules)
+		} else {
+			manager.localFirewalls[applier].EnforcePolicy(*policy, rules)
+		}
 	}
 
 	//-------------------------------------
