@@ -72,20 +72,7 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 
 	podPeer := func() pcn_types.ParsedRules {
 		rulesToReturn := pcn_types.ParsedRules{}
-
-		// Get its services, but only if outgoing
-		if policy.Direction == pcn_types.PolicyOutgoing {
-			services, err := pcn_controllers.Services().List(policy.Peer.Peer, policy.Peer.Namespace)
-			if err != nil {
-				logger.Warningf("Could not get services while building rules. Going to skip.")
-			} else {
-				// For each service that applies to this pod (usually one,
-				// but who knows), insert also the service's Cluster IP
-				for _, serv := range services {
-					rulesToReturn.Outgoing = append(rulesToReturn.Outgoing, parsers.FillTemplates("", serv.Spec.ClusterIP, policy.Templates.Outgoing)...)
-				}
-			}
-		}
+		appliedService := map[string]bool{}
 
 		// Get the pods list
 		pods, err := pcn_controllers.Pods().List(policy.Peer.Peer, policy.Peer.Namespace, nil)
@@ -96,7 +83,59 @@ func buildRules(policy *pcn_types.ParsedPolicy) pcn_types.ParsedRules {
 
 		// For each pod found, generate the rules
 		for _, pod := range pods {
-			ips := []string{pod.Status.PodIP}
+
+			// First, insert this pod's service if any
+			// Get its services, but only if outgoing
+			if policy.Direction == pcn_types.PolicyOutgoing {
+				// First, build the key
+				podQuery := utils.BuildQuery("", pod.Labels)
+				key := utils.BuildObjectKey(policy.Peer.Namespace, "ns") + "|" + utils.BuildObjectKey(podQuery, "pod")
+
+				// Have I already checked this pod's service?
+				if _, exists := appliedService[key]; !exists {
+					services, err := pcn_controllers.Services().List(nil, policy.Peer.Namespace)
+					if err != nil {
+						logger.Warningf("Could not get services while building rules. Going to skip it.")
+					} else {
+						// For each service that applies to this pod (usually one,
+						// but who knows), insert also the service's Cluster IP
+						for _, serv := range services {
+							if len(serv.Spec.Selector) == 0 || !utils.AreLabelsContained(serv.Spec.Selector, pod.Labels) {
+								continue
+							}
+							newPorts := []pcn_types.ProtoPort{}
+							// We now have to convert the ports on the policy,
+							// to those on the service
+							for _, port := range policy.Ports {
+								for _, servPort := range serv.Spec.Ports {
+									if servPort.TargetPort.IntVal == port.DPort && (strings.ToLower(port.Protocol) == strings.ToLower(string(servPort.Protocol)) || len(port.Protocol) == 0) {
+										newPorts = append(newPorts, pcn_types.ProtoPort{
+											SPort:    port.SPort,
+											DPort:    servPort.Port,
+											Protocol: port.Protocol,
+										})
+									}
+								}
+							}
+
+							newTemplates := parsers.BuildRuleTemplates(pcn_types.PolicyOutgoing, pcn_types.ActionForward, newPorts)
+							rulesToReturn.Outgoing = append(rulesToReturn.Outgoing, parsers.FillTemplates("", serv.Spec.ClusterIP, newTemplates.Outgoing)...)
+						}
+					}
+
+					// Next iteration, we won't need to check services anymore.
+					appliedService[key] = true
+				}
+			}
+
+			// Now, insert the single pod's ip
+			ips := []string{}
+
+			if !policy.PreventDirectAccess {
+				// The policy states that the pod should only be accessed by
+				// its service...
+				ips = append(ips, pod.Status.PodIP)
+			}
 			if policy.Direction == pcn_types.PolicyIncoming {
 				ips = append(ips, utils.GetPodVirtualIP(pod.Status.PodIP))
 			}
