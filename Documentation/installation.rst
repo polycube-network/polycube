@@ -102,11 +102,12 @@ Install libyang-dev
 
 ::
 
-    sudo sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
-    wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_16.04/Release.key -O Release.key
-    sudo apt-key add - < Release.key
-    sudo apt-get update
-    sudo apt-get install libyang-dev
+    wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang_0.14.81_amd64.deb -O libyang.deb
+    wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang-dev_0.14.81_amd64.deb -O libyang-dev.deb
+    sudo apt install -f ./libyang.deb
+    sudo apt install -y -f ./libyang-dev.deb
+    rm ./libyang.deb
+    rm ./libyang-dev.deb
 
 
 If you are using another operating system please check the `libyang installation documentation <https://software.opensuse.org//download.html?project=home%3Aliberouter&package=libyang>`_.
