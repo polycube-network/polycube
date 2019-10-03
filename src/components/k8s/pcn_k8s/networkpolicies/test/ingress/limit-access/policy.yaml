@@ -1,0 +1,14 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: ingress-limit-access
+  namespace: pcn-test-default-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: target
+  ingress:
+  - from:
+      - podSelector:
+          matchLabels:
+            purpose: allowed
