@@ -75,8 +75,6 @@ The ``pcn_pkt_log(ctx, level)`` primitive sends a packet to the control plane wh
 `ctx` and `level` are the same as in `pcn_log`.
 This feature is only designed for developers, so final version of services should not include this.
 
-`polycube-tools <https://github.com/mauriciovasquezbernal/polycube-tools>`_ must be installed and ``polycube`` cmake must be configured with `cmake -DHAVE_POLYCUBE_TOOLS=ON ..`
-
 Usage example:
 
 ::

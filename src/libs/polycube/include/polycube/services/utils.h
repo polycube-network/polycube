@@ -80,10 +80,6 @@ void split_ip_and_prefix(const std::string &ip_and_prefix,
  */
 std::string format_debug_string(std::string str, const uint64_t args[4]);
 
-#ifdef HAVE_POLYCUBE_TOOLS
-void print_packet(const uint8_t *pkt, uint32_t len);
-#endif
-
 }  // namespace utils
 }  // namespace service
 }  // namespace polycube
