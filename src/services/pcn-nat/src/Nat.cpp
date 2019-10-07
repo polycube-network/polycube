@@ -83,7 +83,7 @@ NatJsonObject Nat::toJsonObject() {
   return conf;
 }
 
-void Nat::packet_in(polycube::service::Sense sense,
+void Nat::packet_in(polycube::service::Direction direction,
                     polycube::service::PacketInMetadata &md,
                     const std::vector<uint8_t> &packet) {
   logger()->info("packet in event");

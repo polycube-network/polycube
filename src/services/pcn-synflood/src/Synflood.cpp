@@ -23,7 +23,7 @@ Synflood::~Synflood() {
   logger()->debug("Destroying Synflood instance");
 }
 
-void Synflood::packet_in(polycube::service::Sense sense,
+void Synflood::packet_in(polycube::service::Direction direction,
   polycube::service::PacketInMetadata &md,
   const std::vector<uint8_t> &packet) {
   logger()->debug("Packet received");

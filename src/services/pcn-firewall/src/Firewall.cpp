@@ -95,14 +95,14 @@ Firewall::~Firewall() {
   TransparentCube::dismount();
 }
 
-void Firewall::packet_in(polycube::service::Sense sense,
+void Firewall::packet_in(polycube::service::Direction direction,
                                       polycube::service::PacketInMetadata &md,
                                       const std::vector<uint8_t> &packet) {
-  switch (sense) {
-  case polycube::service::Sense::INGRESS:
+  switch (direction) {
+  case polycube::service::Direction::INGRESS:
     logger()->info("packet in event from ingress program");
     break;
-  case polycube::service::Sense::EGRESS:
+  case polycube::service::Direction::EGRESS:
     logger()->info("packet in event from egress program");
     break;
   }
