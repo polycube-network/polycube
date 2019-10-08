@@ -99,8 +99,8 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
 
   uint16_t port = 0;
   uint16_t module;
-  Port *parent_port;
-  ExtIface *parent_iface;
+  Port *parent_port = NULL;
+  ExtIface *parent_iface = NULL;
 
   if (!parent_) {
       logger->error("cube doesn't have a parent.");
@@ -146,7 +146,8 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
     break;
   }
 
-  c.send_packet_to_cube(module, port, packet, sense);
+  c.send_packet_to_cube(module, port, packet, sense,
+         parent_iface && sense == service::Sense::INGRESS);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {

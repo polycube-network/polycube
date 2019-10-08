@@ -26,8 +26,10 @@
 #include "polycube/services/utils.h"
 
 #include <iostream>
+#include <tins/tins.h>
 
 using namespace polycube::service;
+using namespace Tins;
 
 namespace polycube {
 namespace polycubed {
@@ -435,7 +437,7 @@ void Controller::unregister_cb(int id) {
 // caller must guarantee that module_index and port_id are valid
 void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
                                      const std::vector<uint8_t> &packet,
-                                     service::Sense sense) {
+                                     service::Sense sense, bool mac_overwrite) {
   ctrl_rx_md_index_++;
   ctrl_rx_md_index_ %= MD_MAP_SIZE;
 
@@ -445,7 +447,21 @@ void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
   }
   metadata_table_->update_value(ctrl_rx_md_index_, md_temp);
 
-  iface_->send(const_cast<std::vector<uint8_t> &>(packet));
+  if (mac_overwrite) {
+      /* if the packet is coming from the ingress context of a
+       * transparent cube that is attached to a net device
+       * interface, the destination MAC address needs to be
+       * adjusted to the controller interface otherwise kernel
+       * stack will drop the packet (PACKET_OTHERS)
+       */
+      EthernetII pkt(&packet[0], packet.size());
+      HWAddress<6> mac(iface_->getMAC());
+      pkt.dst_addr(mac);
+      const std::vector<uint8_t> &p = pkt.serialize();
+      iface_->send(const_cast<std::vector<uint8_t> &>(p));
+  } else {
+      iface_->send(const_cast<std::vector<uint8_t> &>(packet));
+  }
 }
 
 void Controller::start() {
