@@ -46,10 +46,10 @@ class TransparentCube : public BaseCube {
                   const std::vector<std::string> &egress_code);
   virtual ~TransparentCube();
 
-  virtual void packet_in(Sense sense, PacketInMetadata &md,
+  virtual void packet_in(Direction direction, PacketInMetadata &md,
                          const std::vector<uint8_t> &packet) = 0;
 
-  void send_packet_out(EthernetII &packet, Sense sense,
+  void send_packet_out(EthernetII &packet, Direction direction,
                        bool recirculate = false);
 
   void set_conf(const nlohmann::json &conf);

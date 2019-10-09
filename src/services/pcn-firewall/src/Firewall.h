@@ -63,7 +63,7 @@ class Firewall : public FirewallBase {
  public:
   Firewall(const std::string name, const FirewallJsonObject &conf);
   virtual ~Firewall();
-  void packet_in(polycube::service::Sense sense,
+  void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
