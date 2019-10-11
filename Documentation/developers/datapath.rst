@@ -63,49 +63,7 @@ TODO:
 
 - Document support for multiple eBPF programs
 
-Debugging and logging in the data plane
+
+Debugging the data plane
 ***************************************
-
-The polycube framework provides the ``pcn_log()`` primitive that enables to print messages in the standard log file; hence, all the messages (from both data and control plane) are received in the same place.
-This avoids the use of the ``bpf_trace_printk()`` primitive, which is not integrated with control plane logging.
-
-Syntax:
-
-::
-
-    pcn_log(ctx, level, msg, args...)
-
-- `ctx`: packet being processed.
-- `level`: type of logging level: ``LOG_TRACE``, ``LOG_DEBUG``, ``LOG_INFO``, ``LOG_WARN``, ``LOG_ERR``, ``LOG_CRITICAL``.
-A brief explanation about when to use each level can be found in `this answer <https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels>`_ on StackOverflow
-- `msg`: message to print
-- `args`: arguments of the message
-
-Two special format specifiers are available:
-- ``%I``: print an IP address
-- ``%M``: print a MAC address
-- ``%P``: print a TCP/UDP port
-
-Please note the the custom specifiers spec the data to be in network byte order while standard specifiers expects it to be in host by order.
-
-Current limitations:
- - Cannot be used inside a macro
- - Maximum 4 arguments are allowed
-
-Usage example:
-
-::
-
-  pcn_log(ctx, LOG_DEBUG, "Receiving packet from port %d", md->in_port);
-
-
-The ``pcn_pkt_log(ctx, level)`` primitive sends a packet to the control plane where it is printed in a tcpdump like format.
-`ctx` and `level` are the same as in `pcn_log`.
-This feature is only designed for developers, so final version of services should not include this.
-`polycube-tools <https://github.com/mauriciovasquezbernal/polycube-tools>`_) must be installed and ``polycube`` cmake must be configured with `cmake -DHAVE_POLYCUBE_TOOLS=ON ..`
-
-Usage example:
-
-::
-
-  pcn_pkt_log(ctx, LOG_DEBUG);
+See how to debug by :ref:`logging in the dataplane <logging-in-the-data-plane>`.

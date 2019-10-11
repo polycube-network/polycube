@@ -15,13 +15,16 @@ spec:
     polycube-app: etcd
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: polycube-etcd
   namespace: kube-system
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      polycube-app: etcd
   template:
     metadata:
       labels:

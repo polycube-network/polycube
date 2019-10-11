@@ -37,7 +37,7 @@ enum class ProgramType {
   EGRESS,
 };
 
-enum class Sense {
+enum class Direction {
   INGRESS,
   EGRESS,
 };
@@ -98,7 +98,7 @@ class TransparentCubeIface : virtual public BaseCubeIface {
   virtual void set_next(uint16_t next, ProgramType type) = 0;
   virtual void set_parameter(const std::string &parameter,
                              const std::string &value) = 0;
-  virtual void send_packet_out(const std::vector<uint8_t> &packet, Sense sense,
+  virtual void send_packet_out(const std::vector<uint8_t> &packet, Direction direction,
                                bool recirculate = false) = 0;
 
   virtual void set_conf(const nlohmann::json &conf) = 0;

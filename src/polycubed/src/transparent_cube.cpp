@@ -93,7 +93,7 @@ void TransparentCube::set_parameter(const std::string &parameter,
 }
 
 void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
-                                      service::Sense sense, bool recirculate) {
+                                      service::Direction direction, bool recirculate) {
   Controller &c = (get_type() == CubeType::TC) ? Controller::get_tc_instance()
                                                : Controller::get_xdp_instance();
 
@@ -109,12 +109,12 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
 
   if (parent_port = dynamic_cast<Port *>(parent_)) {
       // calculate port
-      switch (sense) {
-      case service::Sense::INGRESS:
+      switch (direction) {
+      case service::Direction::INGRESS:
         // packet is comming in, port is ours
         port = parent_port->index();
         break;
-      case service::Sense::EGRESS:
+      case service::Direction::EGRESS:
         // packet is going, set port to next one
         if (parent_port->peer_port_) {
           port = parent_port->peer_port_->get_port_id();
@@ -129,15 +129,15 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
   }
 
   // calculate module index
-  switch (sense) {
-  case service::Sense::INGRESS:
+  switch (direction) {
+  case service::Direction::INGRESS:
     if (recirculate) {
       module = ingress_index_;  // myself in ingress
     } else {
       module = ingress_next_;
     }
     break;
-  case service::Sense::EGRESS:
+  case service::Direction::EGRESS:
     if (recirculate) {
       module = egress_index_;  // myself in egress
     } else {

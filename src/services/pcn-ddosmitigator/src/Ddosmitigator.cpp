@@ -82,7 +82,7 @@ DdosmitigatorJsonObject Ddosmitigator::toJsonObject() {
   return conf;
 }
 
-void Ddosmitigator::packet_in(polycube::service::Sense sense,
+void Ddosmitigator::packet_in(polycube::service::Direction direction,
                               polycube::service::PacketInMetadata &md,
                               const std::vector<uint8_t> &packet) {
   logger()->info("packet in event");

@@ -23,15 +23,22 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/polycube-network/polycube/src/components/k8s/utils"
+
 	k8sfilter "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfilter"
 	k8switch "github.com/polycube-network/polycube/src/components/k8s/utils/k8switch"
 
 	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/kv/etcd"
+	"github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/networkpolicies"
+
+	// importing controllers
+	pcn_controllers "github.com/polycube-network/polycube/src/components/k8s/pcn_k8s/controllers"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+
 	//"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -39,18 +46,18 @@ import (
 )
 
 const (
-	basePath           = "http://127.0.0.1:9000/polycube/v1"
-	vxlanInterface     = "pcn_vxlan"
-	stackInterface     = "pcn_stack"
-	routerInterface    = "pcn_router"
+	basePath             = "http://127.0.0.1:9000/polycube/v1"
+	vxlanInterface       = "pcn_vxlan"
+	stackInterface       = "pcn_stack"
+	routerInterface      = "pcn_router"
 	polycubeK8sInterface = "pcn_k8s"
 	polycubeLBInterface  = "pcn_lb"
-	k8switchName       = "k8switch0"
+	k8switchName         = "k8switch0"
 
-	vPodsRangeDefault = "10.10.0.0/16"
-	vtepsRangeDefault = "10.18.0.0/16"
+	vPodsRangeDefault            = "10.10.0.0/16"
+	vtepsRangeDefault            = "10.18.0.0/16"
 	serviceClusterIPRangeDefault = "10.96.0.0/12"
-	serviceNodePortRangeDefault = "30000-32767"
+	serviceNodePortRangeDefault  = "30000-32767"
 )
 
 var (
@@ -70,6 +77,8 @@ var (
 
 	endpointsWatcher watch.Interface
 	nodesWatcher     watch.Interface
+
+	networkPolicyManager networkpolicies.PcnNetworkPolicyManager
 
 	stop bool
 )
@@ -119,7 +128,7 @@ func main() {
 	// creates the in-cluster config
 	//config, err := rest.InClusterConfig()
 	//if err != nil {
-	//	panic(err.Error())
+	// panic(err.Error())
 	//}
 	// creates the clientset
 	var err1 error
@@ -226,6 +235,14 @@ func main() {
 	// kv handler
 	go kvM.Loop()
 
+	// Start the controllers
+	pcn_controllers.Start(clientset, config)
+	utils.SetVPodsRange(k8sNode.VPodCIDR)
+	networkpolicies.SetBasePath(basePath)
+
+	// Start the policy manager
+	networkPolicyManager = networkpolicies.StartNetworkPolicyManager(nodeName)
+
 	// read and process all notifications for both, pods and enpoints
 	// Notice that a notification is processed at the time, so
 	// no synchronization is needed.
@@ -258,6 +275,7 @@ func main() {
 		}
 	}
 
+	pcn_controllers.Stop()
 	deleteNodes()
 	k8sNode.Uninit()
 	log.Debugf("Bye bye")

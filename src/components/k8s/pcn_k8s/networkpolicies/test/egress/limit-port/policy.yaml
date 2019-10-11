@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-limit-port
+  namespace: pcn-test-default-ns
+spec:
+  podSelector:
+    matchLabels:
+      purpose: allowed
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - port: 8080
+    to:
+    - podSelector:
+        matchLabels:
+          app: target

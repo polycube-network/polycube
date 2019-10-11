@@ -37,7 +37,7 @@ class Transparenthelloworld : public polycube::service::TransparentCube,
   virtual ~Transparenthelloworld();
 
   void attach() override;
-  void packet_in(polycube::service::Sense sense,
+  void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
   void update(const TransparenthelloworldJsonObject &conf) override;

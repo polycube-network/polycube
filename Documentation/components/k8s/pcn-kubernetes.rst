@@ -318,3 +318,8 @@ Developing
 ----------
 
 Refer to :doc:`Developers <developers>`
+
+Compatibility
+----------
+
+Pcn-k8s is compatible with all versions equal or greater than 1.9, although we recommend the latest version of Kubernetes.

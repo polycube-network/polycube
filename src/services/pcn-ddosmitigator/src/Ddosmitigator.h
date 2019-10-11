@@ -39,7 +39,7 @@ class Ddosmitigator : public polycube::service::TransparentCube,
   void update(const DdosmitigatorJsonObject &conf) override;
   DdosmitigatorJsonObject toJsonObject() override;
 
-  void packet_in(polycube::service::Sense sense,
+  void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 

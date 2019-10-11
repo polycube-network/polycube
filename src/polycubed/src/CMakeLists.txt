@@ -87,10 +87,6 @@ set(polycubed_libraries
   ${TINS_LIBRARIES}
 )
 
-if (HAVE_POLYCUBE_TOOLS)
-  set (polycubed_libraries ${polycubed_libraries} polycube-tools)
-endif (HAVE_POLYCUBE_TOOLS)
-
 target_link_libraries(polycubed
         ${polycubed_libraries})
 
