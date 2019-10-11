@@ -69,7 +69,7 @@ void Transparenthelloworld::packet_in(polycube::service::Direction direction,
     break;
   }
   EthernetII pkt(&packet[0], packet.size());
-  send_packet_out(pkt, sense, false);
+  send_packet_out(pkt, direction, false);
 }
 
 void Transparenthelloworld::attach() {

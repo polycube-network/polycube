@@ -437,12 +437,12 @@ void Controller::unregister_cb(int id) {
 // caller must guarantee that module_index and port_id are valid
 void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
                                      const std::vector<uint8_t> &packet,
-                                     service::Sense sense, bool mac_overwrite) {
+                                     service::Direction direction, bool mac_overwrite) {
   ctrl_rx_md_index_++;
   ctrl_rx_md_index_ %= MD_MAP_SIZE;
 
   metadata md_temp = {module_index, port_id, MD_PKT_FROM_CONTROLLER};
-  if (sense == service::Sense::EGRESS) {
+  if (direction == service::Direction::EGRESS) {
       md_temp.flags |= MD_EGRESS_CONTEXT;
   }
   metadata_table_->update_value(ctrl_rx_md_index_, md_temp);

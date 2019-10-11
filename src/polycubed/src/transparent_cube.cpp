@@ -146,8 +146,8 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
     break;
   }
 
-  c.send_packet_to_cube(module, port, packet, sense,
-         parent_iface && sense == service::Sense::INGRESS);
+  c.send_packet_to_cube(module, port, packet, direction,
+         parent_iface && direction == service::Direction::INGRESS);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {

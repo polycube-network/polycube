@@ -69,7 +69,7 @@ class Controller : public Node {
   void unregister_cb(int id);
   void send_packet_to_cube(uint16_t module_index, uint16_t port_id,
                            const std::vector<uint8_t> &packet,
-                           service::Sense sense=service::Sense::INGRESS,
+                           service::Direction direction=service::Direction::INGRESS,
                            bool mac_overwrite=false);
 
   int get_fd() const;
