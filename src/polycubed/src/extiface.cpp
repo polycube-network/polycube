@@ -141,7 +141,7 @@ int ExtIface::load_egress() {
 }
 
 uint16_t ExtIface::get_port_id() const {
-  return 0;
+  return ifindex_iface;
 }
 
 void ExtIface::set_peer_iface(PeerIface *peer) {
