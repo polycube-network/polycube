@@ -1,6 +1,11 @@
 #! /bin/bash
 
-# packetcapture service test
+#                 ===packetcapture service test===
+#
+# Given the configuration of tutorial 1, this test adds a pcn-packetcapture
+# instance and attaches it to the "br1: toveth1" interface. After that the traffic
+# between the two interfaces of the simplebridge is captured.
+# Finally it is checked that the capture dump is stored correctly.
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 

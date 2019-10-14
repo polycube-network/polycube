@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Polycube Authors
+ * Copyright 2019 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,10 +89,10 @@ std::string ascii_to_utf8(const std::vector<uint8_t> &packet){
   std::string ret("");
   char ch;
 
-  for(int i = 0 ; i < packet.size(); i++){
-    if(packet[i] < 128){
+  for (int i = 0 ; i < packet.size(); i++){
+    if (packet[i] < 128){
       ret.push_back((char) packet[i]);
-    }else{
+    } else {
       ch = (char) packet[i];
       ret.push_back((char)((packet[i] >> 6) | 0xC0));
       ret.push_back((ch & 0x3F) | 0x80);

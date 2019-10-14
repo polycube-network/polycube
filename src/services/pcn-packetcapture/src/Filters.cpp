@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Polycube Authors
+ * Copyright 2019 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ uint32_t Filters::getSnaplen() {
 void Filters::setSnaplen(const uint32_t &value) {
   snaplen = value;
   set_snaplen = true;
-  if(!bootstrap)
+  if (!bootstrap)
     parent_.updateFiltersMaps();
 }
 
@@ -78,10 +78,9 @@ void Filters::setSrc(const std::string &value) {
   inet_pton(AF_INET, source_ip.data(), &ip_src_filter);
   ip_src_filter = ntohl(ip_src_filter);
   networkSrc = ip_src_filter & netmaskSrc;
-  //network_packet = pkt_values.srcIp & netmask_filter;     //TODO: do it in the fast path
 
   set_srcIp = true;
-  if(!bootstrap)
+  if (!bootstrap)
     parent_.updateFiltersMaps();
 }
 
@@ -98,10 +97,9 @@ void Filters::setDst(const std::string &value) {
   inet_pton(AF_INET, source_ip.data(), &ip_dst_filter);
   ip_dst_filter = ntohl(ip_dst_filter);
   networkDst = ip_dst_filter & netmaskDst;
-  //network_packet = pkt_values.dstIp & netmask_filter;     //TODO: do it in the fast path
 
   set_dstIp = true;
-  if(!bootstrap)
+  if (!bootstrap)
     parent_.updateFiltersMaps();
 }
 
@@ -110,13 +108,14 @@ std::string Filters::getL4proto() {
 }
 
 void Filters::setL4proto(const std::string &value) {
-  if((value.compare(std::string("tcp")) == 0) || (value.compare(std::string("udp")) == 0)){
+  if ((value.compare(std::string("tcp")) == 0) || (value.compare(std::string("udp")) == 0)){
     l4proto = value;
     set_l4proto = true;
-    if(!bootstrap)
+    if (!bootstrap)
       parent_.updateFiltersMaps();
-  }else
+  } else {
     throw std::runtime_error("Bad value at setL4proto. Please enter 'tcp' or 'udp'");
+  }
 }
 
 uint16_t Filters::getSport() {
@@ -126,7 +125,7 @@ uint16_t Filters::getSport() {
 void Filters::setSport(const uint16_t &value) {
   srcPort = value;
   set_srcPort = true;
-  if(!bootstrap)
+  if (!bootstrap)
     parent_.updateFiltersMaps();
 }
 
@@ -137,22 +136,22 @@ uint16_t Filters::getDport() {
 void Filters::setDport(const uint16_t &value) {
   dstPort = value;
   set_dstPort = true;
-  if(!bootstrap)
+  if (!bootstrap)
     parent_.updateFiltersMaps();
 }
 
-uint32_t Filters::getNetworkFilterSrc(){
+uint32_t Filters::getNetworkFilterSrc() {
   return networkSrc;
 }
 
-uint32_t Filters::getNetworkFilterDst(){
+uint32_t Filters::getNetworkFilterDst() {
   return networkDst;
 }
 
-uint32_t Filters::getNetmaskFilterSrc(){
+uint32_t Filters::getNetmaskFilterSrc() {
   return netmaskSrc;
 }
 
-uint32_t Filters::getNetmaskFilterDst(){
+uint32_t Filters::getNetmaskFilterDst() {
   return netmaskDst;
 }

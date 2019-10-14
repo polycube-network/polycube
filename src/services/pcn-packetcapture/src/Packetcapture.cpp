@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Polycube Authors
+ * Copyright 2019 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
   struct timeval tp;
   std::streamsize len;
 
-  if( dt == "" ){
+  if (dt == "") {
     time_t now = time(0);
     tm *ltm = localtime(&now);
     std::stringstream tmstmp;
@@ -92,7 +92,7 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
   
   myFile.open("capture_"+ dt +".pcap", std::ios::binary | std::ios::app);
 
-  if( writeHeader == true ){
+  if (writeHeader == true) {
     struct pcap_file_header *pcap_header = new struct pcap_file_header;
     pcap_header->magic = global_header->getMagic();
     pcap_header->version_major = global_header->getVersionMajor();
@@ -109,9 +109,9 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
   p->setTimestampSeconds((uint32_t) tp.tv_sec);
   p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
   p->setPacketlen((uint32_t) packet.size());
-  if(p->getPacketlen() > filters->getSnaplen()){
+  if (p->getPacketlen() > filters->getSnaplen()) {
     p->setCapturelen(filters->getSnaplen());
-  }else{
+  } else {
     p->setCapturelen(p->getPacketlen());
   }
   p->setRawPacketData(packet);
@@ -140,16 +140,16 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
       
   switch (direction) {
     case polycube::service::Direction::INGRESS:
-    if( getNetworkmode() == true ){
-      addPacket(packet);    /* store the packet */
-    }else{
+    if (getNetworkmode() == true) {
+      addPacket(packet);    /* store the packet in the FIFO queue*/
+    } else {
       writeDump(packet);
     }
     break;
     case polycube::service::Direction::EGRESS:
-    if( getNetworkmode() == true ){
-      addPacket(packet);    /* store the packet */
-    }else{
+    if (getNetworkmode() == true) {
+      addPacket(packet);    /* store the packet in the FIFO queue*/
+    } else {
       writeDump(packet);
     }
     break;
@@ -166,7 +166,7 @@ void Packetcapture::setCapture(const PacketcaptureCaptureEnum &value) {
   auto t_in = get_array_table<uint8_t>("working", 0, ProgramType::INGRESS);
   auto t_out = get_array_table<uint8_t>("working", 0, ProgramType::EGRESS);
 
-  switch(value){
+  switch (value) {
     case PacketcaptureCaptureEnum::INGRESS:
       t_in.set(0x0, ON_T);
       t_out.set(0x0, OFF_T);
@@ -201,9 +201,9 @@ void Packetcapture::setAnomimize(const bool &value) {
 std::string Packetcapture::getDump() {
   std::stringstream dump;
 
-  if(network_mode_flag){
+  if (network_mode_flag) {
     dump << "the service is running in network mode";
-  }else{
+  } else {
       char *cwdr_ptr = get_current_dir_name();
       std::string wdr(cwdr_ptr);
       dump << "capture dump in " << wdr << "/capture_"+ dt +".pcap" << std::endl;
@@ -242,11 +242,11 @@ void Packetcapture::delFilters() {
 
 /* return the first packet in the queue if exist */
 std::shared_ptr<Packet> Packetcapture::getPacket() {
-  if(packets_captured.size() != 0){
+  if (packets_captured.size() != 0) {
     auto p = packets_captured.front();
-    if(network_mode_flag){                            /* pop this element */
+    if (network_mode_flag) {                            /* pop this element */
       packets_captured.erase(packets_captured.begin());
-      if(filters->getSnaplen() < p->getPacketlen()){
+      if (filters->getSnaplen() < p->getPacketlen()) {
         p->packet.resize(filters->getSnaplen());
       }
     }
@@ -265,9 +265,9 @@ void Packetcapture::addPacket(const std::vector<uint8_t> &packet) {
     p->setTimestampSeconds((uint32_t) tp.tv_sec);
     p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
     p->setPacketlen((uint32_t) packet.size());
-    if(p->getPacketlen() > filters->getSnaplen()){
+    if (p->getPacketlen() > filters->getSnaplen()) {
       p->setCapturelen(filters->getSnaplen());
-    }else{
+    } else {
       p->setCapturelen(p->getPacketlen());
     }
     p->setRawPacketData(packet);
@@ -291,44 +291,44 @@ void Packetcapture::attach() {
   logger()->debug("{0} attached", this->get_name());
 }
 
-void Packetcapture::updateFiltersMaps(){
+void Packetcapture::updateFiltersMaps() {
   filters_table ft;
   
-  if(filters->l4proto_is_set()){
+  if (filters->l4proto_is_set()) {
     ft.l4proto_flag = true;
     filters->getL4proto().compare("tcp") == 0? ft.l4proto_filter = 1 : ft.l4proto_filter = 2;
-  }else{
+  } else {
     ft.l4proto_flag = false;
   }
 
-  if(filters->srcPort_is_set()){
+  if (filters->srcPort_is_set()) {
     ft.src_port_flag = true;
     ft.src_port_filter = filters->getSport();
-  }else{
+  } else {
     ft.src_port_flag = false;
   }
 
-  if(filters->dstPort_is_set()){
+  if (filters->dstPort_is_set()) {
     ft.dst_port_flag = true;
     ft.dst_port_filter = filters->getDport();
-  }else{
+  } else {
     ft.dst_port_flag = false;
   }
 
-  if(filters->srcIp_is_set()){
+  if (filters->srcIp_is_set()) {
     ft.network_filter_src_flag = true;
     ft.network_filter_src = filters->getNetworkFilterSrc();
     ft.netmask_filter_src = filters->getNetmaskFilterSrc();
     logger()->debug("network filter: {0}\nnetmask filter: {1}", ft.network_filter_src, ft.netmask_filter_src);
-  }else{
+  } else {
     ft.network_filter_src_flag = false;
   }
 
-  if(filters->dstIp_is_set()){
+  if (filters->dstIp_is_set()) {
     ft.network_filter_dst_flag = true;
     ft.network_filter_dst = filters->getNetworkFilterDst();
     ft.netmask_filter_dst = filters->getNetmaskFilterDst();
-  }else{
+  } else {
     ft.network_filter_dst_flag = false;
   }
 

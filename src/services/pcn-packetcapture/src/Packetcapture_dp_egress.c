@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Polycube Authors
+ * Copyright 2019 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,11 +92,11 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
 
   unsigned int key = 0;
   uint8_t *status = working.lookup(&key);
-  if(!status){
+  if (!status){
       return RX_DROP;
   }
   
-  if(*status == OFF){
+  if (*status == OFF){
       return RX_OK;
   }
 
@@ -132,7 +132,7 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
     ip = data + sizeof(*ethernet);  
     if (data + sizeof(*ethernet) + sizeof(*ip) > data_end)
       return RX_DROP;   
-    if((int)ip->version != 4){
+    if ((int)ip->version != 4){
       return RX_OK;
     }
 
@@ -143,20 +143,20 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
     }
     
     /* Souce Ip filter */
-    if((filters_tab->network_filter_src_flag == true) && ((filters_tab->netmask_filter_src & ntohl(ip->saddr)) != filters_tab->network_filter_src)){
+    if ((filters_tab->network_filter_src_flag == true) && ((filters_tab->netmask_filter_src & ntohl(ip->saddr)) != filters_tab->network_filter_src)){
       return RX_OK;
     }
       
     /* Destination Ip filter */
-    if((filters_tab->network_filter_dst_flag == true) && ((filters_tab->netmask_filter_dst & ntohl(ip->daddr)) != filters_tab->network_filter_dst)){
+    if ((filters_tab->network_filter_dst_flag == true) && ((filters_tab->netmask_filter_dst & ntohl(ip->daddr)) != filters_tab->network_filter_dst)){
       return RX_OK;
     }
 
     /* l4proto Filter */
-    if(filters_tab->l4proto_flag == true){
-      if((filters_tab->l4proto_filter == 1) && (ip->protocol != IPPROTO_TCP)){         /* tcp only */
+    if (filters_tab->l4proto_flag == true){
+      if ((filters_tab->l4proto_filter == 1) && (ip->protocol != IPPROTO_TCP)){         /* tcp only */
         return RX_OK;
-      }else if((filters_tab->l4proto_filter == 2) && (ip->protocol != IPPROTO_UDP)){   /* udp only */
+      }else if ((filters_tab->l4proto_filter == 2) && (ip->protocol != IPPROTO_UDP)){   /* udp only */
         return RX_OK;
       }
     }
@@ -171,12 +171,12 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
       pkt->l4proto = IPPROTO_TCP;
 
       /* src port filter */
-      if((filters_tab->src_port_flag == true) && (filters_tab->src_port_filter != ntohs(tcp->source))){
+      if ((filters_tab->src_port_flag == true) && (filters_tab->src_port_filter != ntohs(tcp->source))){
         return RX_OK;
       }
 
       /* dst port filter */
-      if((filters_tab->dst_port_flag == true) && (filters_tab->dst_port_filter != ntohs(tcp->dest))){
+      if ((filters_tab->dst_port_flag == true) && (filters_tab->dst_port_filter != ntohs(tcp->dest))){
         return RX_OK;
       }
 
@@ -192,6 +192,26 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
     }
 
   }
+
+  /*TODO: Now the traffic will be sent to the controller and will be processed in the slow path.
+   *      This solution will have a big impact on performance.
+   *      Currently, non-IP traffic is also sent to the controller, if this type of traffic is to be excluded
+   *      from capture, a map should be inserted indicating the decision taken at the fast path.
+   *      
+   * 
+   *      Example:
+   *      
+   *      if ( only_IP_flag && ip != NULL) {
+   *        pass the packet to controller
+   *      } else {
+   *        NOP
+   *      }
+   * 
+   *      To optimize performance we can try to copy the packet and only send a copy of it to the slow path but currently
+   *      this feature is not fully functional in polycube.
+   *      see "pcn_pkt_controller_with_metadata_stack()"
+   */
+
   u16 reason = 1;
   return pcn_pkt_controller(ctx, md, reason);
 
