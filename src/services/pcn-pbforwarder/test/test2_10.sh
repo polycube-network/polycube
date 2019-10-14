@@ -2,7 +2,7 @@
 
 source "${BASH_SOURCE%/*}/helpers.bash"
 
-function pbfeanup {
+function pbfeanup() {
   set +e
   del_pbforwarders 1
   del_veths 2
