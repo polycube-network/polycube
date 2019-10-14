@@ -76,6 +76,7 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
 }
 
 void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
+
   PacketJsonObject pj;
   auto p = std::shared_ptr<Packet>(new Packet(*this, pj));
   struct timeval tp;
