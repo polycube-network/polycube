@@ -42,10 +42,15 @@ using polycube::service::LogMsg;
 namespace polycube {
 namespace polycubed {
 
+
 // struct used when sending a packet to an cube
 struct __attribute__((__packed__)) metadata {
   uint16_t module_index;
   uint16_t port_id;
+
+#define MD_PKT_FROM_CONTROLLER  (1UL << 0)
+#define MD_EGRESS_CONTEXT       (1UL << 1)
+  uint32_t flags;
 };
 
 /*
@@ -63,7 +68,9 @@ class Controller : public Node {
   void register_cb(int id, const packet_in_cb &cb);
   void unregister_cb(int id);
   void send_packet_to_cube(uint16_t module_index, uint16_t port_id,
-                           const std::vector<uint8_t> &packet);
+                           const std::vector<uint8_t> &packet,
+                           service::Direction direction=service::Direction::INGRESS,
+                           bool mac_overwrite=false);
 
   int get_fd() const;
   uint32_t get_id() const;

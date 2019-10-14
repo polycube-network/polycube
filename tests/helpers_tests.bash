@@ -77,7 +77,12 @@ function polycubed_is_responding {
 # Kill polycubed, and wait all services to be unloaded and process to be completely killed
 function polycubed_kill_and_wait {
   echo "killing polycubed ..."
-  sudo pkill polycubed >> $test_tmp
+  if [ -z "$KILL_COMMAND" ]
+  then
+      sudo pkill polycubed >> $test_tmp
+  else
+      `$KILL_COMMAND` >> $test_tmp
+  fi
 
   done=0
   i=0

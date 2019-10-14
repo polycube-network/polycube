@@ -73,7 +73,7 @@ void FdbEntry::setPort(const std::string &value) {
 
   fwd_key key{
       .vlan = vlan_,
-      .mac = polycube::service::utils::mac_string_to_be_uint(mac_),
+      .mac = polycube::service::utils::mac_string_to_nbo_uint(mac_),
   };
 
   struct timespec now_timespec;
@@ -132,7 +132,7 @@ std::shared_ptr<FdbEntry> FdbEntry::constructFromMap(Fdb &parent,
   }
 
   uint16_t vlan = key.vlan;
-  std::string mac = polycube::service::utils::be_uint_to_mac_string(key.mac);
+  std::string mac = polycube::service::utils::nbo_uint_to_mac_string(key.mac);
   uint32_t entry_age = now - timestamp;
   uint32_t port_no = value.port;
 

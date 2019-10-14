@@ -33,13 +33,13 @@ TransparentCube::TransparentCube(const nlohmann::json &conf,
     if (dismounted_)
       return;
 
-    Sense sense = static_cast<Sense>(md->port_id);
+    Direction direction = static_cast<Direction>(md->port_id);
     PacketInMetadata md_;
     md_.reason = md->reason;
     md_.metadata[0] = md->metadata[0];
     md_.metadata[1] = md->metadata[1];
     md_.metadata[2] = md->metadata[2];
-    packet_in(sense, md_, packet);
+    packet_in(direction, md_, packet);
   };
 
   cube_ = factory_->create_transparent_cube(
@@ -60,9 +60,9 @@ TransparentCube::~TransparentCube() {
   factory_->destroy_cube(get_name());
 }
 
-void TransparentCube::send_packet_out(EthernetII &packet, Sense sense,
+void TransparentCube::send_packet_out(EthernetII &packet, Direction direction,
                                       bool recirculate) {
-  cube_->send_packet_out(packet.serialize(), sense, recirculate);
+  cube_->send_packet_out(packet.serialize(), direction, recirculate);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {

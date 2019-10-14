@@ -74,16 +74,6 @@ void BaseCube::datapath_log_msg(const LogMsg *msg) {
     logger()->log(level_, print.c_str());
     break;
 
-  case 1:
-#ifdef HAVE_POLYCUBE_TOOLS
-    logger()->log(level_, "packet received for debug:");
-    utils::print_packet((const uint8_t *)msg->msg, msg->len);
-#else
-    logger()->warn(
-        "Received packet for debugging. polycube-tools is not available");
-#endif
-    break;
-
   default:
     logger()->warn("Received bad message type in datapath_log_msg");
     return;

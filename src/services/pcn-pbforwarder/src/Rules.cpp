@@ -327,11 +327,11 @@ rule Rules::to_rule() {
   }
 
   rule r{
-      .srcMac = utils::mac_string_to_be_uint(srcMac),
-      .dstMac = utils::mac_string_to_be_uint(dstMac),
+      .srcMac = utils::mac_string_to_nbo_uint(srcMac),
+      .dstMac = utils::mac_string_to_nbo_uint(dstMac),
       .vlanid = vlan,
-      .srcIp = utils::ip_string_to_be_uint(srcIp),
-      .dstIp = utils::ip_string_to_be_uint(dstIp),
+      .srcIp = utils::ip_string_to_nbo_uint(srcIp),
+      .dstIp = utils::ip_string_to_nbo_uint(dstIp),
       .lvl4_proto = rulesL4ProtoEnum_to_int(L4Proto),
       .src_port = srcPort,
       .dst_port = dstPort,

@@ -32,7 +32,7 @@ BlacklistSrc::~BlacklistSrc() {
       parent_.get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
   logger()->debug("BlacklistSrc Destructor. ip {0} ", ip_);
   try {
-    srcblacklist.remove(utils::ip_string_to_be_uint(ip_));
+    srcblacklist.remove(utils::ip_string_to_nbo_uint(ip_));
   } catch (...) {
   }
 }
@@ -70,7 +70,7 @@ uint64_t BlacklistSrc::getDropPkts() {
   try {
     auto srcblacklist =
         parent_.get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
-    auto values = srcblacklist.get(utils::ip_string_to_be_uint(ip_));
+    auto values = srcblacklist.get(utils::ip_string_to_nbo_uint(ip_));
 
     pkts = std::accumulate(values.begin(), values.end(), pkts);
 

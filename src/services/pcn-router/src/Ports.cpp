@@ -49,8 +49,8 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     // TODO: check that no other router port exists in the same network
     ip_ = conf.getIp();
     split_ip_and_prefix(ip_, ip_address, netmask);
-    ip_uint = ip_string_to_be_uint(ip_address);
-    netmask_uint = ip_string_to_be_uint(netmask);
+    ip_uint = ip_string_to_nbo_uint(ip_address);
+    netmask_uint = ip_string_to_nbo_uint(netmask);
   } else {
     ip_ = "";
     ip_uint = 0;
@@ -66,7 +66,7 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
       .netmask = netmask_uint,
       .secondary_ip = {},
       .secondary_netmask = {},
-      .mac = mac_string_to_be_uint(mac_),
+      .mac = mac_string_to_nbo_uint(mac_),
   };
 
   uint16_t index = this->index();
@@ -76,8 +76,8 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
   for (auto &addr : secondary_ips) {
     std::string secondaryIp = addr.getIp();
     split_ip_and_prefix(secondaryIp, ip_address, netmask);
-    ip_uint = ip_string_to_be_uint(ip_address);
-    netmask_uint = ip_string_to_be_uint(netmask);
+    ip_uint = ip_string_to_nbo_uint(ip_address);
+    netmask_uint = ip_string_to_nbo_uint(netmask);
     value.secondary_ip[i] = ip_uint;
     value.secondary_netmask[i] = netmask_uint;
     i++;
@@ -201,8 +201,8 @@ void Ports::doSetIp(const std::string &new_ip) {
 
   try {
     r_port value = router_port.get(index);
-    value.ip = ip_string_to_be_uint(ip_address);
-    value.netmask = ip_string_to_be_uint(netmask);
+    value.ip = ip_string_to_nbo_uint(ip_address);
+    value.netmask = ip_string_to_nbo_uint(netmask);
   } catch (...) {
     logger()->error("Port {0} not found in the data path", this->name());
   }
@@ -336,7 +336,7 @@ void Ports::doSetMac(const std::string &new_mac) {
   auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
 
   r_port map_value = router_port.get(index);
-  map_value.mac = mac_string_to_be_uint(new_mac);
+  map_value.mac = mac_string_to_nbo_uint(new_mac);
   router_port.set(index, map_value);
 
   logger()->debug(
@@ -353,8 +353,8 @@ void Ports::updatePortInDataPath() {
   uint32_t netmask_uint = 0;
 
   split_ip_and_prefix(ip_, ip_address, netmask);
-  ip_uint = ip_string_to_be_uint(ip_address);
-  netmask_uint = ip_string_to_be_uint(netmask);
+  ip_uint = ip_string_to_nbo_uint(ip_address);
+  netmask_uint = ip_string_to_nbo_uint(netmask);
 
   auto router_port = parent_.get_hash_table<uint16_t, r_port>("router_port");
   r_port value{
@@ -362,7 +362,7 @@ void Ports::updatePortInDataPath() {
       .netmask = netmask_uint,
       .secondary_ip = {},
       .secondary_netmask = {},
-      .mac = mac_string_to_be_uint(mac_),
+      .mac = mac_string_to_nbo_uint(mac_),
   };
 
   uint16_t index = this->index();
@@ -370,8 +370,8 @@ void Ports::updatePortInDataPath() {
   for (auto addr : secondary_ips_) {
     std::string secondaryIp = addr.getIp();
     split_ip_and_prefix(secondaryIp, ip_address, netmask);
-    ip_uint = ip_string_to_be_uint(ip_address);
-    netmask_uint = ip_string_to_be_uint(netmask);
+    ip_uint = ip_string_to_nbo_uint(ip_address);
+    netmask_uint = ip_string_to_nbo_uint(netmask);
     value.secondary_ip[i] = ip_uint;
     value.secondary_netmask[i] = netmask_uint;
     i++;

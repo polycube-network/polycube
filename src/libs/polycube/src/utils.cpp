@@ -29,18 +29,12 @@
 
 #include <api/BPFTable.h>
 
-#ifdef HAVE_POLYCUBE_TOOLS
-#include <polycube/tools/netdissect/netdissect-stdinc.h>
-#include <polycube/tools/netdissect/netdissect.h>
-#include <polycube/tools/netdissect/print.h>
-#endif
-
 namespace polycube {
 namespace service {
 namespace utils {
 
 // new set of functions
-uint32_t ip_string_to_be_uint(const std::string &ip) {
+uint32_t ip_string_to_nbo_uint(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
   int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
@@ -52,14 +46,14 @@ uint32_t ip_string_to_be_uint(const std::string &ip) {
          uint32_t(a[0]);
 }
 
-std::string be_uint_to_ip_string(uint32_t ip) {
+std::string nbo_uint_to_ip_string(uint32_t ip) {
   struct in_addr ip_addr;
   ip_addr.s_addr = ip;
   return std::string(inet_ntoa(ip_addr));
 }
 
 /* https://stackoverflow.com/a/7326381 */
-uint64_t mac_string_to_be_uint(const std::string &mac) {
+uint64_t mac_string_to_nbo_uint(const std::string &mac) {
   uint8_t a[6];
   int last = -1;
   int rc = sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n", a + 0, a + 1,
@@ -71,7 +65,7 @@ uint64_t mac_string_to_be_uint(const std::string &mac) {
          uint64_t(a[2]) << 16 | uint64_t(a[1]) << 8 | uint64_t(a[0]);
 }
 
-std::string be_uint_to_mac_string(uint64_t mac) {
+std::string nbo_uint_to_mac_string(uint64_t mac) {
   uint8_t a[6];
   for (int i = 0; i < 6; i++) {
     a[i] = (mac >> i * 8) & 0xFF;
@@ -200,33 +194,6 @@ std::string format_debug_string(std::string str, const uint64_t args[4]) {
 
   return std::string(buf);
 }
-
-#ifdef HAVE_POLYCUBE_TOOLS
-void print_packet(const uint8_t *pkt, uint32_t len) {
-  netdissect_options Ndo;
-  netdissect_options *ndo = &Ndo;
-
-  memset(ndo, 0, sizeof(*ndo));
-  char ebuf[100];
-  // if (nd_init(ebuf, sizeof(ebuf)) == -1)
-  //  return;
-
-  ndo_set_function_pointers(ndo);
-
-  ndo->ndo_nflag = 1;
-  ndo->ndo_vflag = 0;
-  // ndo->ndo_qflag = 1;
-  ndo->ndo_tflag = 0;
-  const char name[] = "helloworld";
-  ndo->program_name = name;
-  ndo->ndo_eflag = 1;  // print ethernet packet
-  init_print(ndo, 0, 0, 0);
-  ndo->ndo_if_printer = get_if_printer(ndo, 0);
-
-  struct pcap_pkthdr hdr = {{0, 0}, len, len};
-  pretty_print_packet(ndo, &hdr, pkt, 0);
-}
-#endif
 
 std::string get_random_mac() {
   std::random_device rd;

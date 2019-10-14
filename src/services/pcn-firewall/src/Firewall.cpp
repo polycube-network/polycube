@@ -95,14 +95,14 @@ Firewall::~Firewall() {
   TransparentCube::dismount();
 }
 
-void Firewall::packet_in(polycube::service::Sense sense,
+void Firewall::packet_in(polycube::service::Direction direction,
                                       polycube::service::PacketInMetadata &md,
                                       const std::vector<uint8_t> &packet) {
-  switch (sense) {
-  case polycube::service::Sense::INGRESS:
+  switch (direction) {
+  case polycube::service::Direction::INGRESS:
     logger()->info("packet in event from ingress program");
     break;
-  case polycube::service::Sense::EGRESS:
+  case polycube::service::Direction::EGRESS:
     logger()->info("packet in event from egress program");
     break;
   }
@@ -238,8 +238,8 @@ std::vector<std::shared_ptr<SessionTable>> Firewall::getSessionTableList() {
     auto key = connection.first;
     auto value = connection.second;
 
-    conf.setSrc(utils::be_uint_to_ip_string(key.srcIp));
-    conf.setDst(utils::be_uint_to_ip_string(key.dstIp));
+    conf.setSrc(utils::nbo_uint_to_ip_string(key.srcIp));
+    conf.setDst(utils::nbo_uint_to_ip_string(key.dstIp));
     conf.setL4proto(ChainRule::protocol_from_int_to_string(key.l4proto));
     conf.setSport(ntohs(key.srcPort));
     conf.setDport(ntohs(key.dstPort));

@@ -39,7 +39,7 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
   void set_parameter(const std::string &parameter, const std::string &value);
-  void send_packet_out(const std::vector<uint8_t> &packet, service::Sense sense,
+  void send_packet_out(const std::vector<uint8_t> &packet, service::Direction direction,
                        bool recirculate = false);
 
   void set_conf(const nlohmann::json &conf);
