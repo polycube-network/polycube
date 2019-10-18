@@ -1,0 +1,12 @@
+---
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+{% for interface in ansible_interfaces %}
+{% if  hostvars[inventory_hostname]['ansible_'~interface|replace('-','_')]['ipv4']['address'] | default("Not defined") == node_ip %}
+    {{ interface }}:
+      dhcp4: true
+      addresses: [{{node_ip}}/24] #node_ip defined per host in host_vars
+{% endif %}
+{% endfor %}

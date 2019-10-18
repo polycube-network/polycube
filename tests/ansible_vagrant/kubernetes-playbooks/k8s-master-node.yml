@@ -1,0 +1,8 @@
+---
+# Playbook used to configure a master node. 
+# Check the role for more information
+- hosts: k8s_master_nodes
+  become: yes
+  roles:
+   - k8s-master
+   
