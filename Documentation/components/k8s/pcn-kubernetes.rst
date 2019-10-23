@@ -314,6 +314,10 @@ Here is the output for example,
 	 k8switch0  c058b8fb-0e57-4ff6-be4d-5f3e99e71690  k8switch      TC    TRACE     false   false  [7 items]
 
 
+pcn-k8s networking policy
+-------------------------
+pcn-k8s CNI implemented both :doc:`standard kubernetes networking policy <kubernetes-network-policies>` and :doc:`advanced polycube networking policy <polycube-network-policies>`.
+
 Developing
 ----------
 
