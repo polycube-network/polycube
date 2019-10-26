@@ -3,8 +3,15 @@
 # cleanup environment before exit
 function cleanup {
   set +e
+  
   echo "killing polycubed ..."
-  sudo pkill polycubed >> $test_tmp
+  if [ -z "$KILL_COMMAND" ]
+  then
+      sudo pkill polycubed >> $test_tmp
+  else
+      `$KILL_COMMAND` >> $test_tmp
+  fi
+
   echo "{ \"passed\":\"$test_passed\", \"total\":\"$test_total\", \"test_log\":\"$test_log\" }" > $RESULT_JSON
 
   cat $test_results
