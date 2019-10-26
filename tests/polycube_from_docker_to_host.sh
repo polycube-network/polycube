@@ -42,10 +42,5 @@ do
     sudo docker cp $image_name:/lib/x86_64-linux-gnu/$lib /lib/x86_64-linux-gnu
 done
 
-# Copying base yang models
-sudo mkdir -p /usr/local/include/polycube
-sudo docker cp $image_name:/usr/local/include/polycube /usr/local/include/
-sudo ldconfig -n /usr/local/include/
-
 # Copying polycubectl
 sudo docker cp $image_name:/usr/local/bin/polycubectl /usr/local/bin
