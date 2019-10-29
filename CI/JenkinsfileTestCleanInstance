@@ -68,6 +68,7 @@ pipeline {
     environment {
         image_tag = "${env.GIT_COMMIT}"
         image_name = "polycube"
+        container = "polycubed"
         registryCred = credentials('polycube-repo')
         notification_url = credentials('slack-notifications')
         github_token = credentials('github_status_update')
@@ -215,19 +216,27 @@ pipeline {
                         script {
                             docker.withRegistry("", 'polycube-repo') {
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
-                                    # Launch the polycubed daemon and extract the polycubectl
-                                    # /proc is mounted under /host/proc to have a complete visibility of the namespaces created outside of the container
-                                    docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}
-                                    mkdir bin
-                                    docker cp polycubed:/usr/local/bin/polycubectl ./bin/
+                                    set +e
+
                                     # Overload environment variables in order to adapt the behavior of run_tests script
-                                    export PATH=$PATH:${WORKSPACE}/bin
-                                    export KILL_COMMAND="docker stop polycubed"
-                                    export polycubed="docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /lib/modules:/lib/modules:ro -v /proc:/host/proc -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}"
-                                    # Killing polycube image if running
+                                    export KILL_COMMAND="docker stop $container"
+                                    
+                                    # /proc is mounted under /host/proc to have a complete visibility of the namespaces created outside of the container
+                                    export polycubed="docker run -d --name $container --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}"
+
+                                    # Launch the polycubed daemon
+                                    \$polycubed /bin/sleep infinity
+
+                                    # Copy binaries, headers and libraries from docker to host fs
+                                    sudo ./CI/extract_from_docker_image.sh $container
+
                                     \$KILL_COMMAND
+
+                                    \$polycubed
+                                    docker ps
+
                                     cd tests/
                                     # For the moment, tests always returns 0 to enable junit generation
                                     ./run-tests.sh || true
@@ -237,6 +246,10 @@ pipeline {
                                     pip install -r converter/requirements.txt
                                     export TEST_RESULTS=`ls -1 test_results_*`
                                     python3 converter/to_junit.py CleanInstance
+                                    cd ..
+
+                                    # Cleaning slave
+                                    sudo ./CI/clean_slave.sh
                                 """
                             }
                             }
@@ -249,7 +262,7 @@ pipeline {
                             }
                             script {
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
                                 """
                             }
@@ -280,15 +293,27 @@ pipeline {
                         script {
                             docker.withRegistry("", 'polycube-repo') {
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
                                     set +e
-                                    docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}
-                                    mkdir bin
-                                    docker cp polycubed:/usr/local/bin/polycubectl ./bin/
-                                    export PATH=$PATH:${WORKSPACE}/bin
-                                    export KILL_COMMAND="docker stop polycubed"
-                                    export polycubed="docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /lib/modules:/lib/modules:ro -v /proc:/host/proc -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}"
+
+                                    # Overload environment variables in order to adapt the behavior of run_tests script
+                                    export KILL_COMMAND="docker stop $container"
+
+                                    # /proc is mounted under /host/proc to have a complete visibility of the namespaces created outside of the container
+                                    export polycubed="docker run -d --name $container --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-default:${image_tag}"
+
+                                    # Launch the polycubed daemon
+                                    \$polycubed /bin/sleep infinity
+
+                                    # Copy binaries, headers and libraries from docker to host fs
+                                    sudo ./CI/extract_from_docker_image.sh $container
+
+                                    \$KILL_COMMAND
+
+                                    \$polycubed
+
+                                    docker ps
                                     cd tests/ && ./run-tests.sh false || true
                                     export LC_ALL=C
                                     virtualenv venv -p python3
@@ -296,6 +321,10 @@ pipeline {
                                     pip install -r converter/requirements.txt
                                     export TEST_RESULTS=`ls -1 test_results_*`
                                     python3 converter/to_junit.py SameInstance
+                                    cd ..
+                                    
+                                    # Cleaning slave
+                                    sudo ./CI/clean_slave.sh
                                 """
                             }
                         }
@@ -308,7 +337,7 @@ pipeline {
                                     archiveArtifacts artifacts: 'tests/test_results*'
                                 }
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
                                 """
                             }
@@ -339,15 +368,26 @@ pipeline {
                         script {
                             docker.withRegistry("", 'polycube-repo') {
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
                                     set +e
-                                    docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-pcn-iptables:${image_tag}
-                                    mkdir bin
-                                    docker cp polycubed:/usr/local/bin/polycubectl ./bin/
-                                    export PATH=$PATH:${WORKSPACE}/bin
-                                    export KILL_COMMAND="docker stop polycubed"
-                                    export polycubed="docker run -d --name polycubed --rm --privileged --pid=host --cap-add ALL --network host -v /lib/modules:/lib/modules:ro -v /proc:/host/proc -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-pcn-iptables:${image_tag}"
+
+                                    # Overload environment variables in order to adapt the behavior of run_tests script
+                                    export KILL_COMMAND="docker stop $container"
+
+                                    # /proc is mounted under /host/proc to have a complete visibility of the namespaces created outside of the container
+                                    export polycubed="docker run -d --name $container --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro polycubebot/${image_name}-pcn-iptables:${image_tag}"
+
+                                    # Launch the polycubed daemon
+                                    \$polycubed /bin/sleep infinity
+
+                                    # Copy binaries, headers and libraries from docker to host fs
+                                    sudo ./CI/extract_from_docker_image.sh $container
+
+                                    \$KILL_COMMAND
+
+                                    \$polycubed
+                                    
                                     cd tests/ && ./run-tests-iptables.sh || true
                                     export LC_ALL=C
                                     virtualenv venv -p python3
@@ -355,6 +395,10 @@ pipeline {
                                     pip install -r converter/requirements.txt
                                     export TEST_RESULTS=`ls -1 test_results_*`
                                     python3 converter/to_junit.py Iptables
+                                    cd ..
+
+                                    # Cleaning slave
+                                    sudo ./CI/clean_slave.sh
                                 """
                             }
                         }
@@ -367,7 +411,7 @@ pipeline {
                             }
                             script {
                                 sh """
-                                    docker stop polycubed || true
+                                    docker stop $container || true
                                     docker system prune --all --force
                                 """
                             }

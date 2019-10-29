@@ -24,8 +24,8 @@ pbforwarder_add_port pbf1 veth2
 pbforwarder_add_rules_l2 0 97 pbf1
 
 # Get the MAC addresses of the namespaces
-veth1_mac=`LANG=C sudo ip netns exec ns1 ifconfig -a | grep -Po 'HWaddr \K.*$'`
-veth2_mac=`LANG=C sudo ip netns exec ns2 ifconfig -a | grep -Po 'HWaddr \K.*$'`
+veth1_mac=`LANG=C sudo ip netns exec ns1 ifconfig -a | grep -Po 'ether \K[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$'`
+veth2_mac=`LANG=C sudo ip netns exec ns2 ifconfig -a | grep -Po 'ether \K[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$'`
 
 # Allows ns1->ns2 ARP Request
 polycubectl pbforwarder pbf1 rules add 97 dst_mac=FF:FF:FF:FF:FF:FF action=FORWARD out_port=veth2

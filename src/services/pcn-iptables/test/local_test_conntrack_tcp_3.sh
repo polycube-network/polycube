@@ -21,7 +21,7 @@ function test_tcp {
 function test_tcp_fail {
     sudo ip netns exec ns2 netcat -l -w 5 $1&
     sleep 2
-    test_fail sudo ip netns exec ns1 netcat -w 2 -nvz 10.0.2.1 $1
+    test_fail sudo ip netns exec ns1 netcat -w 5 -nvz 10.0.2.1 $1
     sleep 4
 }
 
