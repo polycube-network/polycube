@@ -21,12 +21,16 @@
 #include <iostream>
 #include <ctime>
 #include <fstream>
+#include <chrono>
 #include "unistd.h"
 #include "Packetcapture.h"
 #include "Packetcapture_dp_ingress.h"
 #include "Packetcapture_dp_egress.h"
 #define ON_T 0
 #define OFF_T 1
+#define BILLION 1000000000
+#define MILLION 1000000
+#define ONE_THOUSAND 1000
 
 
 typedef int bpf_int32; 
@@ -52,6 +56,14 @@ struct pcap_pkthdr {
 Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObject &conf)
   : TransparentCube(conf.getBase(), { packetcapture_code_ingress }, { packetcapture_code_egress }),
     PacketcaptureBase(name) {
+  
+  gettimeofday(&ts, NULL);              //getting actual time
+  std::uint64_t uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+  time_t sec_off = uptime / BILLION;
+  ts.tv_sec -= sec_off;
+  uptime -= sec_off * BILLION;
+  ts.tv_usec -= uptime;
+
   logger()->info("Creating Packetcapture instance");
     setCapture(conf.getCapture());
     setAnomimize(conf.getAnomimize());
@@ -79,7 +91,6 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
 
   PacketJsonObject pj;
   auto p = std::shared_ptr<Packet>(new Packet(*this, pj));
-  struct timeval tp;
   std::streamsize len;
 
   if (dt == "") {
@@ -105,7 +116,17 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     myFile.write(reinterpret_cast<const char*>(pcap_header), sizeof(*pcap_header));
     writeHeader = false;
   }
-  gettimeofday(&tp, NULL);
+  struct timeval tp;
+  tp.tv_sec = ts.tv_sec;
+  tp.tv_usec = ts.tv_usec;
+  time_t sec_off = temp_offset/BILLION;     /* from nanoseconds to seconds */
+  temp_offset -= sec_off*BILLION;
+  tp.tv_usec += temp_offset/ONE_THOUSAND;   /* from nanoseconds to microseconds */
+  tp.tv_sec += sec_off;
+  sec_off = tp.tv_usec/MILLION;             /* from microseconds to seconds */
+  tp.tv_usec -= sec_off*MILLION;
+  tp.tv_sec += sec_off;
+
   p->setTimestampSeconds((uint32_t) tp.tv_sec);
   p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
   p->setPacketlen((uint32_t) packet.size());
@@ -140,6 +161,7 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
       
   switch (direction) {
     case polycube::service::Direction::INGRESS:
+    temp_offset = get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::INGRESS).get(0x0);    
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {
@@ -147,6 +169,7 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     }
     break;
     case polycube::service::Direction::EGRESS:
+    temp_offset = get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::EGRESS).get(0x0);
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {

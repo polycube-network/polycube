@@ -44,6 +44,8 @@ class Packetcapture : public PacketcaptureBase {
  bool writeHeader;
  std::ofstream myFile;
  std::string dt;
+ struct timeval ts;
+ uint64_t temp_offset;
  
   void addPacket(const std::vector<uint8_t> &packet);
 

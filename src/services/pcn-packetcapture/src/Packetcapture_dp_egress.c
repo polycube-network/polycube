@@ -78,6 +78,11 @@ struct packetHeaders {
 BPF_ARRAY(pkt_header, struct packetHeaders, 1);
 
 /*
+ * BPF map where a single element, packet timestamp
+ */
+BPF_ARRAY(packet_timestamp, uint64_t, 1);
+
+/*
  * BPF map where a single element, working mode [ON | OFF]
  */
 BPF_ARRAY(working, uint8_t, 1);
@@ -192,6 +197,13 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
     }
 
   }
+
+  /* Getting packet timestamp */
+  uint64_t *pkt_timestamp = packet_timestamp.lookup(&key);
+  if (!pkt_timestamp){
+      return RX_DROP;
+  }
+  *pkt_timestamp = bpf_ktime_get_ns();
 
   /*TODO: Now the traffic will be sent to the controller and will be processed in the slow path.
    *      This solution will have a big impact on performance.
