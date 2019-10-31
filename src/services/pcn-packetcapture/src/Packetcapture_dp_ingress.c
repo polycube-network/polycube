@@ -59,23 +59,6 @@ struct eth_hdr {
   __be16 proto;
 } __attribute__((packed));
 
-struct packetHeaders {
-  uint64_t srcMac;
-  uint64_t dstMac;
-  uint16_t vlan;
-  bool vlan_present;
-  bool ip;
-  uint32_t srcIp;
-  uint32_t dstIp;
-  uint8_t l4proto;
-  uint16_t srcPort;
-  uint16_t dstPort;
-};
-
-/*
- * BPF map where a single element, the packet header
- */
-BPF_ARRAY(pkt_header, struct packetHeaders, 1);
 
 /*
  * BPF map where a single element, packet timestamp
@@ -104,11 +87,6 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
   if (*status == OFF){
       return RX_OK;
   }
-  struct packetHeaders *pkt;
-  pkt = pkt_header.lookup(&key);
-  if (pkt == NULL) {
-    return RX_DROP;
-  }
   
   /* Parsing L2 */
   void *data = (void *)(long)ctx->data;
@@ -117,13 +95,10 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
   if (data + sizeof(*ethernet) > data_end)
     return RX_DROP;
 
-  pkt->srcMac = ethernet->src;
-  pkt->dstMac = ethernet->dst;
   uint16_t ether_type = ethernet->proto;
 
   if (ctx->vlan_present) {
     ether_type = ctx->vlan_proto;
-    pkt->vlan = (uint16_t)(ctx->vlan_tci & 0x0fff);
   }
 
   /* Parsing L3 */
@@ -164,9 +139,10 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
       }
     }
 
+    uint8_t header_len = 4 * ip->ihl; 
     if (ip->protocol == IPPROTO_TCP) {
-      tcp = data + sizeof(*ethernet) + sizeof(*ip);
-      if (data + sizeof(*ethernet) + sizeof(*ip) + sizeof(*tcp) > data_end)
+      tcp = data + sizeof(*ethernet) + header_len;
+      if (data + sizeof(*ethernet) + header_len + sizeof(*tcp) > data_end)
         return RX_DROP;
       
       /* src port filter */
@@ -178,21 +154,18 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
       if ((filters_tab->dst_port_flag == true) && (filters_tab->dst_port_filter != ntohs(tcp->dest))){
         return RX_OK;
       }
-
-      pkt->srcPort = tcp->source;
-      pkt->dstPort = tcp->dest;
     } else if (ip->protocol == IPPROTO_UDP) {
-      udp = data + sizeof(*ethernet) + sizeof(*ip);
-      if (data + sizeof(*ethernet) + sizeof(*ip) + sizeof(*udp) > data_end)
+      udp = data + sizeof(*ethernet) + header_len;
+      if (data + sizeof(*ethernet) + header_len + sizeof(*udp) > data_end)
         return RX_DROP;
-      pkt->l4proto = IPPROTO_UDP;
-      pkt->srcPort = udp->source;
-      pkt->dstPort = udp->dest;
     }
 
   }
   
-  /* Getting packet timestamp */
+  /*                Getting packet timestamp
+   *
+   * see line 61 in Packetcapture.cpp for more details about timestamping algorithm
+   */
   uint64_t *pkt_timestamp = packet_timestamp.lookup(&key);
   if (!pkt_timestamp){
       return RX_DROP;

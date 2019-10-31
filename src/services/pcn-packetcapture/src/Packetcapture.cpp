@@ -57,6 +57,23 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
   : TransparentCube(conf.getBase(), { packetcapture_code_ingress }, { packetcapture_code_egress }),
     PacketcaptureBase(name) {
   
+  /*
+   * The timestamp of the packet is acquired in the fast path using 'bpf_ktime_get_ns()'
+   * This function returns the time elapsed since system booted, in nanoseconds.
+   * See line 173 in Packetcapture_dp_egress.c and Packetcapture_dp_ingress.c
+   * 
+   * The packet's timestamp must be in epoch so now we will store the current
+   * time in epoch format and then the packet capture time offset,that was stored in the fast path,
+   * will be added to it.
+   * 
+   * Now we are calculating the system start time in epoch.
+   * 'timeval struct ts' rapresents the system start time in epoch calculated as
+   * actual time - system uptime
+   * 
+   * See line 138 of this file for more details
+   */
+
+
   gettimeofday(&ts, NULL);              //getting actual time
   std::uint64_t uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
   time_t sec_off = uptime / BILLION;
@@ -116,6 +133,12 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     myFile.write(reinterpret_cast<const char*>(pcap_header), sizeof(*pcap_header));
     writeHeader = false;
   }
+
+  /*
+   * Here the packet capture time offset must be added to the system boot time stored in epoch format.
+   * See line 61 of this file to see system boot time stored in epoch algorithm
+   */
+
   struct timeval tp;
   tp.tv_sec = ts.tv_sec;
   tp.tv_usec = ts.tv_usec;
