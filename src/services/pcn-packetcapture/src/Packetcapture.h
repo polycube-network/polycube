@@ -19,14 +19,11 @@
 
 #include <list>
 #include <fstream>
-
+#include <chrono>
 #include "../base/PacketcaptureBase.h"
-
 #include "Filters.h"
 #include "Packet.h"
 #include "Globalheader.h"
-
-
 #include <tins/ethernetII.h>
 #include <tins/tins.h>
 
@@ -44,10 +41,11 @@ class Packetcapture : public PacketcaptureBase {
  bool writeHeader;
  std::ofstream myFile;
  std::string dt;
- struct timeval ts;
- uint64_t temp_offset;
- 
-  void addPacket(const std::vector<uint8_t> &packet);
+ std::chrono::system_clock::time_point timeP;
+ std::chrono::nanoseconds temp_offset;
+
+ void addPacket(const std::vector<uint8_t> &packet);
+ void to_timeval(std::chrono::system_clock::duration& d, struct timeval& tv);
 
  public:
   Packetcapture(const std::string name, const PacketcaptureJsonObject &conf);

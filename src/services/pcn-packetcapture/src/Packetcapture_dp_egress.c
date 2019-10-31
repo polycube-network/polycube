@@ -164,7 +164,7 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
 
   /*                Getting packet timestamp
    *
-   * see line 61 in Packetcapture.cpp for more details about timestamping algorithm
+   * see line 58 in Packetcapture.cpp for more details about timestamping algorithm
    */
   uint64_t *pkt_timestamp = packet_timestamp.lookup(&key);
   if (!pkt_timestamp){

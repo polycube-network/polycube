@@ -29,9 +29,6 @@
 #define ON_T 0
 #define OFF_T 1
 #define BILLION 1000000000
-#define MILLION 1000000
-#define ONE_THOUSAND 1000
-
 
 typedef int bpf_int32; 
 typedef u_int bpf_u_int32;
@@ -70,16 +67,22 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
    * 'timeval struct ts' rapresents the system start time in epoch calculated as
    * actual time - system uptime
    * 
-   * See line 138 of this file for more details
+   * See line 141 or 307 of this file for more details
    */
 
 
-  gettimeofday(&ts, NULL);              //getting actual time
-  std::uint64_t uptime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-  time_t sec_off = uptime / BILLION;
-  ts.tv_sec -= sec_off;
-  uptime -= sec_off * BILLION;
-  ts.tv_usec -= uptime;
+  timeP = std::chrono::high_resolution_clock::now();  //getting actual time
+
+  std::chrono::nanoseconds uptime(0u);
+  double uptime_seconds;
+  if (std::ifstream("/proc/uptime", std::ios::in) >> uptime_seconds)
+  {
+    uptime = std::chrono::nanoseconds(
+      static_cast<unsigned long long>(uptime_seconds*BILLION)
+    );
+  }
+
+  timeP -= uptime;
 
   logger()->info("Creating Packetcapture instance");
     setCapture(conf.getCapture());
@@ -136,20 +139,13 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
 
   /*
    * Here the packet capture time offset must be added to the system boot time stored in epoch format.
-   * See line 61 of this file to see system boot time stored in epoch algorithm
+   * See line 58 of this file to see system boot time stored in epoch algorithm
    */
 
   struct timeval tp;
-  tp.tv_sec = ts.tv_sec;
-  tp.tv_usec = ts.tv_usec;
-  time_t sec_off = temp_offset/BILLION;     /* from nanoseconds to seconds */
-  temp_offset -= sec_off*BILLION;
-  tp.tv_usec += temp_offset/ONE_THOUSAND;   /* from nanoseconds to microseconds */
-  tp.tv_sec += sec_off;
-  sec_off = tp.tv_usec/MILLION;             /* from microseconds to seconds */
-  tp.tv_usec -= sec_off*MILLION;
-  tp.tv_sec += sec_off;
-
+  std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
+  to_timeval(tp_dur, tp);
+  
   p->setTimestampSeconds((uint32_t) tp.tv_sec);
   p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
   p->setPacketlen((uint32_t) packet.size());
@@ -181,10 +177,10 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     const std::vector<uint8_t> &packet) {
   
   Tins::EthernetII pkt(&packet[0], packet.size());
-      
+
   switch (direction) {
     case polycube::service::Direction::INGRESS:
-    temp_offset = get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::INGRESS).get(0x0);    
+    temp_offset = std::chrono::nanoseconds(static_cast<unsigned long long>(get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::INGRESS).get(0x0)));
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {
@@ -192,7 +188,7 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     }
     break;
     case polycube::service::Direction::EGRESS:
-    temp_offset = get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::EGRESS).get(0x0);
+    temp_offset = std::chrono::nanoseconds(static_cast<unsigned long long>(get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::EGRESS).get(0x0)));
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {
@@ -306,8 +302,16 @@ std::shared_ptr<Packet> Packetcapture::getPacket() {
 void Packetcapture::addPacket(const std::vector<uint8_t> &packet) {
     PacketJsonObject pj;
     auto p = std::shared_ptr<Packet>(new Packet(*this, pj));
+  
+  /*
+   * Here the packet capture time offset must be added to the system boot time stored in epoch format.
+   * See line 58 of this file to see system boot time stored in epoch algorithm
+   */
+
     struct timeval tp;
-    gettimeofday(&tp, NULL);
+    std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
+    to_timeval(tp_dur, tp);
+
     p->setTimestampSeconds((uint32_t) tp.tv_sec);
     p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
     p->setPacketlen((uint32_t) packet.size());
@@ -402,4 +406,11 @@ void Packetcapture::replaceGlobalheader(const GlobalheaderJsonObject &conf) {
 
 void Packetcapture::delGlobalheader() {
   throw std::runtime_error("Packetcapture::delGlobalheader: method not implemented");
+}
+
+void Packetcapture::to_timeval(std::chrono::system_clock::duration& d, struct timeval& tv) {
+    std::chrono::seconds const sec = std::chrono::duration_cast<std::chrono::seconds>(d);
+
+    tv.tv_sec  = sec.count();
+    tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(d - sec).count();
 }
