@@ -16,14 +16,14 @@ source "../helpers.bash"
 function test_tcp {
     sudo ip netns exec ns1 netcat -l -w 5 $tcp_int_port&
 	sleep 2
-	sudo ip netns exec ns2 netcat -w 2 -nvz $missing_ip $tcp_ext_port
+	sudo ip netns exec ns2 netcat -w 5 -nvz $missing_ip $tcp_ext_port
 	sleep 4
 }
 
 function test_tcp_fail {
     sudo ip netns exec ns1 netcat -l -w 5 $tcp_int_port&
 	sleep 2
-	test_fail sudo ip netns exec ns2 netcat -w 2 -nvz $missing_ip $tcp_ext_port
+	test_fail sudo ip netns exec ns2 netcat -w 5 -nvz $missing_ip $tcp_ext_port
 	sleep 4
 }
 
