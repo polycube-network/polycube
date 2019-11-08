@@ -1,0 +1,8 @@
+---
+# Playbook used to configure the files before launching the vagrant environment
+# Check the role for more information
+- hosts: localhost
+  become: no
+  roles:
+   - bootstrap
+   

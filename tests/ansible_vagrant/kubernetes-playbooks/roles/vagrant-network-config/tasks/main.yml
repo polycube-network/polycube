@@ -1,0 +1,39 @@
+---
+# tasks file for vagrant-nettwork-config
+#This task removes the nat adapter used by the vagrant environment
+#This way we have a clean networking namespace on each virtual machine
+#The virtual machine's networking is made up by only an interface bridged to a physical interface on the host.
+
+#remove the netplan files already configured by vagrant
+- name: Find and save in a local variable all the netplan configuration files
+  find:
+    paths: /etc/netplan
+    patterns: "*.yaml"
+  register: files_to_delete
+
+- name: Delete all the netplan configuration files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+
+#copy the new configuration file which configures the bridge adapter with dhcp and assigning also a static ip. Netplan does not allow to assign an static ip and
+#use the dhcp to get the routing information
+#probably in different environments the interface name has to be changed. check your host OS and adjust the template file accordingly
+- name: Template the netplan configuration file to /etc/netplan
+  template:
+    src: 50-vagrant.yaml.j2
+    dest: /etc/netplan/50-vagrant.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+# Set the timezone to Europe/Rome
+- name: Set timezone to Europe/Rome
+  timezone:
+    name: "{{time_zone}}"
+
+#doing "netplan apply" stop systemd-networkd leaving the machine without connection    
+- name: Reboot the system 
+  reboot:
+  

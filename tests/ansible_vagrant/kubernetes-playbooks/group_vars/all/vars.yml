@@ -1,0 +1,82 @@
+#These variables are shared among all roles
+
+docker_packages:
+- docker-ce=5:18.09.9~3-0~ubuntu-xenial
+- docker-ce-cli=5:18.09.9~3-0~ubuntu-xenial
+- containerd.io
+
+#Latest versions
+k8s_packages:
+- kubelet
+- kubeadm
+- kubectl
+
+#Needed for apt over HTTPS
+apt_packages:
+- apt-transport-https
+- ca-certificates
+- curl
+- gnupg-agent
+- software-properties-common
+
+##path to the public key used to ssh to the machines
+#pub_key_path: /home/aldo/.ssh/vagrant_machines.pub
+
+#pod-network-cidr used in k8s
+pod_network_cidr: 10.244.0.0/16
+
+#user to be added to the k8s group
+user: vagrant
+
+# zone to which set the time
+time_zone: Europe/Rome
+
+#####################
+#Nodes Configuration#
+#####################
+
+#Node configuration. The cluster can have only one master node and many worker nodes as needed.
+k8s_master_nodes_ips: 
+- 192.168.0.23
+
+k8s_worker_nodes_ips:
+- 192.168.0.24
+- 192.168.0.25
+- 192.168.0.26
+- 192.168.0.27
+
+#theese prefixes are used when generating the names of the nodes. Used in the host_vars files, inventory.ini and in /etc/hosts in the local system.
+k8s_master_node_prefix: k8s-master-
+
+k8s_worker_node_prefix: k8s-node-
+
+
+############################
+#Vagrant file configuration#
+############################
+
+#flavor of the operating system to be used in the VMs
+image_name: "ubuntu/bionic64"
+#the nic on your host to which the VM interface will be bridged.
+bridge_nic: enp1s0f0 
+
+#Path to the generated SSH private key file
+ssh_key_path: ~/.ssh
+ssh_key_name: vagrant_machines
+
+#path to the public key used to ssh to the machines, if this key does not exist than a new one is generated with the same name
+pub_key_path: "{{ssh_key_path}}/{{ssh_key_name}}.pub"
+
+#Amount of RAM memory for a single VM
+virtual_memory_size: 4096
+
+#Amount of Virtual CPUs for a single VM
+virtual_cpus: 2
+
+###################
+#CNI configuration#
+###################
+
+cni_manifests:
+- https://raw.githubusercontent.com/polycube-network/polycube/master/src/components/k8s/standalone_etcd.yaml
+- https://raw.githubusercontent.com/polycube-network/polycube/master/src/components/k8s/pcn-k8s.yaml

@@ -1,0 +1,8 @@
+---
+# Playbook used to configure each machine that will be part of the k8s cluster.
+# Check the role for more information
+- hosts: all_nodes
+  become: yes
+  roles:
+   - vagrant-network-config
+   
