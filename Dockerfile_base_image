@@ -1,7 +1,7 @@
 # syntax = tonistiigi/dockerfile:runmount20180618
 FROM ubuntu:18.04
-RUN --mount=target=/polycube cp -r /polycube /tmp/polycube && \
-cd /tmp/polycube && \
-SUDO="" WORKDIR="/tmp/dev" \
+COPY scripts/pre-requirements.sh /tmp/
+RUN cd /tmp/ && \
 apt update && \
-./scripts/pre-requirements.sh
+SUDO="" WORKDIR="/tmp/dev" ./pre-requirements.sh && \
+rm -f /tmp/pre-requirements.sh

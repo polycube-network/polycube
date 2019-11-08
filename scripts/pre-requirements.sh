@@ -5,7 +5,7 @@ then
 fi
 mkdir -p $WORKDIR
 
-$SUDO sudo apt update
+$SUDO apt update
 $SUDO bash -c "apt install --allow-unauthenticated -y wget gnupg2 software-properties-common"
 
 # golang v1.12 still not available in repos
