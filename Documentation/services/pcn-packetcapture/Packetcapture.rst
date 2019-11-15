@@ -114,7 +114,7 @@ Filters can be viewed using the command **polycubectl mysniffer filters show**
 
 Get the capture dump
 --------------------
-When the service is not set in *networkmode*, the dump is automatically written in a resilient way in the current working directory.
+When the service is not set in *networkmode*, the dump is automatically written in a resilient way in the temporary user folder.
 
 The path of the capture file can be shown using the command: **polycubectl mysniffer show dump**
 

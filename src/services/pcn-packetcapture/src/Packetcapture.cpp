@@ -67,7 +67,7 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
    * 'timeval struct ts' rapresents the system start time in epoch calculated as
    * actual time - system uptime
    * 
-   * See line 141 or 307 of this file for more details
+   * See line 161 or 329 of this file for more details
    */
 
 
@@ -119,9 +119,28 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     std::stringstream tmstmp;
     tmstmp << ltm->tm_mday << "-" << ltm->tm_mon << "-" << (ltm->tm_year + 1900) << "-" << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec;
     dt = tmstmp.str();
+
+    //getting temp folder
+    //std::filesystem::temp_directory_path only in c++17
+    //according to ISO/IEC 9945 (POSIX)
+    char const *folder = getenv("TMPDIR");
+    if (folder == 0){
+      folder = getenv("TMP");
+      if (folder == 0){
+        folder = getenv("TEMP");
+        if (folder == 0){
+          folder = getenv("TEMPDIR");
+          if (folder == 0){
+            folder = "/tmp/";
+          }
+        }
+      }
+    }
+    temp_folder = std::string(folder);
+    random_number = std::to_string(rand()%1000);    //to avoid two files that using the same name
   }
   
-  myFile.open("capture_"+ dt +".pcap", std::ios::binary | std::ios::app);
+  myFile.open(temp_folder + "capture_" + dt + "_" + random_number + ".pcap", std::ios::binary | std::ios::app);
 
   if (writeHeader == true) {
     struct pcap_file_header *pcap_header = new struct pcap_file_header;
@@ -245,10 +264,12 @@ std::string Packetcapture::getDump() {
 
   if (network_mode_flag) {
     dump << "the service is running in network mode";
-  } else {
+  } else if (temp_folder != ""){
       char *cwdr_ptr = get_current_dir_name();
       std::string wdr(cwdr_ptr);
-      dump << "capture dump in " << wdr << "/capture_"+ dt +".pcap" << std::endl;
+      dump << "capture dump in " << temp_folder << "capture_" + dt + "_" + random_number + ".pcap" << std::endl;
+  } else{
+    dump << "no packets captured";
   }
   
   return dump.str();

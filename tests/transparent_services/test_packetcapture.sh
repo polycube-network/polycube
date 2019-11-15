@@ -33,7 +33,7 @@ polycubectl attach packetcapture_service br1:toveth1
 
 sudo ip netns exec ns1 ping 10.0.0.2 -c 1
 
-rm -f $(polycubectl packetcapture_service show dump | cut -d ' ' -f 4-)
+sudo rm -f $(polycubectl packetcapture_service show dump | cut -d ' ' -f 4-)
 
 
 polycubectl detach packetcapture_service br1:toveth1

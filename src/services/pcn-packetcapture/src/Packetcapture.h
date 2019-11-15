@@ -41,6 +41,8 @@ class Packetcapture : public PacketcaptureBase {
  bool writeHeader;
  std::ofstream myFile;
  std::string dt;
+ std::string temp_folder;
+ std::string random_number;
  std::chrono::system_clock::time_point timeP;
  std::chrono::nanoseconds temp_offset;
 
