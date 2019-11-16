@@ -31,7 +31,6 @@ def slackNotification(buildStatus,String notification_url = "",project_name = ""
             ]
         ]
     )
-
     sh "curl -X POST --fail -H 'Content-type: application/json' --data '${payload}' ${notification_url}"
 }
 
@@ -87,6 +86,14 @@ pipeline {
                     setGithubStatus("${commit_id}", "pending", github_token, "polycube-network/polycube", "Docker Image Build", "Docker Image Build")
                     slackNotification("STARTED",notification_url,"Polycube")
                 }
+            }
+        }
+        stage ('Clean Directory and Checkout') {
+            steps {
+                dir('.') {
+                    deleteDir()
+                }
+                checkout scm
             }
         }
         stage('Build Base Image') {

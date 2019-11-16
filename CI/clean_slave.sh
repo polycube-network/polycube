@@ -30,3 +30,7 @@ for lib in $(ls /lib/x86_64-linux-gnu/ | grep -P "libnl"); do
     sudo rm -rf /lib/x86_64-linux-gnu/$lib
 done
 sudo ldconfig
+for namespace in $(ls /var/run/netns/ | grep -Po "ns[0-9]"); do
+    echo "removing namespace $namespace"
+    sudo ip netns del $namespace
+done
