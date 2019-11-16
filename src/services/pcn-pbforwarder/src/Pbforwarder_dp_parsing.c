@@ -99,6 +99,7 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
       pkt->srcPort = tcp->source;
       pkt->dstPort = tcp->dest;
     } else if (ip->protocol == IPPROTO_UDP) {
+      uint8_t header_len = 4 * ip->ihl;       //we have to redefine this to avoid errors
       udp = data + sizeof(*ethernet) + header_len;
       if (data + sizeof(*ethernet) + header_len + sizeof(*udp) > data_end)
         return RX_DROP;
