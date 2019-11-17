@@ -1,5 +1,5 @@
 Example 3 - Spanning Tree
-=========
+=========================
 
 In this example we will test the Spanning Tree configuration.
 We will have three bridges connected each other in a triangle.

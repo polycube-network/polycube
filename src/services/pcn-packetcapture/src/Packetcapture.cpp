@@ -131,12 +131,13 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
         if (folder == 0){
           folder = getenv("TEMPDIR");
           if (folder == 0){
-            folder = "/tmp/";
+            folder = "/tmp";
           }
         }
       }
     }
     temp_folder = std::string(folder);
+    temp_folder.append("/");
     random_number = std::to_string(rand()%1000);    //to avoid two files that using the same name
   }
   

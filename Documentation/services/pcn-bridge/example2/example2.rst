@@ -1,5 +1,5 @@
 Example 2 - VLAN
-=========
+=================
 
 In this example we will test the VLAN support.
 We will configure two bridges, and four network namespaces connected to them.

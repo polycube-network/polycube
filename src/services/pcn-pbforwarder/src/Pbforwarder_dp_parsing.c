@@ -90,16 +90,18 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
     pkt->srcIp = ip->saddr;
     pkt->dstIp = ip->daddr;
 #if LEVEL == 4
+    uint8_t header_len = 4 * ip->ihl;
     if (ip->protocol == IPPROTO_TCP) {
-      tcp = data + sizeof(*ethernet) + sizeof(*ip);
-      if (data + sizeof(*ethernet) + sizeof(*ip) + sizeof(*tcp) > data_end)
+      tcp = data + sizeof(*ethernet) + header_len;
+      if (data + sizeof(*ethernet) + header_len + sizeof(*tcp) > data_end)
         return RX_DROP;
       pkt->l4proto = IPPROTO_TCP;
       pkt->srcPort = tcp->source;
       pkt->dstPort = tcp->dest;
     } else if (ip->protocol == IPPROTO_UDP) {
-      udp = data + sizeof(*ethernet) + sizeof(*ip);
-      if (data + sizeof(*ethernet) + sizeof(*ip) + sizeof(*udp) > data_end)
+      uint8_t header_len = 4 * ip->ihl;       //we have to redefine this to avoid errors
+      udp = data + sizeof(*ethernet) + header_len;
+      if (data + sizeof(*ethernet) + header_len + sizeof(*udp) > data_end)
         return RX_DROP;
       pkt->l4proto = IPPROTO_UDP;
       pkt->srcPort = udp->source;

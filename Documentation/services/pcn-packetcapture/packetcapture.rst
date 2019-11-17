@@ -51,9 +51,9 @@ Attach to a cube port
 
 Now the packetcapture service is attached to the port *toveth1* of the bridge *br1*
 
-                +----------+
- veth1 ---**x**-|   br1    |------ veth2    
-                +----------+
+
+ veth1 ---**x**- |   br1    | ------ veth2    
+
 
 
 Filters
