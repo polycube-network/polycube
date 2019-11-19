@@ -56,10 +56,11 @@ In this case you have to:
 
 Once the installation is completed, you can follow the :doc:`quickstart` instructions.
 
-Note: if you have llvm 6.0 installed, the installation script will fail. You can do:
+Note: if you have llvm 6.0 installed (check with ``apt list --installed | grep "llvm"``), the installation script will fail.
+In this case, remove llvm 6.0 before starting the installation script:
 
 ::
-    sudo apt remove  llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
+    sudo apt remove llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
 
 Installing from source
 ----------------------
