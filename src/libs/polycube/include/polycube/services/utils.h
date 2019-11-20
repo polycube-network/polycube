@@ -28,9 +28,12 @@ namespace polycube {
 namespace service {
 namespace utils {
 
-/* ip (a.b.c.d) to string and viceversa
+/* IP string (a.b.c.d) or IP prefix (a.b.c.d/m) to nbo uint. If (a.b.c.d/m) only IP will be processed
  * Number is in network byte order (nbo), i.e., big endian */
 uint32_t ip_string_to_nbo_uint(const std::string &ip);
+
+/* IP (a.b.c.d) to string 
+ * Number is in network byte order (nbo), i.e., big endian */
 std::string nbo_uint_to_ip_string(uint32_t ip);
 
 /* mac (aa:bb:cc:dd:ee:ff) to string and vicersa
@@ -54,7 +57,7 @@ uint64_t hex_string_to_uint(const std::string &str);
 std::string get_random_mac();
 
 /* Take in ingress a string like 192.168.0.1/24 and return only the ip
- * 192.168.0.1 */
+ * 192.168.0.1 . If no prefix it will return the same input string*/
 std::string get_ip_from_string(const std::string &ipv_net);
 
 /* Take in ingress a string like 192.168.0.1/24 and return only the "prefix

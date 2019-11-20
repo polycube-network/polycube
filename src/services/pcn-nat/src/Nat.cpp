@@ -34,8 +34,8 @@ Nat::Nat(const std::string name, const NatJsonObject &conf)
   //addNattingTableList(conf.getNattingTable());
 
   ParameterEventCallback cb = [&](const std::string &parameter, const std::string &value) {
-    logger()->debug("parent IP has been updated to {}", value);
-    external_ip_ = value;
+    external_ip_ = utils::get_ip_from_string(value);
+    logger()->debug("parent IP has been updated to {}", external_ip_);
     if (rule_->getMasquerade()->getEnabled()) {
       rule_->getMasquerade()->inject(utils::ip_string_to_nbo_uint(external_ip_));
     }
