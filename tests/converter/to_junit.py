@@ -26,7 +26,8 @@ def file_log_parser(file:str) -> dict:
          elif index:
             test_logs_results[index] += line + "\n"
    return test_logs_results
-            
+
+# For each test we generate a testCase parsing the output file
 for file in TESTS_FILE.split("\n"):
    file_log = "test_log_" + "_".join(file.split("_")[2:])
    test = file_log_parser(file_log)
@@ -42,16 +43,13 @@ for file in TESTS_FILE.split("\n"):
             continue
          else:
             duration=duration[:-1]
-         tc = TestCase(name=test_name, elapsed_sec=int(duration),status=status)
-         if status != "PASSED++++":
-            print(len(test[test_name]))
-            tc.add_failure_info(output=test[test_name])
+         if test_name in test:
+            tc = TestCase(name=test_name, elapsed_sec=int(duration),status=status, stdout=test[test_name])
+         else:
+            tc = TestCase(name=test_name, elapsed_sec=int(duration),status=status)
          tests.append(tc)
+
+# We create a TestSUite and we write them in a XML File
 t = TestSuite(name=args.test_suite_name,test_cases=tests)
 with open('output.xml', 'w') as f:
    TestSuite.to_file(f, [t], prettyprint=False)
-
-from junitparser import JUnitXml
-
-xml1 = JUnitXml.fromfile('output.xml')
-print(xml1)

@@ -45,13 +45,13 @@ function log_test {
     echo "++++TEST $1 FAILED++++" >> $test_results
     echo "++++TEST $1 FAILED++++" >> $test_tmp
     failed=true
-    cat $test_tmp >> $test_log
   else
     test_passed=$(($test_passed+1))
     echo "++++TEST $1 PASSED++++"
     echo "++++TEST $1 PASSED++++" >> $test_results
     echo "++++TEST $1 PASSED++++" >> $test_tmp
   fi
+  cat $test_tmp >> $test_log
   return $status
 }
 
