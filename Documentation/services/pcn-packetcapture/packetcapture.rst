@@ -27,7 +27,7 @@ Create the service
 ::
 
     #create the packetcapture service
-    polycubectl packetcapture add sniffer capture=bidirectional
+    polycubectl packetcapture add mysniffer capture=bidirectional
 
 This service can operate in four working modes (actually, the forth mode is just to turn the capture off):
 
