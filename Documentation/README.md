@@ -9,7 +9,7 @@ The instructions below are intended only if you want to generate the documentati
 ### Installing the dependencies
 
 Our documentation uses `sphinx`.
-In order to install the dependenciesm type:
+In order to install the dependencies type:
 
 ```
 cd Documentation
