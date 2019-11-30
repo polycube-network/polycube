@@ -13,7 +13,7 @@ In order to install the dependencies do
 
 ```
 cd Documentation
-pip install -r Documentation/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Build it
