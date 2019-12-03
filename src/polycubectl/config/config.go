@@ -85,7 +85,7 @@ func saveConfig(config Config) error {
 		return fmt.Errorf("error during json Marshal: %s", err.Error())
 	}
 
-	os.MkdirAll(home+PathToConfigFile, 0600)
+	os.MkdirAll(home+PathToConfigFile, 0700)
 
 	f, err := os.Create(home + PathToConfigFile + ConfigFile)
 	defer f.Close()
