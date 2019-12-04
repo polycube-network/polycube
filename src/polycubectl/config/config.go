@@ -85,6 +85,9 @@ func saveConfig(config Config) error {
 		return fmt.Errorf("error during json Marshal: %s", err.Error())
 	}
 
+	// Create a directory for the config file with read, write and execute
+	// permission for the current user (700)
+	// (both w and x are needed to edit the content of the dir)
 	os.MkdirAll(home+PathToConfigFile, 0700)
 
 	f, err := os.Create(home + PathToConfigFile + ConfigFile)
