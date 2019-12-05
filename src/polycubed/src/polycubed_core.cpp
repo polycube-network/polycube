@@ -208,6 +208,16 @@ std::string PolycubedCore::topology() {
   return j.dump(4);
 }
 
+std::string PolycubedCore::get_if_topology(const std::string &if_name) {
+   json j = {{"name", if_name}};
+
+   auto extIface = polycube::polycubed::ExtIface::get_extiface(if_name);
+   if (extIface != NULL) {
+       j["cubes"] = extIface->get_cubes_names();
+   }
+   return j.dump(4);
+}
+
 std::string get_port_peer(const std::string &port) {
   std::smatch match;
   std::regex rule("(\\S+):(\\S+)");

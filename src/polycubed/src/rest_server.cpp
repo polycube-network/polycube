@@ -271,6 +271,8 @@ void RestServer::setup_routes() {
   // topology
   router_->get(base + std::string("/topology"),
                bind(&RestServer::topology, this));
+  router_->get(base + std::string("/topology/:ifname"),
+               bind(&RestServer::get_if_topology, this));
 
   router_->options(base + std::string("/topology"),
                    bind(&RestServer::topology_help, this));
@@ -827,6 +829,19 @@ void RestServer::topology(const Pistache::Rest::Request &request,
   } catch (const std::runtime_error &e) {
     logger->error("{0}", e.what());
     response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
+}
+
+void RestServer::get_if_topology(const Pistache::Rest::Request &request,
+                                Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+      auto ifname = request.param(":ifname").as<std::string>();
+      std::string retJsonStr = core.get_if_topology(ifname);
+      response.send(Pistache::Http::Code::Ok, retJsonStr);
+  } catch (const std::runtime_error &e) {
+      logger->error("{0}", e.what());
+      response.send(Pistache::Http::Code::Bad_Request, e.what());
   }
 }
 

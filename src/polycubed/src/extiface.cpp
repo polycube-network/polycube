@@ -32,7 +32,7 @@ const std::string PARAMETER_MAC = "MAC";
 const std::string PARAMETER_IP = "IP";
 const std::string PARAMETER_PEER = "PEER";
 
-std::set<std::string> ExtIface::used_ifaces;
+std::map<std::string, ExtIface*> ExtIface::used_ifaces;
 
 ExtIface::ExtIface(const std::string &iface)
     : PeerIface(iface_mutex_),
@@ -43,7 +43,7 @@ ExtIface::ExtIface(const std::string &iface)
     throw std::runtime_error("Iface already in use");
   }
 
-  used_ifaces.insert(iface);
+  used_ifaces.insert({iface, this});
 
   // Save the ifindex
   ifindex_iface = if_nametoindex(iface.c_str());
@@ -58,6 +58,14 @@ ExtIface::~ExtIface() {
     egress_program_.unload_func("handler");
   }
   used_ifaces.erase(iface_);
+}
+
+ExtIface* ExtIface::get_extiface(const std::string &iface_name) {
+  if (used_ifaces.count(iface_name) == 0) {
+      return NULL;
+  }
+
+  return used_ifaces[iface_name];
 }
 
 uint16_t ExtIface::get_index() const {
@@ -241,12 +249,6 @@ void ExtIface::update_indexes() {
     set_next(peer_port ? peer_port->get_egress_index() : 0xffff,
              ProgramType::EGRESS);
   }
-}
-
-// in external ifaces the cubes must be allocated in the inverse order.
-// first is the one that hits ingress traffic.
-int ExtIface::calculate_cube_index(int index) {
-  return 0 - index;
 }
 
 bool ExtIface::is_used() const {

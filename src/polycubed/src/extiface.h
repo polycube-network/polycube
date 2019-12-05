@@ -41,6 +41,13 @@ class ExtIface : public PeerIface {
   ExtIface(const ExtIface &) = delete;
   ExtIface &operator=(const ExtIface &) = delete;
 
+  /* return ExtIface pointer given interface name
+   * or return null if
+   * - either the interface name doesn't exist
+   * - or no extiface created for the interface name
+   */
+  static ExtIface* get_extiface(const std::string &iface_name);
+
   uint16_t get_index() const override;
   uint16_t get_port_id() const override;
   void set_peer_iface(PeerIface *peer) override;
@@ -71,7 +78,7 @@ class ExtIface : public PeerIface {
 
   std::mutex event_mutex;
 
-  static std::set<std::string> used_ifaces;
+  static std::map<std::string, ExtIface*> used_ifaces;
   int load_ingress();
   int load_egress();
   int load_tx();
@@ -82,7 +89,6 @@ class ExtIface : public PeerIface {
   virtual bpf_prog_type get_program_type() const = 0;
 
   void update_indexes() override;
-  int calculate_cube_index(int index) override;
 
   ebpf::BPF ingress_program_;
   ebpf::BPF egress_program_;
