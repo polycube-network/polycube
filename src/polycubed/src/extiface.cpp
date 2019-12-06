@@ -180,39 +180,82 @@ void ExtIface::set_next(uint16_t next, ProgramType type) {
   }
 }
 
+TransparentCube* ExtIface::get_next_cube(ProgramType type) {
+  auto next = get_next(type);
+  for (auto &it : cubes_) {
+      if (it->get_index(type) == next) {
+          return it;
+      }
+  }
+  return NULL;
+}
+
+uint16_t ExtIface::get_next(ProgramType type) {
+  int zero = 0;
+  unsigned int value = 0;
+  auto program = (type == ProgramType::INGRESS) ? &ingress_program_ : &egress_program_;
+  auto index_map = program->get_array_table<uint32_t>("index_map");
+  auto st = index_map.get_value(zero, value);
+  if (st.code() == -1) {
+    logger->error("failed to get interface {0} nexthop", get_iface_name());
+  }
+
+  return value & 0xffff;
+}
+
+std::vector<std::string> ExtIface::get_service_chain(ProgramType type) {
+  std::vector<std::string> chain;
+  TransparentCube *cube;
+  auto nh = get_next(type);
+
+  while (nh != 0xffff) {
+      cube = NULL;
+      for (auto c : cubes_) {
+          if (c->get_index(type) == nh) {
+              cube = c;
+              break;
+          }
+      }
+      chain.push_back(cube ? cube->get_name() : "unknown");
+      nh = cube->get_next(type);
+  }
+  chain.push_back(nh==0xffff ? "stack" : "unknown");
+
+  return chain;
+}
+
 void ExtIface::update_indexes() {
   int i;
 
   // TODO: could we avoid to recalculate in case there is not peer?
 
-  std::vector<uint16_t> ingress_indexes(cubes_.size());
-  std::vector<uint16_t> egress_indexes(cubes_.size());
+  std::vector<uint16_t> ingress_indexes(cubes_.size(), 0xffff) ;
+  std::vector<uint16_t> egress_indexes(cubes_.size(), 0xffff);
 
   for (i = 0; i < cubes_.size(); i++) {
     ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
     egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
   }
 
-  // ingress chain: NIC -> cube[N-1] -> ... -> cube[0] -> stack (or peer)
+  // ingress chain: NIC -> cube[0] -> ... -> cube[n-1] -> stack (or peer)
   // CASE2: cube[0] -> stack (or)
-  for (i = 0; i < cubes_.size(); i++) {
-    if (ingress_indexes[i]) {
+  for (i = cubes_.size() - 1; i >= 0; i--) {
+    if (ingress_indexes[i] != 0xffff) {
       cubes_[i]->set_next(peer_ ? peer_->get_index() : 0xffff,
                           ProgramType::INGRESS);
       break;
     }
   }
 
-  // cube[N-1] -> ... -> cube[0]
-  for (int j = i + 1; j < cubes_.size(); j++) {
-    if (ingress_indexes[j]) {
+  for (int j = i - 1; j >= 0; j--) {
+    if (ingress_indexes[j] != 0xffff) {
       cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
       i = j;
     }
   }
 
   // CASE4: NIC -> cube[N-1] or peer
-  if (i < cubes_.size() && ingress_indexes[i]) {
+  if (i >= 0 && ingress_indexes[i] != 0xffff) {
     set_next(ingress_indexes[i], ProgramType::INGRESS);
   } else {
     set_next(peer_ ? peer_->get_index() : 0, ProgramType::INGRESS);
@@ -222,7 +265,7 @@ void ExtIface::update_indexes() {
 
   // cube[0] -> "egress"
   for (i = 0; i < cubes_.size(); i++) {
-    if (egress_indexes[i]) {
+    if (egress_indexes[i] != 0xffff) {
       cubes_[i]->set_next(0xffff, ProgramType::EGRESS);
       break;
     }
@@ -235,14 +278,14 @@ void ExtIface::update_indexes() {
 
   // cubes[N-1] -> ... -> cube[0]
   for (int j = i + 1; j < cubes_.size(); j++) {
-    if (egress_indexes[j]) {
+    if (egress_indexes[j] != 0xffff) {
       cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
       i = j;
     }
   }
 
   // "nic" -> cubes[N-1] or peer
-  if (i < cubes_.size() && egress_indexes[i]) {
+  if (i < cubes_.size() && egress_indexes[i] != 0xffff) {
     set_next(egress_indexes[i], ProgramType::EGRESS);
   } else {
     Port *peer_port = dynamic_cast<Port *>(peer_);

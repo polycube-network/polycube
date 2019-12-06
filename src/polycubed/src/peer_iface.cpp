@@ -124,6 +124,32 @@ std::vector<std::string> PeerIface::get_cubes_names() const {
   return cubes_names;
 }
 
+std::vector<uint16_t> PeerIface::get_cubes_ingress_index() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<uint16_t> ingress_indices;
+
+  for (auto &cube : cubes_) {
+      ingress_indices.push_back(cube->get_index(ProgramType::INGRESS));
+  }
+
+  return ingress_indices;
+}
+
+std::vector<uint16_t> PeerIface::get_cubes_egress_index() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<uint16_t> egress_indices;
+
+  for (auto &cube : cubes_) {
+      egress_indices.push_back(cube->get_index(ProgramType::EGRESS));
+  }
+
+  return egress_indices;
+}
+
+
+
 PeerIface::CubePositionComparison PeerIface::compare_position(
     const std::string &cube1, const std::string &cube2) {
   // cube position, index 0 is the innermost one

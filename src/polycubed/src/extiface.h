@@ -66,6 +66,9 @@ class ExtIface : public PeerIface {
   std::string get_parameter(const std::string &param_name) override;
   void set_parameter(const std::string &param_name,
                      const std::string &value) override;
+  uint16_t get_next(ProgramType type);
+  TransparentCube* get_next_cube(ProgramType type);
+  std::vector<std::string> get_service_chain(ProgramType type);
 
  protected:
   // 2 maps: one for IP events and one for MAC events

@@ -213,7 +213,35 @@ std::string PolycubedCore::get_if_topology(const std::string &if_name) {
 
    auto extIface = polycube::polycubed::ExtIface::get_extiface(if_name);
    if (extIface != NULL) {
-       j["cubes"] = extIface->get_cubes_names();
+       auto names = extIface->get_cubes_names();
+       auto ingress_indices = extIface->get_cubes_ingress_index();
+       auto egress_indices = extIface->get_cubes_egress_index();
+       std::vector<std::string> cubes_info;
+       std::ostringstream stream;
+       for (int i=0; i<names.size(); i++) {
+           stream.str("");
+           stream << names[i] << ",\t" << ingress_indices[i] << ",\t" << egress_indices[i];
+           cubes_info.push_back(std::string(stream.str()));
+       }
+       j["cubes, ingress_index, egress_index"] = cubes_info;
+
+       stream.str("");
+       auto i_serv_chain = extIface->get_service_chain(ProgramType::INGRESS);
+       for (auto service : i_serv_chain) {
+           stream << service;
+           if (service != std::string("stack"))
+               stream << " ---> ";
+       }
+       j["ingress service chain"] = stream.str();
+
+       stream.str("");
+       auto e_serv_chain = extIface->get_service_chain(ProgramType::EGRESS);
+       for (auto service : e_serv_chain) {
+           stream << service;
+           if (service != std::string("stack"))
+               stream << " ---> ";
+       }
+       j["egress service chain"] = stream.str();
    }
    return j.dump(4);
 }

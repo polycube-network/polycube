@@ -36,6 +36,7 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   virtual ~TransparentCube();
 
   void set_next(uint16_t next, ProgramType type);
+  uint16_t get_next(ProgramType type);
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
   void set_parameter(const std::string &parameter, const std::string &value);
