@@ -461,6 +461,37 @@ pipeline {
                             docker pull "polycubebot/${image_name}-pcn-k8s:${image_tag}"
                             docker tag "polycubebot/${image_name}-pcn-k8s:${image_tag}" "polycubenetwork/k8s-pod-network:latest"
                             docker push "polycubenetwork/k8s-pod-network:latest"
+                            docker pull "polycubebot/${image_name}-pcn-iptables:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-iptables:${image_tag}" "polycubenetwork/polycube-pcn-iptables:latest"
+                            docker push "polycubenetwork/${image_name}-pcn-iptables:latest"
+                            docker system prune --all --force
+                        """
+                    }
+                }
+            }
+        }
+        stage("Release version from TAG") {
+            when {
+               buildingTag()	
+            }
+            agent {
+                label "docker"
+            }
+            steps {
+                script {
+                    var tagName = "${env.TAG_NAME}"
+                    docker.withRegistry("", 'polycube-repo') {
+                        sh """
+                            export DOCKER_BUILDKIT=1
+                            docker pull "polycubebot/${image_name}-default:${image_tag}"
+                            docker tag "polycubebot/${image_name}-default:${image_tag}" "polycubenetwork/polycube:${env.TAG_NAME}"
+                            docker push "polycubenetwork/polycube:${env.TAG_NAME}"
+                            docker pull "polycubebot/${image_name}-pcn-k8s:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-k8s:${image_tag}" "polycubenetwork/k8s-pod-network:${env.TAG_NAME}"
+                            docker push "polycubenetwork/k8s-pod-network:${env.TAG_NAME}"
+                            docker pull "polycubebot/${image_name}-pcn-iptables:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-iptables:${image_tag}" "polycubenetwork/polycube-pcn-iptables:${env.TAG_NAME}"
+                            docker push "polycubenetwork/${image_name}-pcn-iptables:${env.TAG_NAME}"
                             docker system prune --all --force
                         """
                     }

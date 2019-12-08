@@ -18,8 +18,9 @@ $SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
 #wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
 #$SUDO apt-key add - < Release.key
 # So, installing the required package by downloading it manually
-wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang_0.14.81_amd64.deb -O libyang.deb
-wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang-dev_0.14.81_amd64.deb -O libyang-dev.deb
+apt remove -y libyang libyang-dev
+wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang_1.0.101_amd64.deb -O libyang.deb
+wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang-dev_1.0.101_amd64.deb -O libyang-dev.deb
 $SUDO apt install -f ./libyang.deb
 $SUDO apt install -y -f ./libyang-dev.deb
 rm ./libyang.deb
