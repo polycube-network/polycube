@@ -17,6 +17,12 @@
 - name: Refresh inventory to ensure that the new generated one is used
   meta: refresh_inventory
 
+- name: Creating host_vars directory if not present
+  file:
+    path: ./host_vars
+    state: directory
+    mode: '0755'
+
 - name: Find and save in a local variable all host_vars files
   find:
     paths: ./host_vars

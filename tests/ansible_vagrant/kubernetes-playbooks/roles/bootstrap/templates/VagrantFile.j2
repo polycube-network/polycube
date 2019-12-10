@@ -9,10 +9,10 @@ Vagrant.configure("2") do |config|
         v.cpus = {{ virtual_cpus }}
     end
 {% for node_ip in k8s_master_nodes_ips %}
-    config.vm.define "k8s-master" do |master|
+    config.vm.define "{{ k8s_master_node_prefix }}-{{ loop.index }}" do |master|
         master.vm.box = IMAGE_NAME
         # change the bridge interface to match the one on your host machine
-        master.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}"
+        master.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}", netmask: "{{ netmask }}"
         master.vm.hostname = "k8s-master"
         master.vm.provision "ansible" do |ansible|
             # Configures the ssh-key
@@ -25,10 +25,10 @@ Vagrant.configure("2") do |config|
 {% endfor %}
 
 {% for node_ip in k8s_worker_nodes_ips %}
-    config.vm.define "node-{{ loop.index }}" do |node|
+    config.vm.define "{{ k8s_worker_node_prefix }}{{ loop.index }}" do |node|
         node.vm.box = IMAGE_NAME
         # change the bridge interface to match the one on your host machine
-        node.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}"
+        node.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}", netmask: "{{ netmask }}"
         node.vm.hostname = "node-{{ loop.index }}"
         node.vm.provision "ansible" do |ansible|
             # Configures the ssh-key
