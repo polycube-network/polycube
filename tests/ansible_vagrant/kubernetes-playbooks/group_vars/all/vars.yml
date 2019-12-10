@@ -72,6 +72,9 @@ ssh_key_name: vagrant_machines
 #path to the public key used to ssh to the machines, if this key does not exist than a new one is generated with the same name
 pub_key_path: "{{ssh_key_path}}/{{ssh_key_name}}.pub"
 
+#path to the private key used by vagrant and user to access the vagrant machines
+prv_key_path: "{{ssh_key_path}}/{{ssh_key_name}}"
+
 #Amount of RAM memory for a single VM
 virtual_memory_size: 4096
 

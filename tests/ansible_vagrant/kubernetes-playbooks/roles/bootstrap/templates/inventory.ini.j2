@@ -12,11 +12,11 @@
 
 #should work also for the users who do not use an ssh-agent
 [k8s_master_nodes:vars]
-ansible_ssh_private_key_file={{pub_key_path}}
+ansible_ssh_private_key_file={{prv_key_path}}
 
 #should work also for the users who do not use an ssh-agent
 [k8s_worker_nodes:vars]
-ansible_ssh_private_key_file={{pub_key_path}}
+ansible_ssh_private_key_file={{prv_key_path}}
 
 ## All nodes
 [all_nodes:children]
