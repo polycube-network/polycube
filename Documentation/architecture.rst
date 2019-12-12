@@ -1,12 +1,6 @@
 Polycube Architecture
 =====================
 
-**NOTE: this file is outdated**
-
-Polycube is a framework to **create** and **deploy** arbitrary virtual network functions, such as bridges, routers, NATs, firewalls and more, and enables the creation of complex **service chains** by connecting together the above modules.
-
-It is based on the eBPF technology available in the Linux kernel and leverages some companion tools developed in the Iovisor community, such as [BCC](https://github.com/iovisor/bcc/).
-
 The Polycube architecture is depicted below:
 
 .. image:: images/architecture_overview.png
@@ -31,6 +25,7 @@ Each network function is implemented as a separated module and multiple flavors 
 
 Each service implementation includes the `datapath`, namely the eBPF code to be injected in the kernel, the `control/management plane`, which defines the primitives that allow to configure the service behavior, and the `slow path`, which handles packets that cannot be fully processed in the kernel. While the former code runs in the Linux kernel, the latter components are executed in user-space.
 Given the feature-rich nature of the eBPF, the slow path should be rather small; an example can be the implementation of the spanning tree for 802.1Q bridges, which does not make sense to have in the kernel and that can stay in user space.
+
 
 Polycubectl
 -----------

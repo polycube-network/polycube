@@ -13,6 +13,7 @@ Welcome to Polycube's documentation!
    intro
    quickstart
    installation
+   architecture
    cubes
    polycubed/polycubed
    polycubectl/polycubectl

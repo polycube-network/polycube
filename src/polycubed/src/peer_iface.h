@@ -52,6 +52,8 @@ class PeerIface {
                const std::string &other);
   void remove_cube(const std::string &type);
   std::vector<std::string> get_cubes_names() const;
+  std::vector<uint16_t> get_cubes_ingress_index() const;
+  std::vector<uint16_t> get_cubes_egress_index() const;
 
  protected:
   enum class CubePositionComparison {

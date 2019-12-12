@@ -31,7 +31,6 @@ def slackNotification(buildStatus,String notification_url = "",project_name = ""
             ]
         ]
     )
-
     sh "curl -X POST --fail -H 'Content-type: application/json' --data '${payload}' ${notification_url}"
 }
 
@@ -87,6 +86,14 @@ pipeline {
                     setGithubStatus("${commit_id}", "pending", github_token, "polycube-network/polycube", "Docker Image Build", "Docker Image Build")
                     slackNotification("STARTED",notification_url,"Polycube")
                 }
+            }
+        }
+        stage ('Clean Directory and Checkout') {
+            steps {
+                dir('.') {
+                    deleteDir()
+                }
+                checkout scm
             }
         }
         stage('Build Base Image') {
@@ -454,6 +461,37 @@ pipeline {
                             docker pull "polycubebot/${image_name}-pcn-k8s:${image_tag}"
                             docker tag "polycubebot/${image_name}-pcn-k8s:${image_tag}" "polycubenetwork/k8s-pod-network:latest"
                             docker push "polycubenetwork/k8s-pod-network:latest"
+                            docker pull "polycubebot/${image_name}-pcn-iptables:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-iptables:${image_tag}" "polycubenetwork/polycube-pcn-iptables:latest"
+                            docker push "polycubenetwork/${image_name}-pcn-iptables:latest"
+                            docker system prune --all --force
+                        """
+                    }
+                }
+            }
+        }
+        stage("Release version from TAG") {
+            when {
+               buildingTag()	
+            }
+            agent {
+                label "docker"
+            }
+            steps {
+                script {
+                    var tagName = "${env.TAG_NAME}"
+                    docker.withRegistry("", 'polycube-repo') {
+                        sh """
+                            export DOCKER_BUILDKIT=1
+                            docker pull "polycubebot/${image_name}-default:${image_tag}"
+                            docker tag "polycubebot/${image_name}-default:${image_tag}" "polycubenetwork/polycube:${env.TAG_NAME}"
+                            docker push "polycubenetwork/polycube:${env.TAG_NAME}"
+                            docker pull "polycubebot/${image_name}-pcn-k8s:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-k8s:${image_tag}" "polycubenetwork/k8s-pod-network:${env.TAG_NAME}"
+                            docker push "polycubenetwork/k8s-pod-network:${env.TAG_NAME}"
+                            docker pull "polycubebot/${image_name}-pcn-iptables:${image_tag}"
+                            docker tag "polycubebot/${image_name}-pcn-iptables:${image_tag}" "polycubenetwork/polycube-pcn-iptables:${env.TAG_NAME}"
+                            docker push "polycubenetwork/${image_name}-pcn-iptables:${env.TAG_NAME}"
                             docker system prune --all --force
                         """
                     }

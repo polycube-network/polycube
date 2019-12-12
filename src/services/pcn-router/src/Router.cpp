@@ -149,7 +149,10 @@ void Router::delPorts(const std::string &name) {
   // routing table)
   port->delSecondaryipList();
 
-  remove_local_route(port->getIp(), name);
+  //if getIP is empty it means that you have a port with no IP address
+  //so you do not need to call remove_local_route
+  if(port->getIp().empty() == false)
+    remove_local_route(port->getIp(), name);
 
   auto router_port = get_hash_table<uint16_t, r_port>("router_port");
 

@@ -34,12 +34,15 @@ namespace service {
 namespace utils {
 
 // new set of functions
+
 uint32_t ip_string_to_nbo_uint(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
-  int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
+  std::string IP_address = get_ip_from_string(ip);
+
+  int rc = std::sscanf(IP_address.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
                        a + 3, &last);
-  if (rc != 4 || ip.size() != last)
+  if (rc != 4 || IP_address.size() != last)
     throw std::runtime_error("Not an ipv4 address " + ip);
 
   return uint32_t(a[3]) << 24 | uint32_t(a[2]) << 16 | uint32_t(a[1]) << 8 |
@@ -230,7 +233,7 @@ uint64_t hex_string_to_uint(const std::string &str) {
 std::string get_ip_from_string(const std::string &ipv_net) {
   size_t pos = ipv_net.find("/");
   if (pos == std::string::npos) {
-    return std::string();  // throw?
+    return ipv_net;
   }
   return ipv_net.substr(0, pos);
 }

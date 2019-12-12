@@ -2,18 +2,18 @@
 
 **The polycube documentation is available on [ReadTheDocs](https://polycube-network.readthedocs.io/en/latest/).**
 
-The instructions below are intended if you want to generate the documentation locally.
+The instructions below are intended only if you want to generate the documentation locally.
 
 ## Building the documentation locally
 
 ### Installing the dependencies
 
 Our documentation uses `sphinx`.
-In order to install the dependencies do
+In order to install the dependencies type:
 
 ```
 cd Documentation
-pip install -r Documentation/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Build it
