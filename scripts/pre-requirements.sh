@@ -28,12 +28,16 @@ PACKAGES+=" libssl-dev" # needed for certificate based security
 PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
 PACKAGES+=" kmod" # needed for pcn-iptables, when using lsmod to unload conntrack if not needed
 PACKAGES+=" jq bash-completion" # needed for polycubectl bash autocompletion
+PACKAGES+=" libpcre3-dev" # needed for libyang
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary
   PACKAGES+=" iptables" # only for pcn-k8s
   PACKAGES+=" iproute2" # provides bridge command that is used to add entries in vxlan device
 fi
+
+# use non interactive to avoid blocking the install script
+$SUDO bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -yq $PACKAGES"
 
 # licd $WORKDIR
 set +e
@@ -46,9 +50,6 @@ mkdir -p build && cd build
 cmake ..
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
-
-# use non interactive to avoid blocking the install script
-$SUDO bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -yq $PACKAGES"
 
 echo "Install pistache"
 cd $WORKDIR
