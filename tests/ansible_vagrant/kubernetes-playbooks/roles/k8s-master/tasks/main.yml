@@ -70,7 +70,7 @@
     state: restarted
 
 - name: Initialize the Kubernetes cluster using kubeadm
-  command: kubeadm init --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ node_ip }}"  --node-name k8s-master --pod-network-cidr="{{ pod_network_cidr }}"
+  command: kubeadm init --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ node_ip }}"  --node-name k8s-master --pod-network-cidr="{{ pod_network_cidr }}" --service-cidr="{{ service_cidr }}"
 
 - name: Enable the kernel to pass bridged IPv4 traffic to iptables' chains and the forwarding
   command: "{{ item }}"

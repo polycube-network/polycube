@@ -23,7 +23,11 @@ apt_packages:
 #pub_key_path: /home/aldo/.ssh/vagrant_machines.pub
 
 #pod-network-cidr used in k8s
-pod_network_cidr: 10.244.0.0/16
+pod_network_cidr: 10.16.0.0/16
+
+#service-cidr used in k8s, change it to suit your needs
+
+service_cidr: 10.96.0.0/12
 
 #user to be added to the k8s group
 user: vagrant
@@ -35,20 +39,21 @@ time_zone: Europe/Rome
 #Nodes Configuration#
 #####################
 
-#Node configuration. The cluster can have only one master node and many worker nodes as needed.
+#Node configuration. The cluster can have only one master node and many worker nodes as needed. Please change those values as needed.
 k8s_master_nodes_ips: 
-- 192.168.0.23
+- 192.168.1.10
 
 k8s_worker_nodes_ips:
-- 192.168.0.24
-- 192.168.0.25
-- 192.168.0.26
-- 192.168.0.27
+- 192.168.1.11
+- 192.168.1.12
+
+#Netmask used for the network to which the node ips belong to
+netmask: 255.255.254.0
 
 #theese prefixes are used when generating the names of the nodes. Used in the host_vars files, inventory.ini and in /etc/hosts in the local system.
-k8s_master_node_prefix: k8s-master-
+k8s_master_node_prefix: k8s-1-master-
 
-k8s_worker_node_prefix: k8s-node-
+k8s_worker_node_prefix: k8s-1-node-
 
 
 ############################
@@ -66,6 +71,9 @@ ssh_key_name: vagrant_machines
 
 #path to the public key used to ssh to the machines, if this key does not exist than a new one is generated with the same name
 pub_key_path: "{{ssh_key_path}}/{{ssh_key_name}}.pub"
+
+#path to the private key used by vagrant and user to access the vagrant machines
+prv_key_path: "{{ssh_key_path}}/{{ssh_key_name}}"
 
 #Amount of RAM memory for a single VM
 virtual_memory_size: 4096
