@@ -22,7 +22,6 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Firewall] [%n] [%l] %v");
   logger()->info("Creating Firewall instance");
 
-  update(conf);
 
   /*Creating default INGRESS and EGRESS chains.*/
   ChainJsonObject chain;
@@ -73,6 +72,8 @@ Firewall::Firewall(const std::string name, const FirewallJsonObject &conf)
   egress_programs[ModulesConstants::CONNTRACKTABLEUPDATE] =
     new Firewall::ConntrackTableUpdate(ModulesConstants::CONNTRACKTABLEUPDATE,
                                        ChainNameEnum::EGRESS, *this);
+
+  update(conf);
 }
 
 Firewall::~Firewall() {
