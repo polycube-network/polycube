@@ -59,6 +59,7 @@ class PolycubedCore {
 
   std::string get_cube(const std::string &name);
   std::string get_cubes();
+  json get_json_cubes();
 
   std::string get_netdev(const std::string &name);
   std::string get_netdevs();

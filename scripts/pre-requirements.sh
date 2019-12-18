@@ -92,3 +92,17 @@ if [[ -z "${GOPATH}" ]]; then
   mkdir -p $HOME/go
   export GOPATH=$HOME/go
 fi
+
+# echo "Install Prometheus-cpp"
+# cd $WORKDIR
+# set +e
+# if [ ! -d prometheus-cpp ]; then
+#   git clone https://github.com/jupp0r/prometheus-cpp.git
+# fi
+
+# cd prometheus-cpp
+# git submodule update --init
+# mkdir -p build && cd build
+# cmake -DBUILD_SHARED_LIBS=ON ..
+# make -j $(getconf _NPROCESSORS_ONLN)
+# $SUDO make install

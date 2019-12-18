@@ -1,0 +1,67 @@
+/opt/clion-2019.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/pino/polycube
+-- The C compiler identification is GNU 7.4.0
+-- The CXX compiler identification is GNU 7.4.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Version is v0.1.0-beta+ [git: (branch/commit): pino-polycube-metrics/bf5a6d70-dirty]
+-- Latest recognized Git tag is -128-NOTFOUND
+-- Git HEAD is bf5a6d70f6ba5c440ad5dc0e25338c1044af9901
+-- Revision is 128-NOTFOUND-bf5a6d70
+-- Performing Test HAVE_NO_PIE_FLAG
+-- Performing Test HAVE_NO_PIE_FLAG - Success
+-- Performing Test HAVE_REALLOCARRAY_SUPPORT
+-- Performing Test HAVE_REALLOCARRAY_SUPPORT - Success
+-- Found BISON: /usr/bin/bison (found version "3.0.4") 
+-- Found FLEX: /usr/bin/flex (found version "2.6.4") 
+-- Found LLVM: /usr/lib/llvm-5.0/include 5.0.1
+-- Found LibElf: /usr/lib/x86_64-linux-gnu/libelf.so  
+-- Performing Test ELF_GETSHDRSTRNDX
+-- Performing Test ELF_GETSHDRSTRNDX - Success
+-- Using static-libstdc++
+-- Could NOT find LuaJIT (missing: LUAJIT_LIBRARIES LUAJIT_INCLUDE_DIR) 
+CMake Warning at src/libs/bcc/tests/python/CMakeLists.txt:10 (message):
+  Recommended test program 'netperf' not found
+
+
+CMake Warning at src/libs/bcc/tests/python/CMakeLists.txt:16 (message):
+  Recommended test program 'iperf' or 'iperf3' not found
+
+
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.1") 
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+-- Found CURL: /usr/lib/x86_64-linux-gnu/libcurl.so (found version "7.58.0")  
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "1.1.1")  
+-- Checking for module 'libnl-3.0'
+--   Found libnl-3.0, version 3.2.29
+-- Checking for module 'libnl-genl-3.0'
+--   Found libnl-genl-3.0, version 3.2.29
+-- Checking for module 'libnl-route-3.0'
+--   Found libnl-route-3.0, version 3.2.29
+-- Checking for module 'libtins'
+--   Found libtins, version 3.5
+-- Found nlohmann_json: /home/pino/polycube/cmake/nlohmann_json/Findnlohmann_json.cmake (Required is at least version "3.5.0") 
+-- Checking for module 'systemd'
+--   Found systemd, version 237
+-- systemd services install dir: /lib/systemd/system
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/pino/polycube/cmake-build-debug

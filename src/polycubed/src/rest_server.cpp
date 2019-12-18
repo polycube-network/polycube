@@ -29,6 +29,14 @@
 #include "server/Server/ResponseGenerator.h"
 #include "config.h"
 #include "cubes_dump.h"
+#include "prometheus/counter.h"
+#include "prometheus/exposer.h"
+#include "prometheus/registry.h"
+#include "prometheus/metric_family.h"
+#include "prometheus/serializer.h"
+#include "prometheus/text_serializer.h"
+#include "prometheus/family.h"
+
 
 namespace polycube {
 namespace polycubed {
@@ -276,6 +284,10 @@ void RestServer::setup_routes() {
                    bind(&RestServer::topology_help, this));
 
   router_->addNotFoundHandler(bind(&RestServer::redirect, this));
+
+  //prometheus metrics
+  router_->get(base + std::string("/metrics"),
+               bind(&RestServer::get_metrics, this));
 }
 
 void RestServer::logRequest(const Pistache::Rest::Request &request) {
@@ -465,17 +477,17 @@ void RestServer::delete_servicectrl(const Pistache::Rest::Request &request,
   }
 }
 
-void RestServer::get_cubes(const Pistache::Rest::Request &request,
-                           Pistache::Http::ResponseWriter response) {
-  logRequest(request);
-  try {
-    std::string retJsonStr = core.get_cubes();
-    response.send(Pistache::Http::Code::Ok, retJsonStr);
-  } catch (const std::runtime_error &e) {
-    logger->error("{0}", e.what());
-    response.send(Pistache::Http::Code::Bad_Request, e.what());
-  }
-}
+// void RestServer::get_cubes(const Pistache::Rest::Request &request,
+//                            Pistache::Http::ResponseWriter response) {
+//   logRequest(request);
+//   try {
+//     std::string retJsonStr = core.get_cubes();
+//     response.send(Pistache::Http::Code::Ok, retJsonStr);
+//   } catch (const std::runtime_error &e) {
+//     logger->error("{0}", e.what());
+//     response.send(Pistache::Http::Code::Bad_Request, e.what());
+//   }
+// }
 
 void RestServer::get_cube(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response) {
@@ -502,6 +514,129 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
     response.send(Pistache::Http::Code::Bad_Request, e.what());
   }
 }
+//prova da eliminare
+void RestServer::get_cubes(const Pistache::Rest::Request &request,
+                           Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+    json retJson = core.get_json_cubes();
+    std::string retJsonStr = core.get_cubes();
+
+    for (auto& [key, value] : retJson.items()) {
+        //std::cout << key << " : " << value << "\n";
+        if(key.compare("router")==0)
+           std::cout << key << " hello \n";
+         if(key.compare("bridge")==0)
+           std::cout << key << " ciao  \n";
+        
+    }
+    response.send(Pistache::Http::Code::Ok, retJsonStr);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
+}
+
+
+
+
+
+//create prometheus metrics from cubes
+void RestServer::get_metrics(const Pistache::Rest::Request &request,
+                           Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+    //metrics
+    json retJson = core.get_json_cubes();
+
+
+    std::string retJsonStr = core.get_cubes();    
+
+    std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+    std::shared_ptr<prometheus::Registry> exposer_registry_(std::make_shared<prometheus::Registry>());
+    //uri and metricHandler are not necessary, I use pistache
+
+  //cos'è?
+  auto registry = std::make_shared<prometheus::Registry>();
+
+  // add a new counter family to the registry (families combine values with the
+  // same name, but distinct label dimensions)
+  auto& counter_family = prometheus::BuildCounter()
+                             .Name("num_ports_routers")
+                             .Help("Number ports of routers")
+                             .Labels({{"label", "value"}})
+                             .Register(*registry);
+
+  // add a counter to the metric family
+  auto& second_counter = counter_family.Add({{"another_label", "value"}, {"yet_another_label", "value"}});
+  second_counter.Increment();
+
+  auto& counter_hello = prometheus::BuildCounter()
+                             .Name("hello_hello")
+                             .Help("Number ports of routers")
+                             .Labels({{"label", "value2"}})
+                             .Register(*registry);
+   auto& third_counter = counter_hello.Add({});
+  third_counter.Increment(33);
+
+  auto& counter_ciao = prometheus::BuildCounter()
+                             .Name("ciao_ciao")
+                             .Help("Number ports of routers")
+                             .Labels({{"label", "value"}})
+                             .Register(*registry);
+  auto& fourth_counter = counter_ciao.Add({});
+  fourth_counter.Increment();
+
+
+    //metricshandler::collectmetrics
+    //definzione di metricfamily?
+    auto collected_metrics = std::vector<prometheus::MetricFamily>{};
+
+    //cosa fa?
+    collectables_.push_back(registry);
+
+
+
+    //cosa fa?
+    for (auto&& wcollectable : collectables_) {
+      auto collectable = wcollectable.lock();
+      if (!collectable) {
+        continue;
+      }
+
+      //Returns a list of metrics and their samples.  std::vector<prometheus::MetricFamily> &&metrics
+      //per ora funziona perché ho solo una metrica, ma se ne metto due? Devo usre collectalbes_ al posto di collectable?
+      auto&& metrics = collectable->Collect();
+      collected_metrics.insert(collected_metrics.end(),
+                              std::make_move_iterator(metrics.begin()),
+                              std::make_move_iterator(metrics.end()));
+    }
+
+
+
+    //auto metrics = collected_metrics;
+    auto serializer = std::unique_ptr<prometheus::Serializer>{new prometheus::TextSerializer()};
+   // std::string ritorno_prova = serializer->Serialize(metrics);
+    std::string ritorno_prova = serializer->Serialize(collected_metrics);
+
+    // // ask the exposer to scrape the registry on incoming scrapes
+    //exposer.RegisterCollectable(registry);
+
+    response.send(Pistache::Http::Code::Ok, ritorno_prova);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
+}
+
+
+
+
+
+
+
+
+
 
 void RestServer::cubes_help(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response) {

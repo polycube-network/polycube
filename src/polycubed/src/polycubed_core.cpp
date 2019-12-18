@@ -174,6 +174,25 @@ std::string PolycubedCore::get_cubes() {
   }
   return j.dump(4);
 }
+//metrics
+json PolycubedCore::get_json_cubes() {
+  logger->debug("PolycubedCore: get cubes");
+
+  json j = json::object();
+  for (auto &it : servicectrls_map_) {
+    json j2 = json::array();
+    for (auto &it2 : it.second.get_cubes()) {
+      j2 += it2->to_json();
+    }
+    if (j2.size()) {
+      j[it.first] = j2;
+    }
+  }
+  return j;
+}
+
+//get info metrics from a yang file.
+//name, type, jsonpath to calculate the value of a metric
 
 std::string PolycubedCore::get_netdev(const std::string &name) {
   logger->debug("PolycubedCore: get netdev {0}", name);

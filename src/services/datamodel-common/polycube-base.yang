@@ -52,6 +52,22 @@ module polycube-base {
     description "TODO";
   }
 
+  //metrics
+  extension name-metric {
+    argument "value";
+    description "Name of a metric";
+  }
+  //metrics
+  extension type-metric {
+    argument "value";
+    description "Type of a metric";
+  }
+  //metrics
+  extension path-metric {
+    argument "value";
+    description "Json path for a metric";
+  }
+
   grouping base-yang-module {
     leaf uuid {
       type polycube-uuid;
@@ -76,7 +92,7 @@ module polycube-base {
       type string;
       config true;
       polycube-base:init-only-config;
-      polycube-base:cli-example "helloworld";
+     polycube-base:cli-example "helloworld";
     }
 
     leaf loglevel {

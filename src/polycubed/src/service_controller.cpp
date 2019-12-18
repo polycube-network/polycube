@@ -110,7 +110,7 @@ void ServiceController::connect(PolycubedCore *core) {
         servicecontroller_, base_url_, name_, core);
     std::shared_ptr<ManagementLib> lib =
         std::dynamic_pointer_cast<ManagementLib>(management_interface_);
-
+  
     service_md_ = lib->init(&factory_, configuration::config.getLogFile());
     break;
   }

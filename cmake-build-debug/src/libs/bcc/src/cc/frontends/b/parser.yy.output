@@ -1,0 +1,4583 @@
+Terminals unused in grammar
+
+   TFUNC
+   TINCR
+   TDECR
+
+
+Grammatica
+
+    0 $accept: program $end
+
+    1 program: enter_statescope enter_varscope prog_decls exit_varscope exit_statescope
+
+    2 prog_decls: prog_decl
+    3           | prog_decls prog_decl
+
+    4 prog_decl: var_decl TSEMI
+    5          | struct_decl TSEMI
+    6          | state_decl
+    7          | table_decl TSEMI
+    8          | pragma_decl
+    9          | func_decl
+
+   10 pragma_decl: TPRAGMA TIDENTIFIER TIDENTIFIER
+   11            | TPRAGMA TIDENTIFIER TSTRING
+
+   12 stmts: stmt
+   13      | stmts stmt
+
+   14 stmt: expr TSEMI
+   15     | assign_expr TSEMI
+   16     | return_expr TSEMI
+   17     | call_expr TLBRACE enter_varscope table_result_stmts exit_varscope TRBRACE TSEMI
+   18     | call_expr TLBRACE TRBRACE TSEMI
+   19     | if_stmt
+   20     | switch_stmt
+   21     | var_decl TSEMI
+   22     | state_decl
+   23     | onvalid_stmt
+
+   24 call_expr: any_ident TLPAREN call_args TRPAREN
+
+   25 block: TLBRACE stmts TRBRACE
+   26      | TLBRACE TRBRACE
+
+   27 enter_varscope: %empty
+
+   28 exit_varscope: %empty
+
+   29 enter_statescope: %empty
+
+   30 exit_statescope: %empty
+
+   31 struct_decl: TSTRUCT ident TLBRACE struct_decl_stmts TRBRACE
+
+   32 struct_decl_stmts: type_specifiers decl_stmt TSEMI
+   33                  | struct_decl_stmts type_specifiers decl_stmt TSEMI
+
+   34 table_decl: ident TCLT table_decl_args TCGT ident TLPAREN TINTEGER TRPAREN
+
+   35 table_decl_args: ident
+   36                | table_decl_args TCOMMA ident
+
+   37 state_decl: TSTATE scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+   38           | TSTATE scoped_ident TCOMMA TMUL enter_statescope enter_varscope block exit_varscope exit_statescope
+   39           | TSTATE scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals TRPAREN block exit_varscope exit_statescope
+
+   41 table_result_stmts: table_result_stmt
+   42                   | table_result_stmts table_result_stmt
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+   44                  | TMISS ident enter_varscope TLPAREN TRPAREN block exit_varscope TSEMI
+   45                  | TFAILURE ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+   46 formals: TSTRUCT ptr_decl
+   47        | formals TCOMMA TSTRUCT ptr_decl
+
+   48 type_specifier: TU8
+   49               | TU16
+   50               | TU32
+   51               | TU64
+
+   52 type_specifiers: type_specifier
+   53                | type_specifiers type_specifier
+
+   54 var_decl: type_specifiers decl_stmt
+   55         | type_specifiers int_decl TEQUAL expr
+   56         | TSTRUCT type_decl TEQUAL TLBRACE init_args_kv TRBRACE
+   57         | TSTRUCT ref_stmt
+
+   58 decl_stmt: int_decl
+   59          | type_decl
+
+   60 int_decl: ident TCOLON TINTEGER
+
+   61 type_decl: scoped_ident ident
+
+   62 ref_stmt: ptr_decl
+
+   63 ptr_decl: scoped_ident TMUL ident
+
+   64 init_args_kv: init_arg_kv
+   65             | init_args_kv TCOMMA init_arg_kv
+
+   66 init_arg_kv: TDOT ident TEQUAL expr
+   67            | TDOT ident bitop TEQUAL expr
+
+   68 if_stmt: TIF expr enter_varscope block exit_varscope
+   69        | TIF expr enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+   70        | TIF expr enter_varscope block exit_varscope TELSE if_stmt
+
+   71 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope
+   72             | TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+
+   73 switch_stmt: TSWITCH expr TLBRACE case_stmts TRBRACE
+
+   74 case_stmts: case_stmt
+   75           | case_stmts case_stmt
+
+   76 case_stmt: TCASE numeric block TSEMI
+   77          | TCASE TMUL block TSEMI
+
+   78 numeric: TINTEGER
+   79        | THEXINTEGER
+   80        | TINTEGER TCOLON TINTEGER
+   81        | THEXINTEGER TCOLON TINTEGER
+   82        | TTRUE
+   83        | TFALSE
+
+   84 assign_expr: expr TEQUAL expr
+
+   85 return_expr: TRETURN expr
+
+   86 expr: call_expr
+   87     | call_expr bitop
+   88     | table_index_expr
+   89     | table_index_expr TDOT ident
+   90     | any_ident
+   91     | TAT dotted_ident
+   92     | TDOLLAR dotted_ident
+   93     | TDOLLAR dotted_ident bitop
+   94     | TGOTO scoped_ident
+   95     | TNEXT scoped_ident
+   96     | TCONTINUE scoped_ident
+   97     | TLPAREN expr TRPAREN
+   98     | TLPAREN expr TRPAREN bitop
+   99     | TSTRING
+  100     | numeric
+  101     | numeric bitop
+  102     | expr TCLT expr
+  103     | expr TCGT expr
+  104     | expr TCGE expr
+  105     | expr TCLE expr
+  106     | expr TCNE expr
+  107     | expr TCEQ expr
+  108     | expr TPLUS expr
+  109     | expr TMINUS expr
+  110     | expr TMUL expr
+  111     | expr TDIV expr
+  112     | expr TMOD expr
+  113     | expr TXOR expr
+  114     | expr TAND expr
+  115     | expr TOR expr
+  116     | expr TLAND expr
+  117     | expr TLOR expr
+  118     | TNOT expr
+  119     | TCMPL expr
+
+  120 call_args: %empty
+  121          | expr
+  122          | call_args TCOMMA expr
+
+  123 bitop: TLBRACK TCOLON TPLUS TINTEGER TRBRACK
+  124      | TLBRACK TINTEGER TCOLON TPLUS TINTEGER TRBRACK
+
+  125 table_index_expr: dotted_ident TLBRACK ident TRBRACK
+
+  126 scoped_ident: ident
+  127             | scoped_ident TSCOPE TIDENTIFIER
+
+  128 dotted_ident: ident
+  129             | dotted_ident TDOT TIDENTIFIER
+
+  130 any_ident: ident
+  131          | dotted_ident TARROW TIDENTIFIER
+  132          | dotted_ident TDOT TIDENTIFIER
+  133          | scoped_ident TSCOPE TIDENTIFIER
+
+  134 ident: TIDENTIFIER
+
+
+Simboli terminali e regole in cui appaiono
+
+$end (0) 0
+error (256)
+TIDENTIFIER (258) 10 11 127 129 131 132 133 134
+TINTEGER (259) 34 60 78 80 81 123 124
+THEXINTEGER (260) 79 81
+TPRAGMA (261) 10 11
+TSTRING (262) 11 99
+TU8 (263) 48
+TU16 (264) 49
+TU32 (265) 50
+TU64 (266) 51
+TEQUAL (267) 55 56 66 67 84
+TCEQ (268) 107
+TCNE (269) 106
+TCLT (270) 34 102
+TCLE (271) 105
+TCGT (272) 34 103
+TCGE (273) 104
+TAND (274) 114
+TOR (275) 115
+TLPAREN (276) 24 34 40 43 44 45 71 72 97 98
+TRPAREN (277) 24 34 40 43 44 45 71 72 97 98
+TLBRACE (278) 17 18 25 26 31 56 73
+TRBRACE (279) 17 18 25 26 31 56 73
+TLBRACK (280) 123 124 125
+TRBRACK (281) 123 124 125
+TDOT (282) 66 67 89 129 132
+TARROW (283) 131
+TCOMMA (284) 36 38 39 47 65 122
+TPLUS (285) 108 123 124
+TMINUS (286) 109
+TMUL (287) 38 63 77 110
+TDIV (288) 111
+TMOD (289) 112
+TXOR (290) 113
+TDOLLAR (291) 92 93
+TCOLON (292) 60 80 81 123 124
+TSCOPE (293) 127 133
+TNOT (294) 118
+TSEMI (295) 4 5 7 14 15 16 17 18 21 32 33 43 44 45 76 77
+TCMPL (296) 119
+TLAND (297) 116
+TLOR (298) 117
+TSTRUCT (299) 31 46 47 56 57
+TSTATE (300) 37 38 39
+TFUNC (301)
+TGOTO (302) 94
+TCONTINUE (303) 96
+TNEXT (304) 95
+TTRUE (305) 82
+TFALSE (306) 83
+TRETURN (307) 85
+TIF (308) 68 69 70
+TELSE (309) 69 70 72
+TSWITCH (310) 73
+TCASE (311) 76 77
+TMATCH (312) 43
+TMISS (313) 44
+TFAILURE (314) 45
+TVALID (315) 71 72
+TAT (316) 91
+TINCR (317)
+TDECR (318)
+
+
+Simboli nonterminali e regole in cui appaiono
+
+$accept (64)
+    nel primo membro: 0
+program (65)
+    nel primo membro: 1, nel secondo membro: 0
+prog_decls (66)
+    nel primo membro: 2 3, nel secondo membro: 1 3
+prog_decl (67)
+    nel primo membro: 4 5 6 7 8 9, nel secondo membro: 2 3
+pragma_decl (68)
+    nel primo membro: 10 11, nel secondo membro: 8
+stmts (69)
+    nel primo membro: 12 13, nel secondo membro: 13 25
+stmt (70)
+    nel primo membro: 14 15 16 17 18 19 20 21 22 23, nel secondo membro:
+    12 13
+call_expr (71)
+    nel primo membro: 24, nel secondo membro: 17 18 86 87
+block (72)
+    nel primo membro: 25 26, nel secondo membro: 37 38 39 40 43 44
+    45 68 69 70 71 72 76 77
+enter_varscope (73)
+    nel primo membro: 27, nel secondo membro: 1 17 37 38 39 40 43 44
+    45 68 69 70 71 72
+exit_varscope (74)
+    nel primo membro: 28, nel secondo membro: 1 17 37 38 39 40 43 44
+    45 68 69 70 71 72
+enter_statescope (75)
+    nel primo membro: 29, nel secondo membro: 1 37 38 39 40
+exit_statescope (76)
+    nel primo membro: 30, nel secondo membro: 1 37 38 39 40
+struct_decl (77)
+    nel primo membro: 31, nel secondo membro: 5
+struct_decl_stmts (78)
+    nel primo membro: 32 33, nel secondo membro: 31 33
+table_decl (79)
+    nel primo membro: 34, nel secondo membro: 7
+table_decl_args (80)
+    nel primo membro: 35 36, nel secondo membro: 34 36
+state_decl (81)
+    nel primo membro: 37 38 39, nel secondo membro: 6 22
+func_decl (82)
+    nel primo membro: 40, nel secondo membro: 9
+table_result_stmts (83)
+    nel primo membro: 41 42, nel secondo membro: 17 42
+table_result_stmt (84)
+    nel primo membro: 43 44 45, nel secondo membro: 41 42
+formals (85)
+    nel primo membro: 46 47, nel secondo membro: 40 43 45 47
+type_specifier (86)
+    nel primo membro: 48 49 50 51, nel secondo membro: 52 53
+type_specifiers (87)
+    nel primo membro: 52 53, nel secondo membro: 32 33 40 53 54 55
+var_decl (88)
+    nel primo membro: 54 55 56 57, nel secondo membro: 4 21
+decl_stmt (89)
+    nel primo membro: 58 59, nel secondo membro: 32 33 54
+int_decl (90)
+    nel primo membro: 60, nel secondo membro: 55 58
+type_decl (91)
+    nel primo membro: 61, nel secondo membro: 56 59
+ref_stmt (92)
+    nel primo membro: 62, nel secondo membro: 57
+ptr_decl (93)
+    nel primo membro: 63, nel secondo membro: 46 47 62
+init_args_kv (94)
+    nel primo membro: 64 65, nel secondo membro: 56 65
+init_arg_kv (95)
+    nel primo membro: 66 67, nel secondo membro: 64 65
+if_stmt (96)
+    nel primo membro: 68 69 70, nel secondo membro: 19 70
+onvalid_stmt (97)
+    nel primo membro: 71 72, nel secondo membro: 23
+switch_stmt (98)
+    nel primo membro: 73, nel secondo membro: 20
+case_stmts (99)
+    nel primo membro: 74 75, nel secondo membro: 73 75
+case_stmt (100)
+    nel primo membro: 76 77, nel secondo membro: 74 75
+numeric (101)
+    nel primo membro: 78 79 80 81 82 83, nel secondo membro: 76 100
+    101
+assign_expr (102)
+    nel primo membro: 84, nel secondo membro: 15
+return_expr (103)
+    nel primo membro: 85, nel secondo membro: 16
+expr (104)
+    nel primo membro: 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100
+    101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116
+    117 118 119, nel secondo membro: 14 55 66 67 68 69 70 73 84 85
+    97 98 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116
+    117 118 119 121 122
+call_args (105)
+    nel primo membro: 120 121 122, nel secondo membro: 24 122
+bitop (106)
+    nel primo membro: 123 124, nel secondo membro: 67 87 93 98 101
+table_index_expr (107)
+    nel primo membro: 125, nel secondo membro: 88 89
+scoped_ident (108)
+    nel primo membro: 126 127, nel secondo membro: 37 38 39 61 63 94
+    95 96 127 133
+dotted_ident (109)
+    nel primo membro: 128 129, nel secondo membro: 91 92 93 125 129
+    131 132
+any_ident (110)
+    nel primo membro: 130 131 132 133, nel secondo membro: 24 90
+ident (111)
+    nel primo membro: 134, nel secondo membro: 31 34 35 36 40 43 44
+    45 60 61 63 66 67 71 72 89 125 126 128 130
+
+
+Stato 0
+
+    0 $accept: . program $end
+
+    $default  riduzione con la regola 29 (enter_statescope)
+
+    program           prosecuzione allo stato 1
+    enter_statescope  prosecuzione allo stato 2
+
+
+Stato 1
+
+    0 $accept: program . $end
+
+    $end  shift e prosecuzione allo stato 3
+
+
+Stato 2
+
+    1 program: enter_statescope . enter_varscope prog_decls exit_varscope exit_statescope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 4
+
+
+Stato 3
+
+    0 $accept: program $end .
+
+    $default  accetta
+
+
+Stato 4
+
+    1 program: enter_statescope enter_varscope . prog_decls exit_varscope exit_statescope
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TPRAGMA      shift e prosecuzione allo stato 6
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+    TSTRUCT      shift e prosecuzione allo stato 11
+    TSTATE       shift e prosecuzione allo stato 12
+
+    prog_decls       prosecuzione allo stato 13
+    prog_decl        prosecuzione allo stato 14
+    pragma_decl      prosecuzione allo stato 15
+    struct_decl      prosecuzione allo stato 16
+    table_decl       prosecuzione allo stato 17
+    state_decl       prosecuzione allo stato 18
+    func_decl        prosecuzione allo stato 19
+    type_specifier   prosecuzione allo stato 20
+    type_specifiers  prosecuzione allo stato 21
+    var_decl         prosecuzione allo stato 22
+    ident            prosecuzione allo stato 23
+
+
+Stato 5
+
+  134 ident: TIDENTIFIER .
+
+    $default  riduzione con la regola 134 (ident)
+
+
+Stato 6
+
+   10 pragma_decl: TPRAGMA . TIDENTIFIER TIDENTIFIER
+   11            | TPRAGMA . TIDENTIFIER TSTRING
+
+    TIDENTIFIER  shift e prosecuzione allo stato 24
+
+
+Stato 7
+
+   48 type_specifier: TU8 .
+
+    $default  riduzione con la regola 48 (type_specifier)
+
+
+Stato 8
+
+   49 type_specifier: TU16 .
+
+    $default  riduzione con la regola 49 (type_specifier)
+
+
+Stato 9
+
+   50 type_specifier: TU32 .
+
+    $default  riduzione con la regola 50 (type_specifier)
+
+
+Stato 10
+
+   51 type_specifier: TU64 .
+
+    $default  riduzione con la regola 51 (type_specifier)
+
+
+Stato 11
+
+   31 struct_decl: TSTRUCT . ident TLBRACE struct_decl_stmts TRBRACE
+   56 var_decl: TSTRUCT . type_decl TEQUAL TLBRACE init_args_kv TRBRACE
+   57         | TSTRUCT . ref_stmt
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    type_decl     prosecuzione allo stato 25
+    ref_stmt      prosecuzione allo stato 26
+    ptr_decl      prosecuzione allo stato 27
+    scoped_ident  prosecuzione allo stato 28
+    ident         prosecuzione allo stato 29
+
+
+Stato 12
+
+   37 state_decl: TSTATE . scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+   38           | TSTATE . scoped_ident TCOMMA TMUL enter_statescope enter_varscope block exit_varscope exit_statescope
+   39           | TSTATE . scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    scoped_ident  prosecuzione allo stato 30
+    ident         prosecuzione allo stato 31
+
+
+Stato 13
+
+    1 program: enter_statescope enter_varscope prog_decls . exit_varscope exit_statescope
+    3 prog_decls: prog_decls . prog_decl
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TPRAGMA      shift e prosecuzione allo stato 6
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+    TSTRUCT      shift e prosecuzione allo stato 11
+    TSTATE       shift e prosecuzione allo stato 12
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    prog_decl        prosecuzione allo stato 32
+    pragma_decl      prosecuzione allo stato 15
+    exit_varscope    prosecuzione allo stato 33
+    struct_decl      prosecuzione allo stato 16
+    table_decl       prosecuzione allo stato 17
+    state_decl       prosecuzione allo stato 18
+    func_decl        prosecuzione allo stato 19
+    type_specifier   prosecuzione allo stato 20
+    type_specifiers  prosecuzione allo stato 21
+    var_decl         prosecuzione allo stato 22
+    ident            prosecuzione allo stato 23
+
+
+Stato 14
+
+    2 prog_decls: prog_decl .
+
+    $default  riduzione con la regola 2 (prog_decls)
+
+
+Stato 15
+
+    8 prog_decl: pragma_decl .
+
+    $default  riduzione con la regola 8 (prog_decl)
+
+
+Stato 16
+
+    5 prog_decl: struct_decl . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 34
+
+
+Stato 17
+
+    7 prog_decl: table_decl . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 35
+
+
+Stato 18
+
+    6 prog_decl: state_decl .
+
+    $default  riduzione con la regola 6 (prog_decl)
+
+
+Stato 19
+
+    9 prog_decl: func_decl .
+
+    $default  riduzione con la regola 9 (prog_decl)
+
+
+Stato 20
+
+   52 type_specifiers: type_specifier .
+
+    $default  riduzione con la regola 52 (type_specifiers)
+
+
+Stato 21
+
+   40 func_decl: type_specifiers . ident enter_statescope enter_varscope TLPAREN formals TRPAREN block exit_varscope exit_statescope
+   53 type_specifiers: type_specifiers . type_specifier
+   54 var_decl: type_specifiers . decl_stmt
+   55         | type_specifiers . int_decl TEQUAL expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+
+    type_specifier  prosecuzione allo stato 36
+    decl_stmt       prosecuzione allo stato 37
+    int_decl        prosecuzione allo stato 38
+    type_decl       prosecuzione allo stato 39
+    scoped_ident    prosecuzione allo stato 40
+    ident           prosecuzione allo stato 41
+
+
+Stato 22
+
+    4 prog_decl: var_decl . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 42
+
+
+Stato 23
+
+   34 table_decl: ident . TCLT table_decl_args TCGT ident TLPAREN TINTEGER TRPAREN
+
+    TCLT  shift e prosecuzione allo stato 43
+
+
+Stato 24
+
+   10 pragma_decl: TPRAGMA TIDENTIFIER . TIDENTIFIER
+   11            | TPRAGMA TIDENTIFIER . TSTRING
+
+    TIDENTIFIER  shift e prosecuzione allo stato 44
+    TSTRING      shift e prosecuzione allo stato 45
+
+
+Stato 25
+
+   56 var_decl: TSTRUCT type_decl . TEQUAL TLBRACE init_args_kv TRBRACE
+
+    TEQUAL  shift e prosecuzione allo stato 46
+
+
+Stato 26
+
+   57 var_decl: TSTRUCT ref_stmt .
+
+    $default  riduzione con la regola 57 (var_decl)
+
+
+Stato 27
+
+   62 ref_stmt: ptr_decl .
+
+    $default  riduzione con la regola 62 (ref_stmt)
+
+
+Stato 28
+
+   61 type_decl: scoped_ident . ident
+   63 ptr_decl: scoped_ident . TMUL ident
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TMUL         shift e prosecuzione allo stato 47
+    TSCOPE       shift e prosecuzione allo stato 48
+
+    ident  prosecuzione allo stato 49
+
+
+Stato 29
+
+   31 struct_decl: TSTRUCT ident . TLBRACE struct_decl_stmts TRBRACE
+  126 scoped_ident: ident .
+
+    TLBRACE  shift e prosecuzione allo stato 50
+
+    $default  riduzione con la regola 126 (scoped_ident)
+
+
+Stato 30
+
+   37 state_decl: TSTATE scoped_ident . enter_statescope enter_varscope block exit_varscope exit_statescope
+   38           | TSTATE scoped_ident . TCOMMA TMUL enter_statescope enter_varscope block exit_varscope exit_statescope
+   39           | TSTATE scoped_ident . TCOMMA scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TCOMMA  shift e prosecuzione allo stato 51
+    TSCOPE  shift e prosecuzione allo stato 48
+
+    $default  riduzione con la regola 29 (enter_statescope)
+
+    enter_statescope  prosecuzione allo stato 52
+
+
+Stato 31
+
+  126 scoped_ident: ident .
+
+    $default  riduzione con la regola 126 (scoped_ident)
+
+
+Stato 32
+
+    3 prog_decls: prog_decls prog_decl .
+
+    $default  riduzione con la regola 3 (prog_decls)
+
+
+Stato 33
+
+    1 program: enter_statescope enter_varscope prog_decls exit_varscope . exit_statescope
+
+    $default  riduzione con la regola 30 (exit_statescope)
+
+    exit_statescope  prosecuzione allo stato 53
+
+
+Stato 34
+
+    5 prog_decl: struct_decl TSEMI .
+
+    $default  riduzione con la regola 5 (prog_decl)
+
+
+Stato 35
+
+    7 prog_decl: table_decl TSEMI .
+
+    $default  riduzione con la regola 7 (prog_decl)
+
+
+Stato 36
+
+   53 type_specifiers: type_specifiers type_specifier .
+
+    $default  riduzione con la regola 53 (type_specifiers)
+
+
+Stato 37
+
+   54 var_decl: type_specifiers decl_stmt .
+
+    $default  riduzione con la regola 54 (var_decl)
+
+
+Stato 38
+
+   55 var_decl: type_specifiers int_decl . TEQUAL expr
+   58 decl_stmt: int_decl .
+
+    TEQUAL  shift e prosecuzione allo stato 54
+
+    $default  riduzione con la regola 58 (decl_stmt)
+
+
+Stato 39
+
+   59 decl_stmt: type_decl .
+
+    $default  riduzione con la regola 59 (decl_stmt)
+
+
+Stato 40
+
+   61 type_decl: scoped_ident . ident
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TSCOPE       shift e prosecuzione allo stato 48
+
+    ident  prosecuzione allo stato 49
+
+
+Stato 41
+
+   40 func_decl: type_specifiers ident . enter_statescope enter_varscope TLPAREN formals TRPAREN block exit_varscope exit_statescope
+   60 int_decl: ident . TCOLON TINTEGER
+  126 scoped_ident: ident .
+
+    TCOLON  shift e prosecuzione allo stato 55
+
+    TLPAREN   riduzione con la regola 29 (enter_statescope)
+    $default  riduzione con la regola 126 (scoped_ident)
+
+    enter_statescope  prosecuzione allo stato 56
+
+
+Stato 42
+
+    4 prog_decl: var_decl TSEMI .
+
+    $default  riduzione con la regola 4 (prog_decl)
+
+
+Stato 43
+
+   34 table_decl: ident TCLT . table_decl_args TCGT ident TLPAREN TINTEGER TRPAREN
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    table_decl_args  prosecuzione allo stato 57
+    ident            prosecuzione allo stato 58
+
+
+Stato 44
+
+   10 pragma_decl: TPRAGMA TIDENTIFIER TIDENTIFIER .
+
+    $default  riduzione con la regola 10 (pragma_decl)
+
+
+Stato 45
+
+   11 pragma_decl: TPRAGMA TIDENTIFIER TSTRING .
+
+    $default  riduzione con la regola 11 (pragma_decl)
+
+
+Stato 46
+
+   56 var_decl: TSTRUCT type_decl TEQUAL . TLBRACE init_args_kv TRBRACE
+
+    TLBRACE  shift e prosecuzione allo stato 59
+
+
+Stato 47
+
+   63 ptr_decl: scoped_ident TMUL . ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 60
+
+
+Stato 48
+
+  127 scoped_ident: scoped_ident TSCOPE . TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 61
+
+
+Stato 49
+
+   61 type_decl: scoped_ident ident .
+
+    $default  riduzione con la regola 61 (type_decl)
+
+
+Stato 50
+
+   31 struct_decl: TSTRUCT ident TLBRACE . struct_decl_stmts TRBRACE
+
+    TU8   shift e prosecuzione allo stato 7
+    TU16  shift e prosecuzione allo stato 8
+    TU32  shift e prosecuzione allo stato 9
+    TU64  shift e prosecuzione allo stato 10
+
+    struct_decl_stmts  prosecuzione allo stato 62
+    type_specifier     prosecuzione allo stato 20
+    type_specifiers    prosecuzione allo stato 63
+
+
+Stato 51
+
+   38 state_decl: TSTATE scoped_ident TCOMMA . TMUL enter_statescope enter_varscope block exit_varscope exit_statescope
+   39           | TSTATE scoped_ident TCOMMA . scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TMUL         shift e prosecuzione allo stato 64
+
+    scoped_ident  prosecuzione allo stato 65
+    ident         prosecuzione allo stato 31
+
+
+Stato 52
+
+   37 state_decl: TSTATE scoped_ident enter_statescope . enter_varscope block exit_varscope exit_statescope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 66
+
+
+Stato 53
+
+    1 program: enter_statescope enter_varscope prog_decls exit_varscope exit_statescope .
+
+    $default  riduzione con la regola 1 (program)
+
+
+Stato 54
+
+   55 var_decl: type_specifiers int_decl TEQUAL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 82
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 55
+
+   60 int_decl: ident TCOLON . TINTEGER
+
+    TINTEGER  shift e prosecuzione allo stato 88
+
+
+Stato 56
+
+   40 func_decl: type_specifiers ident enter_statescope . enter_varscope TLPAREN formals TRPAREN block exit_varscope exit_statescope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 89
+
+
+Stato 57
+
+   34 table_decl: ident TCLT table_decl_args . TCGT ident TLPAREN TINTEGER TRPAREN
+   36 table_decl_args: table_decl_args . TCOMMA ident
+
+    TCGT    shift e prosecuzione allo stato 90
+    TCOMMA  shift e prosecuzione allo stato 91
+
+
+Stato 58
+
+   35 table_decl_args: ident .
+
+    $default  riduzione con la regola 35 (table_decl_args)
+
+
+Stato 59
+
+   56 var_decl: TSTRUCT type_decl TEQUAL TLBRACE . init_args_kv TRBRACE
+
+    TDOT  shift e prosecuzione allo stato 92
+
+    init_args_kv  prosecuzione allo stato 93
+    init_arg_kv   prosecuzione allo stato 94
+
+
+Stato 60
+
+   63 ptr_decl: scoped_ident TMUL ident .
+
+    $default  riduzione con la regola 63 (ptr_decl)
+
+
+Stato 61
+
+  127 scoped_ident: scoped_ident TSCOPE TIDENTIFIER .
+
+    $default  riduzione con la regola 127 (scoped_ident)
+
+
+Stato 62
+
+   31 struct_decl: TSTRUCT ident TLBRACE struct_decl_stmts . TRBRACE
+   33 struct_decl_stmts: struct_decl_stmts . type_specifiers decl_stmt TSEMI
+
+    TU8      shift e prosecuzione allo stato 7
+    TU16     shift e prosecuzione allo stato 8
+    TU32     shift e prosecuzione allo stato 9
+    TU64     shift e prosecuzione allo stato 10
+    TRBRACE  shift e prosecuzione allo stato 95
+
+    type_specifier   prosecuzione allo stato 20
+    type_specifiers  prosecuzione allo stato 96
+
+
+Stato 63
+
+   32 struct_decl_stmts: type_specifiers . decl_stmt TSEMI
+   53 type_specifiers: type_specifiers . type_specifier
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+
+    type_specifier  prosecuzione allo stato 36
+    decl_stmt       prosecuzione allo stato 97
+    int_decl        prosecuzione allo stato 98
+    type_decl       prosecuzione allo stato 39
+    scoped_ident    prosecuzione allo stato 40
+    ident           prosecuzione allo stato 99
+
+
+Stato 64
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL . enter_statescope enter_varscope block exit_varscope exit_statescope
+
+    $default  riduzione con la regola 29 (enter_statescope)
+
+    enter_statescope  prosecuzione allo stato 100
+
+
+Stato 65
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident . enter_statescope enter_varscope block exit_varscope exit_statescope
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TSCOPE  shift e prosecuzione allo stato 48
+
+    $default  riduzione con la regola 29 (enter_statescope)
+
+    enter_statescope  prosecuzione allo stato 101
+
+
+Stato 66
+
+   37 state_decl: TSTATE scoped_ident enter_statescope enter_varscope . block exit_varscope exit_statescope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 103
+
+
+Stato 67
+
+   78 numeric: TINTEGER .
+   80        | TINTEGER . TCOLON TINTEGER
+
+    TCOLON  shift e prosecuzione allo stato 104
+
+    $default  riduzione con la regola 78 (numeric)
+
+
+Stato 68
+
+   79 numeric: THEXINTEGER .
+   81        | THEXINTEGER . TCOLON TINTEGER
+
+    TCOLON  shift e prosecuzione allo stato 105
+
+    $default  riduzione con la regola 79 (numeric)
+
+
+Stato 69
+
+   99 expr: TSTRING .
+
+    $default  riduzione con la regola 99 (expr)
+
+
+Stato 70
+
+   97 expr: TLPAREN . expr TRPAREN
+   98     | TLPAREN . expr TRPAREN bitop
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 106
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 71
+
+   92 expr: TDOLLAR . dotted_ident
+   93     | TDOLLAR . dotted_ident bitop
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    dotted_ident  prosecuzione allo stato 107
+    ident         prosecuzione allo stato 108
+
+
+Stato 72
+
+  118 expr: TNOT . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 109
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 73
+
+  119 expr: TCMPL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 110
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 74
+
+   94 expr: TGOTO . scoped_ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    scoped_ident  prosecuzione allo stato 111
+    ident         prosecuzione allo stato 31
+
+
+Stato 75
+
+   96 expr: TCONTINUE . scoped_ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    scoped_ident  prosecuzione allo stato 112
+    ident         prosecuzione allo stato 31
+
+
+Stato 76
+
+   95 expr: TNEXT . scoped_ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    scoped_ident  prosecuzione allo stato 113
+    ident         prosecuzione allo stato 31
+
+
+Stato 77
+
+   82 numeric: TTRUE .
+
+    $default  riduzione con la regola 82 (numeric)
+
+
+Stato 78
+
+   83 numeric: TFALSE .
+
+    $default  riduzione con la regola 83 (numeric)
+
+
+Stato 79
+
+   91 expr: TAT . dotted_ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    dotted_ident  prosecuzione allo stato 114
+    ident         prosecuzione allo stato 108
+
+
+Stato 80
+
+   86 expr: call_expr .
+   87     | call_expr . bitop
+
+    TLBRACK  shift e prosecuzione allo stato 115
+
+    $default  riduzione con la regola 86 (expr)
+
+    bitop  prosecuzione allo stato 116
+
+
+Stato 81
+
+  100 expr: numeric .
+  101     | numeric . bitop
+
+    TLBRACK  shift e prosecuzione allo stato 115
+
+    $default  riduzione con la regola 100 (expr)
+
+    bitop  prosecuzione allo stato 117
+
+
+Stato 82
+
+   55 var_decl: type_specifiers int_decl TEQUAL expr .
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 55 (var_decl)
+
+
+Stato 83
+
+   88 expr: table_index_expr .
+   89     | table_index_expr . TDOT ident
+
+    TDOT  shift e prosecuzione allo stato 134
+
+    $default  riduzione con la regola 88 (expr)
+
+
+Stato 84
+
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+  133 any_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TSCOPE  shift e prosecuzione allo stato 135
+
+
+Stato 85
+
+  125 table_index_expr: dotted_ident . TLBRACK ident TRBRACK
+  129 dotted_ident: dotted_ident . TDOT TIDENTIFIER
+  131 any_ident: dotted_ident . TARROW TIDENTIFIER
+  132          | dotted_ident . TDOT TIDENTIFIER
+
+    TLBRACK  shift e prosecuzione allo stato 136
+    TDOT     shift e prosecuzione allo stato 137
+    TARROW   shift e prosecuzione allo stato 138
+
+
+Stato 86
+
+   24 call_expr: any_ident . TLPAREN call_args TRPAREN
+   90 expr: any_ident .
+
+    TLPAREN  shift e prosecuzione allo stato 139
+
+    $default  riduzione con la regola 90 (expr)
+
+
+Stato 87
+
+  126 scoped_ident: ident .
+  128 dotted_ident: ident .
+  130 any_ident: ident .
+
+    TLBRACK   riduzione con la regola 128 (dotted_ident)
+    TDOT      riduzione con la regola 128 (dotted_ident)
+    TARROW    riduzione con la regola 128 (dotted_ident)
+    TSCOPE    riduzione con la regola 126 (scoped_ident)
+    $default  riduzione con la regola 130 (any_ident)
+
+
+Stato 88
+
+   60 int_decl: ident TCOLON TINTEGER .
+
+    $default  riduzione con la regola 60 (int_decl)
+
+
+Stato 89
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope . TLPAREN formals TRPAREN block exit_varscope exit_statescope
+
+    TLPAREN  shift e prosecuzione allo stato 140
+
+
+Stato 90
+
+   34 table_decl: ident TCLT table_decl_args TCGT . ident TLPAREN TINTEGER TRPAREN
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 141
+
+
+Stato 91
+
+   36 table_decl_args: table_decl_args TCOMMA . ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 142
+
+
+Stato 92
+
+   66 init_arg_kv: TDOT . ident TEQUAL expr
+   67            | TDOT . ident bitop TEQUAL expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 143
+
+
+Stato 93
+
+   56 var_decl: TSTRUCT type_decl TEQUAL TLBRACE init_args_kv . TRBRACE
+   65 init_args_kv: init_args_kv . TCOMMA init_arg_kv
+
+    TRBRACE  shift e prosecuzione allo stato 144
+    TCOMMA   shift e prosecuzione allo stato 145
+
+
+Stato 94
+
+   64 init_args_kv: init_arg_kv .
+
+    $default  riduzione con la regola 64 (init_args_kv)
+
+
+Stato 95
+
+   31 struct_decl: TSTRUCT ident TLBRACE struct_decl_stmts TRBRACE .
+
+    $default  riduzione con la regola 31 (struct_decl)
+
+
+Stato 96
+
+   33 struct_decl_stmts: struct_decl_stmts type_specifiers . decl_stmt TSEMI
+   53 type_specifiers: type_specifiers . type_specifier
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+
+    type_specifier  prosecuzione allo stato 36
+    decl_stmt       prosecuzione allo stato 146
+    int_decl        prosecuzione allo stato 98
+    type_decl       prosecuzione allo stato 39
+    scoped_ident    prosecuzione allo stato 40
+    ident           prosecuzione allo stato 99
+
+
+Stato 97
+
+   32 struct_decl_stmts: type_specifiers decl_stmt . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 147
+
+
+Stato 98
+
+   58 decl_stmt: int_decl .
+
+    $default  riduzione con la regola 58 (decl_stmt)
+
+
+Stato 99
+
+   60 int_decl: ident . TCOLON TINTEGER
+  126 scoped_ident: ident .
+
+    TCOLON  shift e prosecuzione allo stato 55
+
+    $default  riduzione con la regola 126 (scoped_ident)
+
+
+Stato 100
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL enter_statescope . enter_varscope block exit_varscope exit_statescope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 148
+
+
+Stato 101
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident enter_statescope . enter_varscope block exit_varscope exit_statescope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 149
+
+
+Stato 102
+
+   25 block: TLBRACE . stmts TRBRACE
+   26      | TLBRACE . TRBRACE
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+    TLPAREN      shift e prosecuzione allo stato 70
+    TRBRACE      shift e prosecuzione allo stato 150
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TSTRUCT      shift e prosecuzione allo stato 151
+    TSTATE       shift e prosecuzione allo stato 12
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TRETURN      shift e prosecuzione allo stato 152
+    TIF          shift e prosecuzione allo stato 153
+    TSWITCH      shift e prosecuzione allo stato 154
+    TVALID       shift e prosecuzione allo stato 155
+    TAT          shift e prosecuzione allo stato 79
+
+    stmts             prosecuzione allo stato 156
+    stmt              prosecuzione allo stato 157
+    call_expr         prosecuzione allo stato 158
+    state_decl        prosecuzione allo stato 159
+    type_specifier    prosecuzione allo stato 20
+    type_specifiers   prosecuzione allo stato 160
+    var_decl          prosecuzione allo stato 161
+    if_stmt           prosecuzione allo stato 162
+    onvalid_stmt      prosecuzione allo stato 163
+    switch_stmt       prosecuzione allo stato 164
+    numeric           prosecuzione allo stato 81
+    assign_expr       prosecuzione allo stato 165
+    return_expr       prosecuzione allo stato 166
+    expr              prosecuzione allo stato 167
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 103
+
+   37 state_decl: TSTATE scoped_ident enter_statescope enter_varscope block . exit_varscope exit_statescope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 168
+
+
+Stato 104
+
+   80 numeric: TINTEGER TCOLON . TINTEGER
+
+    TINTEGER  shift e prosecuzione allo stato 169
+
+
+Stato 105
+
+   81 numeric: THEXINTEGER TCOLON . TINTEGER
+
+    TINTEGER  shift e prosecuzione allo stato 170
+
+
+Stato 106
+
+   97 expr: TLPAREN expr . TRPAREN
+   98     | TLPAREN expr . TRPAREN bitop
+  102     | expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ     shift e prosecuzione allo stato 118
+    TCNE     shift e prosecuzione allo stato 119
+    TCLT     shift e prosecuzione allo stato 120
+    TCLE     shift e prosecuzione allo stato 121
+    TCGT     shift e prosecuzione allo stato 122
+    TCGE     shift e prosecuzione allo stato 123
+    TAND     shift e prosecuzione allo stato 124
+    TOR      shift e prosecuzione allo stato 125
+    TRPAREN  shift e prosecuzione allo stato 171
+    TPLUS    shift e prosecuzione allo stato 126
+    TMINUS   shift e prosecuzione allo stato 127
+    TMUL     shift e prosecuzione allo stato 128
+    TDIV     shift e prosecuzione allo stato 129
+    TMOD     shift e prosecuzione allo stato 130
+    TXOR     shift e prosecuzione allo stato 131
+    TLAND    shift e prosecuzione allo stato 132
+    TLOR     shift e prosecuzione allo stato 133
+
+
+Stato 107
+
+   92 expr: TDOLLAR dotted_ident .
+   93     | TDOLLAR dotted_ident . bitop
+  129 dotted_ident: dotted_ident . TDOT TIDENTIFIER
+
+    TLBRACK  shift e prosecuzione allo stato 115
+    TDOT     shift e prosecuzione allo stato 172
+
+    $default  riduzione con la regola 92 (expr)
+
+    bitop  prosecuzione allo stato 173
+
+
+Stato 108
+
+  128 dotted_ident: ident .
+
+    $default  riduzione con la regola 128 (dotted_ident)
+
+
+Stato 109
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+  118     | TNOT expr .
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 118 (expr)
+
+
+Stato 110
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+  119     | TCMPL expr .
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 119 (expr)
+
+
+Stato 111
+
+   94 expr: TGOTO scoped_ident .
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TSCOPE  shift e prosecuzione allo stato 48
+
+    $default  riduzione con la regola 94 (expr)
+
+
+Stato 112
+
+   96 expr: TCONTINUE scoped_ident .
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TSCOPE  shift e prosecuzione allo stato 48
+
+    $default  riduzione con la regola 96 (expr)
+
+
+Stato 113
+
+   95 expr: TNEXT scoped_ident .
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TSCOPE  shift e prosecuzione allo stato 48
+
+    $default  riduzione con la regola 95 (expr)
+
+
+Stato 114
+
+   91 expr: TAT dotted_ident .
+  129 dotted_ident: dotted_ident . TDOT TIDENTIFIER
+
+    TDOT  shift e prosecuzione allo stato 172
+
+    $default  riduzione con la regola 91 (expr)
+
+
+Stato 115
+
+  123 bitop: TLBRACK . TCOLON TPLUS TINTEGER TRBRACK
+  124      | TLBRACK . TINTEGER TCOLON TPLUS TINTEGER TRBRACK
+
+    TINTEGER  shift e prosecuzione allo stato 174
+    TCOLON    shift e prosecuzione allo stato 175
+
+
+Stato 116
+
+   87 expr: call_expr bitop .
+
+    $default  riduzione con la regola 87 (expr)
+
+
+Stato 117
+
+  101 expr: numeric bitop .
+
+    $default  riduzione con la regola 101 (expr)
+
+
+Stato 118
+
+  107 expr: expr TCEQ . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 176
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 119
+
+  106 expr: expr TCNE . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 177
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 120
+
+  102 expr: expr TCLT . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 178
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 121
+
+  105 expr: expr TCLE . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 179
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 122
+
+  103 expr: expr TCGT . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 180
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 123
+
+  104 expr: expr TCGE . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 181
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 124
+
+  114 expr: expr TAND . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 182
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 125
+
+  115 expr: expr TOR . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 183
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 126
+
+  108 expr: expr TPLUS . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 184
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 127
+
+  109 expr: expr TMINUS . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 185
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 128
+
+  110 expr: expr TMUL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 186
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 129
+
+  111 expr: expr TDIV . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 187
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 130
+
+  112 expr: expr TMOD . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 188
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 131
+
+  113 expr: expr TXOR . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 189
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 132
+
+  116 expr: expr TLAND . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 190
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 133
+
+  117 expr: expr TLOR . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 191
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 134
+
+   89 expr: table_index_expr TDOT . ident
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 192
+
+
+Stato 135
+
+  127 scoped_ident: scoped_ident TSCOPE . TIDENTIFIER
+  133 any_ident: scoped_ident TSCOPE . TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 193
+
+
+Stato 136
+
+  125 table_index_expr: dotted_ident TLBRACK . ident TRBRACK
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 194
+
+
+Stato 137
+
+  129 dotted_ident: dotted_ident TDOT . TIDENTIFIER
+  132 any_ident: dotted_ident TDOT . TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 195
+
+
+Stato 138
+
+  131 any_ident: dotted_ident TARROW . TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 196
+
+
+Stato 139
+
+   24 call_expr: any_ident TLPAREN . call_args TRPAREN
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    $default  riduzione con la regola 120 (call_args)
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 197
+    call_args         prosecuzione allo stato 198
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 140
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN . formals TRPAREN block exit_varscope exit_statescope
+
+    TSTRUCT  shift e prosecuzione allo stato 199
+
+    formals  prosecuzione allo stato 200
+
+
+Stato 141
+
+   34 table_decl: ident TCLT table_decl_args TCGT ident . TLPAREN TINTEGER TRPAREN
+
+    TLPAREN  shift e prosecuzione allo stato 201
+
+
+Stato 142
+
+   36 table_decl_args: table_decl_args TCOMMA ident .
+
+    $default  riduzione con la regola 36 (table_decl_args)
+
+
+Stato 143
+
+   66 init_arg_kv: TDOT ident . TEQUAL expr
+   67            | TDOT ident . bitop TEQUAL expr
+
+    TEQUAL   shift e prosecuzione allo stato 202
+    TLBRACK  shift e prosecuzione allo stato 115
+
+    bitop  prosecuzione allo stato 203
+
+
+Stato 144
+
+   56 var_decl: TSTRUCT type_decl TEQUAL TLBRACE init_args_kv TRBRACE .
+
+    $default  riduzione con la regola 56 (var_decl)
+
+
+Stato 145
+
+   65 init_args_kv: init_args_kv TCOMMA . init_arg_kv
+
+    TDOT  shift e prosecuzione allo stato 92
+
+    init_arg_kv  prosecuzione allo stato 204
+
+
+Stato 146
+
+   33 struct_decl_stmts: struct_decl_stmts type_specifiers decl_stmt . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 205
+
+
+Stato 147
+
+   32 struct_decl_stmts: type_specifiers decl_stmt TSEMI .
+
+    $default  riduzione con la regola 32 (struct_decl_stmts)
+
+
+Stato 148
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL enter_statescope enter_varscope . block exit_varscope exit_statescope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 206
+
+
+Stato 149
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope . block exit_varscope exit_statescope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 207
+
+
+Stato 150
+
+   26 block: TLBRACE TRBRACE .
+
+    $default  riduzione con la regola 26 (block)
+
+
+Stato 151
+
+   56 var_decl: TSTRUCT . type_decl TEQUAL TLBRACE init_args_kv TRBRACE
+   57         | TSTRUCT . ref_stmt
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    type_decl     prosecuzione allo stato 25
+    ref_stmt      prosecuzione allo stato 26
+    ptr_decl      prosecuzione allo stato 27
+    scoped_ident  prosecuzione allo stato 28
+    ident         prosecuzione allo stato 31
+
+
+Stato 152
+
+   85 return_expr: TRETURN . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 208
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 153
+
+   68 if_stmt: TIF . expr enter_varscope block exit_varscope
+   69        | TIF . expr enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+   70        | TIF . expr enter_varscope block exit_varscope TELSE if_stmt
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 209
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 154
+
+   73 switch_stmt: TSWITCH . expr TLBRACE case_stmts TRBRACE
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 210
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 155
+
+   71 onvalid_stmt: TVALID . TLPAREN ident TRPAREN enter_varscope block exit_varscope
+   72             | TVALID . TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+
+    TLPAREN  shift e prosecuzione allo stato 211
+
+
+Stato 156
+
+   13 stmts: stmts . stmt
+   25 block: TLBRACE stmts . TRBRACE
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+    TLPAREN      shift e prosecuzione allo stato 70
+    TRBRACE      shift e prosecuzione allo stato 212
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TSTRUCT      shift e prosecuzione allo stato 151
+    TSTATE       shift e prosecuzione allo stato 12
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TRETURN      shift e prosecuzione allo stato 152
+    TIF          shift e prosecuzione allo stato 153
+    TSWITCH      shift e prosecuzione allo stato 154
+    TVALID       shift e prosecuzione allo stato 155
+    TAT          shift e prosecuzione allo stato 79
+
+    stmt              prosecuzione allo stato 213
+    call_expr         prosecuzione allo stato 158
+    state_decl        prosecuzione allo stato 159
+    type_specifier    prosecuzione allo stato 20
+    type_specifiers   prosecuzione allo stato 160
+    var_decl          prosecuzione allo stato 161
+    if_stmt           prosecuzione allo stato 162
+    onvalid_stmt      prosecuzione allo stato 163
+    switch_stmt       prosecuzione allo stato 164
+    numeric           prosecuzione allo stato 81
+    assign_expr       prosecuzione allo stato 165
+    return_expr       prosecuzione allo stato 166
+    expr              prosecuzione allo stato 167
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 157
+
+   12 stmts: stmt .
+
+    $default  riduzione con la regola 12 (stmts)
+
+
+Stato 158
+
+   17 stmt: call_expr . TLBRACE enter_varscope table_result_stmts exit_varscope TRBRACE TSEMI
+   18     | call_expr . TLBRACE TRBRACE TSEMI
+   86 expr: call_expr .
+   87     | call_expr . bitop
+
+    TLBRACE  shift e prosecuzione allo stato 214
+    TLBRACK  shift e prosecuzione allo stato 115
+
+    $default  riduzione con la regola 86 (expr)
+
+    bitop  prosecuzione allo stato 116
+
+
+Stato 159
+
+   22 stmt: state_decl .
+
+    $default  riduzione con la regola 22 (stmt)
+
+
+Stato 160
+
+   53 type_specifiers: type_specifiers . type_specifier
+   54 var_decl: type_specifiers . decl_stmt
+   55         | type_specifiers . int_decl TEQUAL expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TU8          shift e prosecuzione allo stato 7
+    TU16         shift e prosecuzione allo stato 8
+    TU32         shift e prosecuzione allo stato 9
+    TU64         shift e prosecuzione allo stato 10
+
+    type_specifier  prosecuzione allo stato 36
+    decl_stmt       prosecuzione allo stato 37
+    int_decl        prosecuzione allo stato 38
+    type_decl       prosecuzione allo stato 39
+    scoped_ident    prosecuzione allo stato 40
+    ident           prosecuzione allo stato 99
+
+
+Stato 161
+
+   21 stmt: var_decl . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 215
+
+
+Stato 162
+
+   19 stmt: if_stmt .
+
+    $default  riduzione con la regola 19 (stmt)
+
+
+Stato 163
+
+   23 stmt: onvalid_stmt .
+
+    $default  riduzione con la regola 23 (stmt)
+
+
+Stato 164
+
+   20 stmt: switch_stmt .
+
+    $default  riduzione con la regola 20 (stmt)
+
+
+Stato 165
+
+   15 stmt: assign_expr . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 216
+
+
+Stato 166
+
+   16 stmt: return_expr . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 217
+
+
+Stato 167
+
+   14 stmt: expr . TSEMI
+   84 assign_expr: expr . TEQUAL expr
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TEQUAL  shift e prosecuzione allo stato 218
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TSEMI   shift e prosecuzione allo stato 219
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+
+Stato 168
+
+   37 state_decl: TSTATE scoped_ident enter_statescope enter_varscope block exit_varscope . exit_statescope
+
+    $default  riduzione con la regola 30 (exit_statescope)
+
+    exit_statescope  prosecuzione allo stato 220
+
+
+Stato 169
+
+   80 numeric: TINTEGER TCOLON TINTEGER .
+
+    $default  riduzione con la regola 80 (numeric)
+
+
+Stato 170
+
+   81 numeric: THEXINTEGER TCOLON TINTEGER .
+
+    $default  riduzione con la regola 81 (numeric)
+
+
+Stato 171
+
+   97 expr: TLPAREN expr TRPAREN .
+   98     | TLPAREN expr TRPAREN . bitop
+
+    TLBRACK  shift e prosecuzione allo stato 115
+
+    $default  riduzione con la regola 97 (expr)
+
+    bitop  prosecuzione allo stato 221
+
+
+Stato 172
+
+  129 dotted_ident: dotted_ident TDOT . TIDENTIFIER
+
+    TIDENTIFIER  shift e prosecuzione allo stato 222
+
+
+Stato 173
+
+   93 expr: TDOLLAR dotted_ident bitop .
+
+    $default  riduzione con la regola 93 (expr)
+
+
+Stato 174
+
+  124 bitop: TLBRACK TINTEGER . TCOLON TPLUS TINTEGER TRBRACK
+
+    TCOLON  shift e prosecuzione allo stato 223
+
+
+Stato 175
+
+  123 bitop: TLBRACK TCOLON . TPLUS TINTEGER TRBRACK
+
+    TPLUS  shift e prosecuzione allo stato 224
+
+
+Stato 176
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  107     | expr TCEQ expr .
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCNE   shift e prosecuzione allo stato 119
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 107 (expr)
+
+
+Stato 177
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  106     | expr TCNE expr .
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 106 (expr)
+
+
+Stato 178
+
+  102 expr: expr . TCLT expr
+  102     | expr TCLT expr .
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ   shift e prosecuzione allo stato 118
+    TCNE   shift e prosecuzione allo stato 119
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 102 (expr)
+
+
+Stato 179
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  105     | expr TCLE expr .
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ   shift e prosecuzione allo stato 118
+    TCNE   shift e prosecuzione allo stato 119
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 105 (expr)
+
+
+Stato 180
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  103     | expr TCGT expr .
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ   shift e prosecuzione allo stato 118
+    TCNE   shift e prosecuzione allo stato 119
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 103 (expr)
+
+
+Stato 181
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  104     | expr TCGE expr .
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ   shift e prosecuzione allo stato 118
+    TCNE   shift e prosecuzione allo stato 119
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 104 (expr)
+
+
+Stato 182
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  114     | expr TAND expr .
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TOR    shift e prosecuzione allo stato 125
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 114 (expr)
+
+
+Stato 183
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  115     | expr TOR expr .
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 115 (expr)
+
+
+Stato 184
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  108     | expr TPLUS expr .
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TMINUS  shift e prosecuzione allo stato 127
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 108 (expr)
+
+
+Stato 185
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  109     | expr TMINUS expr .
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ   shift e prosecuzione allo stato 118
+    TCNE   shift e prosecuzione allo stato 119
+    TCLT   shift e prosecuzione allo stato 120
+    TCLE   shift e prosecuzione allo stato 121
+    TCGT   shift e prosecuzione allo stato 122
+    TCGE   shift e prosecuzione allo stato 123
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TXOR   shift e prosecuzione allo stato 131
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 109 (expr)
+
+
+Stato 186
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  110     | expr TMUL expr .
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 110 (expr)
+
+
+Stato 187
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  111     | expr TDIV expr .
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 111 (expr)
+
+
+Stato 188
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  112     | expr TMOD expr .
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 112 (expr)
+
+
+Stato 189
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  113     | expr TXOR expr .
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TAND   shift e prosecuzione allo stato 124
+    TOR    shift e prosecuzione allo stato 125
+    TLAND  shift e prosecuzione allo stato 132
+    TLOR   shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 113 (expr)
+
+
+Stato 190
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  116     | expr TLAND expr .
+  117     | expr . TLOR expr
+
+    TLOR  shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 116 (expr)
+
+
+Stato 191
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+  117     | expr TLOR expr .
+
+    $default  riduzione con la regola 117 (expr)
+
+
+Stato 192
+
+   89 expr: table_index_expr TDOT ident .
+
+    $default  riduzione con la regola 89 (expr)
+
+
+Stato 193
+
+  127 scoped_ident: scoped_ident TSCOPE TIDENTIFIER .
+  133 any_ident: scoped_ident TSCOPE TIDENTIFIER .
+
+    TSCOPE    riduzione con la regola 127 (scoped_ident)
+    $default  riduzione con la regola 133 (any_ident)
+
+
+Stato 194
+
+  125 table_index_expr: dotted_ident TLBRACK ident . TRBRACK
+
+    TRBRACK  shift e prosecuzione allo stato 225
+
+
+Stato 195
+
+  129 dotted_ident: dotted_ident TDOT TIDENTIFIER .
+  132 any_ident: dotted_ident TDOT TIDENTIFIER .
+
+    TLBRACK   riduzione con la regola 129 (dotted_ident)
+    TDOT      riduzione con la regola 129 (dotted_ident)
+    TARROW    riduzione con la regola 129 (dotted_ident)
+    $default  riduzione con la regola 132 (any_ident)
+
+
+Stato 196
+
+  131 any_ident: dotted_ident TARROW TIDENTIFIER .
+
+    $default  riduzione con la regola 131 (any_ident)
+
+
+Stato 197
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+  121 call_args: expr .
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 121 (call_args)
+
+
+Stato 198
+
+   24 call_expr: any_ident TLPAREN call_args . TRPAREN
+  122 call_args: call_args . TCOMMA expr
+
+    TRPAREN  shift e prosecuzione allo stato 226
+    TCOMMA   shift e prosecuzione allo stato 227
+
+
+Stato 199
+
+   46 formals: TSTRUCT . ptr_decl
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ptr_decl      prosecuzione allo stato 228
+    scoped_ident  prosecuzione allo stato 229
+    ident         prosecuzione allo stato 31
+
+
+Stato 200
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals . TRPAREN block exit_varscope exit_statescope
+   47 formals: formals . TCOMMA TSTRUCT ptr_decl
+
+    TRPAREN  shift e prosecuzione allo stato 230
+    TCOMMA   shift e prosecuzione allo stato 231
+
+
+Stato 201
+
+   34 table_decl: ident TCLT table_decl_args TCGT ident TLPAREN . TINTEGER TRPAREN
+
+    TINTEGER  shift e prosecuzione allo stato 232
+
+
+Stato 202
+
+   66 init_arg_kv: TDOT ident TEQUAL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 233
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 203
+
+   67 init_arg_kv: TDOT ident bitop . TEQUAL expr
+
+    TEQUAL  shift e prosecuzione allo stato 234
+
+
+Stato 204
+
+   65 init_args_kv: init_args_kv TCOMMA init_arg_kv .
+
+    $default  riduzione con la regola 65 (init_args_kv)
+
+
+Stato 205
+
+   33 struct_decl_stmts: struct_decl_stmts type_specifiers decl_stmt TSEMI .
+
+    $default  riduzione con la regola 33 (struct_decl_stmts)
+
+
+Stato 206
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL enter_statescope enter_varscope block . exit_varscope exit_statescope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 235
+
+
+Stato 207
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope block . exit_varscope exit_statescope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 236
+
+
+Stato 208
+
+   85 return_expr: TRETURN expr .
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 85 (return_expr)
+
+
+Stato 209
+
+   68 if_stmt: TIF expr . enter_varscope block exit_varscope
+   69        | TIF expr . enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+   70        | TIF expr . enter_varscope block exit_varscope TELSE if_stmt
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 237
+
+
+Stato 210
+
+   73 switch_stmt: TSWITCH expr . TLBRACE case_stmts TRBRACE
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ     shift e prosecuzione allo stato 118
+    TCNE     shift e prosecuzione allo stato 119
+    TCLT     shift e prosecuzione allo stato 120
+    TCLE     shift e prosecuzione allo stato 121
+    TCGT     shift e prosecuzione allo stato 122
+    TCGE     shift e prosecuzione allo stato 123
+    TAND     shift e prosecuzione allo stato 124
+    TOR      shift e prosecuzione allo stato 125
+    TLBRACE  shift e prosecuzione allo stato 238
+    TPLUS    shift e prosecuzione allo stato 126
+    TMINUS   shift e prosecuzione allo stato 127
+    TMUL     shift e prosecuzione allo stato 128
+    TDIV     shift e prosecuzione allo stato 129
+    TMOD     shift e prosecuzione allo stato 130
+    TXOR     shift e prosecuzione allo stato 131
+    TLAND    shift e prosecuzione allo stato 132
+    TLOR     shift e prosecuzione allo stato 133
+
+
+Stato 211
+
+   71 onvalid_stmt: TVALID TLPAREN . ident TRPAREN enter_varscope block exit_varscope
+   72             | TVALID TLPAREN . ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 239
+
+
+Stato 212
+
+   25 block: TLBRACE stmts TRBRACE .
+
+    $default  riduzione con la regola 25 (block)
+
+
+Stato 213
+
+   13 stmts: stmts stmt .
+
+    $default  riduzione con la regola 13 (stmts)
+
+
+Stato 214
+
+   17 stmt: call_expr TLBRACE . enter_varscope table_result_stmts exit_varscope TRBRACE TSEMI
+   18     | call_expr TLBRACE . TRBRACE TSEMI
+
+    TRBRACE  shift e prosecuzione allo stato 240
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 241
+
+
+Stato 215
+
+   21 stmt: var_decl TSEMI .
+
+    $default  riduzione con la regola 21 (stmt)
+
+
+Stato 216
+
+   15 stmt: assign_expr TSEMI .
+
+    $default  riduzione con la regola 15 (stmt)
+
+
+Stato 217
+
+   16 stmt: return_expr TSEMI .
+
+    $default  riduzione con la regola 16 (stmt)
+
+
+Stato 218
+
+   84 assign_expr: expr TEQUAL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 242
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 219
+
+   14 stmt: expr TSEMI .
+
+    $default  riduzione con la regola 14 (stmt)
+
+
+Stato 220
+
+   37 state_decl: TSTATE scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope .
+
+    $default  riduzione con la regola 37 (state_decl)
+
+
+Stato 221
+
+   98 expr: TLPAREN expr TRPAREN bitop .
+
+    $default  riduzione con la regola 98 (expr)
+
+
+Stato 222
+
+  129 dotted_ident: dotted_ident TDOT TIDENTIFIER .
+
+    $default  riduzione con la regola 129 (dotted_ident)
+
+
+Stato 223
+
+  124 bitop: TLBRACK TINTEGER TCOLON . TPLUS TINTEGER TRBRACK
+
+    TPLUS  shift e prosecuzione allo stato 243
+
+
+Stato 224
+
+  123 bitop: TLBRACK TCOLON TPLUS . TINTEGER TRBRACK
+
+    TINTEGER  shift e prosecuzione allo stato 244
+
+
+Stato 225
+
+  125 table_index_expr: dotted_ident TLBRACK ident TRBRACK .
+
+    $default  riduzione con la regola 125 (table_index_expr)
+
+
+Stato 226
+
+   24 call_expr: any_ident TLPAREN call_args TRPAREN .
+
+    $default  riduzione con la regola 24 (call_expr)
+
+
+Stato 227
+
+  122 call_args: call_args TCOMMA . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 245
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 228
+
+   46 formals: TSTRUCT ptr_decl .
+
+    $default  riduzione con la regola 46 (formals)
+
+
+Stato 229
+
+   63 ptr_decl: scoped_ident . TMUL ident
+  127 scoped_ident: scoped_ident . TSCOPE TIDENTIFIER
+
+    TMUL    shift e prosecuzione allo stato 47
+    TSCOPE  shift e prosecuzione allo stato 48
+
+
+Stato 230
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals TRPAREN . block exit_varscope exit_statescope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 246
+
+
+Stato 231
+
+   47 formals: formals TCOMMA . TSTRUCT ptr_decl
+
+    TSTRUCT  shift e prosecuzione allo stato 247
+
+
+Stato 232
+
+   34 table_decl: ident TCLT table_decl_args TCGT ident TLPAREN TINTEGER . TRPAREN
+
+    TRPAREN  shift e prosecuzione allo stato 248
+
+
+Stato 233
+
+   66 init_arg_kv: TDOT ident TEQUAL expr .
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 66 (init_arg_kv)
+
+
+Stato 234
+
+   67 init_arg_kv: TDOT ident bitop TEQUAL . expr
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TSTRING      shift e prosecuzione allo stato 69
+    TLPAREN      shift e prosecuzione allo stato 70
+    TDOLLAR      shift e prosecuzione allo stato 71
+    TNOT         shift e prosecuzione allo stato 72
+    TCMPL        shift e prosecuzione allo stato 73
+    TGOTO        shift e prosecuzione allo stato 74
+    TCONTINUE    shift e prosecuzione allo stato 75
+    TNEXT        shift e prosecuzione allo stato 76
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+    TAT          shift e prosecuzione allo stato 79
+
+    call_expr         prosecuzione allo stato 80
+    numeric           prosecuzione allo stato 81
+    expr              prosecuzione allo stato 249
+    table_index_expr  prosecuzione allo stato 83
+    scoped_ident      prosecuzione allo stato 84
+    dotted_ident      prosecuzione allo stato 85
+    any_ident         prosecuzione allo stato 86
+    ident             prosecuzione allo stato 87
+
+
+Stato 235
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL enter_statescope enter_varscope block exit_varscope . exit_statescope
+
+    $default  riduzione con la regola 30 (exit_statescope)
+
+    exit_statescope  prosecuzione allo stato 250
+
+
+Stato 236
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope block exit_varscope . exit_statescope
+
+    $default  riduzione con la regola 30 (exit_statescope)
+
+    exit_statescope  prosecuzione allo stato 251
+
+
+Stato 237
+
+   68 if_stmt: TIF expr enter_varscope . block exit_varscope
+   69        | TIF expr enter_varscope . block exit_varscope TELSE enter_varscope block exit_varscope
+   70        | TIF expr enter_varscope . block exit_varscope TELSE if_stmt
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 252
+
+
+Stato 238
+
+   73 switch_stmt: TSWITCH expr TLBRACE . case_stmts TRBRACE
+
+    TCASE  shift e prosecuzione allo stato 253
+
+    case_stmts  prosecuzione allo stato 254
+    case_stmt   prosecuzione allo stato 255
+
+
+Stato 239
+
+   71 onvalid_stmt: TVALID TLPAREN ident . TRPAREN enter_varscope block exit_varscope
+   72             | TVALID TLPAREN ident . TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+
+    TRPAREN  shift e prosecuzione allo stato 256
+
+
+Stato 240
+
+   18 stmt: call_expr TLBRACE TRBRACE . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 257
+
+
+Stato 241
+
+   17 stmt: call_expr TLBRACE enter_varscope . table_result_stmts exit_varscope TRBRACE TSEMI
+
+    TMATCH    shift e prosecuzione allo stato 258
+    TMISS     shift e prosecuzione allo stato 259
+    TFAILURE  shift e prosecuzione allo stato 260
+
+    table_result_stmts  prosecuzione allo stato 261
+    table_result_stmt   prosecuzione allo stato 262
+
+
+Stato 242
+
+   84 assign_expr: expr TEQUAL expr .
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 84 (assign_expr)
+
+
+Stato 243
+
+  124 bitop: TLBRACK TINTEGER TCOLON TPLUS . TINTEGER TRBRACK
+
+    TINTEGER  shift e prosecuzione allo stato 263
+
+
+Stato 244
+
+  123 bitop: TLBRACK TCOLON TPLUS TINTEGER . TRBRACK
+
+    TRBRACK  shift e prosecuzione allo stato 264
+
+
+Stato 245
+
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+  122 call_args: call_args TCOMMA expr .
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 122 (call_args)
+
+
+Stato 246
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals TRPAREN block . exit_varscope exit_statescope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 265
+
+
+Stato 247
+
+   47 formals: formals TCOMMA TSTRUCT . ptr_decl
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ptr_decl      prosecuzione allo stato 266
+    scoped_ident  prosecuzione allo stato 229
+    ident         prosecuzione allo stato 31
+
+
+Stato 248
+
+   34 table_decl: ident TCLT table_decl_args TCGT ident TLPAREN TINTEGER TRPAREN .
+
+    $default  riduzione con la regola 34 (table_decl)
+
+
+Stato 249
+
+   67 init_arg_kv: TDOT ident bitop TEQUAL expr .
+  102 expr: expr . TCLT expr
+  103     | expr . TCGT expr
+  104     | expr . TCGE expr
+  105     | expr . TCLE expr
+  106     | expr . TCNE expr
+  107     | expr . TCEQ expr
+  108     | expr . TPLUS expr
+  109     | expr . TMINUS expr
+  110     | expr . TMUL expr
+  111     | expr . TDIV expr
+  112     | expr . TMOD expr
+  113     | expr . TXOR expr
+  114     | expr . TAND expr
+  115     | expr . TOR expr
+  116     | expr . TLAND expr
+  117     | expr . TLOR expr
+
+    TCEQ    shift e prosecuzione allo stato 118
+    TCNE    shift e prosecuzione allo stato 119
+    TCLT    shift e prosecuzione allo stato 120
+    TCLE    shift e prosecuzione allo stato 121
+    TCGT    shift e prosecuzione allo stato 122
+    TCGE    shift e prosecuzione allo stato 123
+    TAND    shift e prosecuzione allo stato 124
+    TOR     shift e prosecuzione allo stato 125
+    TPLUS   shift e prosecuzione allo stato 126
+    TMINUS  shift e prosecuzione allo stato 127
+    TMUL    shift e prosecuzione allo stato 128
+    TDIV    shift e prosecuzione allo stato 129
+    TMOD    shift e prosecuzione allo stato 130
+    TXOR    shift e prosecuzione allo stato 131
+    TLAND   shift e prosecuzione allo stato 132
+    TLOR    shift e prosecuzione allo stato 133
+
+    $default  riduzione con la regola 67 (init_arg_kv)
+
+
+Stato 250
+
+   38 state_decl: TSTATE scoped_ident TCOMMA TMUL enter_statescope enter_varscope block exit_varscope exit_statescope .
+
+    $default  riduzione con la regola 38 (state_decl)
+
+
+Stato 251
+
+   39 state_decl: TSTATE scoped_ident TCOMMA scoped_ident enter_statescope enter_varscope block exit_varscope exit_statescope .
+
+    $default  riduzione con la regola 39 (state_decl)
+
+
+Stato 252
+
+   68 if_stmt: TIF expr enter_varscope block . exit_varscope
+   69        | TIF expr enter_varscope block . exit_varscope TELSE enter_varscope block exit_varscope
+   70        | TIF expr enter_varscope block . exit_varscope TELSE if_stmt
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 267
+
+
+Stato 253
+
+   76 case_stmt: TCASE . numeric block TSEMI
+   77          | TCASE . TMUL block TSEMI
+
+    TINTEGER     shift e prosecuzione allo stato 67
+    THEXINTEGER  shift e prosecuzione allo stato 68
+    TMUL         shift e prosecuzione allo stato 268
+    TTRUE        shift e prosecuzione allo stato 77
+    TFALSE       shift e prosecuzione allo stato 78
+
+    numeric  prosecuzione allo stato 269
+
+
+Stato 254
+
+   73 switch_stmt: TSWITCH expr TLBRACE case_stmts . TRBRACE
+   75 case_stmts: case_stmts . case_stmt
+
+    TRBRACE  shift e prosecuzione allo stato 270
+    TCASE    shift e prosecuzione allo stato 253
+
+    case_stmt  prosecuzione allo stato 271
+
+
+Stato 255
+
+   74 case_stmts: case_stmt .
+
+    $default  riduzione con la regola 74 (case_stmts)
+
+
+Stato 256
+
+   71 onvalid_stmt: TVALID TLPAREN ident TRPAREN . enter_varscope block exit_varscope
+   72             | TVALID TLPAREN ident TRPAREN . enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 272
+
+
+Stato 257
+
+   18 stmt: call_expr TLBRACE TRBRACE TSEMI .
+
+    $default  riduzione con la regola 18 (stmt)
+
+
+Stato 258
+
+   43 table_result_stmt: TMATCH . ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 273
+
+
+Stato 259
+
+   44 table_result_stmt: TMISS . ident enter_varscope TLPAREN TRPAREN block exit_varscope TSEMI
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 274
+
+
+Stato 260
+
+   45 table_result_stmt: TFAILURE . ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    TIDENTIFIER  shift e prosecuzione allo stato 5
+
+    ident  prosecuzione allo stato 275
+
+
+Stato 261
+
+   17 stmt: call_expr TLBRACE enter_varscope table_result_stmts . exit_varscope TRBRACE TSEMI
+   42 table_result_stmts: table_result_stmts . table_result_stmt
+
+    TMATCH    shift e prosecuzione allo stato 258
+    TMISS     shift e prosecuzione allo stato 259
+    TFAILURE  shift e prosecuzione allo stato 260
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope      prosecuzione allo stato 276
+    table_result_stmt  prosecuzione allo stato 277
+
+
+Stato 262
+
+   41 table_result_stmts: table_result_stmt .
+
+    $default  riduzione con la regola 41 (table_result_stmts)
+
+
+Stato 263
+
+  124 bitop: TLBRACK TINTEGER TCOLON TPLUS TINTEGER . TRBRACK
+
+    TRBRACK  shift e prosecuzione allo stato 278
+
+
+Stato 264
+
+  123 bitop: TLBRACK TCOLON TPLUS TINTEGER TRBRACK .
+
+    $default  riduzione con la regola 123 (bitop)
+
+
+Stato 265
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals TRPAREN block exit_varscope . exit_statescope
+
+    $default  riduzione con la regola 30 (exit_statescope)
+
+    exit_statescope  prosecuzione allo stato 279
+
+
+Stato 266
+
+   47 formals: formals TCOMMA TSTRUCT ptr_decl .
+
+    $default  riduzione con la regola 47 (formals)
+
+
+Stato 267
+
+   68 if_stmt: TIF expr enter_varscope block exit_varscope .
+   69        | TIF expr enter_varscope block exit_varscope . TELSE enter_varscope block exit_varscope
+   70        | TIF expr enter_varscope block exit_varscope . TELSE if_stmt
+
+    TELSE  shift e prosecuzione allo stato 280
+
+    $default  riduzione con la regola 68 (if_stmt)
+
+
+Stato 268
+
+   77 case_stmt: TCASE TMUL . block TSEMI
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 281
+
+
+Stato 269
+
+   76 case_stmt: TCASE numeric . block TSEMI
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 282
+
+
+Stato 270
+
+   73 switch_stmt: TSWITCH expr TLBRACE case_stmts TRBRACE .
+
+    $default  riduzione con la regola 73 (switch_stmt)
+
+
+Stato 271
+
+   75 case_stmts: case_stmts case_stmt .
+
+    $default  riduzione con la regola 75 (case_stmts)
+
+
+Stato 272
+
+   71 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope . block exit_varscope
+   72             | TVALID TLPAREN ident TRPAREN enter_varscope . block exit_varscope TELSE enter_varscope block exit_varscope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 283
+
+
+Stato 273
+
+   43 table_result_stmt: TMATCH ident . enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 284
+
+
+Stato 274
+
+   44 table_result_stmt: TMISS ident . enter_varscope TLPAREN TRPAREN block exit_varscope TSEMI
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 285
+
+
+Stato 275
+
+   45 table_result_stmt: TFAILURE ident . enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 286
+
+
+Stato 276
+
+   17 stmt: call_expr TLBRACE enter_varscope table_result_stmts exit_varscope . TRBRACE TSEMI
+
+    TRBRACE  shift e prosecuzione allo stato 287
+
+
+Stato 277
+
+   42 table_result_stmts: table_result_stmts table_result_stmt .
+
+    $default  riduzione con la regola 42 (table_result_stmts)
+
+
+Stato 278
+
+  124 bitop: TLBRACK TINTEGER TCOLON TPLUS TINTEGER TRBRACK .
+
+    $default  riduzione con la regola 124 (bitop)
+
+
+Stato 279
+
+   40 func_decl: type_specifiers ident enter_statescope enter_varscope TLPAREN formals TRPAREN block exit_varscope exit_statescope .
+
+    $default  riduzione con la regola 40 (func_decl)
+
+
+Stato 280
+
+   69 if_stmt: TIF expr enter_varscope block exit_varscope TELSE . enter_varscope block exit_varscope
+   70        | TIF expr enter_varscope block exit_varscope TELSE . if_stmt
+
+    TIF  shift e prosecuzione allo stato 153
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 288
+    if_stmt         prosecuzione allo stato 289
+
+
+Stato 281
+
+   77 case_stmt: TCASE TMUL block . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 290
+
+
+Stato 282
+
+   76 case_stmt: TCASE numeric block . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 291
+
+
+Stato 283
+
+   71 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block . exit_varscope
+   72             | TVALID TLPAREN ident TRPAREN enter_varscope block . exit_varscope TELSE enter_varscope block exit_varscope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 292
+
+
+Stato 284
+
+   43 table_result_stmt: TMATCH ident enter_varscope . TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    TLPAREN  shift e prosecuzione allo stato 293
+
+
+Stato 285
+
+   44 table_result_stmt: TMISS ident enter_varscope . TLPAREN TRPAREN block exit_varscope TSEMI
+
+    TLPAREN  shift e prosecuzione allo stato 294
+
+
+Stato 286
+
+   45 table_result_stmt: TFAILURE ident enter_varscope . TLPAREN formals TRPAREN block exit_varscope TSEMI
+
+    TLPAREN  shift e prosecuzione allo stato 295
+
+
+Stato 287
+
+   17 stmt: call_expr TLBRACE enter_varscope table_result_stmts exit_varscope TRBRACE . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 296
+
+
+Stato 288
+
+   69 if_stmt: TIF expr enter_varscope block exit_varscope TELSE enter_varscope . block exit_varscope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 297
+
+
+Stato 289
+
+   70 if_stmt: TIF expr enter_varscope block exit_varscope TELSE if_stmt .
+
+    $default  riduzione con la regola 70 (if_stmt)
+
+
+Stato 290
+
+   77 case_stmt: TCASE TMUL block TSEMI .
+
+    $default  riduzione con la regola 77 (case_stmt)
+
+
+Stato 291
+
+   76 case_stmt: TCASE numeric block TSEMI .
+
+    $default  riduzione con la regola 76 (case_stmt)
+
+
+Stato 292
+
+   71 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope .
+   72             | TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope . TELSE enter_varscope block exit_varscope
+
+    TELSE  shift e prosecuzione allo stato 298
+
+    $default  riduzione con la regola 71 (onvalid_stmt)
+
+
+Stato 293
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN . formals TRPAREN block exit_varscope TSEMI
+
+    TSTRUCT  shift e prosecuzione allo stato 199
+
+    formals  prosecuzione allo stato 299
+
+
+Stato 294
+
+   44 table_result_stmt: TMISS ident enter_varscope TLPAREN . TRPAREN block exit_varscope TSEMI
+
+    TRPAREN  shift e prosecuzione allo stato 300
+
+
+Stato 295
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN . formals TRPAREN block exit_varscope TSEMI
+
+    TSTRUCT  shift e prosecuzione allo stato 199
+
+    formals  prosecuzione allo stato 301
+
+
+Stato 296
+
+   17 stmt: call_expr TLBRACE enter_varscope table_result_stmts exit_varscope TRBRACE TSEMI .
+
+    $default  riduzione con la regola 17 (stmt)
+
+
+Stato 297
+
+   69 if_stmt: TIF expr enter_varscope block exit_varscope TELSE enter_varscope block . exit_varscope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 302
+
+
+Stato 298
+
+   72 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE . enter_varscope block exit_varscope
+
+    $default  riduzione con la regola 27 (enter_varscope)
+
+    enter_varscope  prosecuzione allo stato 303
+
+
+Stato 299
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals . TRPAREN block exit_varscope TSEMI
+   47 formals: formals . TCOMMA TSTRUCT ptr_decl
+
+    TRPAREN  shift e prosecuzione allo stato 304
+    TCOMMA   shift e prosecuzione allo stato 231
+
+
+Stato 300
+
+   44 table_result_stmt: TMISS ident enter_varscope TLPAREN TRPAREN . block exit_varscope TSEMI
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 305
+
+
+Stato 301
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN formals . TRPAREN block exit_varscope TSEMI
+   47 formals: formals . TCOMMA TSTRUCT ptr_decl
+
+    TRPAREN  shift e prosecuzione allo stato 306
+    TCOMMA   shift e prosecuzione allo stato 231
+
+
+Stato 302
+
+   69 if_stmt: TIF expr enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope .
+
+    $default  riduzione con la regola 69 (if_stmt)
+
+
+Stato 303
+
+   72 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope . block exit_varscope
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 307
+
+
+Stato 304
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals TRPAREN . block exit_varscope TSEMI
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 308
+
+
+Stato 305
+
+   44 table_result_stmt: TMISS ident enter_varscope TLPAREN TRPAREN block . exit_varscope TSEMI
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 309
+
+
+Stato 306
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN formals TRPAREN . block exit_varscope TSEMI
+
+    TLBRACE  shift e prosecuzione allo stato 102
+
+    block  prosecuzione allo stato 310
+
+
+Stato 307
+
+   72 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block . exit_varscope
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 311
+
+
+Stato 308
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals TRPAREN block . exit_varscope TSEMI
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 312
+
+
+Stato 309
+
+   44 table_result_stmt: TMISS ident enter_varscope TLPAREN TRPAREN block exit_varscope . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 313
+
+
+Stato 310
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN formals TRPAREN block . exit_varscope TSEMI
+
+    $default  riduzione con la regola 28 (exit_varscope)
+
+    exit_varscope  prosecuzione allo stato 314
+
+
+Stato 311
+
+   72 onvalid_stmt: TVALID TLPAREN ident TRPAREN enter_varscope block exit_varscope TELSE enter_varscope block exit_varscope .
+
+    $default  riduzione con la regola 72 (onvalid_stmt)
+
+
+Stato 312
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals TRPAREN block exit_varscope . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 315
+
+
+Stato 313
+
+   44 table_result_stmt: TMISS ident enter_varscope TLPAREN TRPAREN block exit_varscope TSEMI .
+
+    $default  riduzione con la regola 44 (table_result_stmt)
+
+
+Stato 314
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN formals TRPAREN block exit_varscope . TSEMI
+
+    TSEMI  shift e prosecuzione allo stato 316
+
+
+Stato 315
+
+   43 table_result_stmt: TMATCH ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI .
+
+    $default  riduzione con la regola 43 (table_result_stmt)
+
+
+Stato 316
+
+   45 table_result_stmt: TFAILURE ident enter_varscope TLPAREN formals TRPAREN block exit_varscope TSEMI .
+
+    $default  riduzione con la regola 45 (table_result_stmt)

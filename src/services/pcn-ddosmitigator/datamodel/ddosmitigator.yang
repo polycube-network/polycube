@@ -13,6 +13,7 @@ module ddosmitigator {
   polycube-base:service-version "2.0";
   polycube-base:service-name "ddosmitigator";
   polycube-base:service-min-kernel-version "4.14.0";
+  
 
   uses "polycube-transparent-base:transparent-base-yang-module";
 
@@ -24,18 +25,27 @@ module ddosmitigator {
       type uint64;
       config false;
       description "Dropped Packets/s";
+      polycube-base:name-metric "ddos_stats_pps_packets";
+      polycube-base:type-metric "counter";
+      polycube-base:path-metric '.stats.pps';
     }
 
     leaf pkts {
       type uint64;
       config false;
       description "Total Dropped Packets";
+       polycube-base:name-metric "ddos_stats_pkts_packets";
+        polycube-base:type-metric "counter";
+        polycube-base:path-metric '.stats.pkts';
     }
   }
-
+  
   list blacklist-src {
       key "ip";
       description "Blacklisted source IP addresses";
+      polycube-base:name-metric "ddos_blacklist-src_addresses";
+      polycube-base:type-metric "gauge";
+      polycube-base:path-metric '."blacklist-src" |  length';
 
       leaf ip {
         type string;
@@ -47,23 +57,32 @@ module ddosmitigator {
         type uint64;
         config false;
         description "Dropped Packets";
+         polycube-base:name-metric "ddos_blacklist-src_drop_pkts_packets";
+        polycube-base:type-metric "counter";
+        polycube-base:path-metric '."blacklist-src"[i]."drop-pkts"';
       }
   }
 
   list blacklist-dst {
       key "ip";
       description "Blacklisted destination IP addresses";
+      polycube-base:name-metric "ddos_blacklist-dst_addresses";
+      polycube-base:type-metric "gauge";
+      polycube-base:path-metric '."blacklist-dst" |  length'; 
 
       leaf ip {
         type string;
         description "Destination IP Address";
         polycube-base:cli-example "10.0.0.2";
       }
-
+     
       leaf drop-pkts {
         type uint64;
         config false;
         description "Dropped Packets";
+        polycube-base:name-metric "ddos_blacklist-dst_drop_pkts_packets";
+        polycube-base:type-metric "counter";
+        polycube-base:path-metric '."blacklist-dst"[i]."drop-pkts"';
       }
   }
 }

@@ -19,6 +19,9 @@ module router {
 
   uses "polycube-standard-base:standard-base-yang-module" {
      augment ports {
+      polycube-base:name-metric "router_number_ports";
+      polycube-base:type-metric "cgauge";
+      polycube-base:path-metric 'jsonpath';
       leaf ip {
         type inet:ipv4-prefix;
         description "IP address and prefix of the port";

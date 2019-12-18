@@ -136,6 +136,10 @@ class RestServer {
   void logRequest(const Pistache::Rest::Request &request);
   void logJson(json j);
 
+  //metrics
+  void get_metrics(const Pistache::Rest::Request &request,
+                     Pistache::Http::ResponseWriter response);
+
   PolycubedCore &core;
   std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
   std::shared_ptr<Pistache::Rest::Router> router_;

@@ -41,6 +41,15 @@
 
 #include "server/../utils/utils.h"
 
+// to test
+std::vector<std::string> nameMetrics_;
+std::vector<std::string> typeMetrics_;
+std::vector<std::string> pathMetrics_;
+
+std::vector<std::string> nameServices_ = {"firewall", "helloworld", "k8switch", "k8sfilter",  "lbdsr", "lbrp", "nat", "pbforwarder", "router", "simplebridge", "simpleforwarder", "iptables", "transparenthelloworld",  "synflood",  "packetcapture" };
+int t = 0;
+  
+
 namespace polycube::polycubed::Rest::Parser {
 std::int16_t Yang::GetExtensionIndex(lys_ext_instance **extensions,
                                      std::uint8_t extensions_length,
@@ -180,10 +189,9 @@ void Yang::ParseContainer(
         parent.get(), node_fields, configuration, init_only_config,
         data->presence != nullptr, false);
   } else {
-    resource = factory_->BodyGeneric(data->name, description, cli_example,
-                                     parent.get(), node_fields,
-                                     configuration, init_only_config,
-                                     data->presence != nullptr);
+    resource = factory_->BodyGeneric(
+        data->name, description, cli_example, "toto", parent.get(), node_fields,
+        configuration, init_only_config, data->presence != nullptr);
   }
   auto child = data->child;
   while (child != nullptr) {
@@ -212,14 +220,27 @@ void Yang::ParseList(
   // maps the original key name with the one fixed (in case of duplicate
   // names in the YANG tree
   auto key_name_fixed = std::unordered_map<std::string, std::string>();
+ 
+ const auto &name_metric = FetchExtensionByIndex(
+      list->ext,
+      GetExtensionIndex(list->ext, list->ext_size, "name-metric", 11));
+  const auto &type_metric = FetchExtensionByIndex(
+      list->ext,
+      GetExtensionIndex(list->ext, list->ext_size, "type-metric", 11));
+  const auto &path_metric = FetchExtensionByIndex(
+      list->ext,
+      GetExtensionIndex(list->ext, list->ext_size, "path-metric", 11));
+  nameMetrics_.push_back(name_metric);
+  typeMetrics_.push_back(type_metric);
+  pathMetrics_.push_back(path_metric);
   std::string rest_endpoint;
   std::string rest_endpoint_multiple;
   parsed_names.emplace(list->name);
   if (generate_endpoint) {
     rest_endpoint_multiple =
         std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent)
-            ->Endpoint() + '/' +
-        list->name;
+            ->Endpoint() +
+        '/' + list->name;
     rest_endpoint = rest_endpoint_multiple;
   }
   if (list->keys_size != 0) {
@@ -274,9 +295,9 @@ void Yang::ParseList(
         rest_endpoint_multiple, parent.get(), configuration, init_only_config,
         std::move(keys), node_fields);
   } else {
-    resource = factory_->BodyList(
-        list->name, description, cli_example, parent.get(), std::move(keys),
-        node_fields, configuration, init_only_config);
+    resource = factory_->BodyList(list->name, description, cli_example,
+                                  parent.get(), std::move(keys), node_fields,
+                                  configuration, init_only_config);
   }
   // parse each child using the generic "node" parsing function
   child = list->child;
@@ -301,6 +322,25 @@ void Yang::ParseLeaf(
   const auto &cli_example = FetchExtensionByIndex(
       leaf->ext,
       GetExtensionIndex(leaf->ext, leaf->ext_size, "cli-example", 11));
+
+
+  const auto &name_metric = FetchExtensionByIndex(
+      leaf->ext,
+      GetExtensionIndex(leaf->ext, leaf->ext_size, "name-metric", 11));
+   //if(name_metric != "")  std::cout << "metric: " << name_metric << "\n";
+  const auto &type_metric = FetchExtensionByIndex(
+      leaf->ext,
+      GetExtensionIndex(leaf->ext, leaf->ext_size, "type-metric", 11));
+ // if(type_metric != "")   std::cout << "type: " << type_metric << "\n";
+  const auto &path_metric = FetchExtensionByIndex(
+      leaf->ext,
+      GetExtensionIndex(leaf->ext, leaf->ext_size, "path-metric", 11));
+ // if(path_metric != "")  std::cout << "path: " << path_metric << "\n";
+  nameMetrics_.push_back(name_metric);
+  typeMetrics_.push_back(type_metric);
+  pathMetrics_.push_back(path_metric);
+  
+
   bool configuration = ((leaf->flags & LYS_CONFIG_MASK) ^ 2) != 0;
   bool init_only_config = (configuration)
                               ? GetExtensionIndex(leaf->ext, leaf->ext_size,
@@ -311,7 +351,8 @@ void Yang::ParseLeaf(
   std::vector<std::string> values;
 
   for (auto &it : validators) {
-    auto enumvalidator = std::dynamic_pointer_cast<Validators::EnumValidator>(it);
+    auto enumvalidator =
+        std::dynamic_pointer_cast<Validators::EnumValidator>(it);
     if (!enumvalidator) {
       continue;
     }
@@ -341,20 +382,22 @@ void Yang::ParseLeaf(
         std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
     auto endpoint = e_parent->Endpoint() + '/' + leaf->name;
     auto base_model = base_model_factory_->IsBaseModel(parsed_names);
-    auto &&factory__ = base_model ? dynamic_cast<Resources::Data::AbstractFactory*>(base_model_factory_.get()) : factory_.get();
+    auto &&factory__ = base_model
+                           ? dynamic_cast<Resources::Data::AbstractFactory *>(
+                                 base_model_factory_.get())
+                           : factory_.get();
     bool is_enum = leaf->type.base == LY_TYPE_ENUM;
 
     leaf_res = factory__->RestLeaf(
         std::move(parsed_names), leaf->name, description, cli_example, endpoint,
-        parent.get(), std::move(value_field), node_fields,
-        configuration, init_only_config, mandatory,
-        Types::ScalarFromYang(leaf->type.base), std::move(default_value),
-        is_enum, values);
+        parent.get(), std::move(value_field), node_fields, configuration,
+        init_only_config, mandatory, Types::ScalarFromYang(leaf->type.base),
+        std::move(default_value), is_enum, values);
   } else {
     leaf_res = factory_->BodyLeaf(
         leaf->name, description, cli_example, parent.get(),
-        std::move(value_field), node_fields, configuration,
-        init_only_config, mandatory, Types::ScalarFromYang(leaf->type.base),
+        std::move(value_field), node_fields, configuration, init_only_config,
+        mandatory, Types::ScalarFromYang(leaf->type.base),
         std::move(default_value));
   }
   parent->AddChild(std::move(leaf_res));
@@ -396,7 +439,10 @@ void Yang::ParseLeafList(
   std::shared_ptr<Resources::Body::LeafListResource> resource;
   if (generate_endpoint) {
     auto base_model = base_model_factory_->IsBaseModel(parsed_names);
-    auto &&factory__ = base_model ? dynamic_cast<Resources::Data::AbstractFactory*>(base_model_factory_.get()) : factory_.get();
+    auto &&factory__ = base_model
+                           ? dynamic_cast<Resources::Data::AbstractFactory *>(
+                                 base_model_factory_.get())
+                           : factory_.get();
 
     const auto &e_parent =
         std::dynamic_pointer_cast<Resources::Endpoint::ParentResource>(parent);
@@ -409,8 +455,8 @@ void Yang::ParseLeafList(
   } else {
     resource = factory_->BodyLeafList(
         leaflist->name, description, cli_example, parent.get(),
-        std::move(value_field), node_fields, configuration,
-        init_only_config, mandatory, Types::ScalarFromYang(leaflist->type.base),
+        std::move(value_field), node_fields, configuration, init_only_config,
+        mandatory, Types::ScalarFromYang(leaflist->type.base),
         std::move(default_value));
   }
   parent->AddChild(std::move(resource));
@@ -484,7 +530,7 @@ void Yang::ParseInput(
   while (child != nullptr) {
     ParseNode(child, parsed_names, parent, false);
     child = child->next;
-   }
+  }
 }
 
 void Yang::ParseAny(
@@ -520,15 +566,13 @@ void Yang::ParseAny(
         std::move(parsed_names), data->name, description, cli_example, endpoint,
         parent.get(), factory_->JsonValueField(),
         std::vector<Resources::Body::JsonNodeField>{}, configuration,
-        init_only_config, mandatory, Types::Scalar::String,
-        nullptr, false, {});
+        init_only_config, mandatory, Types::Scalar::String, nullptr, false, {});
   } else {
-    resource =
-        factory_->BodyLeaf(data->name, description, cli_example, parent.get(),
-                           factory_->JsonValueField(),
-                           std::vector<Resources::Body::JsonNodeField>{},
-                           configuration, init_only_config, mandatory,
-                           Types::Scalar::String, nullptr);
+    resource = factory_->BodyLeaf(data->name, description, cli_example,
+                                  parent.get(), factory_->JsonValueField(),
+                                  std::vector<Resources::Body::JsonNodeField>{},
+                                  configuration, init_only_config, mandatory,
+                                  Types::Scalar::String, nullptr);
   }
   parent->AddChild(std::move(resource));
 }
@@ -612,6 +656,16 @@ const std::shared_ptr<Resources::Endpoint::Service> Yang::Parse(
   }
   ParseModule(module_, parsed_names, cube);
   typedef_validators_->clear();
+
+  // test metrics
+
+  if(strcmp(module_->name,"ddosmitigator")==0)
+  for(int i=0; i<nameMetrics_.size(); i++)
+   if(!empty(nameMetrics_[i]))
+    std::cout << nameMetrics_[i] << " " << typeMetrics_[i] << " " <<
+    pathMetrics_[i] << "\n";
+
+
   return std::move(cube);
 }
 }  // namespace polycube::polycubed::Rest::Parser

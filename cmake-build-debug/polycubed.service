@@ -1,0 +1,9 @@
+[Unit]
+Description=polycube service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/polycubed
+
+[Install]
+WantedBy=multi-user.target

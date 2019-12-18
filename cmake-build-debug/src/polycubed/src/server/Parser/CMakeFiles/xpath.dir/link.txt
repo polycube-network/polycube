@@ -1,0 +1,2 @@
+/usr/bin/ar qc libxpath.a  CMakeFiles/xpath.dir/XPathParserDriver.cpp.o CMakeFiles/xpath.dir/XPathParser.cpp.o CMakeFiles/xpath.dir/XPathScanner.cpp.o
+/usr/bin/ranlib libxpath.a
