@@ -15,7 +15,9 @@
 source "${BASH_SOURCE%/*}/helpers.bash"
 
 function test_tcp {
-    sudo ip netns exec ns2 netcat -l -w 5 $tcp_port&
+	sudo ip netns exec ns2 netcat -l -w 5 $tcp_port&
+	sleep 2
+	sudo ip netns exec ns1 ping $veth2_ip -c 1
 	sleep 2
 	sudo ip netns exec ns1 netcat -w 5 -nvz $veth2_ip $tcp_port
 	sleep 4

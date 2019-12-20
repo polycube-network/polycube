@@ -71,6 +71,10 @@ void TransparentCube::set_next(uint16_t next, ProgramType type) {
   reload_all();
 }
 
+uint16_t TransparentCube::get_next(ProgramType type) {
+  return type == ProgramType::INGRESS ? ingress_next_ : egress_next_;
+}
+
 void TransparentCube::set_parent(PeerIface *parent) {
   parent_ = parent;
   if (parent_) {

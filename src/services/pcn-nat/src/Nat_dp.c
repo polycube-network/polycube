@@ -10,7 +10,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   void *data_end = (void *)(long)ctx->data_end;
 
   struct eth_hdr *eth = data;
-  if (data + sizeof(*eth) > data_end)
+  if ( (void *)eth + sizeof(*eth) > data_end )
     goto DROP;
 
   pcn_log(
@@ -49,7 +49,7 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   uint8_t update_session_table = 1;
 
   struct iphdr *ip = data + sizeof(*eth);
-  if (data + sizeof(*eth) + sizeof(*ip) > data_end)
+  if ( (void *)ip + sizeof(*ip) > data_end )
     goto DROP;
 
   pcn_log(ctx, LOG_TRACE, "Processing IP packet: src %I, dst: %I", ip->saddr,
@@ -61,8 +61,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 
   switch (ip->protocol) {
   case IPPROTO_TCP: {
-    struct tcphdr *tcp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct tcphdr *tcp = data + sizeof(*eth) + header_len;
+    if ( (void *)tcp + sizeof(*tcp) > data_end )
       goto DROP;
 
     pcn_log(ctx, LOG_TRACE, "Packet is TCP: src_port %P, dst_port %P",
@@ -72,8 +73,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     break;
   }
   case IPPROTO_UDP: {
-    struct udphdr *udp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*udp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct udphdr *udp = data + sizeof(*eth) + header_len;
+    if ( (void *)udp + sizeof(*udp) > data_end )
       goto DROP;
     pcn_log(ctx, LOG_TRACE, "Packet is UDP: src_port %P, dst_port %P",
             udp->source, udp->dest);
@@ -82,8 +84,9 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     break;
   }
   case IPPROTO_ICMP: {
-    struct icmphdr *icmp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*icmp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct icmphdr *icmp = data + sizeof(*eth) + header_len;
+    if ( (void *)icmp + sizeof(*icmp) > data_end )
       goto DROP;
     pcn_log(ctx, LOG_TRACE, "Packet is ICMP: type %d, id %d", icmp->type,
             icmp->un.echo.id);
@@ -302,8 +305,9 @@ apply_nat:;
   uint32_t l4sum = pcn_csum_diff(&old_port, 4, &new_port, 4, 0);
   switch (proto) {
   case IPPROTO_TCP: {
-    struct tcphdr *tcp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*tcp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct tcphdr *tcp = data + sizeof(*eth) + header_len;
+    if ( (void *)tcp + sizeof(*tcp) > data_end )
       goto DROP;
 
     if (rule_type == NAT_SRC || rule_type == NAT_MSQ) {
@@ -326,8 +330,9 @@ apply_nat:;
     goto proceed;
   }
   case IPPROTO_UDP: {
-    struct udphdr *udp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*udp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct udphdr *udp = data + sizeof(*eth) + header_len;
+    if ( (void *)udp + sizeof(*udp) > data_end )
       goto DROP;
     if (rule_type == NAT_SRC || rule_type == NAT_MSQ) {
       ip->saddr = new_ip;
@@ -349,8 +354,9 @@ apply_nat:;
     goto proceed;
   }
   case IPPROTO_ICMP: {
-    struct icmphdr *icmp = data + sizeof(*eth) + sizeof(*ip);
-    if (data + sizeof(*eth) + sizeof(*ip) + sizeof(*icmp) > data_end)
+    uint8_t header_len = 4 * ip->ihl;
+    struct icmphdr *icmp = data + sizeof(*eth) + header_len;
+    if ( (void *)icmp + sizeof(*icmp) > data_end )
       goto DROP;
     if (rule_type == NAT_SRC || rule_type == NAT_MSQ) {
       ip->saddr = new_ip;

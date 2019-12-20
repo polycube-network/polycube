@@ -1,17 +1,17 @@
 Installing Polycube
 ===================
 
-This installation guide includes instructions to install polycube on ``Ubuntu 18.04``, however with few changes those should also work on other versions and distributions.
+This installation guide includes instructions to install Polycube on ``Ubuntu 18.04``.
+However those should also work on other versions and distributions with a few changes.
 
 Dependencies
 ------------
 
-``polycube`` requires following dependencies:
-
-- At least **Linux kernel v4.15** that includes a set of the eBPF features which are needed by polycube
-- **pistache**: a library to build rest API servers
-- **libints**: a library for crafting packets (needed only for some services)
-- **Go language**: required to run ``polycubectl`` (polycube command line interface)
+Polycube requires following dependencies:
+ - At least **Linux kernel v4.15** that includes a set of the eBPF features which are needed by polycube
+ - **pistache**: a library to build rest API servers
+ - **libints**: a library for crafting packets (needed only for some services)
+ - **Go language**: required to run ``polycubectl`` (polycube command line interface)
 
 Following sections will detail the installation process for the above components.
 
@@ -31,8 +31,8 @@ Use ``uname -a`` to check the kernel version you are running, if this is ``<v4.1
     sudo dpkg -i *.deb
     sudo reboot
 
-Automatic installation
-----------------------
+Automatic installation from source files
+----------------------------------------
 
 If you are running ``Ubuntu 18.04`` and you do not want to manually install polycube and its dependencies, you can use the install script available under the `scripts` folder.
 This is not guaranteed that the script works on versions or distributions other than ``Ubuntu 18.04``.
@@ -56,8 +56,15 @@ In this case you have to:
 
 Once the installation is completed, you can follow the :doc:`quickstart` instructions.
 
-Installing from source
-----------------------
+Note: if you have llvm 6.0 installed (check with ``apt list --installed | grep "llvm"``), the installation script will fail.
+In this case, remove llvm 6.0 before starting the installation script:
+
+::
+    sudo apt remove llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
+
+
+Manual installation from source files
+-------------------------------------
 
 Install GO
 ^^^^^^^^^^
