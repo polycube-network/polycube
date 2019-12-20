@@ -156,7 +156,7 @@ std::string PolycubedCore::get_cube(const std::string &name) {
     throw std::runtime_error("Cube does not exist");
   }
 
-  return cube->to_json().dump(4);
+  return cube->to_json().dump(4) + " provastringa " ;
 }
 
 std::string PolycubedCore::get_cubes() {

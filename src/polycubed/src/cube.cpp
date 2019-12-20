@@ -97,6 +97,8 @@ nlohmann::json Cube::to_json() const {
 
   j["shadow"] = shadow_;
   j["span"] = span_;
+ //pino
+
 
   return j;
 }

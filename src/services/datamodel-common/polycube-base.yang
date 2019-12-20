@@ -67,6 +67,11 @@ module polycube-base {
     argument "value";
     description "Json path for a metric";
   }
+  //metrics
+    extension help-metric {
+      argument "value";
+      description "Help section of a metric";
+    }
 
   grouping base-yang-module {
     leaf uuid {

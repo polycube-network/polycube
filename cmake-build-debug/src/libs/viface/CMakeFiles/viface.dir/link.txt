@@ -1,2 +1,0 @@
-/usr/bin/ar qc libviface.a  CMakeFiles/viface.dir/viface.cpp.o
-/usr/bin/ranlib libviface.a

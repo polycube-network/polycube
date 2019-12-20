@@ -19,6 +19,13 @@
 
 #include "server/Resources/Endpoint/Service.h"
 
+struct InfoMetric {
+    std::string nameMetric;
+    std::string typeMetric;
+    std::string pathMetric;
+    std::string helpMetric;
+};
+
 struct ServiceMetadata {
   std::string description;
   std::string version;
@@ -26,7 +33,11 @@ struct ServiceMetadata {
   std::string swaggerCodegenGitRepoId;
   std::string dataModel;
   std::string requiredKernelVersion;
+  std::vector<InfoMetric> Metrics;
 };
+
+
+
 
 namespace polycube::polycubed {
 class ManagementInterface {

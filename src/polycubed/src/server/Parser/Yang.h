@@ -117,59 +117,71 @@ class Yang {
 
   void ParseModule(const lys_module *module,
                    std::queue<std::string> parsed_names,
-                   const std::shared_ptr<Resources::Endpoint::Service> &cube);
+                   const std::shared_ptr<Resources::Endpoint::Service> &cube,
+                   ServiceMetadata *md);
 
   void ParseNode(const lys_node *data, std::queue<std::string> parsed_names,
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                 bool generate_endpoint) const;
+                 bool generate_endpoint,
+                 ServiceMetadata *md) const;
 
   void ParseContainer(
       const lys_node_container *data, std::queue<std::string> parsed_names,
       const std::shared_ptr<Resources::Body::ParentResource> &parent,
-      bool generate_endpoint) const;
+      bool generate_endpoint,
+      ServiceMetadata *md) const;
 
   void ParseUses(const lys_node_uses *group,
                  std::queue<std::string> parsed_names,
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                 bool generate_endpoint) const;
+                 bool generate_endpoint,
+                 ServiceMetadata *md) const;
 
   void ParseList(const lys_node_list *list,
                  std::queue<std::string> parsed_names,
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                 bool generate_endpoint) const;
+                 bool generate_endpoint,
+                 ServiceMetadata *md) const;
 
   void ParseLeaf(const lys_node_leaf *leaf,
                  std::queue<std::string> parsed_names,
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                 bool generate_endpoint) const;
+                 bool generate_endpoint,
+                 ServiceMetadata *md) const;
 
   void ParseLeafList(
       const lys_node_leaflist *leaflist, std::queue<std::string> parsed_names,
       const std::shared_ptr<Resources::Body::ParentResource> &parent,
-      bool generate_endpoint) const;
+      bool generate_endpoint,
+      ServiceMetadata *md) const;
 
   void ParseChoice(
       const lys_node_choice *choice, std::queue<std::string> parsed_names,
       const std::shared_ptr<Resources::Body::ParentResource> &parent,
-      bool generate_endpoint) const;
+      bool generate_endpoint,
+      ServiceMetadata *md) const;
 
   void ParseCase(const lys_node_case *case_node,
                  std::queue<std::string> parsed_names,
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                 bool generate_endpoint) const;
+                 bool generate_endpoint,
+                 ServiceMetadata *md) const;
 
   void ParseInput(
       const lys_node_inout *data, std::queue<std::string> parsed_names,
-      const std::shared_ptr<Resources::Body::ParentResource> &parent) const;
+      const std::shared_ptr<Resources::Body::ParentResource> &parent,
+      ServiceMetadata *md) const;
 
   void ParseAny(const lys_node_anydata *data,
                 std::queue<std::string> parsed_names,
                 const std::shared_ptr<Resources::Body::ParentResource> &parent,
-                bool generate_endpoint) const;
+                bool generate_endpoint,
+                ServiceMetadata *md) const;
 
   void ParseRpcAction(
       const lys_node_rpc_action *data, std::queue<std::string> parsed_names,
-      const std::shared_ptr<Resources::Body::ParentResource> &parent) const;
+      const std::shared_ptr<Resources::Body::ParentResource> &parent,
+      ServiceMetadata *md) const;
 };
 
 }  // namespace polycube::polycubed::Rest::Parser

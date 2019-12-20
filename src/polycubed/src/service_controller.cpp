@@ -81,6 +81,15 @@ std::string ServiceController::get_description() const {
   return service_md_.description;
 }
 
+//pino
+std::vector<InfoMetric> ServiceController::get_infoMetrics() const {
+    if(service_md_.Metrics.empty()) {
+        std::vector<InfoMetric> emptyMap;
+        return emptyMap;
+    }
+    return service_md_.Metrics;
+}
+
 std::string ServiceController::get_version() const {
   if (service_md_.version.empty())
     return "Unknown";
@@ -110,8 +119,8 @@ void ServiceController::connect(PolycubedCore *core) {
         servicecontroller_, base_url_, name_, core);
     std::shared_ptr<ManagementLib> lib =
         std::dynamic_pointer_cast<ManagementLib>(management_interface_);
-  
-    service_md_ = lib->init(&factory_, configuration::config.getLogFile());
+
+      service_md_ = lib->init(&factory_, configuration::config.getLogFile());
     break;
   }
   }

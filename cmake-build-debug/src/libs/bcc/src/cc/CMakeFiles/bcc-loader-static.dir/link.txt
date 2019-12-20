@@ -1,2 +1,0 @@
-/usr/bin/ar qc libbcc-loader-static.a  CMakeFiles/bcc-loader-static.dir/bcc_syms.cc.o CMakeFiles/bcc-loader-static.dir/bcc_elf.c.o CMakeFiles/bcc-loader-static.dir/bcc_perf_map.c.o CMakeFiles/bcc-loader-static.dir/bcc_proc.c.o CMakeFiles/bcc-loader-static.dir/ns_guard.cc.o CMakeFiles/bcc-loader-static.dir/common.cc.o
-/usr/bin/ranlib libbcc-loader-static.a

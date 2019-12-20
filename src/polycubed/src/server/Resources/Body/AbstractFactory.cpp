@@ -97,7 +97,7 @@ std::unique_ptr<ListResource> AbstractFactory::BodyList(
 
 std::unique_ptr<ParentResource> AbstractFactory::BodyGeneric(
     const std::string &name, const std::string &description,
-    const std::string &cli_example, const std::string &nameMetric, const Body::ParentResource *parent,
+    const std::string &cli_example, const Body::ParentResource *parent,
     const std::vector<JsonNodeField> &node_fields, bool configuration,
     bool init_only_config, bool container_presence) const {
   return std::make_unique<ParentResource>(

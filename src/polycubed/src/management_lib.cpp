@@ -45,7 +45,6 @@ ServiceMetadata ManagementLib::init(service::CubeFactory *factory,
   }
 
   ServiceMetadata md;
-
   md.dataModel = get_lib_info(handle_, "data_model");
   md.pyangGitRepoId = get_lib_info(handle_, "pyang_git");
   md.swaggerCodegenGitRepoId = get_lib_info(handle_, "swagger_codegen_git");
@@ -60,11 +59,10 @@ ServiceMetadata ManagementLib::init(service::CubeFactory *factory,
   auto parser = Rest::Parser::Yang(md.dataModel, std::move(rest_factory),
                                    std::move(base_model_factory));
   service_ = parser.Parse(base_url_, name_, &md);
-
+  
   auto service_lib =
       std::dynamic_pointer_cast<Rest::Resources::Data::Lib::Service>(service_);
   service_lib->init(factory, logfile);
-
   return md;
 }
 

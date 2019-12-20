@@ -57,6 +57,8 @@ class ServiceController {
 
   std::string get_name() const;
   std::string get_description() const;
+  //std::map <std::string,std::vector<InfoMetric>> get_infoMetrics() const;
+  std::vector<InfoMetric> get_infoMetrics() const;
   std::string get_version() const;
   std::string get_pyang_git_repo_id() const;
   std::string get_swagger_codegen_git_repo_id() const;

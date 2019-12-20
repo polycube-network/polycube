@@ -19,6 +19,7 @@
 #include <vector>
 #include <fstream>
 
+
 #include "polycubed_core.h"
 #include "service_controller.h"
 #include "version.h"
@@ -36,6 +37,7 @@
 #include "prometheus/serializer.h"
 #include "prometheus/text_serializer.h"
 #include "prometheus/family.h"
+
 
 
 namespace polycube {
@@ -338,7 +340,7 @@ void RestServer::root_help(HelpType help_type,
     auto services = core.get_servicectrls_list();
     for (auto &it : services) {
       std::string service_name = it->get_name();
-      j["params"][service_name]["name"] = service_name;
+      j["params"][service_name]["name"] = service_name + "provapino";
       j["params"][service_name]["simpletype"] = "service";
       j["params"][service_name]["type"] = "leaf";
       j["params"][service_name]["description"] = it->get_description();
@@ -477,17 +479,17 @@ void RestServer::delete_servicectrl(const Pistache::Rest::Request &request,
   }
 }
 
-// void RestServer::get_cubes(const Pistache::Rest::Request &request,
-//                            Pistache::Http::ResponseWriter response) {
-//   logRequest(request);
-//   try {
-//     std::string retJsonStr = core.get_cubes();
-//     response.send(Pistache::Http::Code::Ok, retJsonStr);
-//   } catch (const std::runtime_error &e) {
-//     logger->error("{0}", e.what());
-//     response.send(Pistache::Http::Code::Bad_Request, e.what());
-//   }
-// }
+void RestServer::get_cubes(const Pistache::Rest::Request &request,
+                           Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+    std::string retJsonStr = core.get_cubes();
+    response.send(Pistache::Http::Code::Ok, retJsonStr);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
+}
 
 void RestServer::get_cube(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response) {
@@ -514,31 +516,6 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
     response.send(Pistache::Http::Code::Bad_Request, e.what());
   }
 }
-//prova da eliminare
-void RestServer::get_cubes(const Pistache::Rest::Request &request,
-                           Pistache::Http::ResponseWriter response) {
-  logRequest(request);
-  try {
-    json retJson = core.get_json_cubes();
-    std::string retJsonStr = core.get_cubes();
-
-    for (auto& [key, value] : retJson.items()) {
-        //std::cout << key << " : " << value << "\n";
-        if(key.compare("router")==0)
-           std::cout << key << " hello \n";
-         if(key.compare("bridge")==0)
-           std::cout << key << " ciao  \n";
-        
-    }
-    response.send(Pistache::Http::Code::Ok, retJsonStr);
-  } catch (const std::runtime_error &e) {
-    logger->error("{0}", e.what());
-    response.send(Pistache::Http::Code::Bad_Request, e.what());
-  }
-}
-
-
-
 
 
 //create prometheus metrics from cubes
@@ -546,7 +523,19 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
                            Pistache::Http::ResponseWriter response) {
   logRequest(request);
   try {
-    //metrics
+      //auto provaPino = core.get_service_controller("ddosmitigator").get_nameMetricPino();
+       //auto listServices = core.get_servicectrls_names();
+
+      auto provaPino = core.get_service_controller("ddosmitigator").get_infoMetrics();
+
+      std::string retMetrics;
+      for ( const auto &i : provaPino )
+          retMetrics += "#NAME " + i.nameMetric + "\n" +
+                  "#TYPE " + i.typeMetric + "\n" +
+                  "#PATH " + i.pathMetric + "\n" +
+                  "#HELP " + i.helpMetric + "\n";
+
+      //metrics
     json retJson = core.get_json_cubes();
 
 
@@ -595,7 +584,7 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
     //cosa fa?
     collectables_.push_back(registry);
 
-
+    
 
     //cosa fa?
     for (auto&& wcollectable : collectables_) {
@@ -622,7 +611,8 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
     // // ask the exposer to scrape the registry on incoming scrapes
     //exposer.RegisterCollectable(registry);
 
-    response.send(Pistache::Http::Code::Ok, ritorno_prova);
+      response.send(Pistache::Http::Code::Ok, retMetrics);
+      //response.send(Pistache::Http::Code::Ok, ritorno_prova + provaPino + "\n");
   } catch (const std::runtime_error &e) {
     logger->error("{0}", e.what());
     response.send(Pistache::Http::Code::Bad_Request, e.what());

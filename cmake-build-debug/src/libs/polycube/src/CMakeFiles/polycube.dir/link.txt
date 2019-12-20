@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpolycube.a  CMakeFiles/polycube.dir/base_cube.cpp.o CMakeFiles/polycube.dir/transparent_cube.cpp.o CMakeFiles/polycube.dir/port.cpp.o CMakeFiles/polycube.dir/table.cpp.o CMakeFiles/polycube.dir/utils.cpp.o CMakeFiles/polycube.dir/guid.cpp.o CMakeFiles/polycube.dir/common.cpp.o
-/usr/bin/ranlib libpolycube.a

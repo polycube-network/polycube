@@ -30,7 +30,7 @@ CubeTC::CubeTC(const std::string &name, const std::string &service_name,
                const std::vector<std::string> &egress_code, LogLevel level, bool shadow, bool span)
     : Cube(name, service_name, PatchPanel::get_tc_instance(),
            PatchPanel::get_tc_instance(), level, CubeType::TC, shadow, span) {
-  // it has to be done here becuase it needs the load, compile methods
+  // it has to be done here because it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
   if (shadow && span) {

@@ -235,7 +235,7 @@ std::unique_ptr<Endpoint::ParentResource> ConcreteFactory::RestGeneric(
     auto create_handler =
         LoadHandler<Response(const char *, const Key *, size_t, const char *)>(
             GenerateHandlerName(tree_names, Operation::kCreate));
-    return std::make_unique<ParentResource>(
+      return std::make_unique<ParentResource>(
         std::move(create_handler), name, description, cli_example,
         rest_endpoint, parent, core_, node_fields);
   }

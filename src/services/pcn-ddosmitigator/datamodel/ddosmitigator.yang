@@ -13,7 +13,7 @@ module ddosmitigator {
   polycube-base:service-version "2.0";
   polycube-base:service-name "ddosmitigator";
   polycube-base:service-min-kernel-version "4.14.0";
-  
+
 
   uses "polycube-transparent-base:transparent-base-yang-module";
 
@@ -26,8 +26,9 @@ module ddosmitigator {
       config false;
       description "Dropped Packets/s";
       polycube-base:name-metric "ddos_stats_pps_packets";
-      polycube-base:type-metric "counter";
+      polycube-base:type-metric "C";
       polycube-base:path-metric '.stats.pps';
+      polycube-base:help-metric "Dropped Packets";
     }
 
     leaf pkts {
@@ -35,8 +36,9 @@ module ddosmitigator {
       config false;
       description "Total Dropped Packets";
        polycube-base:name-metric "ddos_stats_pkts_packets";
-        polycube-base:type-metric "counter";
-        polycube-base:path-metric '.stats.pkts';
+       polycube-base:type-metric "C";
+       polycube-base:path-metric '.stats.pkts';
+       polycube-base:help-metric "Total Dropped Packets";
     }
   }
   
@@ -44,8 +46,10 @@ module ddosmitigator {
       key "ip";
       description "Blacklisted source IP addresses";
       polycube-base:name-metric "ddos_blacklist-src_addresses";
-      polycube-base:type-metric "gauge";
+      polycube-base:type-metric "G";
       polycube-base:path-metric '."blacklist-src" |  length';
+      polycube-base:help-metric "Number of addresses in blacklist-src";
+
 
       leaf ip {
         type string;
@@ -57,9 +61,11 @@ module ddosmitigator {
         type uint64;
         config false;
         description "Dropped Packets";
-         polycube-base:name-metric "ddos_blacklist-src_drop_pkts_packets";
-        polycube-base:type-metric "counter";
+        polycube-base:name-metric "ddos_blacklist-src_drop_pkts_packets";
+        polycube-base:type-metric "C";
         polycube-base:path-metric '."blacklist-src"[i]."drop-pkts"';
+        polycube-base:help-metric "Number of dropped packets fot ip address in blacklist-src";
+
       }
   }
 
@@ -67,8 +73,10 @@ module ddosmitigator {
       key "ip";
       description "Blacklisted destination IP addresses";
       polycube-base:name-metric "ddos_blacklist-dst_addresses";
-      polycube-base:type-metric "gauge";
-      polycube-base:path-metric '."blacklist-dst" |  length'; 
+      polycube-base:type-metric "G";
+      polycube-base:path-metric '."blacklist-dst" |  length';
+      polycube-base:help-metric "Number of addresses in blacklist-dst";
+
 
       leaf ip {
         type string;
@@ -81,8 +89,10 @@ module ddosmitigator {
         config false;
         description "Dropped Packets";
         polycube-base:name-metric "ddos_blacklist-dst_drop_pkts_packets";
-        polycube-base:type-metric "counter";
+        polycube-base:type-metric "C";
         polycube-base:path-metric '."blacklist-dst"[i]."drop-pkts"';
+        polycube-base:help-metric "Number of dropped packets fot ip address in blacklist-src";
+
       }
   }
 }

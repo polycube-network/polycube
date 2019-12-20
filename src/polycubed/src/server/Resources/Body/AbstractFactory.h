@@ -87,7 +87,7 @@ class AbstractFactory {
 
   std::unique_ptr<ParentResource> BodyGeneric(
       const std::string &name, const std::string &description,
-      const std::string &cli_example, const std::string &nameMetric, const ParentResource *const parent,
+      const std::string &cli_example, const ParentResource *const parent,
       const std::vector<JsonNodeField> &node_fields, bool configuration,
       bool init_only_config, bool container_presence) const;
 
