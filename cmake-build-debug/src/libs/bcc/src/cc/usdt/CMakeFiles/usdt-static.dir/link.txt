@@ -1,0 +1,2 @@
+/usr/bin/ar qc libusdt-static.a  CMakeFiles/usdt-static.dir/usdt_args.cc.o CMakeFiles/usdt-static.dir/usdt.cc.o
+/usr/bin/ranlib libusdt-static.a

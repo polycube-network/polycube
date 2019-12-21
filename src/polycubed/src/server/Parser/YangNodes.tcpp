@@ -231,7 +231,10 @@ void Yang::ParseList(
      const auto &path_metric = FetchExtensionByIndex(
              list->ext,
              GetExtensionIndex(list->ext, list->ext_size, "path-metric", 11));
-     md->Metrics.push_back({name_metric,type_metric,path_metric,"ciao"});
+     const auto &help_metric = FetchExtensionByIndex(
+             list->ext,
+             GetExtensionIndex(list->ext, list->ext_size, "help-metric", 11));
+     md->Metrics.push_back({name_metric,type_metric,path_metric,help_metric});
 
  }
   std::string rest_endpoint;
@@ -335,8 +338,11 @@ void Yang::ParseLeaf(
       const auto &path_metric = FetchExtensionByIndex(
               leaf->ext,
               GetExtensionIndex(leaf->ext, leaf->ext_size, "path-metric", 11));
+      const auto &help_metric = FetchExtensionByIndex(
+              leaf->ext,
+              GetExtensionIndex(leaf->ext, leaf->ext_size, "help-metric", 11));
 
-      md->Metrics.push_back({name_metric,type_metric,path_metric,"ciao"});
+      md->Metrics.push_back({name_metric,type_metric,path_metric,help_metric});
 
   }
   

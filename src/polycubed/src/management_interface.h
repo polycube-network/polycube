@@ -20,10 +20,10 @@
 #include "server/Resources/Endpoint/Service.h"
 
 struct InfoMetric {
-    std::string nameMetric;
-    std::string typeMetric;
-    std::string pathMetric;
-    std::string helpMetric;
+    const std::string nameMetric;
+    const std::string typeMetric;
+    const std::string pathMetric;
+    const std::string helpMetric;
 };
 
 struct ServiceMetadata {

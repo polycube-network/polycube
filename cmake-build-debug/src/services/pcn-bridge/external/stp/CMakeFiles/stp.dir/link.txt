@@ -1,0 +1,2 @@
+/usr/bin/ar qc libstp.a  CMakeFiles/stp.dir/stp.c.o CMakeFiles/stp.dir/dependencies.c.o CMakeFiles/stp.dir/log.cpp.o
+/usr/bin/ranlib libstp.a

@@ -38,6 +38,7 @@
 #include "prometheus/text_serializer.h"
 #include "prometheus/family.h"
 
+#include <typeinfo>
 
 
 namespace polycube {
@@ -520,106 +521,123 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
 }
 
 
-//create prometheus metrics from cubes
-void RestServer::get_metrics(const Pistache::Rest::Request &request,
-                           Pistache::Http::ResponseWriter response) {
-  logRequest(request);
-  try {
-      //auto provaPino = core.get_service_controller("ddosmitigator").get_nameMetricPino();
-       //auto listServices = core.get_servicectrls_names();
+//create//prometheus metrics from cubes
+        void RestServer::get_metrics(const Pistache::Rest::Request &request,
+                                     Pistache::Http::ResponseWriter response) {
+            logRequest(request);
+            try {
+                //auto provaPino = core.get_service_controller("ddosmitigator").get_nameMetricPino();
+                //auto listServices = core.get_servicectrls_names();
 
-      auto provaPino = core.get_service_controller("ddosmitigator").get_infoMetrics();
+                //metrics
+                //json retJson = core.get_json_cubes();
+                //std::string retJsonStr = core.get_cubes();
 
-      std::string retMetrics;
-      for ( const auto &i : provaPino )
-          retMetrics += "#NAME " + i.nameMetric + "\n" +
-                  "#TYPE " + i.typeMetric + "\n" +
-                  "#PATH " + i.pathMetric + "\n" +
-                  "#HELP " + i.helpMetric + "\n";
+                std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+                std::shared_ptr<prometheus::Registry> exposer_registry_(std::make_shared<prometheus::Registry>());
+                //uri and metricHandler are not necessary, I use pistache
+                //cos'è?
+                auto registry = std::make_shared<prometheus::Registry>();
 
-      //metrics
-    json retJson = core.get_json_cubes();
-
-
-    std::string retJsonStr = core.get_cubes();    
-
-    std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
-    std::shared_ptr<prometheus::Registry> exposer_registry_(std::make_shared<prometheus::Registry>());
-    //uri and metricHandler are not necessary, I use pistache
-
-  //cos'è?
-  auto registry = std::make_shared<prometheus::Registry>();
-
-  // add a new counter family to the registry (families combine values with the
-  // same name, but distinct label dimensions)
-  auto& counter_family = prometheus::BuildCounter()
-                             .Name("num_ports_routers")
-                             .Help("Number ports of routers")
-                             .Labels({{"label", "value"}})
-                             .Register(*registry);
-
-  // add a counter to the metric family
-  auto& second_counter = counter_family.Add({{"another_label", "value"}, {"yet_another_label", "value"}});
-  second_counter.Increment();
-
-  auto& counter_hello = prometheus::BuildCounter()
-                             .Name("hello_hello")
-                             .Help("Number ports of routers")
-                             .Labels({{"label", "value2"}})
-                             .Register(*registry);
-   auto& third_counter = counter_hello.Add({});
-  third_counter.Increment(33);
-
-  auto& counter_ciao = prometheus::BuildCounter()
-                             .Name("ciao_ciao")
-                             .Help("Number ports of routers")
-                             .Labels({{"label", "value"}})
-                             .Register(*registry);
-  auto& fourth_counter = counter_ciao.Add({});
-  fourth_counter.Increment();
+                //metricshandler::collectmetrics
+                //definzione di metricfamily?
+                auto collected_metrics = std::vector<prometheus::MetricFamily>{};
 
 
-    //metricshandler::collectmetrics
-    //definzione di metricfamily?
-    auto collected_metrics = std::vector<prometheus::MetricFamily>{};
+                auto provaPino = core.get_service_controller("ddosmitigator").get_infoMetrics();
 
-    //cosa fa?
-    collectables_.push_back(registry);
+                std::string retMetrics;
+                //std::list<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
+                //std::list<std::reference_wrapper<prometheus::Counter>> counters_;
+                //for(int i=0; i<provaPino.size();i++) {
+                    // add a new counter family to the registry (families combine values with the
+                    // same name, but distinct label dimensions)
+                    /*counters_family_.push_back(prometheus::BuildCounter()
+                            .Name(provaPino[i].nameMetric)
+                            .Help(provaPino[i].helpMetric)
+                            .Labels({})
+                            .Register(*registry));
+                            */
+                    // add a counter to the metric family
+                    //counters_.push_back(counters_family_.get().Add({}));
+                //}
+                for(auto i: provaPino)
+                 retMetrics += "#NAME " + i.nameMetric + "\n" + "#TYPE " + i.typeMetric + "\n" + "#PATH " + i.pathMetric + "\n" + "#HELP " + i.helpMetric + "\n";
 
-    
+               std::vector<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
+               std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
 
-    //cosa fa?
-    for (auto&& wcollectable : collectables_) {
-      auto collectable = wcollectable.lock();
-      if (!collectable) {
-        continue;
-      }
+                for(int i=0;i<provaPino.size();i++) {
+                    counters_family_.push_back(prometheus::BuildCounter()
+                                                       .Name(provaPino[i].nameMetric)
+                                                       .Help(provaPino[i].helpMetric)
+                                                       .Labels({})
+                                                       .Register(*registry));
 
-      //Returns a list of metrics and their samples.  std::vector<prometheus::MetricFamily> &&metrics
-      //per ora funziona perché ho solo una metrica, ma se ne metto due? Devo usre collectalbes_ al posto di collectable?
-      auto&& metrics = collectable->Collect();
-      collected_metrics.insert(collected_metrics.end(),
-                              std::make_move_iterator(metrics.begin()),
-                              std::make_move_iterator(metrics.end()));
-    }
+                    //I can access directly to a counter of a family without add a counter
+                    //counters_family_[i].get().Add({}).Increment();
+
+                    //I add a counter to te family
+                    //In this way I can have a family but many counter with different label=value
+                    counters_.push_back(counters_family_[i].get().Add({}));
+
+                    counters_[i].get().Increment(i);
+                }
+
+
+               /* for(int i=0;i<provaPino.size();i++) {
+                    counters_family_.push_back(prometheus::BuildCounter()
+                                                       .Name(provaPino[i].nameMetric)
+                                                       .Help(provaPino[i].helpMetric)
+                                                       .Labels({})
+                                                       .Register(*registry));
+
+                    counters_family_[i].get().Add({}).Increment();
+
+                    counters_.push_back(counters_family_[i].get().Add({}));
+
+                    counters_[i].get().Increment(32);
+
+               }*/
+                //cosa fa?
+                collectables_.push_back(registry);
 
 
 
-    //auto metrics = collected_metrics;
-    auto serializer = std::unique_ptr<prometheus::Serializer>{new prometheus::TextSerializer()};
-   // std::string ritorno_prova = serializer->Serialize(metrics);
-    std::string ritorno_prova = serializer->Serialize(collected_metrics);
 
-    // // ask the exposer to scrape the registry on incoming scrapes
-    //exposer.RegisterCollectable(registry);
 
-      response.send(Pistache::Http::Code::Ok, retMetrics);
-      //response.send(Pistache::Http::Code::Ok, ritorno_prova + provaPino + "\n");
-  } catch (const std::runtime_error &e) {
-    logger->error("{0}", e.what());
-    response.send(Pistache::Http::Code::Bad_Request, e.what());
-  }
-}
+                //cosa fa?
+                for (auto&& wcollectable : collectables_) {
+                    auto collectable = wcollectable.lock();
+                    if (!collectable) {
+                        continue;
+                    }
+
+                    //Returns a list of metrics and their samples.  std::vector<prometheus::MetricFamily> &&metrics
+                    //per ora funziona perché ho solo una metrica, ma se ne metto due? Devo usre collectalbes_ al posto di collectable?
+                    auto&& metrics = collectable->Collect();
+                    collected_metrics.insert(collected_metrics.end(),
+                                             std::make_move_iterator(metrics.begin()),
+                                             std::make_move_iterator(metrics.end()));
+                }
+
+
+
+                //auto metrics = collected_metrics;
+                auto serializer = std::unique_ptr<prometheus::Serializer>{new prometheus::TextSerializer()};
+                // std::string ritorno_prova = serializer->Serialize(metrics);
+                std::string ritorno_prova = serializer->Serialize(collected_metrics);
+
+                // // ask the exposer to scrape the registry on incoming scrapes
+                //exposer.RegisterCollectable(registry);
+
+                //response.send(Pistache::Http::Code::Ok, retMetrics);
+                response.send(Pistache::Http::Code::Ok, ritorno_prova);
+            } catch (const std::runtime_error &e) {
+                logger->error("{0}", e.what());
+                response.send(Pistache::Http::Code::Bad_Request, e.what());
+            }
+        }
 
 
 

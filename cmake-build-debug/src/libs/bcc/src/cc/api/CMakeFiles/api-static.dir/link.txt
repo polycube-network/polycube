@@ -1,0 +1,2 @@
+/usr/bin/ar qc libapi-static.a  CMakeFiles/api-static.dir/BPF.cc.o CMakeFiles/api-static.dir/BPFTable.cc.o
+/usr/bin/ranlib libapi-static.a
