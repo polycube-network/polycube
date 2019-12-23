@@ -1,22 +1,10 @@
 Polyube metrics with Prometheus
 =================================
 
-Test phase
------------
-We chose to use the `TDD <https://en.wikipedia.org/wiki/Test-driven_development>`_ approach.
-
-
-
-Google-Test
--------------
-As a library to write tests in C++ was chosen: `googletest <https://github.com/google/googletest.git>`_
-
-
-
 
 Brief architecture
 ------------------
-grafico slide
+
 
 
 
