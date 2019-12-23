@@ -1,1 +1,0 @@
-/usr/bin/cc  -Wall -g  -rdynamic CMakeFiles/bps.dir/bps.c.o  -o bps ../src/cc/libbcc_bpf.a 

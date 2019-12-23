@@ -1,2 +1,0 @@
-/usr/bin/ar qc libb_frontend.a  CMakeFiles/b_frontend.dir/loader.cc.o CMakeFiles/b_frontend.dir/codegen_llvm.cc.o CMakeFiles/b_frontend.dir/node.cc.o CMakeFiles/b_frontend.dir/parser.cc.o CMakeFiles/b_frontend.dir/printer.cc.o CMakeFiles/b_frontend.dir/type_check.cc.o CMakeFiles/b_frontend.dir/parser.yy.cc.o CMakeFiles/b_frontend.dir/lexer.ll.cc.o
-/usr/bin/ranlib libb_frontend.a
