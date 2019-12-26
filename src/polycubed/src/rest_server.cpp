@@ -30,16 +30,8 @@
 #include "server/Server/ResponseGenerator.h"
 #include "config.h"
 #include "cubes_dump.h"
-#include "prometheus/counter.h"
-#include "prometheus/exposer.h"
-#include "prometheus/registry.h"
-#include "prometheus/metric_family.h"
-#include "prometheus/serializer.h"
-#include "prometheus/text_serializer.h"
-#include "prometheus/family.h"
 
 #include <typeinfo>
-
 
 namespace polycube {
 namespace polycubed {
@@ -158,6 +150,7 @@ void RestServer::start() {
   httpEndpoint_->setHandler(Pistache::Rest::Router::handler(router_));
   httpEndpoint_->serveThreaded();
 }
+
 
 void RestServer::shutdown() {
   logger->info("shutting down rest server ...");
@@ -520,93 +513,73 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
   }
 }
 
+void RestServer::create_metrics() {
+    logger->info("loading metrics from yang files");
+    try {
+        //uri and metricHandler are not necessary, I use pistache
+        //to registry metrics
+        registry = std::make_shared<prometheus::Registry>();
+        std::vector<std::string> name_services = core.get_servicectrls_names_vector();
 
-//create//prometheus metrics from cubes
-        void RestServer::get_metrics(const Pistache::Rest::Request &request,
-                                     Pistache::Http::ResponseWriter response) {
-            logRequest(request);
-            try {
-                //auto provaPino = core.get_service_controller("ddosmitigator").get_nameMetricPino();
-                //auto listServices = core.get_servicectrls_names();
+        for(int i=0;i<name_services.size();i++) {
+            auto metrics_service = core.get_service_controller(name_services[i]).get_infoMetrics();
 
-                //metrics
-                //json retJson = core.get_json_cubes();
-                //std::string retJsonStr = core.get_cubes();
+            for (int j = 0; j < metrics_service.size(); j++) {
 
-                std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
-                std::shared_ptr<prometheus::Registry> exposer_registry_(std::make_shared<prometheus::Registry>());
-                //uri and metricHandler are not necessary, I use pistache
-                //cos'è?
-                auto registry = std::make_shared<prometheus::Registry>();
-
-                //metricshandler::collectmetrics
-                //definzione di metricfamily?
-                auto collected_metrics = std::vector<prometheus::MetricFamily>{};
-
-
-                auto provaPino = core.get_service_controller("ddosmitigator").get_infoMetrics();
-
-                std::string retMetrics;
-                //std::list<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
-                //std::list<std::reference_wrapper<prometheus::Counter>> counters_;
-                //for(int i=0; i<provaPino.size();i++) {
-                    // add a new counter family to the registry (families combine values with the
-                    // same name, but distinct label dimensions)
-                    /*counters_family_.push_back(prometheus::BuildCounter()
-                            .Name(provaPino[i].nameMetric)
-                            .Help(provaPino[i].helpMetric)
-                            .Labels({})
-                            .Register(*registry));
-                            */
-                    // add a counter to the metric family
-                    //counters_.push_back(counters_family_.get().Add({}));
-                //}
-                for(auto i: provaPino)
-                 retMetrics += "#NAME " + i.nameMetric + "\n" + "#TYPE " + i.typeMetric + "\n" + "#PATH " + i.pathMetric + "\n" + "#HELP " + i.helpMetric + "\n";
-
-               std::vector<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
-               std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
-
-                for(int i=0;i<provaPino.size();i++) {
-                    counters_family_.push_back(prometheus::BuildCounter()
-                                                       .Name(provaPino[i].nameMetric)
-                                                       .Help(provaPino[i].helpMetric)
-                                                       .Labels({})
-                                                       .Register(*registry));
+                if (metrics_service[j].typeMetric == "C") {
+                    map_metrics[name_services[i]].counters_family_.push_back(prometheus::BuildCounter()
+                                                                                     .Name(metrics_service[j].nameMetric)
+                                                                                     .Help(metrics_service[j].helpMetric)
+                                                                                     .Labels({})
+                                                                                     .Register(*registry));
 
                     //I can access directly to a counter of a family without add a counter
                     //counters_family_[i].get().Add({}).Increment();
 
                     //I add a counter to te family
                     //In this way I can have a family but many counter with different label=value
-                    counters_.push_back(counters_family_[i].get().Add({}));
+                    map_metrics[name_services[i]].counters_.push_back(
+                            map_metrics[name_services[i]].counters_family_.back().get().Add({}));
 
-                    counters_[i].get().Increment(i);
+                    //map_metrics[name_services[i]].counters_.back().get().Increment(j);
+                } else if (metrics_service[j].typeMetric == "G") {
+
+                    map_metrics[name_services[i]].gauges_family_.push_back(prometheus::BuildGauge()
+                                                                                   .Name(metrics_service[j].nameMetric)
+                                                                                   .Help(metrics_service[j].helpMetric)
+                                                                                   .Labels({})
+                                                                                   .Register(*registry));
+                    //I can access directly to a counter of a family without add a counter
+                    //counters_family_[i].get().Add({}).Increment();
+
+                    //I add a counter to te family
+                    //In this way I can have a family but many counter with different label=value
+                    map_metrics[name_services[i]].gauges_.push_back(
+                            map_metrics[name_services[i]].gauges_family_.back().get().Add({}));
+
+                    //map_metrics[name_services[i]].gauges_.back().get().Set(1);
                 }
+            }
+        }
+        //all metrics created are put into collectalbes_ thanks to registry
+        //collectables_ can collects al types of metrics (counter, gauge, histogram, summary)
+        collectables_.push_back(registry);
+    }
+    catch (const std::runtime_error &e) {
+        logger->error("{0}", e.what());
+    }
+}
 
 
-               /* for(int i=0;i<provaPino.size();i++) {
-                    counters_family_.push_back(prometheus::BuildCounter()
-                                                       .Name(provaPino[i].nameMetric)
-                                                       .Help(provaPino[i].helpMetric)
-                                                       .Labels({})
-                                                       .Register(*registry));
+//create prometheus metrics from yang files
+void RestServer::get_metrics(const Pistache::Rest::Request &request,
+                                     Pistache::Http::ResponseWriter response) {
+            logRequest(request);
+            try {
+                //vector of MetricFamily
+                auto collected_metrics = std::vector<prometheus::MetricFamily>{};
 
-                    counters_family_[i].get().Add({}).Increment();
-
-                    counters_.push_back(counters_family_[i].get().Add({}));
-
-                    counters_[i].get().Increment(32);
-
-               }*/
-                //cosa fa?
-                collectables_.push_back(registry);
-
-
-
-
-
-                //cosa fa?
+                //collectables_ is filled in crete_metrics
                 for (auto&& wcollectable : collectables_) {
                     auto collectable = wcollectable.lock();
                     if (!collectable) {
@@ -614,39 +587,22 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
                     }
 
                     //Returns a list of metrics and their samples.  std::vector<prometheus::MetricFamily> &&metrics
-                    //per ora funziona perché ho solo una metrica, ma se ne metto due? Devo usre collectalbes_ al posto di collectable?
                     auto&& metrics = collectable->Collect();
                     collected_metrics.insert(collected_metrics.end(),
                                              std::make_move_iterator(metrics.begin()),
                                              std::make_move_iterator(metrics.end()));
                 }
 
-
-
                 //auto metrics = collected_metrics;
                 auto serializer = std::unique_ptr<prometheus::Serializer>{new prometheus::TextSerializer()};
-                // std::string ritorno_prova = serializer->Serialize(metrics);
-                std::string ritorno_prova = serializer->Serialize(collected_metrics);
+                std::string ret_metrics = serializer->Serialize(collected_metrics);
 
-                // // ask the exposer to scrape the registry on incoming scrapes
-                //exposer.RegisterCollectable(registry);
-
-                //response.send(Pistache::Http::Code::Ok, retMetrics);
-                response.send(Pistache::Http::Code::Ok, ritorno_prova);
+                response.send(Pistache::Http::Code::Ok, ret_metrics);
             } catch (const std::runtime_error &e) {
                 logger->error("{0}", e.what());
                 response.send(Pistache::Http::Code::Bad_Request, e.what());
             }
-        }
-
-
-
-
-
-
-
-
-
+}
 
 void RestServer::cubes_help(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response) {

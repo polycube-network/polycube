@@ -112,6 +112,15 @@ std::list<std::string> PolycubedCore::get_servicectrls_names() {
   return list;
 }
 
+std::vector<std::string> PolycubedCore::get_servicectrls_names_vector() {
+        std::vector<std::string> vector;
+        for (auto &it : servicectrls_map_) {
+            vector.push_back(it.first);
+        }
+
+        return vector;
+    }
+
 std::list<ServiceController const *> PolycubedCore::get_servicectrls_list()
     const {
   std::list<ServiceController const *> list;

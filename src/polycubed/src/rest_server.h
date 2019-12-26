@@ -29,6 +29,13 @@
 #include <algorithm>
 #include "polycube/services/json.hpp"
 #include "polycubed_core.h"
+#include "prometheus/counter.h"
+#include "prometheus/exposer.h"
+#include "prometheus/registry.h"
+#include "prometheus/metric_family.h"
+#include "prometheus/serializer.h"
+#include "prometheus/text_serializer.h"
+#include "prometheus/family.h"
 
 // #define LOG_DEBUG_
 
@@ -61,8 +68,10 @@ class RestServer {
   void start();
   void shutdown();
   void load_last_topology();
+  void create_metrics();
 
- private:
+
+private:
   void setup_routes();
   // this function has to be static because has to be passed as a callback.
   static int client_verify_callback(int preverify_ok, void *ctx);
@@ -150,6 +159,17 @@ class RestServer {
   static std::string blacklist_cert_path;
 
   std::shared_ptr<spdlog::logger> logger;
+  struct Metric {
+        std::vector<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
+        std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
+        std::vector<std::reference_wrapper<prometheus::Family<prometheus::Gauge>>> gauges_family_;
+        std::vector<std::reference_wrapper<prometheus::Gauge>> gauges_;
+
+    };
+  std::map<std::string, Metric> map_metrics;
+  std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+  std::shared_ptr<prometheus::Registry> registry;
+
 };
 
 }  // namespace polycubed

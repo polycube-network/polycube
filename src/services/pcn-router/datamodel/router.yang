@@ -19,17 +19,23 @@ module router {
 
   uses "polycube-standard-base:standard-base-yang-module" {
      augment ports {
-      polycube-base:name-metric "router_number_ports";
-      polycube-base:type-metric "cgauge";
-      polycube-base:path-metric 'jsonpath';
       leaf ip {
         type inet:ipv4-prefix;
         description "IP address and prefix of the port";
         polycube-base:cli-example "10.0.0.1/24";
+        polycube-base:name-metric "router_ip_ports";
+        polycube-base:type-metric "G";
+        polycube-base:path-metric 'TODO';
+        polycube-base:help-metric "Number of ports of the router with ip";
       }
 
       list secondaryip {
         description "Additional IP addresses for the port";
+        polycube-base:cli-example "10.0.0.1/24";
+        polycube-base:name-metric "router_secondaryip_ports";
+        polycube-base:type-metric "G";
+        polycube-base:path-metric 'TODO';
+        polycube-base:help-metric "Number of ports of the router with secondary ip";
         key "ip";
         leaf ip {
           type inet:ipv4-prefix;
@@ -42,6 +48,11 @@ module router {
         type yang:mac-address;
         description "MAC address of the port";
         polycube-base:cli-example "B3:23:45:F5:3A";
+        polycube-base:cli-example "10.0.0.1/24";
+        polycube-base:name-metric "router_mac_ports";
+        polycube-base:type-metric "G";
+        polycube-base:path-metric 'TODO';
+        polycube-base:help-metric "Number of ports of the router with mac";
       }
     }
   }
@@ -49,6 +60,10 @@ module router {
   list route {
     key "network nexthop";
     description "Entry associated with the routing table";
+    polycube-base:name-metric "router_route_routes";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of entries in routing table";
     leaf network {
       type inet:ipv4-prefix;
       mandatory true;
@@ -82,6 +97,10 @@ module router {
   list arp-table {
     key "address";
     description "Entry associated with the ARP table";
+    polycube-base:name-metric "router_arp_table_entries";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of entries in arp table";
     leaf address {
       type inet:ip-prefix;
       mandatory true;

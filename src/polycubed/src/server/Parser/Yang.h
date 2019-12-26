@@ -142,6 +142,11 @@ class Yang {
                  const std::shared_ptr<Resources::Body::ParentResource> &parent,
                  bool generate_endpoint,
                  ServiceMetadata *md) const;
+  void ParseAugment(const lys_node_augment *augument,
+                   std::queue<std::string> parsed_names,
+                   const std::shared_ptr<Resources::Body::ParentResource> &parent,
+                   bool generate_endpoint,
+                   ServiceMetadata *md) const;
 
   void ParseLeaf(const lys_node_leaf *leaf,
                  std::queue<std::string> parsed_names,

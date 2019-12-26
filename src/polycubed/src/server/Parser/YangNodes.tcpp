@@ -150,8 +150,6 @@ void Yang::ParseNode(
                    std::move(parsed_names), parent, md);
     break;
   case LYS_ANYDATA:
-    ParseAny(reinterpret_cast<const lys_node_anydata *>(data),
-             std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_EXT:
     break;
@@ -318,6 +316,31 @@ void Yang::ParseList(
   }
   parent->AddChild(std::move(resource));
 }
+
+void Yang::ParseAugment(
+            const lys_node_augment *augment, std::queue<std::string> parsed_names,
+            const std::shared_ptr<Resources::Body::ParentResource> &parent,
+            const bool generate_endpoint, ServiceMetadata *md) const {
+    std::cout << "porco demonio \n\n";
+        const auto &name_metric = FetchExtensionByIndex(
+                augment->ext,
+                GetExtensionIndex(augment->ext, augment->ext_size, "name-metric", 11));
+        if(!name_metric.empty()) {
+            const auto &type_metric = FetchExtensionByIndex(
+                    augment->ext,
+                    GetExtensionIndex(augment->ext, augment->ext_size, "type-metric", 11));
+            const auto &path_metric = FetchExtensionByIndex(
+                    augment->ext,
+                    GetExtensionIndex(augment->ext, augment->ext_size, "path-metric", 11));
+            const auto &help_metric = FetchExtensionByIndex(
+                    augment->ext,
+                    GetExtensionIndex(augment->ext, augment->ext_size, "help-metric", 11));
+            md->Metrics.push_back({name_metric, type_metric, path_metric, help_metric});
+
+        }
+    }
+
+
 
 void Yang::ParseLeaf(
     const lys_node_leaf *leaf, std::queue<std::string> parsed_names,
