@@ -386,6 +386,7 @@ nlohmann::json BaseCube::to_json() const {
   j["service-name"] = service_name_;
   j["type"] = cube_type_to_string(type_);
   j["loglevel"] = logLevelString(level_);
+
   return j;
 }
 

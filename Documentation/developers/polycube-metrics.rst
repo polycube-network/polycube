@@ -31,7 +31,7 @@ Done
 - [X] Extensions added in polycube-base.yang to support metrics in OpenMetrics format
 - [X] Data structures have been added in ServiceMetadata in management_interface.h file
 - [X] Metrics (Counter, Gauge) added in the yang of some services (for now only in leaf and list)
-- [X] Prototypes in YangNodes.tcpp have been changed (ServiceMetadata * md parameter has been added) to allow saving
+- [X] Prototypes in Yang.h then in YangNodes.tcpp have been changed (ServiceMetadata * md parameter has been added) to allow saving
 metrics read in yang as metadata defined in management_interface and which can be accessed using a function
 defined in service_controller which can in turn be called by a core element in the rest server
 - [X] Adding code in ParseLeaf and ParseList to read metric extensions and save

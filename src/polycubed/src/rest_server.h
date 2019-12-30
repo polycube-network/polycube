@@ -66,42 +66,36 @@ namespace polycube {
                       const std::string &black_cert_list_path = "");
 
             void start();
-
             void shutdown();
-
             void load_last_topology();
-
             void create_metrics();
-
+            //TODO Once the code is complete, it will return the values ​​of the metrics taken
+            //from the json of the cubes that are instantiated
+            //For now it exposes the metrics in OpenMetrics format with null values
+            void get_metrics(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response);
 
         private:
             void setup_routes();
-
             // this function has to be static because has to be passed as a callback.
             static int client_verify_callback(int preverify_ok, void *ctx);
 
             void root_handler(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response);
-
             void root_help(HelpType type, Pistache::Http::ResponseWriter response);
-
             void root_completion(HelpType type, Pistache::Http::ResponseWriter response);
 
             void post_servicectrl(const Pistache::Rest::Request &request,
                                   Pistache::Http::ResponseWriter response);
-
             void get_servicectrls(const Pistache::Rest::Request &request,
                                   Pistache::Http::ResponseWriter response);
-
             void get_servicectrl(const Pistache::Rest::Request &request,
                                  Pistache::Http::ResponseWriter response);
-
             void delete_servicectrl(const Pistache::Rest::Request &request,
                                     Pistache::Http::ResponseWriter response);
 
             void get_cubes(const Pistache::Rest::Request &request,
                            Pistache::Http::ResponseWriter response);
-
             void get_cube(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response);
 
@@ -116,7 +110,6 @@ namespace polycube {
 
             void get_netdevs(const Pistache::Rest::Request &request,
                              Pistache::Http::ResponseWriter response);
-
             void get_netdev(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response);
 
@@ -128,28 +121,22 @@ namespace polycube {
 
             void connect(const Pistache::Rest::Request &request,
                          Pistache::Http::ResponseWriter response);
-
             void disconnect(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response);
 
             void connect_help(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response);
-
             void connect_completion(const std::string &p1,
                                     Pistache::Http::ResponseWriter response);
 
             void attach(const Pistache::Rest::Request &request,
                         Pistache::Http::ResponseWriter response);
-
             void detach(const Pistache::Rest::Request &request,
                         Pistache::Http::ResponseWriter response);
-
             void topology(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response);
-
             void get_if_topology(const Pistache::Rest::Request &request,
                                  Pistache::Http::ResponseWriter response);
-
             void topology_help(const Pistache::Rest::Request &request,
                                Pistache::Http::ResponseWriter response);
 
@@ -162,14 +149,7 @@ namespace polycube {
             void create_cubes(json &cubes);
 
             void logRequest(const Pistache::Rest::Request &request);
-
             void logJson(json j);
-
-            //TODO Once the code is complete, it will return the values ​​of the metrics taken
-            //from the json of the cubes that are instantiated
-            //For now it exposes the metrics in OpenMetrics format with null values
-            void get_metrics(const Pistache::Rest::Request &request,
-                             Pistache::Http::ResponseWriter response);
 
             PolycubedCore &core;
             std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
@@ -189,18 +169,18 @@ namespace polycube {
                 std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
                 std::vector<std::reference_wrapper<prometheus::Family < prometheus::Gauge>>> gauges_family_;
                 std::vector<std::reference_wrapper<prometheus::Gauge>> gauges_;
-
             };
             //the map will contain the name of the service (not the cube) as a key
             //and the metric information taken from the yang files as the value
             std::map<std::string, Metric> map_metrics;
+
             //Interface implemented by anything that can be used by Prometheus to collect metrics.
             // A Collectable has to be registered for collection
             std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+
             //The Registry is responsible to expose data to a class/method/function
             //"bridge", which returns the metrics in a format Prometheus supports
             std::shared_ptr<prometheus::Registry> registry;
-
         };
 
     }  // namespace polycubed

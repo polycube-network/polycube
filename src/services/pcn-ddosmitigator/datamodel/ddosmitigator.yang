@@ -50,7 +50,6 @@ module ddosmitigator {
       polycube-base:path-metric '$.blacklist-src.length';
       polycube-base:help-metric "Number of addresses in blacklist-src";
 
-
       leaf ip {
         type string;
         description "Source IP Address";
