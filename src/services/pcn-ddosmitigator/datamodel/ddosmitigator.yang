@@ -37,7 +37,7 @@ module ddosmitigator {
       description "Total Dropped Packets";
        polycube-base:name-metric "ddos_stats_pkts_packets";
        polycube-base:type-metric "C";
-       polycube-base:path-metric '.stats.pkts';
+       polycube-base:path-metric '$.stats.pkts';
        polycube-base:help-metric "Total Dropped Packets";
     }
   }
@@ -47,7 +47,7 @@ module ddosmitigator {
       description "Blacklisted source IP addresses";
       polycube-base:name-metric "ddos_blacklist_src_addresses";
       polycube-base:type-metric "G";
-      polycube-base:path-metric '."blacklist-src" |  length';
+      polycube-base:path-metric '$.blacklist-src.length';
       polycube-base:help-metric "Number of addresses in blacklist-src";
 
 

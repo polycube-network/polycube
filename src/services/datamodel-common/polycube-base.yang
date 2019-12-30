@@ -65,7 +65,7 @@ module polycube-base {
   //metrics
   extension path-metric {
     argument "value";
-    description "Json path for a metric";
+    description "Json path of a metric";
   }
   //metrics
     extension help-metric {

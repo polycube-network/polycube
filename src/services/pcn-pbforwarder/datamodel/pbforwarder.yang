@@ -22,6 +22,10 @@ module pbforwarder {
   list rules {
     key "id";
     description "Rule that contains all possible matches and the action for a packet";
+    polycube-base:name-metric "pbforwarder_rules_number_rules";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of rules";
 
     leaf id {
       type uint32;

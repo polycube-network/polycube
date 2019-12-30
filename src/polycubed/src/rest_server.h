@@ -48,129 +48,160 @@ using json = nlohmann::json;
 using Pistache::Rest::Request;
 
 namespace polycube {
-namespace polycubed {
+    namespace polycubed {
 
-class RestServer {
- public:
-  // RestServer(Net::Address addr);
-  RestServer(Pistache::Address addr, PolycubedCore &core);
+        class RestServer {
+        public:
+            // RestServer(Net::Address addr);
+            RestServer(Pistache::Address addr, PolycubedCore &core);
 
-  std::shared_ptr<Pistache::Rest::Router> get_router();
+            std::shared_ptr<Pistache::Rest::Router> get_router();
 
-  static const std::string base;
+            static const std::string base;
 
-  void init(size_t thr = 1, const std::string &server_cert = "",
-            const std::string &server_key = "",
-            const std::string &root_ca_cert = "",
-            const std::string &white_cert_list_path = "",
-            const std::string &black_cert_list_path = "");
+            void init(size_t thr = 1, const std::string &server_cert = "",
+                      const std::string &server_key = "",
+                      const std::string &root_ca_cert = "",
+                      const std::string &white_cert_list_path = "",
+                      const std::string &black_cert_list_path = "");
 
-  void start();
-  void shutdown();
-  void load_last_topology();
-  void create_metrics();
+            void start();
+
+            void shutdown();
+
+            void load_last_topology();
+
+            void create_metrics();
 
 
-private:
-  void setup_routes();
-  // this function has to be static because has to be passed as a callback.
-  static int client_verify_callback(int preverify_ok, void *ctx);
+        private:
+            void setup_routes();
 
-  void root_handler(const Pistache::Rest::Request &request,
-                    Pistache::Http::ResponseWriter response);
-  void root_help(HelpType type, Pistache::Http::ResponseWriter response);
-  void root_completion(HelpType type, Pistache::Http::ResponseWriter response);
+            // this function has to be static because has to be passed as a callback.
+            static int client_verify_callback(int preverify_ok, void *ctx);
 
-  void post_servicectrl(const Pistache::Rest::Request &request,
-                        Pistache::Http::ResponseWriter response);
-  void get_servicectrls(const Pistache::Rest::Request &request,
-                        Pistache::Http::ResponseWriter response);
-  void get_servicectrl(const Pistache::Rest::Request &request,
-                       Pistache::Http::ResponseWriter response);
-  void delete_servicectrl(const Pistache::Rest::Request &request,
+            void root_handler(const Pistache::Rest::Request &request,
+                              Pistache::Http::ResponseWriter response);
+
+            void root_help(HelpType type, Pistache::Http::ResponseWriter response);
+
+            void root_completion(HelpType type, Pistache::Http::ResponseWriter response);
+
+            void post_servicectrl(const Pistache::Rest::Request &request,
+                                  Pistache::Http::ResponseWriter response);
+
+            void get_servicectrls(const Pistache::Rest::Request &request,
+                                  Pistache::Http::ResponseWriter response);
+
+            void get_servicectrl(const Pistache::Rest::Request &request,
+                                 Pistache::Http::ResponseWriter response);
+
+            void delete_servicectrl(const Pistache::Rest::Request &request,
+                                    Pistache::Http::ResponseWriter response);
+
+            void get_cubes(const Pistache::Rest::Request &request,
+                           Pistache::Http::ResponseWriter response);
+
+            void get_cube(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response);
 
-  void get_cubes(const Pistache::Rest::Request &request,
-                 Pistache::Http::ResponseWriter response);
-  void get_cube(const Pistache::Rest::Request &request,
-                Pistache::Http::ResponseWriter response);
+            void post_cubes(const Pistache::Rest::Request &request,
+                            Pistache::Http::ResponseWriter response);
 
-  void post_cubes(const Pistache::Rest::Request &request,
-                     Pistache::Http::ResponseWriter response);
+            void cubes_help(const Pistache::Rest::Request &request,
+                            Pistache::Http::ResponseWriter response);
 
-  void cubes_help(const Pistache::Rest::Request &request,
-                  Pistache::Http::ResponseWriter response);
+            void cube_help(const Pistache::Rest::Request &request,
+                           Pistache::Http::ResponseWriter response);
 
-  void cube_help(const Pistache::Rest::Request &request,
-                 Pistache::Http::ResponseWriter response);
+            void get_netdevs(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response);
 
-  void get_netdevs(const Pistache::Rest::Request &request,
-                   Pistache::Http::ResponseWriter response);
-  void get_netdev(const Pistache::Rest::Request &request,
-                  Pistache::Http::ResponseWriter response);
+            void get_netdev(const Pistache::Rest::Request &request,
+                            Pistache::Http::ResponseWriter response);
 
-  void netdevs_help(const Pistache::Rest::Request &request,
-                    Pistache::Http::ResponseWriter response);
+            void netdevs_help(const Pistache::Rest::Request &request,
+                              Pistache::Http::ResponseWriter response);
 
-  void netdev_help(const Pistache::Rest::Request &request,
-                   Pistache::Http::ResponseWriter response);
+            void netdev_help(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response);
 
-  void connect(const Pistache::Rest::Request &request,
-               Pistache::Http::ResponseWriter response);
-  void disconnect(const Pistache::Rest::Request &request,
-                  Pistache::Http::ResponseWriter response);
+            void connect(const Pistache::Rest::Request &request,
+                         Pistache::Http::ResponseWriter response);
 
-  void connect_help(const Pistache::Rest::Request &request,
-                    Pistache::Http::ResponseWriter response);
-  void connect_completion(const std::string &p1,
+            void disconnect(const Pistache::Rest::Request &request,
+                            Pistache::Http::ResponseWriter response);
+
+            void connect_help(const Pistache::Rest::Request &request,
+                              Pistache::Http::ResponseWriter response);
+
+            void connect_completion(const std::string &p1,
+                                    Pistache::Http::ResponseWriter response);
+
+            void attach(const Pistache::Rest::Request &request,
+                        Pistache::Http::ResponseWriter response);
+
+            void detach(const Pistache::Rest::Request &request,
+                        Pistache::Http::ResponseWriter response);
+
+            void topology(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response);
 
-  void attach(const Pistache::Rest::Request &request,
-              Pistache::Http::ResponseWriter response);
-  void detach(const Pistache::Rest::Request &request,
-              Pistache::Http::ResponseWriter response);
-  void topology(const Pistache::Rest::Request &request,
-                Pistache::Http::ResponseWriter response);
-  void get_if_topology(const Pistache::Rest::Request &request,
-                Pistache::Http::ResponseWriter response);
-  void topology_help(const Pistache::Rest::Request &request,
-                     Pistache::Http::ResponseWriter response);
+            void get_if_topology(const Pistache::Rest::Request &request,
+                                 Pistache::Http::ResponseWriter response);
 
-  void redirect(const Pistache::Rest::Request &request,
-                Pistache::Http::ResponseWriter response);
+            void topology_help(const Pistache::Rest::Request &request,
+                               Pistache::Http::ResponseWriter response);
 
-  void get_version(const Pistache::Rest::Request &request,
-                   Pistache::Http::ResponseWriter response);
+            void redirect(const Pistache::Rest::Request &request,
+                          Pistache::Http::ResponseWriter response);
 
-  void create_cubes(json &cubes);
+            void get_version(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response);
 
-  void logRequest(const Pistache::Rest::Request &request);
-  void logJson(json j);
+            void create_cubes(json &cubes);
 
-  //metrics
-  void get_metrics(const Pistache::Rest::Request &request,
-                     Pistache::Http::ResponseWriter response);
+            void logRequest(const Pistache::Rest::Request &request);
 
-  PolycubedCore &core;
-  std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
-  std::shared_ptr<Pistache::Rest::Router> router_;
+            void logJson(json j);
 
-  static std::string whitelist_cert_path;
-  static std::string blacklist_cert_path;
+            //TODO Once the code is complete, it will return the values ​​of the metrics taken
+            //from the json of the cubes that are instantiated
+            //For now it exposes the metrics in OpenMetrics format with null values
+            void get_metrics(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response);
 
-  std::shared_ptr<spdlog::logger> logger;
-  struct Metric {
-        std::vector<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
-        std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
-        std::vector<std::reference_wrapper<prometheus::Family<prometheus::Gauge>>> gauges_family_;
-        std::vector<std::reference_wrapper<prometheus::Gauge>> gauges_;
+            PolycubedCore &core;
+            std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
+            std::shared_ptr<Pistache::Rest::Router> router_;
 
-    };
-  std::map<std::string, Metric> map_metrics;
-  std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
-  std::shared_ptr<prometheus::Registry> registry;
+            static std::string whitelist_cert_path;
+            static std::string blacklist_cert_path;
 
-};
+            std::shared_ptr<spdlog::logger> logger;
 
-}  // namespace polycubed
+            //the struct Metric for now is composed of two vectors for each metric (Gauge and Counter),
+            //one indicates the family of the metric and one the metric itself
+            //Note: families combine values with the same name, but distinct label dimensions
+            //TODO meyabe there are best ways
+            struct Metric {
+                std::vector<std::reference_wrapper<prometheus::Family < prometheus::Counter>>> counters_family_;
+                std::vector<std::reference_wrapper<prometheus::Counter>> counters_;
+                std::vector<std::reference_wrapper<prometheus::Family < prometheus::Gauge>>> gauges_family_;
+                std::vector<std::reference_wrapper<prometheus::Gauge>> gauges_;
+
+            };
+            //the map will contain the name of the service (not the cube) as a key
+            //and the metric information taken from the yang files as the value
+            std::map<std::string, Metric> map_metrics;
+            //Interface implemented by anything that can be used by Prometheus to collect metrics.
+            // A Collectable has to be registered for collection
+            std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+            //The Registry is responsible to expose data to a class/method/function
+            //"bridge", which returns the metrics in a format Prometheus supports
+            std::shared_ptr<prometheus::Registry> registry;
+
+        };
+
+    }  // namespace polycubed
 }  // namespace polycube

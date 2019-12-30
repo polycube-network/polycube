@@ -4,6 +4,8 @@ find_package(Pistache CONFIG REQUIRED)
 
 find_package(prometheus-cpp CONFIG REQUIRED)
 
+#find_package(jsoncons CONFIG REQUIRED)
+
 find_package(OpenSSL REQUIRED)
 include_directories(OPENSSL_INCLUDE_DIR)
 
@@ -23,6 +25,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/)
 # include_directories(${CMAKE_SOURCE_DIR}/src/libs/prometheus-cpp/core/include)
 # include_directories(${CMAKE_SOURCE_DIR}/src/libs/prometheus-cpp/pull)
 # include_directories(${CMAKE_SOURCE_DIR}/src/libs/prometheus-cpp/push)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/jsoncons/include)
 
 GET_PROPERTY(LOAD_SERVICES GLOBAL PROPERTY LOAD_SERVICES_)
 
@@ -84,6 +87,7 @@ set(polycubed_libraries
   prometheus-cpp-core
   prometheus-cpp-pull
   prometheus-cpp-push
+  jsoncons
   pthread
   bcc-static
   yang

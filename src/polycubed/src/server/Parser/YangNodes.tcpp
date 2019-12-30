@@ -321,7 +321,6 @@ void Yang::ParseAugment(
             const lys_node_augment *augment, std::queue<std::string> parsed_names,
             const std::shared_ptr<Resources::Body::ParentResource> &parent,
             const bool generate_endpoint, ServiceMetadata *md) const {
-    std::cout << "porco demonio \n\n";
         const auto &name_metric = FetchExtensionByIndex(
                 augment->ext,
                 GetExtensionIndex(augment->ext, augment->ext_size, "name-metric", 11));

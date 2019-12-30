@@ -108,6 +108,7 @@ class ServiceController {
 
   // these objects save all the common objects accross different services
   static std::unordered_map<std::string, std::shared_ptr<BaseCubeIface>> cubes;
+
   static std::unordered_map<std::string, std::string> ports_to_ports;
 
   static std::unordered_map<std::string, std::string> cubes_x_service;

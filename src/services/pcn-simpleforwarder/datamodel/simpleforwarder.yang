@@ -19,6 +19,10 @@ module simpleforwarder {
   list actions {
     key "inport";
     description "Entry of the Actions table";
+    polycube-base:name-metric "simpleforwarder_actions_entries";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of entries of the Actions table";
     leaf inport {
       type string;
       mandatory true;
@@ -26,6 +30,10 @@ module simpleforwarder {
     }
 
     leaf action {
+      polycube-base:name-metric "simpleforwarder_action_types";
+      polycube-base:type-metric "G";
+      polycube-base:path-metric 'TODO';
+      polycube-base:help-metric "Number of action of type {DROP, SLOWPATH, FORWARD}";
       type enumeration {
         enum DROP;
         enum SLOWPATH;
