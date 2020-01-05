@@ -60,4 +60,4 @@ TODO
 - [] Obtain from the output files of polycube-codegen all the jsonpaths for the metrics and add them (update them) to the extensions in the yang
 - [] Use the metric types Histogram and Summary
 - [] In the rest_server access all cubes given the name of a service
-- [] Document the addition of metrics to an existing service
+- [] Continue the documentation
