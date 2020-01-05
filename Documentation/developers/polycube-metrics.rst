@@ -22,10 +22,14 @@ The library chosen to obtain the value of a metric from the json of an instanced
 How to add metrics to a service
 --------------------------------
 To add a metric to a service you must add the extensions defined in polycube-base.yang to the chosen point of the service yang file (which can be a leaf, a container, a list, an augment or similar):
-- polycube-base: name-metric: you must respect OpenMetrics rules
-- polycube-base: type-metric: gauge, counter, histogram, summary
-- polycube-base: help-metric: a summary to help those who read the metrics
-- polycube-base: path-metric: from the polycube-codegen output file (with a few modifications) you have to take the jsonpath up to the point where the metric is written.
+
+- polycube-base:name-metric: you must respect OpenMetrics rules
+
+- polycube-base:type-metric: gauge, counter, histogram, summary
+
+- polycube-base:help-metric: a summary to help those who read the metrics
+
+- polycube-base:path-metric: from the polycube-codegen output file (with a few modifications) you have to take the jsonpath up to the point where the metric is written.
 
 
 
