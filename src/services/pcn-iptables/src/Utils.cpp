@@ -523,7 +523,7 @@ bool Chain::interfaceFromRulesToMap(
   if (interfaces.size() != 0 && dont_care_rules.size() != 0) {
     std::vector<uint64_t> bitVector(
         FROM_NRULES_TO_NELEMENTS(Iptables::max_rules_));
-    interfaces.insert(std::pair<uint16_t, std::vector<uint64_t>>(0, bitVector));
+    interfaces.insert(std::pair<uint16_t, std::vector<uint64_t>>(0xffff, bitVector));
     for (auto const &ruleNumber : dont_care_rules) {
       for (auto &interface : interfaces) {
         SET_BIT((interface.second)[ruleNumber / 63], ruleNumber % 63);
