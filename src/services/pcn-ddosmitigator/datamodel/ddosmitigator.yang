@@ -27,7 +27,7 @@ module ddosmitigator {
       description "Dropped Packets/s";
       polycube-base:name-metric "ddos_stats_pps_packets";
       polycube-base:type-metric "C";
-      polycube-base:path-metric '.stats.pps';
+      polycube-base:path-metric '$.stats.pps';
       polycube-base:help-metric "Dropped Packets";
     }
 
@@ -62,7 +62,7 @@ module ddosmitigator {
         description "Dropped Packets";
         polycube-base:name-metric "ddos_blacklist_src_drop_pkts_packets";
         polycube-base:type-metric "C";
-        polycube-base:path-metric '."blacklist-src"[i]."drop-pkts"';
+        polycube-base:path-metric '$.blacklist-src.drop-pkts'; //TODO
         polycube-base:help-metric "Number of dropped packets of ip address in blacklist-src";
       }
   }
@@ -72,7 +72,7 @@ module ddosmitigator {
       description "Blacklisted destination IP addresses";
       polycube-base:name-metric "ddos_blacklist_dst_addresses";
       polycube-base:type-metric "G";
-      polycube-base:path-metric '."blacklist-dst" |  length';
+      polycube-base:path-metric '$.blacklist-dst.length';
       polycube-base:help-metric "Number of addresses in blacklist-dst";
 
 
@@ -88,7 +88,7 @@ module ddosmitigator {
         description "Dropped Packets";
         polycube-base:name-metric "ddos_blacklist_dst_drop_pkts_packets";
         polycube-base:type-metric "C";
-        polycube-base:path-metric '."blacklist-dst"[i]."drop-pkts"';
+        polycube-base:path-metric '$.blacklist-dst.drop-pkts'; //TODO';
         polycube-base:help-metric "Number of dropped packets of ip address in blacklist-src";
       }
   }
