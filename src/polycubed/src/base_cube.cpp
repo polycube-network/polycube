@@ -140,6 +140,16 @@ int BaseCube::get_table_fd(const std::string &table_name, int index,
   }
 }
 
+const ebpf::TableDesc &BaseCube::get_table_desc(const std::string &table_name,
+                                         int index, ProgramType type) {
+  switch (type) {
+  case ProgramType::INGRESS:
+    return ingress_programs_[index]->get_table(table_name).getTableDescription();
+  case ProgramType::EGRESS:
+    return egress_programs_[index]->get_table(table_name).getTableDescription();
+  }
+}
+
 void BaseCube::reload(const std::string &code, int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   return do_reload(code, index, type);
