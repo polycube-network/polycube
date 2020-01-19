@@ -3,16 +3,23 @@
 # cleanup environment before exit
 function cleanup {
   set +e
+  
   echo "killing polycubed ..."
-  sudo pkill polycubed >> $test_tmp
+  if [ -z "$KILL_COMMAND" ]
+  then
+      sudo pkill polycubed >> $test_tmp
+  else
+      `$KILL_COMMAND` >> $test_tmp
+  fi
+
   echo "{ \"passed\":\"$test_passed\", \"total\":\"$test_total\", \"test_log\":\"$test_log\" }" > $RESULT_JSON
 
   cat $test_results
 
   echo ""
-  echo "FAILED TESTS:"
+  echo "Failed TESTS:"
   echo ""
-  cat $test_results | grep FAILED -A 1
+  cat $test_results | grep Failed -A 1
 
   if $failed ; then
     exit 1
@@ -34,17 +41,17 @@ function log_test {
   fi
   test_total=$(($test_total+1))
   if [ $status -ne 0 ]; then
-    echo "++++TEST $1 FAILED++++"
-    echo "++++TEST $1 FAILED++++" >> $test_results
-    echo "++++TEST $1 FAILED++++" >> $test_tmp
+    echo "++++TEST $1 Failed++++"
+    echo "++++TEST $1 Failed++++" >> $test_results
+    echo "++++TEST $1 Failed++++" >> $test_tmp
     failed=true
-    cat $test_tmp >> $test_log
   else
     test_passed=$(($test_passed+1))
-    echo "++++TEST $1 PASSED++++"
-    echo "++++TEST $1 PASSED++++" >> $test_results
-    echo "++++TEST $1 PASSED++++" >> $test_tmp
+    echo "++++TEST $1 Passed++++"
+    echo "++++TEST $1 Passed++++" >> $test_results
+    echo "++++TEST $1 Passed++++" >> $test_tmp
   fi
+  cat $test_tmp >> $test_log
   return $status
 }
 

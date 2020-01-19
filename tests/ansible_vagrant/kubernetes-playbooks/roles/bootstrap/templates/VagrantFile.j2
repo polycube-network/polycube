@@ -1,0 +1,42 @@
+IMAGE_NAME = "{{ image_name }}"
+BRIDGE_NIC = "{{ bridge_nic }}"
+
+Vagrant.configure("2") do |config|
+    config.ssh.insert_key = true
+
+    config.vm.provider "virtualbox" do |v|
+        v.memory = {{ virtual_memory_size }}
+        v.cpus = {{ virtual_cpus }}
+    end
+{% for node_ip in k8s_master_nodes_ips %}
+    config.vm.define "{{ k8s_master_node_prefix }}-{{ loop.index }}" do |master|
+        master.vm.box = IMAGE_NAME
+        # change the bridge interface to match the one on your host machine
+        master.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}", netmask: "{{ netmask }}"
+        master.vm.hostname = "k8s-master"
+        master.vm.provision "ansible" do |ansible|
+            # Configures the ssh-key
+            ansible.playbook = "kubernetes-playbooks/vagrant-ssh-key.yml"
+             ansible.extra_vars = {
+                pub_key_path: "{{ pub_key_path }}"
+            }
+        end
+    end
+{% endfor %}
+
+{% for node_ip in k8s_worker_nodes_ips %}
+    config.vm.define "{{ k8s_worker_node_prefix }}{{ loop.index }}" do |node|
+        node.vm.box = IMAGE_NAME
+        # change the bridge interface to match the one on your host machine
+        node.vm.network "public_network", bridge: BRIDGE_NIC, ip: "{{ node_ip }}", netmask: "{{ netmask }}"
+        node.vm.hostname = "node-{{ loop.index }}"
+        node.vm.provision "ansible" do |ansible|
+            # Configures the ssh-key
+            ansible.playbook = "kubernetes-playbooks/vagrant-ssh-key.yml"
+            ansible.extra_vars = {
+                pub_key_path: "{{ pub_key_path }}"
+            }
+        end
+    end
+{% endfor %}
+end

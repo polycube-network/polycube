@@ -3,6 +3,7 @@ FROM polycubebot/base_image:latest
 ARG DEFAULT_MODE=default
 ENV MODE=$DEFAULT_MODE
 RUN echo "The mode is $MODE"
+RUN rm -rf /tmp/polycube
 RUN --mount=target=/polycube cp -r /polycube /tmp/polycube && \
 cd /tmp/polycube && \
 SUDO="" USER="root" WORKDIR="/tmp/dev" ./scripts/install.sh $MODE && \
@@ -32,4 +33,5 @@ ADD src/components/k8s/cni/cni-uninstall.sh /cni-uninstall.sh
 ADD src/components/k8s/pcn_k8s/cleanup.sh /cleanup.sh
 ADD src/components/k8s/pcn_k8s/init.sh /init.sh
 
-CMD ["polycubed"]
+# by running nsenter --mount=/host/proc/1/ns/mnt polycubed, the daemon has a complete view of the namespaces of the host and it is able to manipulate them (needed for shadow services)
+CMD ["nsenter","--mount=/host/proc/1/ns/mnt","polycubed"]

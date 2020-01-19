@@ -5,29 +5,13 @@ then
 fi
 mkdir -p $WORKDIR
 
-$SUDO sudo apt update
+$SUDO apt update
 $SUDO bash -c "apt install --allow-unauthenticated -y wget gnupg2 software-properties-common"
 
 # golang v1.12 still not available in repos
 $SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
 
-# repo for libyang-dev
-
-# Cannot add the repository to our machine, as the GPG key expired on Aug 2019 and Ubuntu refuses to install the software in there
-#$SUDO sh -c "echo 'deb http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/home:liberouter.list"
-#wget -nv https://download.opensuse.org/repositories/home:liberouter/xUbuntu_18.04/Release.key -O Release.key
-#$SUDO apt-key add - < Release.key
-# So, installing the required package by downloading it manually
-wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang_0.14.81_amd64.deb -O libyang.deb
-wget -nv http://download.opensuse.org/repositories/home:/liberouter/xUbuntu_18.04/amd64/libyang-dev_0.14.81_amd64.deb -O libyang-dev.deb
-$SUDO apt install -f ./libyang.deb
-$SUDO apt install -y -f ./libyang-dev.deb
-rm ./libyang.deb
-rm ./libyang-dev.deb
-
 $SUDO apt update
-
-
 PACKAGES=""
 PACKAGES+=" git" # needed to clone dependencies
 PACKAGES+=" build-essential cmake" # provides compiler and other compilation tools
@@ -44,6 +28,7 @@ PACKAGES+=" libssl-dev" # needed for certificate based security
 PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
 PACKAGES+=" kmod" # needed for pcn-iptables, when using lsmod to unload conntrack if not needed
 PACKAGES+=" jq bash-completion" # needed for polycubectl bash autocompletion
+PACKAGES+=" libpcre3-dev" # needed for libyang
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary
@@ -53,6 +38,18 @@ fi
 
 # use non interactive to avoid blocking the install script
 $SUDO bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -yq $PACKAGES"
+
+# licd $WORKDIR
+set +e
+if [ ! -d libyang ]; then
+    git clone https://github.com/CESNET/libyang.git
+fi
+cd libyang
+git checkout v0.14-r1
+mkdir -p build && cd build
+cmake ..
+make -j $(getconf _NPROCESSORS_ONLN)
+$SUDO make install
 
 echo "Install pistache"
 cd $WORKDIR

@@ -1,0 +1,7 @@
+---
+# Master playbook to run a once the whole configuration.
+# Check the specific playbooks and roles to have more information.
+- import_playbook: bootstrap.yml
+- import_playbook: vagrant-netconfig.yml
+- import_playbook: k8s-master-node.yml
+- import_playbook: k8s-worker-node.yml

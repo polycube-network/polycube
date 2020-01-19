@@ -269,7 +269,7 @@ In case you hit any problems, please follow the next steps to recover from a fai
     kubectl -n kube-system scale --replicas=1 deployment/kube-dns
 
 Inspect cube status inside pcn-k8s
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ``pcn-k8s`` is deployed as container in each node, sometimes it is helpful to inspect the cube(s) status
 within the container for debugging or other purposes. You can login into each node where the pcn-k8s container
 is running and get the information via :doc:`polycubectl<../../quickstart#docker>` command locally.
@@ -314,12 +314,16 @@ Here is the output for example,
 	 k8switch0  c058b8fb-0e57-4ff6-be4d-5f3e99e71690  k8switch      TC    TRACE     false   false  [7 items]
 
 
+pcn-k8s networking policy
+-------------------------
+pcn-k8s CNI implemented both :doc:`standard kubernetes networking policy <kubernetes-network-policies>` and :doc:`advanced polycube networking policy <polycube-network-policies>`.
+
 Developing
 ----------
 
 Refer to :doc:`Developers <developers>`
 
 Compatibility
-----------
+-------------
 
 Pcn-k8s is compatible with all versions equal or greater than 1.9, although we recommend the latest version of Kubernetes.

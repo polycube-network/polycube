@@ -64,6 +64,7 @@ class PolycubedCore {
   std::string get_netdevs();
 
   std::string topology();
+  std::string get_if_topology(const std::string &if_name);
 
   void connect(const std::string &peer1, const std::string &peer2);
   void disconnect(const std::string &peer1, const std::string &peer2);

@@ -1,0 +1,105 @@
+---
+# tasks file for bootstrap
+#This task generates the vagrant file for the VMs to be created.
+
+- name: Template the VagrantFile.j2 configuration file to ../Vagrantfile
+  template:
+    src: VagrantFile.j2
+    dest: ../Vagrantfile
+  delegate_to: localhost
+
+- name: Template the inventory.ini.j2 configuration file to invetory.ini
+  template:
+    src: inventory.ini.j2
+    dest: inventory.ini
+  delegate_to: localhost
+
+- name: Refresh inventory to ensure that the new generated one is used
+  meta: refresh_inventory
+
+- name: Creating host_vars directory if not present
+  file:
+    path: ./host_vars
+    state: directory
+    mode: '0755'
+
+- name: Find and save in a local variable all host_vars files
+  find:
+    paths: ./host_vars
+    patterns: "*.yml"
+  register: files_to_delete
+
+- name: Delete all the host_vars files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+
+- name: Creating the "host_vars" file for each k8s' master-node
+  file:
+    path: ./host_vars/{{item}}.yml
+    state: touch
+    mode: u=rw,g=r,o=r
+  loop: "{{ groups.k8s_master_nodes }}"
+
+- name: Populating the k8s-master-nodes host_vars files with the node ip
+  lineinfile:
+    path: "./host_vars/{{ item.0 }}.yml"
+    line: "node_ip: {{ item.1 }}"
+  loop: "{{ groups.k8s_master_nodes|zip(k8s_master_nodes_ips)|list }}"
+
+- name: Creating the "host_vars" file for each k8s' worker-node
+  file:
+    path: ./host_vars/{{item}}.yml
+    state: touch
+    mode: u=rw,g=r,o=r
+  loop: "{{ groups.k8s_worker_nodes }}"
+
+- name: Populating the k8s-worker-nodes host_vars files with the node ips
+  lineinfile:
+    path: "./host_vars/{{ item.0 }}.yml"
+    line: "node_ip: {{ item.1 }}"
+  loop: "{{ groups.k8s_worker_nodes|zip(k8s_worker_nodes_ips)|list }}"
+
+- name: Removing k8s-master-nodes from /etc/hosts in the localhost if they already exist
+  become: yes
+  lineinfile:
+    path: /etc/hosts
+    regexp: ".*{{ item }}.*"
+    state: absent 
+  loop: "{{ groups.k8s_master_nodes }}"
+
+- name: Adding k8s-master-nodes from /etc/hosts in the localhost
+  become: yes
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.1 }} {{item.0}}"
+  loop: "{{ groups.k8s_master_nodes|zip(k8s_master_nodes_ips)|list }}"
+
+- name: Removing k8s-worker-nodes from /etc/hosts in the localhost if they already exist
+  become: yes
+  lineinfile:
+    path: /etc/hosts
+    regexp: ".*{{ item }}.*"
+    state: absent 
+  loop: "{{ groups.k8s_worker_nodes }}"
+
+- name: Adding k8s-worker-nodes to /etc/hosts in the localhost
+  become: yes
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.1 }} {{item.0}}" 
+  loop: "{{ groups.k8s_worker_nodes|zip(k8s_worker_nodes_ips)|list }}"
+
+- name: Check if the ~/.ssh directory exists, if not create it
+  file:
+    path: "{{ ssh_key_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Checking if ssh key exists and if not generate a new one
+  openssh_keypair:
+    path: "{{ ssh_key_path }}/{{ssh_key_name}}"
+
+- name: Run "vagrant up" with the Vagrantfile as input.
+  command: vagrant up

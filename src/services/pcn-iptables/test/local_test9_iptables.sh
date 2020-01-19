@@ -17,14 +17,14 @@ trap iptablescleanup EXIT
 function test_tcp {
     sudo ip netns exec ns2 netcat -l -w 5 60123&
     sleep 2
-    sudo ip netns exec ns1 netcat -w 2 -nvz 10.0.2.1 60123
+    sudo ip netns exec ns1 netcat -w 5 -nvz 10.0.2.1 60123
     sleep 4
 }
 
 function test_tcp_fail {
     sudo ip netns exec ns2 netcat -l -w 5 60123&
     sleep 2
-    test_fail sudo ip netns exec ns1 netcat -w 2 -nvz 10.0.2.1 60123
+    test_fail sudo ip netns exec ns1 netcat -w 5 -nvz 10.0.2.1 60123
     sleep 4
 }
 

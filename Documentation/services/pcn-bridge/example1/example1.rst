@@ -1,5 +1,5 @@
 Example 1 - Connectivity
-=========
+========================
 
 In this example two network namespaces will be connected together by a bridge instance.
 

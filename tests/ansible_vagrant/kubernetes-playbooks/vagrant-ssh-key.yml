@@ -1,0 +1,20 @@
+---
+# Playbook used to configure the ssh key which is used to access the machines.
+# The same key is also used by ansible during the configuration.
+# The playbook is called by vagrant during the environment set up. 
+# Check the Vagrantfile if you need to change the playbook called during the initial set up
+
+- hosts: all
+  become: true
+  tasks:
+  - name: Set authorized key
+    authorized_key:
+      user: vagrant
+      state: present
+      key: "{{ lookup('file', pub_key_path) }}" # Path where the pub key is located
+
+  - name: sleep for 15 seconds and continue with play
+    become: false
+    wait_for:
+      timeout: 15
+    delegate_to: localhost
