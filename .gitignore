@@ -7,3 +7,4 @@ swagger-codegen*
 .idea/*
 cmake-build-debug/*
 Vagrantfile
+libyang/*
