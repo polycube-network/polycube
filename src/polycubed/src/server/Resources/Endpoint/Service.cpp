@@ -72,7 +72,8 @@ void Service::ClearCubes() {
 }
 
 std::vector<Response>
-Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool update, bool initialization) {
+Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
+                             bool update, bool initialization) {
   if (update || !ServiceController::exists_cube(name)) {
     auto op = OperationType(update, initialization);
     auto k = ListKeyValues{};
@@ -104,8 +105,9 @@ Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body, bool
       if (!update) {
         cube_names_.AddValue(name);
       }
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/", body, k, op, ResourceType::Service);
+      if (configuration::config.getCubesDumpEnabled()) {
+        core_->get_cubes_dump()->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/",
+                body, k, op, ResourceType::Service);
       }
     }
 
@@ -149,7 +151,8 @@ void Service::post_body(const Request &request, ResponseWriter response) {
     return;
   }
 
-  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, false, true);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body,
+          false, true);
   Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
@@ -215,8 +218,10 @@ void Service::del(const Pistache::Rest::Request &request,
   auto res = DeleteValue(name, k);
   Server::ResponseGenerator::Generate(std::vector<Response>{res},
                                       std::move(response));
-  if (auto d = core_->get_cubes_dump()) {
-    d->UpdateCubesConfig(RestServer::base + this->name_ + "/" + name + "/", nullptr, k, Operation::kDelete, ResourceType::Service);
+  if (configuration::config.getCubesDumpEnabled()) {
+    core_->get_cubes_dump()->UpdateCubesConfig(
+            RestServer::base + this->name_ + "/" + name + "/",nullptr, k,
+            Operation::kDelete, ResourceType::Service);
   }
 }
 
@@ -229,7 +234,8 @@ void Service::patch_body(const Request &request, ResponseWriter response) {
         std::move(response));
     return;
   }
-  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body, true, false);
+  auto resp = CreateReplaceUpdate(body["name"].get<std::string>(), body,
+          true, false);
   Server:: ResponseGenerator::Generate(std::move(resp), std::move(response));
 }
 
@@ -261,7 +267,8 @@ void Service::options_body(const Request &request, ResponseWriter response) {
   if (!query_param.has("completion")) {
     Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
   } else {
-    Server::ResponseGenerator::Generate({CompletionService(type)}, std::move(response));
+    Server::ResponseGenerator::Generate({CompletionService(type)},
+            std::move(response));
   }
   //Server::ResponseGenerator::Generate({Help(type)}, std::move(response));
 }

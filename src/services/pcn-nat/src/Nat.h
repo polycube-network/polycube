@@ -64,11 +64,9 @@ class Nat : public polycube::service::TransparentCube, public NatInterface {
   void update(const NatJsonObject &conf) override;
   NatJsonObject toJsonObject() override;
 
-  void packet_in(polycube::service::Sense sense,
+  void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
-
-  void attach() override;
 
   /// <summary>
   ///

@@ -1,0 +1,2 @@
+assertpy==0.15
+pytest==5.3.1

@@ -473,7 +473,7 @@ std::shared_ptr<FwdTable> K8switch::getFwdTable(const std::string &address) {
     auto fwd_table = get_array_table<pod>("fwd_table");
     auto entry = fwd_table.get(ip_key);
 
-    std::string mac = utils::be_uint_to_ip_string(entry.mac);
+    std::string mac = utils::nbo_uint_to_ip_string(entry.mac);
     std::string port(get_port(entry.port)->name());
     return std::make_shared<FwdTable>(FwdTable(*this, address, mac, port));
   } catch (std::exception &e) {
@@ -499,8 +499,8 @@ std::vector<std::shared_ptr<FwdTable>> K8switch::getFwdTableList() {
 
       // TODO: key is only the index, it should be converted back to the full IP
       // address
-      std::string ip = utils::be_uint_to_ip_string(key);
-      std::string mac = utils::be_uint_to_mac_string(value.mac);
+      std::string ip = utils::nbo_uint_to_ip_string(key);
+      std::string mac = utils::nbo_uint_to_mac_string(value.mac);
       std::string port(get_port(value.port)->name());
 
       fwd_table_entries.push_back(
@@ -524,7 +524,7 @@ void K8switch::addFwdTable(const std::string &address,
   auto port = get_port(conf.getPort());
 
   pod p{
-      .mac = utils::mac_string_to_be_uint(conf.getMac()),
+      .mac = utils::mac_string_to_nbo_uint(conf.getMac()),
       .port = uint16_t(port->index()),
   };
 

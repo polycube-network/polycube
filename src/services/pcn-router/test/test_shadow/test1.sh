@@ -17,7 +17,7 @@ polycubectl router add r1 shadow=true
 sudo ip netns ls
 
 # Add port p1
-router_add_port r1 p1 10.0.0.1 255.255.255.0
+router_add_port r1 p1 10.0.0.1/24
 sudo ip netns exec pcn-r1 ip -c a
 
 # Change the Ip address of the p1 port from Linux

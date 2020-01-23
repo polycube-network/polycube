@@ -15,9 +15,11 @@
 source "${BASH_SOURCE%/*}/helpers.bash"
 
 function test_tcp {
-    sudo ip netns exec ns2 netcat -l -w 5 $tcp_port&
+	sudo ip netns exec ns2 netcat -l -w 5 $tcp_port&
 	sleep 2
-	sudo ip netns exec ns1 netcat -w 2 -nvz $veth2_ip $tcp_port
+	sudo ip netns exec ns1 ping $veth2_ip -c 1
+	sleep 2
+	sudo ip netns exec ns1 netcat -w 5 -nvz $veth2_ip $tcp_port
 	sleep 4
 }
 
@@ -44,8 +46,8 @@ create_veth_net 2
 polycubectl nat add nat1
 polycubectl router add r1
 
-polycubectl router r1 ports add to_veth1 ip=$to_veth1_ip netmask=255.255.255.0 peer=veth1
-polycubectl router r1 ports add to_veth2 ip=$to_veth2_ip netmask=255.255.255.0 peer=veth2
+polycubectl router r1 ports add to_veth1 ip=$to_veth1_ip/24 peer=veth1
+polycubectl router r1 ports add to_veth2 ip=$to_veth2_ip/24 peer=veth2
 
 polycubectl attach nat1 r1:to_veth2 position=first
 

@@ -14,11 +14,14 @@ spec:
   selector:
     app: myechoserver
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: myechoserver
 spec:
+  selector:
+    matchLabels:
+      app: myechoserver
   replicas: 1
   template:
     metadata:

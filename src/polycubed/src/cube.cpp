@@ -164,9 +164,13 @@ std::shared_ptr<PortIface> Cube::add_port(const std::string &name,
     peerB.set_status(IFACE_STATUS::UP);
     peerA.set_namespace(prefix_ns + get_name());
     peerA.set_status(IFACE_STATUS::UP);
-    if (conf.count("ip") && conf.count("netmask")) {
-      int prefix = polycube::service::utils::get_netmask_length(conf.at("netmask").get<std::string>());
-      peerA.set_ip(conf.at("ip").get<std::string>(), prefix);
+    if (conf.count("ip")) {
+      std::string ip_address;
+      std::string netmask;
+      polycube::service::utils::split_ip_and_prefix(
+                conf.at("ip").get<std::string>(), ip_address, netmask);
+      int prefix = polycube::service::utils::get_netmask_length(netmask);
+      peerA.set_ip(ip_address, prefix);
     } else if (conf.count("ipv6")) {
       peerA.set_ipv6(conf.at("ipv6").get<std::string>());
     }

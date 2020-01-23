@@ -20,12 +20,14 @@
 #include <utility>
 #include <vector>
 
+#include "../../config.h"
 #include "../../Server/ResponseGenerator.h"
 #include "../Body/JsonNodeField.h"
 #include "../Body/ListKey.h"
 #include "PathParamField.h"
 #include "Service.h"
 #include "rest_server.h"
+#include "utils/utils.h"
 #include "cubes_dump.h"
 
 #include "../Data/Lib/ListResource.h"
@@ -114,8 +116,10 @@ std::vector<Response> ListResource::RequestValidate(
 void ListResource::Keys(const Pistache::Rest::Request &request,
                         ListKeyValues &parsed) const {
   for (const auto &k : keys_) {
+    std::string param_ = request.param(':' + k.Name()).as<std::string>();
+    std::string param = utils::decode_url(param_);
     parsed.push_back(
-        {this->name_, k.OriginalName(), k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
+        {this->name_, k.OriginalName(), k.Name(), k.Type(), param});
   }
   dynamic_cast<const ParentResource *const>(parent_)->Keys(request, parsed);
 }
@@ -124,8 +128,10 @@ void ListResource::GetListKeys(const Pistache::Rest::Request &request,
                                ListKeyValues &parsed) const {
   for (const auto &k : keys_) {
     if (request.hasParam(':' + k.Name())) {
+      std::string param_ = request.param(':' + k.Name()).as<std::string>();
+      std::string param = utils::decode_url(param_);
       parsed.push_back(
-          {this->name_, k.OriginalName(), k.Name(), k.Type(), request.param(':' + k.Name()).as<std::string>()});
+          {this->name_, k.OriginalName(), k.Name(), k.Type(), param});
     }
   }
 }
@@ -177,10 +183,10 @@ void ListResource::CreateReplaceUpdateWhole(
       errors.push_back(resp);
     }
     // check if the operation completed successfully and in case update the configuration
-    if (isOperationSuccessful(resp.error_tag)) {
-      if (auto d = core_->get_cubes_dump()) {
-        d->UpdateCubesConfig(request.resource(), jbody, keys, op, ResourceType::ListResource);
-      }
+    if (isOperationSuccessful(resp.error_tag) &&
+        configuration::config.getCubesDumpEnabled()) {
+      core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), jbody,
+              keys, op, ResourceType::ListResource);
     }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
@@ -238,8 +244,9 @@ void ListResource::del_multiple(const Request &request,
     ListKeyValues keys{};
     dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
     errors.push_back(DeleteWhole(cube_name, keys));
-    if (auto d = core_->get_cubes_dump()) {
-      d->UpdateCubesConfig(request.resource(), nullptr, keys, Operation::kDelete, ResourceType::ListResource);
+    if (configuration::config.getCubesDumpEnabled()) {
+      core_->get_cubes_dump()->UpdateCubesConfig(request.resource(), nullptr, keys,
+              Operation::kDelete, ResourceType::ListResource);
     }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));

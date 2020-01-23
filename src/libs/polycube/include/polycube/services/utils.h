@@ -28,13 +28,18 @@ namespace polycube {
 namespace service {
 namespace utils {
 
-/* ip (a.b.c.d) to string and viceversa in big endian */
-uint32_t ip_string_to_be_uint(const std::string &ip);
-std::string be_uint_to_ip_string(uint32_t ip);
+/* IP string (a.b.c.d) or IP prefix (a.b.c.d/m) to nbo uint. If (a.b.c.d/m) only IP will be processed
+ * Number is in network byte order (nbo), i.e., big endian */
+uint32_t ip_string_to_nbo_uint(const std::string &ip);
 
-/* mac (aa:bb:cc:dd:ee:ff) to string and vicersa in big endian */
-uint64_t mac_string_to_be_uint(const std::string &mac);
-std::string be_uint_to_mac_string(uint64_t mac);
+/* IP (a.b.c.d) to string 
+ * Number is in network byte order (nbo), i.e., big endian */
+std::string nbo_uint_to_ip_string(uint32_t ip);
+
+/* mac (aa:bb:cc:dd:ee:ff) to string and vicersa
+ * Number is in network byte order (nbo), i.e., big endian */
+uint64_t mac_string_to_nbo_uint(const std::string &mac);
+std::string nbo_uint_to_mac_string(uint64_t mac);
 
 /* transforms an ipv4 dotted representation into a hexadecimal big endian */
 /* deprecated */
@@ -52,7 +57,7 @@ uint64_t hex_string_to_uint(const std::string &str);
 std::string get_random_mac();
 
 /* Take in ingress a string like 192.168.0.1/24 and return only the ip
- * 192.168.0.1 */
+ * 192.168.0.1 . If no prefix it will return the same input string*/
 std::string get_ip_from_string(const std::string &ipv_net);
 
 /* Take in ingress a string like 192.168.0.1/24 and return only the "prefix
@@ -65,17 +70,18 @@ uint32_t get_netmask_length(const std::string &netmask_string);
 
 /* Take in ingress a prefix length like 24 and return the
 * "netmask" -> 255.255.255.0 in this case */
-std::string get_netmask_from_CIDR(const int cidr);
+std::string get_netmask_from_prefixlength(const int prefixlength);
+
+/* Take in ingress an ip/prefix and return the ip address and the netmask
+*  in the variables ip_address and netmask passed by reference */
+void split_ip_and_prefix(const std::string &ip_and_prefix,
+                        std::string &ip_address, std::string &netmask);
 
 /*
  * formats a debug string, custom specifiers are evaluated by a
  * custom implemented logic
  */
 std::string format_debug_string(std::string str, const uint64_t args[4]);
-
-#ifdef HAVE_POLYCUBE_TOOLS
-void print_packet(const uint8_t *pkt, uint32_t len);
-#endif
 
 }  // namespace utils
 }  // namespace service

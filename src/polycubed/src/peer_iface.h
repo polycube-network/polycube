@@ -24,6 +24,7 @@
 
 using polycube::service::TransparentCubeIface;
 using polycube::service::ProgramType;
+using polycube::service::ParameterEventCallback;
 
 namespace polycube {
 namespace polycubed {
@@ -38,12 +39,21 @@ class PeerIface {
   virtual void set_peer_iface(PeerIface *peer) = 0;
   virtual PeerIface *get_peer_iface() = 0;
 
-  virtual std::string get_parameter(const std::string &parameter) = 0;
+  virtual void subscribe_parameter(const std::string &caller,
+                                   const std::string &param_name,
+                                   ParameterEventCallback &callback) = 0;
+  virtual void unsubscribe_parameter(const std::string &caller,
+                                     const std::string &param_name) = 0;
+  virtual std::string get_parameter(const std::string &param_name) = 0;
+  virtual void set_parameter(const std::string &param_name,
+                             const std::string &value) = 0;
 
-  void add_cube(TransparentCube *cube, std::string *position,
-                const std::string &other);
+  int add_cube(TransparentCube *cube, const std::string &position,
+               const std::string &other);
   void remove_cube(const std::string &type);
   std::vector<std::string> get_cubes_names() const;
+  std::vector<uint16_t> get_cubes_ingress_index() const;
+  std::vector<uint16_t> get_cubes_egress_index() const;
 
  protected:
   enum class CubePositionComparison {

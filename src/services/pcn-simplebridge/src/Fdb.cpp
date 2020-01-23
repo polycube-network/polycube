@@ -77,7 +77,7 @@ std::shared_ptr<FdbEntry> Fdb::getEntry(const std::string &address) {
   logger()->debug("[FdbEntry] mac: {0}", address);
 
   auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");
-  uint64_t key = utils::mac_string_to_be_uint(address);
+  uint64_t key = utils::mac_string_to_nbo_uint(address);
 
   try {
     auto entry = FdbEntry::constructFromMap(*this, address, fwdtable.get(key));
@@ -104,7 +104,7 @@ std::vector<std::shared_ptr<FdbEntry>> Fdb::getEntryList() {
       auto map_key = pair.first;
       auto map_entry = pair.second;
 
-      std::string mac_address = utils::be_uint_to_mac_string(map_key);
+      std::string mac_address = utils::nbo_uint_to_mac_string(map_key);
       auto entry = FdbEntry::constructFromMap(*this, mac_address, map_entry);
       if (!entry)
         continue;
@@ -143,7 +143,7 @@ void Fdb::addEntry(const std::string &address, const FdbEntryJsonObject &conf) {
   struct timespec now_timespec;
   clock_gettime(CLOCK_MONOTONIC, &now_timespec);
 
-  uint64_t key = utils::mac_string_to_be_uint(address);
+  uint64_t key = utils::mac_string_to_nbo_uint(address);
   fwd_entry value{
       .timestamp = (uint32_t)now_timespec.tv_sec, .port = port_index,
   };
@@ -182,7 +182,7 @@ void Fdb::delEntry(const std::string &address) {
     throw std::runtime_error("Filtering database entry not found");
   }
 
-  uint64_t key = utils::mac_string_to_be_uint(address);
+  uint64_t key = utils::mac_string_to_nbo_uint(address);
 
   try {
     auto fwdtable = parent_.get_hash_table<uint64_t, fwd_entry>("fwdtable");

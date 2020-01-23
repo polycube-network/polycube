@@ -33,8 +33,8 @@ int PeerIface::calculate_cube_index(int index) {
 
 enum class Position { AUTO, FIRST, LAST };
 
-void PeerIface::add_cube(TransparentCube *cube, std::string *position,
-                         const std::string &other) {
+int PeerIface::add_cube(TransparentCube *cube, const std::string &position,
+                        const std::string &other) {
   std::lock_guard<std::mutex> guard(mutex_);
   int index = 0;
   int other_index;
@@ -51,7 +51,7 @@ void PeerIface::add_cube(TransparentCube *cube, std::string *position,
     }
   }
 
-  if (*position == "auto") {
+  if (position == "auto") {
     CubePositionComparison cmp;
     // try to determine index from below
     for (int i = 0; i < cubes_.size(); i++) {
@@ -80,19 +80,19 @@ void PeerIface::add_cube(TransparentCube *cube, std::string *position,
         }
       }
     }
-  } else if (*position == "first") {
+  } else if (position == "first") {
     index = 0;
-  } else if (*position == "last") {
+  } else if (position == "last") {
     index = cubes_.size();
-  } else if (*position == "before") {
+  } else if (position == "before") {
     index = other_index;
-  } else if (*position == "after") {
+  } else if (position == "after") {
     index = other_index + 1;
   }
 
-  *position = std::to_string(index);
   cubes_.insert(cubes_.begin() + calculate_cube_index(index), cube);
   update_indexes();
+  return index;
 }
 
 void PeerIface::remove_cube(const std::string &cube_name) {
@@ -123,6 +123,32 @@ std::vector<std::string> PeerIface::get_cubes_names() const {
 
   return cubes_names;
 }
+
+std::vector<uint16_t> PeerIface::get_cubes_ingress_index() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<uint16_t> ingress_indices;
+
+  for (auto &cube : cubes_) {
+      ingress_indices.push_back(cube->get_index(ProgramType::INGRESS));
+  }
+
+  return ingress_indices;
+}
+
+std::vector<uint16_t> PeerIface::get_cubes_egress_index() const {
+  std::lock_guard<std::mutex> guard(mutex_);
+
+  std::vector<uint16_t> egress_indices;
+
+  for (auto &cube : cubes_) {
+      egress_indices.push_back(cube->get_index(ProgramType::EGRESS));
+  }
+
+  return egress_indices;
+}
+
+
 
 PeerIface::CubePositionComparison PeerIface::compare_position(
     const std::string &cube1, const std::string &cube2) {

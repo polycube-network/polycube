@@ -23,11 +23,16 @@
 #include "utils/netlink.h"
 
 #include <iostream>
+#include <net/if.h>
 
 namespace polycube {
 namespace polycubed {
 
-std::set<std::string> ExtIface::used_ifaces;
+const std::string PARAMETER_MAC = "MAC";
+const std::string PARAMETER_IP = "IP";
+const std::string PARAMETER_PEER = "PEER";
+
+std::map<std::string, ExtIface*> ExtIface::used_ifaces;
 
 ExtIface::ExtIface(const std::string &iface)
     : PeerIface(iface_mutex_),
@@ -38,7 +43,10 @@ ExtIface::ExtIface(const std::string &iface)
     throw std::runtime_error("Iface already in use");
   }
 
-  used_ifaces.insert(iface);
+  used_ifaces.insert({iface, this});
+
+  // Save the ifindex
+  ifindex_iface = if_nametoindex(iface.c_str());
 }
 
 ExtIface::~ExtIface() {
@@ -50,6 +58,14 @@ ExtIface::~ExtIface() {
     egress_program_.unload_func("handler");
   }
   used_ifaces.erase(iface_);
+}
+
+ExtIface* ExtIface::get_extiface(const std::string &iface_name) {
+  if (used_ifaces.count(iface_name) == 0) {
+      return NULL;
+  }
+
+  return used_ifaces[iface_name];
 }
 
 uint16_t ExtIface::get_index() const {
@@ -133,7 +149,7 @@ int ExtIface::load_egress() {
 }
 
 uint16_t ExtIface::get_port_id() const {
-  return 0;
+  return ifindex_iface;
 }
 
 void ExtIface::set_peer_iface(PeerIface *peer) {
@@ -145,10 +161,6 @@ void ExtIface::set_peer_iface(PeerIface *peer) {
 PeerIface *ExtIface::get_peer_iface() {
   std::lock_guard<std::mutex> guard(iface_mutex_);
   return peer_;
-}
-
-std::string ExtIface::get_parameter(const std::string &parameter) {
-  throw std::runtime_error("get parameter not implemented in netdev");
 }
 
 void ExtIface::set_next_index(uint16_t index) {
@@ -168,39 +180,82 @@ void ExtIface::set_next(uint16_t next, ProgramType type) {
   }
 }
 
+TransparentCube* ExtIface::get_next_cube(ProgramType type) {
+  auto next = get_next(type);
+  for (auto &it : cubes_) {
+      if (it->get_index(type) == next) {
+          return it;
+      }
+  }
+  return NULL;
+}
+
+uint16_t ExtIface::get_next(ProgramType type) {
+  int zero = 0;
+  unsigned int value = 0;
+  auto program = (type == ProgramType::INGRESS) ? &ingress_program_ : &egress_program_;
+  auto index_map = program->get_array_table<uint32_t>("index_map");
+  auto st = index_map.get_value(zero, value);
+  if (st.code() == -1) {
+    logger->error("failed to get interface {0} nexthop", get_iface_name());
+  }
+
+  return value & 0xffff;
+}
+
+std::vector<std::string> ExtIface::get_service_chain(ProgramType type) {
+  std::vector<std::string> chain;
+  TransparentCube *cube;
+  auto nh = get_next(type);
+
+  while (nh != 0xffff) {
+      cube = NULL;
+      for (auto c : cubes_) {
+          if (c->get_index(type) == nh) {
+              cube = c;
+              break;
+          }
+      }
+      chain.push_back(cube ? cube->get_name() : "unknown");
+      nh = cube->get_next(type);
+  }
+  chain.push_back(nh==0xffff ? "stack" : "unknown");
+
+  return chain;
+}
+
 void ExtIface::update_indexes() {
   int i;
 
   // TODO: could we avoid to recalculate in case there is not peer?
 
-  std::vector<uint16_t> ingress_indexes(cubes_.size());
-  std::vector<uint16_t> egress_indexes(cubes_.size());
+  std::vector<uint16_t> ingress_indexes(cubes_.size(), 0xffff) ;
+  std::vector<uint16_t> egress_indexes(cubes_.size(), 0xffff);
 
   for (i = 0; i < cubes_.size(); i++) {
     ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
     egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
   }
 
-  // ingress chain: NIC -> cube[N-1] -> ... -> cube[0] -> stack (or peer)
+  // ingress chain: NIC -> cube[0] -> ... -> cube[n-1] -> stack (or peer)
   // CASE2: cube[0] -> stack (or)
-  for (i = 0; i < cubes_.size(); i++) {
-    if (ingress_indexes[i]) {
+  for (i = cubes_.size() - 1; i >= 0; i--) {
+    if (ingress_indexes[i] != 0xffff) {
       cubes_[i]->set_next(peer_ ? peer_->get_index() : 0xffff,
                           ProgramType::INGRESS);
       break;
     }
   }
 
-  // cube[N-1] -> ... -> cube[0]
-  for (int j = i + 1; j < cubes_.size(); j++) {
-    if (ingress_indexes[j]) {
+  for (int j = i - 1; j >= 0; j--) {
+    if (ingress_indexes[j] != 0xffff) {
       cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
       i = j;
     }
   }
 
   // CASE4: NIC -> cube[N-1] or peer
-  if (i < cubes_.size() && ingress_indexes[i]) {
+  if (i >= 0 && ingress_indexes[i] != 0xffff) {
     set_next(ingress_indexes[i], ProgramType::INGRESS);
   } else {
     set_next(peer_ ? peer_->get_index() : 0, ProgramType::INGRESS);
@@ -210,7 +265,7 @@ void ExtIface::update_indexes() {
 
   // cube[0] -> "egress"
   for (i = 0; i < cubes_.size(); i++) {
-    if (egress_indexes[i]) {
+    if (egress_indexes[i] != 0xffff) {
       cubes_[i]->set_next(0xffff, ProgramType::EGRESS);
       break;
     }
@@ -223,26 +278,20 @@ void ExtIface::update_indexes() {
 
   // cubes[N-1] -> ... -> cube[0]
   for (int j = i + 1; j < cubes_.size(); j++) {
-    if (egress_indexes[j]) {
+    if (egress_indexes[j] != 0xffff) {
       cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
       i = j;
     }
   }
 
   // "nic" -> cubes[N-1] or peer
-  if (i < cubes_.size() && egress_indexes[i]) {
+  if (i < cubes_.size() && egress_indexes[i] != 0xffff) {
     set_next(egress_indexes[i], ProgramType::EGRESS);
   } else {
     Port *peer_port = dynamic_cast<Port *>(peer_);
     set_next(peer_port ? peer_port->get_egress_index() : 0xffff,
              ProgramType::EGRESS);
   }
-}
-
-// in external ifaces the cubes must be allocated in the inverse order.
-// first is the one that hits ingress traffic.
-int ExtIface::calculate_cube_index(int index) {
-  return 0 - index;
 }
 
 bool ExtIface::is_used() const {
@@ -252,6 +301,143 @@ bool ExtIface::is_used() const {
 
 std::string ExtIface::get_iface_name() const {
   return iface_;
+}
+
+/* Interfaces alignment */
+void ExtIface::subscribe_parameter(const std::string &caller,
+                                   const std::string &param_name,
+                                   ParameterEventCallback &callback) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    // lambda function netlink notification LINK_ADDED
+    std::function<void(int, const std::string &)> notification_new_link;
+    notification_new_link = [&](int ifindex, const std::string &iface) {
+      // Check if the iface in the notification is that of the ExtIface
+      if (get_iface_name() == iface) {
+        std::string mac_iface = Netlink::getInstance().get_iface_mac(iface);
+        for (auto &map_element : parameter_mac_event_callbacks) {
+          (map_element.second).first(iface, mac_iface);
+        }
+      }
+    };
+    // subscribe to the netlink event for MAC
+    int netlink_index = Netlink::getInstance().registerObserver(
+          Netlink::Event::LINK_ADDED, notification_new_link);
+
+    // Save key and value in the map
+    parameter_mac_event_callbacks.insert(
+          std::make_pair(caller, std::make_pair(callback, netlink_index)));
+
+    // send first notification with the Mac of the netdev
+    std::string mac_iface = Netlink::getInstance().get_iface_mac(iface_);
+    callback(iface_, mac_iface);
+  } else if (param_upper == PARAMETER_IP) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    // lambda function netlink notification NEW_ADDRESS
+    std::function<void(int, const std::string &)> notification_new_address;
+    notification_new_address = [&](int ifindex, const std::string &cidr) {
+      // Check if the iface in the notification is that of the ExtIface
+      if (ifindex == ifindex_iface) {
+        for (auto &map_element : parameter_ip_event_callbacks) {
+          (map_element.second).first(get_iface_name(), cidr);
+        }
+      }
+    };
+    // subscribe to the netlink event for Ip and Netmask
+    int netlink_index = Netlink::getInstance().registerObserver(
+          Netlink::Event::NEW_ADDRESS, notification_new_address);
+
+    // Save key and value in the map
+    parameter_ip_event_callbacks.insert(
+          std::make_pair(caller, std::make_pair(callback, netlink_index)));
+
+    // send first notification with the Ip/prefix of the netdev
+    std::string info_ip_address;
+    info_ip_address = get_parameter(PARAMETER_IP);
+    callback(iface_, info_ip_address);
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
+}
+
+void ExtIface::unsubscribe_parameter(const std::string &caller,
+                                     const std::string &param_name) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    auto map_element = parameter_mac_event_callbacks.find(caller);
+    if (map_element != parameter_mac_event_callbacks.end()) {
+      // unsubscribe to the netlink event
+      int netlink_index = (map_element->second).second;
+      Netlink::getInstance().unregisterObserver(
+            Netlink::Event::LINK_ADDED, netlink_index);
+      // remove element from the map
+      parameter_mac_event_callbacks.erase(map_element);
+    } else {
+      throw std::runtime_error("there was no subscription for the parameter " +
+                                param_upper + " by " + caller);
+    }
+  } else if (param_upper == PARAMETER_IP) {
+    std::lock_guard<std::mutex> lock(event_mutex);
+    auto map_element = parameter_ip_event_callbacks.find(caller);
+    if (map_element != parameter_ip_event_callbacks.end()) {
+      // unsubscribe to the netlink event
+      int netlink_index = (map_element->second).second;
+      Netlink::getInstance().unregisterObserver(
+            Netlink::Event::NEW_ADDRESS, netlink_index);
+      // remove element from the map
+      parameter_ip_event_callbacks.erase(map_element);
+    } else {
+      throw std::runtime_error("there was no subscription for the parameter " +
+                                param_upper + " by " + caller);
+    }
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
+}
+
+std::string ExtIface::get_parameter(const std::string &param_name) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    return Netlink::getInstance().get_iface_mac(iface_);
+  } else if(param_upper == PARAMETER_IP) {
+    try {
+      std::string ip = Netlink::getInstance().get_iface_ip(iface_);
+      std::string netmask = Netlink::getInstance().get_iface_netmask(iface_);
+      int prefix = polycube::service::utils::get_netmask_length(netmask);
+      std::string info_ip_address = ip + "/" + std::to_string(prefix);
+      return info_ip_address;
+    } catch  (...) {
+      // netdev does not have an Ip
+      return "";
+    }
+  } else if (param_upper == PARAMETER_PEER) {
+    return iface_;
+  } else {
+    throw std::runtime_error("parameter " + param_upper +
+                             " not available in extiface");
+  }
+}
+
+void ExtIface::set_parameter(const std::string &param_name,
+                             const std::string &value) {
+  std::string param_upper = param_name;
+  std::transform(param_upper.begin(), param_upper.end(),
+                 param_upper.begin(), ::toupper);
+  if (param_upper == PARAMETER_MAC) {
+    Netlink::getInstance().set_iface_mac(iface_, value);
+  } else if(param_upper == PARAMETER_IP) {
+    Netlink::getInstance().set_iface_cidr(iface_, value);
+  } else {
+    throw std::runtime_error("parameter " + param_upper + " not available");
+  }
 }
 
 }  // namespace polycubed

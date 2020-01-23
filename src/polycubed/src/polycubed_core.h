@@ -30,6 +30,7 @@
 #include "service_controller.h"
 
 #include "cube_factory_impl.h"
+#include "port.h"
 //#include "extiface_info.h"
 
 using json = nlohmann::json;
@@ -63,6 +64,7 @@ class PolycubedCore {
   std::string get_netdevs();
 
   std::string topology();
+  std::string get_if_topology(const std::string &if_name);
 
   void connect(const std::string &peer1, const std::string &peer2);
   void disconnect(const std::string &peer1, const std::string &peer2);
@@ -73,12 +75,26 @@ class PolycubedCore {
   void set_polycubeendpoint(std::string &polycube);
   std::string get_polycubeendpoint();
 
+  void cube_port_parameter_subscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter,
+    ParameterEventCallback &cb);
+
+  void cube_port_parameter_unsubscribe(
+    const std::string &cube, const std::string &port_name,
+    const std::string &caller, const std::string &parameter);
+
   std::string get_cube_port_parameter(const std::string &cube,
                                       const std::string &port_name,
                                       const std::string &parameter);
   std::string set_cube_parameter(const std::string &cube,
                                  const std::string &parameter,
                                  const std::string &value);
+
+  void notify_port_subscribers(const std::string &cube,
+                               const std::string &port_name,
+                               const std::string &parameter,
+                               const std::string &value);
 
   std::vector<std::string> get_all_ports();
 
@@ -92,6 +108,15 @@ class PolycubedCore {
 
  private:
   bool try_to_set_peer(const std::string &peer1, const std::string &peer2);
+
+  // map of maps of callbacks
+  // key of outer map is cube_name:port_name:param_name
+  // key of the inner map is the calle id
+  std::unordered_map<std::string,
+      std::unordered_map<std::string, ParameterEventCallback>>
+      cubes_port_event_callbacks_;
+
+  std::mutex cubes_port_event_mutex_;
 
   std::unordered_map<std::string, ServiceController> servicectrls_map_;
   std::string polycubeendpoint_;

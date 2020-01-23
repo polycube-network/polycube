@@ -22,6 +22,7 @@ function simplebridge_add_port {
 function create_veth {
   for i in `seq 1 $1`;
   do
+    sudo ip netns del ns${i} || true
   	sudo ip netns add ns${i}
   	sudo ip link add veth${i}_ type veth peer name veth${i}
   	sudo ip link set veth${i}_ netns ns${i}

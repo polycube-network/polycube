@@ -21,26 +21,26 @@ module synflood {
     config false;
 
     leaf tcpattemptfails {
-        type uint64;
-        description "TCP attempts fails";
+        type string;
+        description "Number of failed TCP connections";
         config false;
     }
 
     leaf tcpoutrsts {
-        type uint64;
-        description "TCP sent with RST flag";
+        type string;
+        description "Number of TCP segments sent, containing the RST flag";
         config false;
     }
 
     leaf deliverratio {
-        type uint64;
-        description "pkts delivered to application over total received pkts";
+        type string;
+        description "Ratio between the number of IP pkts delivered to application protocols and the total number of received pkts";
         config false;
     }
 
     leaf responseratio {
-        type uint64;
-        description "pkts requests to send over total received pkts";
+        type string;
+        description "Ratio between the number of IP pkts requests to send by application protocols and the total number of received pkts";
         config false;
     }
 

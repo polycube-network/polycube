@@ -27,7 +27,7 @@ set -e
 
 # Create the router r1 (shadow) and the port p1
 polycubectl router add r1 shadow=true
-router_add_port r1 p1 10.0.0.1 255.255.255.0
+router_add_port r1 p1 10.0.0.1/24
 
 # Show router r1
 polycubectl router r1 show

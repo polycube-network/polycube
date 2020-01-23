@@ -46,18 +46,21 @@ class TransparentCube : public BaseCube {
                   const std::vector<std::string> &egress_code);
   virtual ~TransparentCube();
 
-  virtual void packet_in(Sense sense, PacketInMetadata &md,
+  virtual void packet_in(Direction direction, PacketInMetadata &md,
                          const std::vector<uint8_t> &packet) = 0;
 
-  std::string get_parent_parameter(const std::string &parameter);
-
-  void send_packet_out(EthernetII &packet, Sense sense,
+  void send_packet_out(EthernetII &packet, Direction direction,
                        bool recirculate = false);
 
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
 
   virtual void attach();
+
+  void subscribe_parent_parameter(const std::string &param_name,
+                                  ParameterEventCallback &callback);
+  void unsubscribe_parent_parameter(const std::string &param_name);
+  std::string get_parent_parameter(const std::string &param_name);
 
  private:
   std::shared_ptr<TransparentCubeIface>

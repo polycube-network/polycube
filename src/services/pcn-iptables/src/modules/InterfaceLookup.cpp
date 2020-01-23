@@ -41,7 +41,7 @@ Iptables::InterfaceLookup::InterfaceLookup(
                             : ProgramType::INGRESS) {
   this->type_ = type;
 
-  auto it = ports.find(0);
+  auto it = ports.find(0xffff);
   if (it == ports.end()) {
     wildcard_rule_ = false;
     wildcard_string_ = "";

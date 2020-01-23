@@ -19,6 +19,7 @@
 #include "base_cube.h"
 
 using polycube::service::TransparentCubeIface;
+using polycube::service::ParameterEventCallback;
 
 namespace polycube {
 namespace polycubed {
@@ -35,15 +36,20 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   virtual ~TransparentCube();
 
   void set_next(uint16_t next, ProgramType type);
+  uint16_t get_next(ProgramType type);
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
-  std::string get_parent_parameter(const std::string &parameter);
   void set_parameter(const std::string &parameter, const std::string &value);
-  void send_packet_out(const std::vector<uint8_t> &packet, service::Sense sense,
+  void send_packet_out(const std::vector<uint8_t> &packet, service::Direction direction,
                        bool recirculate = false);
 
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
+
+  void subscribe_parent_parameter(const std::string &param_name,
+                                  ParameterEventCallback &callback);
+  void unsubscribe_parent_parameter(const std::string &param_name);
+  std::string get_parent_parameter(const std::string &param_name);
 
  protected:
   void uninit();
@@ -52,6 +58,9 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   static std::string get_wrapper_code();
   uint16_t ingress_next_;
   uint16_t egress_next_;
+
+  std::unordered_map<std::string, ParameterEventCallback> subscription_list;
+  std::mutex subscription_list_mutex;
 };
 
 }  // namespace polycubed

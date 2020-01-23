@@ -27,7 +27,7 @@ Stp::Stp(Bridge &parent, const StpJsonObject &conf)
   vlan_ = conf.getVlan();
 
   stp_ = stp_create(parent.get_name().c_str(),
-                    reverseMac(polycube::service::utils::mac_string_to_be_uint(
+                    reverseMac(polycube::service::utils::mac_string_to_nbo_uint(
                         parent.getMac())),
                     sendBPDUproxy, this);
 
@@ -122,7 +122,7 @@ void Stp::decrementCounter() {
 
 void Stp::changeMac(const std::string &mac) {
   stp_set_bridge_id(
-      stp_, reverseMac(polycube::service::utils::mac_string_to_be_uint(mac)));
+      stp_, reverseMac(polycube::service::utils::mac_string_to_nbo_uint(mac)));
 
   stp_set_bridge_priority(stp_, priority_);
 }
@@ -161,7 +161,7 @@ void Stp::sendBPDU(struct ofpbuf *bpdu, int port_no, void *aux) {
   uint8_t *buf = (uint8_t *)ofpbuf_base(bpdu);
 
   uint64_t mac =
-      polycube::service::utils::mac_string_to_be_uint(parent_.getMac());
+      polycube::service::utils::mac_string_to_nbo_uint(parent_.getMac());
 
   memcpy(buf + 6, &mac, ETH_ADDR_LEN);  // set source mac
 

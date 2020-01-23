@@ -71,24 +71,24 @@ void TransparentCube::set_next(uint16_t next, ProgramType type) {
   reload_all();
 }
 
+uint16_t TransparentCube::get_next(ProgramType type) {
+  return type == ProgramType::INGRESS ? ingress_next_ : egress_next_;
+}
+
 void TransparentCube::set_parent(PeerIface *parent) {
   parent_ = parent;
-  if (parent) {
+  if (parent_) {
     attach_();
+
+    std::lock_guard<std::mutex> lock(subscription_list_mutex);
+    for (auto &it : subscription_list) {
+      parent_->subscribe_parameter(uuid().str(), it.first, it.second);
+    }
   }
 }
 
 PeerIface *TransparentCube::get_parent() {
   return parent_;
-}
-
-std::string TransparentCube::get_parent_parameter(
-    const std::string &parameter) {
-  if (!parent_) {
-    throw std::runtime_error("cube is not attached");
-  }
-
-  return parent_->get_parameter(parameter);
 }
 
 void TransparentCube::set_parameter(const std::string &parameter,
@@ -97,39 +97,51 @@ void TransparentCube::set_parameter(const std::string &parameter,
 }
 
 void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
-                                      service::Sense sense, bool recirculate) {
+                                      service::Direction direction, bool recirculate) {
   Controller &c = (get_type() == CubeType::TC) ? Controller::get_tc_instance()
                                                : Controller::get_xdp_instance();
 
   uint16_t port = 0;
   uint16_t module;
+  Port *parent_port = NULL;
+  ExtIface *parent_iface = NULL;
 
-  Port *parent = dynamic_cast<Port *>(parent_);
+  if (!parent_) {
+      logger->error("cube doesn't have a parent.");
+      return;
+  }
 
-  // calculate port
-  switch (sense) {
-  case service::Sense::INGRESS:
-    // packet is comming in, port is ours
-    port = parent->index();
-    break;
-  case service::Sense::EGRESS:
-    // packet is going, set port to next one
-    if (parent->peer_port_) {
-      port = parent->peer_port_->get_port_id();
-    }
-    break;
+  if (parent_port = dynamic_cast<Port *>(parent_)) {
+      // calculate port
+      switch (direction) {
+      case service::Direction::INGRESS:
+        // packet is comming in, port is ours
+        port = parent_port->index();
+        break;
+      case service::Direction::EGRESS:
+        // packet is going, set port to next one
+        if (parent_port->peer_port_) {
+          port = parent_port->peer_port_->get_port_id();
+        }
+        break;
+      }
+  } else if (parent_iface = dynamic_cast<ExtIface *>(parent_)) {
+      port = parent_iface->get_port_id();
+  } else {
+      logger->error("cube doesn't have a valid parent.");
+      return;
   }
 
   // calculate module index
-  switch (sense) {
-  case service::Sense::INGRESS:
+  switch (direction) {
+  case service::Direction::INGRESS:
     if (recirculate) {
       module = ingress_index_;  // myself in ingress
     } else {
       module = ingress_next_;
     }
     break;
-  case service::Sense::EGRESS:
+  case service::Direction::EGRESS:
     if (recirculate) {
       module = egress_index_;  // myself in egress
     } else {
@@ -138,7 +150,8 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
     break;
   }
 
-  c.send_packet_to_cube(module, port, packet);
+  c.send_packet_to_cube(module, port, packet, direction,
+         parent_iface && direction == service::Direction::INGRESS);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {
@@ -161,6 +174,43 @@ nlohmann::json TransparentCube::to_json() const {
   j["parent"] = parent;
 
   return j;
+}
+
+void TransparentCube::subscribe_parent_parameter(
+    const std::string &param_name, ParameterEventCallback &callback) {
+
+  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  // Add event to the list
+  subscription_list.emplace(param_name, callback);
+
+  // If not parent, just return, the subcription will done when the cube is attached
+  if (!parent_) {
+    return;
+  }
+  parent_->subscribe_parameter(uuid().str(), param_name, callback);
+}
+
+void TransparentCube::unsubscribe_parent_parameter(
+    const std::string &param_name) {
+
+  std::lock_guard<std::mutex> lock(subscription_list_mutex);
+  // Remove event from the list
+  subscription_list.erase(param_name);
+
+  // If not parent, just return
+  if (!parent_) {
+    return;
+  }
+  parent_->unsubscribe_parameter(uuid().str(), param_name);
+}
+
+std::string TransparentCube::get_parent_parameter(
+    const std::string &param_name) {
+  if (!parent_) {
+    throw std::runtime_error("cube is not attached");
+  }
+
+  return parent_->get_parameter(param_name);
 }
 
 }  // namespace polycubed

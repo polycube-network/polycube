@@ -97,7 +97,7 @@ void Iptables::IpLookup::updateTableValue(uint8_t netmask, std::string ip,
     table_name += "Output";
 
   lpm_k key{
-      .netmask_len = netmask, .ip = utils::ip_string_to_be_uint(ip),
+      .netmask_len = netmask, .ip = utils::ip_string_to_nbo_uint(ip),
   };
 
   std::lock_guard<std::mutex> guard(program_mutex_);

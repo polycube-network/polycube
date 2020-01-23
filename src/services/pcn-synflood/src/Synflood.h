@@ -27,7 +27,7 @@ class Synflood : public SynfloodBase {
   Synflood(const std::string name, const SynfloodJsonObject &conf);
   virtual ~Synflood();
 
-  void packet_in(polycube::service::Sense sense,
+  void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
@@ -38,6 +38,4 @@ class Synflood : public SynfloodBase {
   void addStats(const StatsJsonObject &value) override;
   void replaceStats(const StatsJsonObject &conf) override;
   void delStats() override;
-
-  static std::string exec(const char* cmd);
 };

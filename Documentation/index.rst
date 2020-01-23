@@ -10,8 +10,10 @@ Welcome to Polycube's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   intro
    quickstart
    installation
+   architecture
    cubes
    polycubed/polycubed
    polycubectl/polycubectl

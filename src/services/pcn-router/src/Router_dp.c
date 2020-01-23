@@ -31,7 +31,7 @@
 #define ROUTING_TABLE_DIM 256
 #define ROUTER_PORT_N 32
 #define ARP_TABLE_DIM 32
-#define SECONDARY_ADDRESS 5
+#define MAX_SECONDARY_ADDRESSES 5 // also defined in Ports.h
 #define TYPE_NOLOCALINTERFACE 0  // used to compare the 'type' field in the rt_v
 #define TYPE_LOCALINTERFACE 1
 #define IP_CSUM_OFFSET (sizeof(struct eth_hdr) + offsetof(struct iphdr, check))
@@ -58,12 +58,12 @@ struct rt_v {
   __be32 nexthop;
   u8 type;
 };
-/* Router Port */
+/* Router Port, also defined in Ports.h */
 struct r_port {
   __be32 ip;
   __be32 netmask;
-  __be32 secondary_ip[SECONDARY_ADDRESS];
-  __be32 secondary_netmask[SECONDARY_ADDRESS];
+  __be32 secondary_ip[MAX_SECONDARY_ADDRESSES];
+  __be32 secondary_netmask[MAX_SECONDARY_ADDRESSES];
   __be64 mac : 48;
 };
 BPF_F_TABLE("lpm_trie", struct rt_k, struct rt_v, routing_table,
@@ -200,7 +200,7 @@ static inline int send_packet_to_output_interface(
   return pcn_pkt_redirect(ctx, md, out_port);
 }
 static inline int search_secondary_address(__be32 *arr, __be32 ip) {
-  int i, size = SECONDARY_ADDRESS;
+  int i, size = MAX_SECONDARY_ADDRESSES;
   for (i = 0; i < size; i++) {
     if (arr[i] == ip)
       return i; /* found */

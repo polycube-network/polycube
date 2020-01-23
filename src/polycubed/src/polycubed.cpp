@@ -173,6 +173,12 @@ int main(int argc, char *argv[]) {
       exit(EXIT_SUCCESS);
     }
   } catch (const std::exception &e) {
+
+    // The problem of the error in loading the config file may be due to
+    // polycubed executed as normal user
+    if (getuid())
+      logger->critical("polycubed should be executed with root privileges");
+
     logger->critical("Error loading config: {}", e.what());
     exit(EXIT_FAILURE);
   }
@@ -182,7 +188,7 @@ int main(int argc, char *argv[]) {
   logger->set_level(config.getLogLevel());
 
   if (getuid()) {
-    logger->critical("please run polycubed as root");
+    logger->critical("polycubed should be executed with root privileges");
     exit(EXIT_FAILURE);
   }
 
@@ -285,18 +291,17 @@ int main(int argc, char *argv[]) {
   load_services(*core);
 
   // create a cubes dump instance if needed
-  if (!config.getCubesNoDump()) {
+  //if (!config.getCubesNoDump()) {
+  if (config.getCubesDumpEnabled()) {
     cubesdump = new CubesDump();
     core->set_cubes_dump(cubesdump);
-  }
 
-  // In case the user does not want to initialize the Polycube virtual network,
-  // let's load the last topology that was present when the daemon was shut down.
-  if (!config.getCubesInitTopology()) {
-    restserver->load_last_topology();
-  }
+    // In case the user does not want to initialize the Polycube virtual network,
+    // let's load the last topology that was present when the daemon was shut down.
+    if (!config.getCubesDumpCleanInit()) {
+      restserver->load_last_topology();
+    }
 
-  if (!config.getCubesNoDump()) {
     // start to saving topology only after it has been loaded
     cubesdump->Enable();
   }

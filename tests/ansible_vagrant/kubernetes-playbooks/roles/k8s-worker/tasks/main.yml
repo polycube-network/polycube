@@ -1,0 +1,82 @@
+---
+# tasks file for k8s-worker
+
+- name: Install packages that allow apt to be used over HTTPS
+  apt:
+    name: "{{ apt_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Add an apt signing key for Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add apt repository for stable version
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+    state: present
+# different versions can be installed->modify the docker_packages variable
+- name: Install docker and its dependecies
+  apt: 
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Add user to docker group
+  user:
+    name: "{{ user }}" # defined in group_var/all
+    group: docker
+
+# otherwise the kubelet won't start
+- name: Remove swapfile from /etc/fstab
+  mount:
+   name: /swapfile
+   fstype: swap
+   state: absent
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Enable the kernel to pass bridged IPv4 traffic to iptables' chains and the forwarding
+  command: "{{ item }}"
+  with_items:
+    - sysctl -w net.bridge.bridge-nf-call-iptables=1
+    - sysctl -w net.ipv4.ip_forward=1
+
+- name: Add an apt signing key for Kubernetes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Adding apt repository for Kubernetes
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes.list
+
+# different versions can be installed->modify the k8s_packages variable
+- name: Install Kubernetes binaries
+  apt: 
+    name: "{{ k8s_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Configure node ip
+  lineinfile:
+    path: /etc/default/kubelet
+    create: yes
+    line: KUBELET_EXTRA_ARGS=--node-ip="{{ node_ip }}" # node ip is per host in host_vars
+
+- name: Restart kubelet
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+
+- name: Copy the join command to server location
+  copy: src=join-command dest=/tmp/join-command.sh mode=0777
+
+- name: Join the node to cluster
+  command: sh /tmp/join-command.sh

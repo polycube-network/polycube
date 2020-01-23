@@ -1,0 +1,7 @@
+# syntax = tonistiigi/dockerfile:runmount20180618
+FROM ubuntu:18.04
+COPY scripts/pre-requirements.sh /tmp/
+RUN cd /tmp/ && \
+apt update && \
+SUDO="" WORKDIR="/tmp/dev" ./pre-requirements.sh && \
+rm -f /tmp/pre-requirements.sh

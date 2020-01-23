@@ -83,6 +83,8 @@ The best way to know what is the syntax for each service is to use the `Help`_ o
 
 ``polycubectl`` is also able to read the contents of the request from the standard input, it can be used in two ways:
 
+.. _complex-conf:
+
 Passing complex configuration from the command line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::

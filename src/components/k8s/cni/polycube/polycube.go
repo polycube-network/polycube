@@ -18,11 +18,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"net"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -36,6 +38,7 @@ import (
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 
+	k8sfirewall "github.com/polycube-network/polycube/src/components/k8s/utils/k8sfirewall"
 	k8switch "github.com/polycube-network/polycube/src/components/k8s/utils/k8switch"
 
 	log "github.com/sirupsen/logrus"
@@ -54,12 +57,13 @@ type gwInfo struct {
 }
 
 const (
-	basePath           = "http://127.0.0.1:9000/polycube/v1"
+	basePath             = "http://127.0.0.1:9000/polycube/v1"
 	polycubeK8sInterface = "pcn_k8s"
 )
 
 var (
 	k8switchAPI *k8switch.K8switchApiService
+	fwAPI       *k8sfirewall.FirewallApiService
 )
 
 func init() {
@@ -73,6 +77,11 @@ func init() {
 	cfgK8switch := k8switch.Configuration{BasePath: basePath}
 	srK8switch := k8switch.NewAPIClient(&cfgK8switch)
 	k8switchAPI = srK8switch.K8switchApi
+
+	// for firewall creation
+	cfgK8firewall := k8sfirewall.Configuration{BasePath: basePath}
+	srK8firewall := k8sfirewall.NewAPIClient(&cfgK8firewall)
+	fwAPI = srK8firewall.FirewallApi
 }
 
 func loadNetConf(bytes []byte) (*NetConf, string, error) {
@@ -307,7 +316,83 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	success = true
+
+	// If everything's all right, then create the firewall
+	if err := createFirewall(portName, ip.String()); err != nil {
+		log.Errorln("Could not create firewall.")
+		return err
+	}
+
 	return types.PrintResult(result, cniVersion)
+}
+
+func createFirewall(portName, ip string) error {
+	// At this point we don't have the UUID of the pod.
+	// So, the only way we have to create the firewall and to be able
+	// to reference it later, is by using its IP.
+	// So its name will be fw-ip
+	name := "fw-" + ip
+
+	// First create the firewall
+	if response, err := fwAPI.CreateFirewallByID(nil, name, k8sfirewall.Firewall{
+		Name: name,
+	}); err != nil {
+		log.Errorf("An error occurred while trying to create firewall %s: error: %s, response: %+v", name, err, response)
+		return err
+	}
+	log.Infof("firewall %s successfully created", name)
+
+	// Set it to automatically accept established connections. This way, we do
+	// not need to insert a rule to do that, and we can reduce the rules list.
+	// NOTE: \" are included because the swagger-generated API would send
+	// on instead of "on" as it should be.
+	if response, err := fwAPI.UpdateFirewallAcceptEstablishedByID(nil, name, "\"ON\""); err != nil {
+		log.Errorf("An error occurred while trying to set accept-established to 'on'. Firewall: %s, error: %s, response: %+v", name, err, response)
+		deleteFirewall(name)
+		return err
+	}
+	log.Infof("firewall %s set to automatically accept established connections")
+
+	// Switch to forward for both ingress and egress
+	// Read above for the \" thing.
+	if response, err := fwAPI.UpdateFirewallChainDefaultByID(nil, name, "ingress", "\"forward\""); err != nil {
+		log.Errorf("Could not set default ingress action to forward for firewall %s. Error: %s, response: %+v", name, err, response)
+		deleteFirewall(name)
+		return err
+	}
+	if response, err := fwAPI.UpdateFirewallChainDefaultByID(nil, name, "egress", "\"forward\""); err != nil {
+		log.Errorf("Could not set default egress action to forward for firewall %s. Error: %s, response: %+v", name, err, response)
+		deleteFirewall(name)
+		return err
+	}
+
+	// Set it async
+	// This does not return any error because the soultion would still work
+	// even if this fails: rules injection will just be slower.
+	if response, err := fwAPI.UpdateFirewallInteractiveByID(nil, name, false); err != nil {
+		log.Errorf("Could not set interactive to false on firewall %s: %+v, %s\n", name, response, err)
+	}
+	log.Infof("firewall %s successfully set to async", name)
+
+	// Attach it
+	// TODO: generate swagger api for this
+	port := "k8switch0:" + portName
+	var jsonStr = []byte(`{"cube":"` + name + `", "port":"` + port + `"}`)
+	resp, err := http.Post(basePath+"/attach", "application/json", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		log.Errorf("Could not attach firewall %s. Error %s, response %+v", name, err, resp)
+		deleteFirewall(name)
+		return err
+	}
+	log.Infof("firewall %s successfully attached on port %s", name, portName)
+
+	return nil
+}
+
+func deleteFirewall(name string) {
+	if response, err := fwAPI.DeleteFirewallByID(nil, name); err != nil {
+		log.Errorf("Could not delete firewall %s; response: %+v; error: %s", name, response, err)
+	}
 }
 
 func cmdDel(args *skel.CmdArgs) error {
@@ -395,5 +480,5 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel, version.All)
+	skel.PluginMain(cmdAdd, nil, cmdDel, version.All, "Polycube CNI plugin")
 }

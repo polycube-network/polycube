@@ -71,23 +71,27 @@ void VethPeer::set_mac(const std::string &mac) {
 
 void VethPeer::set_ip(const std::string &ip, const int prefix) {
   if (!ns_.empty()) {
-    /* exec set_iface_ip into namespace */
-    std::function<void()> doThis = [&]{Netlink::getInstance().set_iface_ip(name_, ip, prefix);};
+    /* exec add_iface_ip into namespace */
+    std::function<void()> doThis = [&]{
+      Netlink::getInstance().add_iface_ip(name_, ip, prefix);
+    };
     Namespace namespace_ = Namespace::open(ns_);
     namespace_.execute(doThis);
   } else {
-    Netlink::getInstance().set_iface_ip(name_, ip, prefix);
+    Netlink::getInstance().add_iface_ip(name_, ip, prefix);
   }
 }
 
 void VethPeer::set_ipv6(const std::string &ipv6) {
   if (!ns_.empty()) {
-    /* exec set_iface_ipv6 into namespace */
-    std::function<void()> doThis = [&]{Netlink::getInstance().set_iface_ipv6(name_, ipv6);};
+    /* exec add_iface_ipv6 into namespace */
+    std::function<void()> doThis = [&]{
+      Netlink::getInstance().add_iface_ipv6(name_, ipv6);
+    };
     Namespace namespace_ = Namespace::open(ns_);
     namespace_.execute(doThis);
   } else {
-    Netlink::getInstance().set_iface_ipv6(name_, ipv6);
+    Netlink::getInstance().add_iface_ipv6(name_, ipv6);
   }
 }
 

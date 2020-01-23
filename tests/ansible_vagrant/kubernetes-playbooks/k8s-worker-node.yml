@@ -1,0 +1,7 @@
+---
+# Playbook used to configure a worker node. 
+# Check the role for more information
+- hosts: k8s_worker_nodes
+  become: yes
+  roles:
+   - k8s-worker

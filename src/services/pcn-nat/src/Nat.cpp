@@ -32,9 +32,20 @@ Nat::Nat(const std::string name, const NatJsonObject &conf)
 
   addRule(conf.getRule());
   //addNattingTableList(conf.getNattingTable());
+
+  ParameterEventCallback cb = [&](const std::string &parameter, const std::string &value) {
+    external_ip_ = utils::get_ip_from_string(value);
+    logger()->debug("parent IP has been updated to {}", external_ip_);
+    if (rule_->getMasquerade()->getEnabled()) {
+      rule_->getMasquerade()->inject(utils::ip_string_to_nbo_uint(external_ip_));
+    }
+  };
+  subscribe_parent_parameter("ip", cb);
 }
 
-Nat::~Nat() {}
+Nat::~Nat() {
+  unsubscribe_parent_parameter("ip");
+}
 
 void Nat::update(const NatJsonObject &conf) {
   // This method updates all the object/parameter in Nat object specified in the
@@ -72,26 +83,10 @@ NatJsonObject Nat::toJsonObject() {
   return conf;
 }
 
-void Nat::packet_in(polycube::service::Sense sense,
+void Nat::packet_in(polycube::service::Direction direction,
                     polycube::service::PacketInMetadata &md,
                     const std::vector<uint8_t> &packet) {
   logger()->info("packet in event");
-}
-
-void Nat::attach() {
-  try {
-    auto temp = get_parent_parameter("ip");
-    external_ip_ = temp.substr(1, temp.length() - 2);  // remove qoutes
-    logger()->info("external ip is : {}", external_ip_);
-    // if masquerare is enabled we need to update the IP address
-    // TODO: this action should also be performed when the IP address on the
-    // parent changes (it needs the subscription mechanishm)
-    if (rule_->getMasquerade()->getEnabled()) {
-      rule_->getMasquerade()->inject(utils::ip_string_to_be_uint(external_ip_));
-    }
-  } catch (...) {
-    logger()->warn("External IP not found. Is this enabled on a router?");
-  }
 }
 
 std::string Nat::generate_code() {
@@ -165,8 +160,8 @@ std::shared_ptr<NattingTable> Nat::getNattingTable(
   try {
     auto table = get_hash_table<st_k, st_v>("egress_session_table");
     st_k map_key{
-        .src_ip = utils::ip_string_to_be_uint(internalSrc),
-        .dst_ip = utils::ip_string_to_be_uint(internalDst),
+        .src_ip = utils::ip_string_to_nbo_uint(internalSrc),
+        .dst_ip = utils::ip_string_to_nbo_uint(internalDst),
         .src_port = htons(internalSport),
         .dst_port = htons(internalDport),
         .proto = uint8_t(std::stol(proto)),
@@ -174,7 +169,7 @@ std::shared_ptr<NattingTable> Nat::getNattingTable(
 
     st_v value = table.get(map_key);
 
-    std::string newIp = utils::be_uint_to_ip_string(value.new_ip);
+    std::string newIp = utils::nbo_uint_to_ip_string(value.new_ip);
     uint16_t newPort = value.new_port;
     uint8_t originatingRule = value.originating_rule_type;
     ;
@@ -197,10 +192,10 @@ std::vector<std::shared_ptr<NattingTable>> Nat::getNattingTableList() {
       auto value = pair.second;
 
       auto entry = std::make_shared<NattingTable>(
-          *this, utils::be_uint_to_ip_string(key.src_ip),
-          utils::be_uint_to_ip_string(key.dst_ip), ntohs(key.src_port),
+          *this, utils::nbo_uint_to_ip_string(key.src_ip),
+          utils::nbo_uint_to_ip_string(key.dst_ip), ntohs(key.src_port),
           ntohs(key.dst_port), key.proto,
-          utils::be_uint_to_ip_string(value.new_ip), ntohs(value.new_port),
+          utils::nbo_uint_to_ip_string(value.new_ip), ntohs(value.new_port),
           value.originating_rule_type);
 
       entries.push_back(entry);

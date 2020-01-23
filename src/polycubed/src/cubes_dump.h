@@ -36,15 +36,20 @@ class CubesDump {
                          Rest::Resources::Endpoint::Operation opType,
                          Rest::Resources::Endpoint::ResourceType resType);
 
-  void UpdatePortPeer(const std::string& cubeName, const std::string& cubePort, std::string peer);
+  void UpdatePortPeer(const std::string& cubeName,
+          const std::string& cubePort,
+          std::string peer);
 
-  void UpdatePortTCubes(const std::string& cubeName, const std::string& cubePort, std::string tCubeName, int position);
+  void UpdatePortTCubes(const std::string& cubeName,
+          const std::string& cubePort,
+          std::string tCubeName,
+          int position);
 
  private:
   void UpdateCubesConfigCreateReplace(const std::vector<std::string> &resItem,
-                                      const nlohmann::json &body,
-                                      const ListKeyValues &keys,
-                                      Rest::Resources::Endpoint::ResourceType resType);
+                              const nlohmann::json &body,
+                              const ListKeyValues &keys,
+                              Rest::Resources::Endpoint::ResourceType resType);
 
   void UpdateCubesConfigUpdate(const std::vector<std::string> &resItem,
                                const nlohmann::json body,
@@ -57,26 +62,27 @@ class CubesDump {
                                Rest::Resources::Endpoint::ResourceType resType);
 
   bool checkPresence(const std::vector<std::string> &resItem,
-                     const int &resItemIndex,
-                     const std::map<std::string, std::vector<Rest::Resources::Body::ListKeyValue>> &keyValues,
-                     const nlohmann::json &elem);
+                   const int &resItemIndex,
+                   const std::map<std::string,
+                   std::vector<Rest::Resources::Body::ListKeyValue>> &keyValues,
+                   const nlohmann::json &elem);
 
   void SaveToFile(const std::string &path);
 
   // thread that saves in file
   std::unique_ptr<std::thread> save_in_file_thread_;
   // mutex on the access to cubesConfig
-  std::mutex cubesConfigMutex_;
+  std::mutex cubes_config_mutex_;
   // cubes configuration <name, configuration>
-  std::map<std::string, nlohmann::json> cubesConfig_;
+  std::map<std::string, nlohmann::json> cubes_config_;
   // how many updates have been made while thread saving to file.
   // it is incremented by the server to notify when an update is available while
   // the saving thread was not waiting on the condition_variable
-  std::atomic<int> listOfPendingChanges_;
+  std::atomic<int> list_of_pending_changes_;
   // wait until an update occurs
-  std::condition_variable waitForUpdate_;
+  std::condition_variable wait_for_update_;
   // the saving thread ends if the daemon is shutting down (kill=true)
-  bool killSavingThread_;
+  bool kill_saving_thread_;
   bool dump_enabled_;
 };
 } // namespace polycube::polycubed

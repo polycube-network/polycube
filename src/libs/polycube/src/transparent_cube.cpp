@@ -33,13 +33,13 @@ TransparentCube::TransparentCube(const nlohmann::json &conf,
     if (dismounted_)
       return;
 
-    Sense sense = static_cast<Sense>(md->port_id);
+    Direction direction = static_cast<Direction>(md->port_id);
     PacketInMetadata md_;
     md_.reason = md->reason;
     md_.metadata[0] = md->metadata[0];
     md_.metadata[1] = md->metadata[1];
     md_.metadata[2] = md->metadata[2];
-    packet_in(sense, md_, packet);
+    packet_in(direction, md_, packet);
   };
 
   cube_ = factory_->create_transparent_cube(
@@ -60,14 +60,9 @@ TransparentCube::~TransparentCube() {
   factory_->destroy_cube(get_name());
 }
 
-std::string TransparentCube::get_parent_parameter(
-    const std::string &parameter) {
-  return cube_->get_parent_parameter(parameter);
-}
-
-void TransparentCube::send_packet_out(EthernetII &packet, Sense sense,
+void TransparentCube::send_packet_out(EthernetII &packet, Direction direction,
                                       bool recirculate) {
-  cube_->send_packet_out(packet.serialize(), sense, recirculate);
+  cube_->send_packet_out(packet.serialize(), direction, recirculate);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {
@@ -79,6 +74,21 @@ nlohmann::json TransparentCube::to_json() const  {
 }
 
 void TransparentCube::attach() {}
+
+void TransparentCube::subscribe_parent_parameter(
+    const std::string &param_name, ParameterEventCallback &callback) {
+  cube_->subscribe_parent_parameter(param_name, callback);
+}
+
+void TransparentCube::unsubscribe_parent_parameter(
+    const std::string &param_name) {
+  cube_->unsubscribe_parent_parameter(param_name);
+}
+
+std::string TransparentCube::get_parent_parameter(
+    const std::string &param_name) {
+  return cube_->get_parent_parameter(param_name);
+}
 
 }  // namespace service
 }  // namespace polycube

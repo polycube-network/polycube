@@ -29,37 +29,34 @@
 
 #include <api/BPFTable.h>
 
-#ifdef HAVE_POLYCUBE_TOOLS
-#include <polycube/tools/netdissect/netdissect-stdinc.h>
-#include <polycube/tools/netdissect/netdissect.h>
-#include <polycube/tools/netdissect/print.h>
-#endif
-
 namespace polycube {
 namespace service {
 namespace utils {
 
 // new set of functions
-uint32_t ip_string_to_be_uint(const std::string &ip) {
+
+uint32_t ip_string_to_nbo_uint(const std::string &ip) {
   unsigned char a[4];
   int last = -1;
-  int rc = std::sscanf(ip.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
+  std::string IP_address = get_ip_from_string(ip);
+
+  int rc = std::sscanf(IP_address.c_str(), "%hhu.%hhu.%hhu.%hhu%n", a + 0, a + 1, a + 2,
                        a + 3, &last);
-  if (rc != 4 || ip.size() != last)
+  if (rc != 4 || IP_address.size() != last)
     throw std::runtime_error("Not an ipv4 address " + ip);
 
   return uint32_t(a[3]) << 24 | uint32_t(a[2]) << 16 | uint32_t(a[1]) << 8 |
          uint32_t(a[0]);
 }
 
-std::string be_uint_to_ip_string(uint32_t ip) {
+std::string nbo_uint_to_ip_string(uint32_t ip) {
   struct in_addr ip_addr;
   ip_addr.s_addr = ip;
   return std::string(inet_ntoa(ip_addr));
 }
 
 /* https://stackoverflow.com/a/7326381 */
-uint64_t mac_string_to_be_uint(const std::string &mac) {
+uint64_t mac_string_to_nbo_uint(const std::string &mac) {
   uint8_t a[6];
   int last = -1;
   int rc = sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n", a + 0, a + 1,
@@ -71,7 +68,7 @@ uint64_t mac_string_to_be_uint(const std::string &mac) {
          uint64_t(a[2]) << 16 | uint64_t(a[1]) << 8 | uint64_t(a[0]);
 }
 
-std::string be_uint_to_mac_string(uint64_t mac) {
+std::string nbo_uint_to_mac_string(uint64_t mac) {
   uint8_t a[6];
   for (int i = 0; i < 6; i++) {
     a[i] = (mac >> i * 8) & 0xFF;
@@ -201,33 +198,6 @@ std::string format_debug_string(std::string str, const uint64_t args[4]) {
   return std::string(buf);
 }
 
-#ifdef HAVE_POLYCUBE_TOOLS
-void print_packet(const uint8_t *pkt, uint32_t len) {
-  netdissect_options Ndo;
-  netdissect_options *ndo = &Ndo;
-
-  memset(ndo, 0, sizeof(*ndo));
-  char ebuf[100];
-  // if (nd_init(ebuf, sizeof(ebuf)) == -1)
-  //  return;
-
-  ndo_set_function_pointers(ndo);
-
-  ndo->ndo_nflag = 1;
-  ndo->ndo_vflag = 0;
-  // ndo->ndo_qflag = 1;
-  ndo->ndo_tflag = 0;
-  const char name[] = "helloworld";
-  ndo->program_name = name;
-  ndo->ndo_eflag = 1;  // print ethernet packet
-  init_print(ndo, 0, 0, 0);
-  ndo->ndo_if_printer = get_if_printer(ndo, 0);
-
-  struct pcap_pkthdr hdr = {{0, 0}, len, len};
-  pretty_print_packet(ndo, &hdr, pkt, 0);
-}
-#endif
-
 std::string get_random_mac() {
   std::random_device rd;
   std::mt19937 mt(rd());
@@ -263,7 +233,7 @@ uint64_t hex_string_to_uint(const std::string &str) {
 std::string get_ip_from_string(const std::string &ipv_net) {
   size_t pos = ipv_net.find("/");
   if (pos == std::string::npos) {
-    return std::string();  // throw?
+    return ipv_net;
   }
   return ipv_net.substr(0, pos);
 }
@@ -296,15 +266,31 @@ uint32_t get_netmask_length(const std::string &netmask_string) {
     throw std::runtime_error("IP Address is not in a valid format");
 }
 
-std::string get_netmask_from_CIDR(const int cidr) {
+std::string get_netmask_from_prefixlength(const int prefixlength) {
   uint32_t ipv4Netmask;
 
+  if (prefixlength == 0) {
+    return "0.0.0.0";
+  }
+
   ipv4Netmask = 0xFFFFFFFF;
-  ipv4Netmask <<= 32 - cidr;
+  ipv4Netmask <<= 32 - prefixlength;
   ipv4Netmask = ntohl(ipv4Netmask);
   struct in_addr addr = {ipv4Netmask};
 
   return inet_ntoa(addr);
+}
+
+void split_ip_and_prefix(const std::string &ip_and_prefix,
+                        std::string &ip_address, std::string &netmask) {
+  // ip_and_prefix = ip_address/prefix
+  std::istringstream split(ip_and_prefix);
+  std::vector<std::string> info;
+  char split_char = '/';
+  for (std::string each; std::getline(split, each, split_char);
+       info.push_back(each));
+  ip_address = info[0];
+  netmask = get_netmask_from_prefixlength(std::atoi(info[1].c_str()));
 }
 
 }  // namespace utils

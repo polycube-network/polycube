@@ -122,6 +122,8 @@ class RestServer {
               Pistache::Http::ResponseWriter response);
   void topology(const Pistache::Rest::Request &request,
                 Pistache::Http::ResponseWriter response);
+  void get_if_topology(const Pistache::Rest::Request &request,
+                Pistache::Http::ResponseWriter response);
   void topology_help(const Pistache::Rest::Request &request,
                      Pistache::Http::ResponseWriter response);
 

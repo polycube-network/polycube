@@ -86,7 +86,7 @@ struct IpAddr {
   uint8_t netmask;
   uint32_t rule_id;
   std::string toString() const {
-    return utils::be_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
+    return utils::nbo_uint_to_ip_string(ip) + "/" + std::to_string(netmask);
   }
   void fromString(std::string ipnetmask) {
     std::string ip_;
@@ -104,7 +104,7 @@ struct IpAddr {
       throw std::runtime_error("Netmask can't be bigger than 32");
 
     ip_ = ipnetmask.substr(0, found);
-    ip = utils::ip_string_to_be_uint(ip_);
+    ip = utils::ip_string_to_nbo_uint(ip_);
     netmask = netmask_;
   }
   bool operator<(const IpAddr &that) const {
@@ -123,8 +123,8 @@ const uint8_t DSTPORT = 4;
 
 // apply Horus mitigator optimization if there are at least # rules
 // matching the pattern, at ruleset begin
-const uint8_t MIN_RULE_SIZE_FOR_HORUS = 1;
-const uint8_t MAX_RULE_SIZE_FOR_HORUS = 2048;
+const uint32_t MIN_RULE_SIZE_FOR_HORUS = 1;
+const uint32_t MAX_RULE_SIZE_FOR_HORUS = 2048;
 
 // Enable Horus optimization
 // We want to disable Horus by default while we decide a policy to apply it or

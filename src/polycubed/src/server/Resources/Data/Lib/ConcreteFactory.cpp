@@ -34,6 +34,8 @@
 #include "ParentResource.h"
 #include "Service.h"
 
+#include "polycubed_core.h"
+
 namespace polycube::polycubed::Rest::Resources::Data::Lib {
 using EntryPoint::GenerateHandlerName;
 using EntryPoint::GenerateHelpName;
@@ -100,9 +102,31 @@ std::unique_ptr<Endpoint::LeafResource> ConcreteFactory::RestLeaf(
         node_fields, mandatory, type, std::move(default_value),
         is_enum, values);
   }
-  auto replace_handler =
-      LoadHandler<Response(const char *, const Key *, size_t, const char *)>(
-          GenerateHandlerName(tree_names, Operation::kUpdate));
+
+  auto local_core = this->core_;
+
+  std::function<Response(const char *, const Key *, size_t, const char *)>
+      replace_handler;
+
+  auto tree_names_ = tree_names;
+  tree_names_.pop();
+
+  replace_handler =
+    LoadHandler<Response(const char *, const Key *, size_t, const char *)>(
+        GenerateHandlerName(tree_names, Operation::kUpdate));
+
+  if (tree_names_.size() == 2 && tree_names_.front() == "ports") {
+    auto original = std::move(replace_handler);
+    replace_handler =
+       [original, local_core, name](const char *cube_name, const Key *keys, size_t nkeys, const char *c) -> Response {
+        auto res = original(cube_name, keys, nkeys, c);
+        std::string val(c);
+        val = val.substr(1, val.length() - 2); // remove qoutes
+        local_core->notify_port_subscribers(cube_name, keys[0].value.string, name, val);
+        return res;
+      };
+  }
+
   return std::make_unique<LeafResource>(
       std::move(replace_handler), std::move(read_handler), name, description,
       cli_example, rest_endpoint, parent, core_, std::move(value_field),
