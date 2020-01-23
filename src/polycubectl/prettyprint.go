@@ -296,6 +296,10 @@ func formatValue(data interface{}) string {
 	buf := ""
 	buf = fmt.Sprintf("%v", data)
 
+    if reflect.ValueOf(data).Kind() == reflect.String {
+        return buf
+    }
+
 	_, erri := strconv.ParseInt(buf, 10, 64)
 	if erri != nil {
 		f, errf := strconv.ParseFloat(buf, 64)
