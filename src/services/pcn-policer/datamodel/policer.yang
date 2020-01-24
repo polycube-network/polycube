@@ -1,0 +1,86 @@
+module policer {
+  yang-version 1.1;
+  namespace "http://polycube.network/policer";
+  prefix "policer";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
+
+  organization "Polycube Open Source Project";
+  description "YANG data model for the Polycube Traffic Policer service based on token bucket algorithm";
+
+  polycube-base:service-description "Traffic Policer Service";
+  polycube-base:service-version "1.0";
+  polycube-base:service-name "policer";
+  polycube-base:service-min-kernel-version "5.1.0";
+
+  uses "polycube-transparent-base:transparent-base-yang-module";
+
+  typedef action-type {
+    type enumeration {
+      enum PASS;
+      enum LIMIT;
+      enum DROP;
+    }
+  }
+
+  grouping contract-data {
+    leaf action {
+      type action-type;
+      description "Action applied to traffic of the contract: PASS = Let all the traffic pass without limitations; LIMIT = Apply rate and burst limits to selected traffic; DROP = Drop all the traffic";
+      polycube-base:cli-example "LIMIT";
+      polycube-base:init-only-config;
+    }
+
+    leaf rate-limit {
+      type uint64;
+      description "Maximum average traffic rate (in bps)";
+      polycube-base:cli-example "10000";
+      polycube-base:init-only-config;
+    }
+    
+    leaf burst-limit {
+      type uint64;
+      description "Maximum size of a burst of packets (in bits)";
+      polycube-base:cli-example "50000";
+      polycube-base:init-only-config;
+    }
+  }
+
+  grouping updatable-contract-data {
+    uses contract-data;
+
+    action update-data {
+      input {
+        uses contract-data;
+      }
+    }
+  }
+
+  container default-contract {
+    description "Contract applied to traffic not matching any of the specified classes (default: PASS)";
+    uses updatable-contract-data {
+      refine action {
+        default PASS;
+      }
+    }
+  }
+
+  list contract {
+    key "traffic-class";
+    description "Contract applied to a specific class of traffic";
+    
+    leaf traffic-class {
+      type uint32;
+      mandatory true;
+      description "Identifier of the class of traffic, provided as packet metadata";
+      polycube-base:cli-example "1000";
+    }
+    
+    uses updatable-contract-data {
+      refine action {
+        mandatory true;
+      }
+    }
+  }
+}
