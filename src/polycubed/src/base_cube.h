@@ -76,6 +76,8 @@ class BaseCube : virtual public BaseCubeIface {
   const Guid &uuid() const;
 
   int get_table_fd(const std::string &table_name, int index, ProgramType type);
+  const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
+                             ProgramType type);
 
   void set_log_level(LogLevel level);
   LogLevel get_log_level() const;
