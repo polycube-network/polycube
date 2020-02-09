@@ -36,6 +36,7 @@ add_service(iptables pcn-iptables)
 add_service(transparenthelloworld pcn-transparent-helloworld)
 add_service(synflood pcn-synflood)
 add_service(packetcapture pcn-packetcapture)
+add_service(dyntmon pcn-dyntmon)
 
 # save string to create code that load the services
 SET_PROPERTY(GLOBAL PROPERTY LOAD_SERVICES_ ${LOAD_SERVICES})

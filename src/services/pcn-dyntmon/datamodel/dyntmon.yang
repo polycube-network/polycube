@@ -1,0 +1,139 @@
+module dyntmon {
+    yang-version 1.1;
+    namespace "http://polycube.network/dyntmon";
+    prefix "dyntmon";
+
+    import polycube-base {
+        prefix "polycube-base";
+    }
+    import polycube-transparent-base {
+        prefix "polycube-transparent-base";
+    }
+    import "ietf-inet-types" {
+        prefix "inet";
+    }
+    import "ietf-yang-types" {
+        prefix "yang";
+    }
+
+    organization
+      "Polycube open source project";
+    description
+      "YANG data model for the Polycube Dynamic Traffic Monitor transparent service";
+    polycube-base:service-description "Dynamic Traffic Monitor transparent service";
+    polycube-base:service-version "1.0";
+    polycube-base:service-name "dyntmon";
+    polycube-base:service-min-kernel-version "4.14.0";
+
+    uses polycube-transparent-base:transparent-base-yang-module;
+
+    container dataplane {
+        description
+          "Running probe";
+        leaf name {
+            type string;
+            description
+              "eBPF program name";
+        }
+        leaf code {
+            type string;
+            description
+              "eBPF source code";
+        }
+        list metrics {
+            key "name";
+            description
+              "Exported Metric";
+            leaf name {
+                type string;
+                mandatory true;
+                description
+                  "Name of the metric (e.g., number of HTTP requests)";
+            }
+            leaf map-name {
+                type string;
+                mandatory true;
+                description
+                  "Corrisponding eBPF map name";
+            }
+            container open-metrics-metadata {
+                description
+                  "Open-Metrics metadata";
+                presence
+                  "The metric will be exported with the OpenMetric format";
+                leaf help {
+                    type string;
+                    mandatory true;
+                    description
+                      "Metric description";
+                }
+                leaf type {
+                    mandatory true;
+                    type enumeration{
+                        enum Counter;
+                        enum Gauge;
+                        enum Histogram;
+                        enum Summary;
+                        enum Untyped;
+                    }
+                    description
+                      "Metric type";
+                }
+                list label {
+                    key "name";
+                    description
+                      "Label attached to the metric";
+                    leaf name {
+                        type string;
+                        description
+                          "Name of the label (e.g., 'method')";
+                    }
+                    leaf value {
+                        type string;
+                        description
+                          "Label value (e.g., 'POST')";
+                    }
+                }
+            }
+        }
+        action reload {
+            output {
+                leaf message {
+                    type string;
+                    description
+                      "Reload the ebpf code";
+                }
+            }
+        }
+    }
+    list metrics {
+        config false;
+        key "name";
+        description
+          "Collected metrics";
+        leaf name {
+            config false;
+            type string;
+            description
+              "Name of the metric (e.g, number of HTTP requests)";
+        }
+        leaf value {
+            config false;
+            type string;
+            description
+              "Value of the metric";
+        }
+        leaf timestamp {
+            config false;
+            type int64;
+            description
+              "Timestamp";
+        }
+    }
+    leaf open-metrics {
+        config false;
+        type string;
+        description
+          "Collected metrics in OpenMetrics Format";
+    }
+}
