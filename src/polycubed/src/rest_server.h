@@ -52,7 +52,9 @@ class RestServer {
 
   static const std::string base;
 
-  void init(size_t thr = 1, const std::string &server_cert = "",
+  void init(size_t thr = 1,
+            size_t max_payload_size = 64*1024,
+            const std::string &server_cert = "",
             const std::string &server_key = "",
             const std::string &root_ca_cert = "",
             const std::string &white_cert_list_path = "",
