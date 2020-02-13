@@ -157,6 +157,7 @@ def listening():
     global f, stop
     while(1):
         if stop:
+            os.sync()
             f.close()
             break
         getAndWritePacket(sys.argv[1])
