@@ -192,6 +192,8 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *m
    */
   
   u16 reason = 1;
-  return pcn_pkt_controller(ctx, md, reason);
+  // return pcn_pkt_controller(ctx, md, reason);
+   u32 metadata[3] = { 0 };
+   return pcn_pkt_controller_with_metadata_stack( ctx , md, reason, metadata );
 
 }

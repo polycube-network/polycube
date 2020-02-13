@@ -216,7 +216,7 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     }
     break;
   }
-  send_packet_out(pkt, direction, false);
+  //send_packet_out(pkt, direction, false);
 }
 
 PacketcaptureCaptureEnum Packetcapture::getCapture() {
