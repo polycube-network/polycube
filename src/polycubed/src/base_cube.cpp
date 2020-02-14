@@ -432,9 +432,10 @@ enum {
 };
 
 struct pkt_metadata {
-  u16 cube_id;      //__attribute__((deprecated)) // use CUBE_ID instead
-  u16 in_port;      // The interface on which a packet was received.
-  u32 packet_len;   //__attribute__((deprecated)) // Use ctx->len
+  u16 cube_id;        //__attribute__((deprecated)) // use CUBE_ID instead
+  u16 in_port;        // The interface on which a packet was received.
+  u32 packet_len;     //__attribute__((deprecated)) // Use ctx->len
+  u32 traffic_class;  // The traffic class the packet belongs to
 
   // used to send data to controller
   u16 reason;
@@ -468,9 +469,17 @@ void call_ingress_program(struct CTXTYPE *skb, int index) {
 }
 
 static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index);
+
+static __always_inline
 void call_egress_program(struct CTXTYPE *skb, int index) {
   egress_programs.call(skb, index);
 }
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index);
 
 /* checksum related */
 

@@ -93,7 +93,13 @@ const std::string TransparentCubeTC::TRANSPARENTCUBETC_WRAPPER = R"(
 int handle_rx_wrapper(struct CTXTYPE *skb) {
   struct pkt_metadata md = {};
   md.packet_len = skb->len;
+  md.traffic_class = skb->mark;
+  
   int rc = handle_rx(skb, &md);
+
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md.traffic_class;
 
   switch (rc) {
     case RX_DROP:
