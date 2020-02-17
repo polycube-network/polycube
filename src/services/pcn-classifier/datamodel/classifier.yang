@@ -1,0 +1,105 @@
+module classifier {
+  yang-version 1.1;
+  namespace "http://polycube.network/classifier";
+  prefix "classifier";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
+
+  import ietf-yang-types { prefix "yang"; }
+  import ietf-inet-types { prefix "inet"; }
+
+  organization "Polycube Open Source Project";
+  description "YANG data model for the Polycube Traffic Classifier";
+
+  polycube-base:service-description "Traffic Classifier Service";
+  polycube-base:service-version "1.0";
+  polycube-base:service-name "classifier";
+  polycube-base:service-min-kernel-version "4.15.0";
+
+  uses "polycube-transparent-base:transparent-base-yang-module";
+
+  list traffic-class {
+    key id;
+    description "Traffic class identified by id";
+
+    leaf id {
+      type uint32;
+      mandatory true;
+      description "Id of the class, set in metadata of matching packets";
+      polycube-base:cli-example "100";
+    }
+
+    leaf priority {
+      type uint32;
+      mandatory true;
+      description "Packets matching multiple classes are assigned to the one with highest priority";
+    }
+    
+    leaf direction {
+      type enumeration {
+        enum INGRESS;
+        enum EGRESS;
+        enum BOTH;
+      }
+      default BOTH;
+      description "Direction (INGRESS, EGRESS or BOTH) of the packet (default: BOTH)";
+      polycube-base:cli-example "INGRESS";
+    }
+
+    leaf smac {
+      type yang:mac-address;
+      description "Source MAC address of the packet";
+      polycube-base:cli-example "AC:00:00:00:00:01";
+    }
+
+    leaf dmac {
+      type yang:mac-address;
+      description "Destination MAC address of the packet";
+      polycube-base:cli-example "AC:00:00:00:00:02";
+    }
+
+    leaf ethtype {
+      type enumeration {
+        enum ARP;
+        enum IP;
+      }
+      description "Ethertype of the packet (ARP | IP)";
+      polycube-base:cli-example "IP";
+    }
+
+    leaf srcip {
+      type inet:ipv4-prefix;
+      description "Source IP address prefix of the packet";
+      polycube-base:cli-example "10.0.0.0/8";
+    }
+
+    leaf dstip {
+      type inet:ipv4-prefix;
+      description "Destination IP address prefix of the packet";
+      polycube-base:cli-example "192.168.0.0/24";
+    }
+
+    leaf l4proto {
+      type enumeration {
+        enum ICMP;
+        enum TCP;
+        enum UDP;
+      }
+      description "Level 4 protocol of the packet (ICMP | TCP | UDP)";
+      polycube-base:cli-example "TCP";
+    }
+
+    leaf sport {
+      type uint16;
+      description "Source port of the packet";
+      polycube-base:cli-example "80";
+    }
+
+    leaf dport {
+      type uint16;
+      description "Destination port of the packet";
+      polycube-base:cli-example "56000";
+    }
+  }
+}
