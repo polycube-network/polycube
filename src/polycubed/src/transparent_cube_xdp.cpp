@@ -127,8 +127,13 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
   if (int_md) {
     md.cube_id = CUBE_ID;
     md.packet_len = int_md->packet_len;
+    md.traffic_class = int_md->traffic_class;
 
     int rc = handle_rx(ctx, &md);
+
+    // Save the traffic class for the next program in case it was changed
+    // by the current one
+    int_md->traffic_class = md.traffic_class;
 
     switch (rc) {
     case RX_DROP:
