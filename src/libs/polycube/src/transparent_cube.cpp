@@ -35,6 +35,7 @@ TransparentCube::TransparentCube(const nlohmann::json &conf,
 
     Direction direction = static_cast<Direction>(md->port_id);
     PacketInMetadata md_;
+    md_.traffic_class = md->traffic_class;
     md_.reason = md->reason;
     md_.metadata[0] = md->metadata[0];
     md_.metadata[1] = md->metadata[1];

@@ -80,6 +80,7 @@ struct pkt_metadata {
   u16 module_index;
   u16 in_port;
   u32 packet_len;
+  u32 traffic_class;
   // used to send data to controller
   u16 reason;
   u32 md[3];

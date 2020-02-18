@@ -185,6 +185,30 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *m
 
   return pcn_pkt_controller(pkt, md, reason);
 }
+
+static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index) {
+  u32 inport_key = 0;
+
+  // Save the metadata for the next program in case they were changed by the
+  // current one
+  port_md.update(&inport_key, md);;
+
+  call_ingress_program(skb, index);
+}
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index) {
+  u32 inport_key = 0;
+
+  // Save the metadata for the next program in case they were changed by the
+  // current one
+  port_md.update(&inport_key, md);;
+
+  call_egress_program(skb, index);
+}
 )";
 
 const std::string CubeXDP::CUBEXDP_WRAPPER = R"(
@@ -198,8 +222,13 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
     md.cube_id = CUBE_ID;
     md.in_port = int_md->in_port;
     md.packet_len = int_md->packet_len;
+    md.traffic_class = int_md->traffic_class;
 
     int rc = handle_rx(ctx, &md);
+
+    // Save the traffic class for the next program in case it was changed
+    // by the current one
+    int_md->traffic_class = md.traffic_class;
 
     switch (rc) {
     case RX_DROP:

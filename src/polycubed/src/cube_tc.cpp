@@ -245,6 +245,26 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *skb,
   skb->cb[4] = metadata[2];
   return pcn_pkt_controller(skb, md, reason);
 }
+
+static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index) {
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md->traffic_class;
+
+  call_ingress_program(skb, index);
+}
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index) {
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md->traffic_class;
+
+  call_egress_program(skb, index);
+}
 )";
 
 const std::string CubeTC::CUBETC_HELPERS = R"(
@@ -327,6 +347,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   md.in_port = x >> 16;
   md.cube_id = CUBE_ID;
   md.packet_len = skb->len;
+  md.traffic_class = skb->mark;
   skb->cb[0] = md.in_port << 16 | CUBE_ID;
 
   // Check if the cube is shadow and the in_port has odd index
@@ -342,6 +363,10 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
 #endif
 
   int rc = handle_rx(skb, &md);
+
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md.traffic_class;
 
   switch (rc) {
     case RX_REDIRECT:
