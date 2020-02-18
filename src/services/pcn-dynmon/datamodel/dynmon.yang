@@ -1,0 +1,137 @@
+module dynmon {
+    yang-version 1.1;
+    namespace "http://polycube.network/dynmon";
+    prefix "dynmon";
+
+    import polycube-base {
+        prefix "polycube-base";
+    }
+    import polycube-transparent-base {
+        prefix "polycube-transparent-base";
+    }
+    import "ietf-inet-types" {
+        prefix "inet";
+    }
+    import "ietf-yang-types" {
+        prefix "yang";
+    }
+
+    organization
+      "Polycube open source project";
+    description
+      "YANG data model for the Polycube Dynamic Traffic Monitor transparent service";
+    polycube-base:service-description "Dynamic Traffic Monitor transparent service";
+    polycube-base:service-version "1.0";
+    polycube-base:service-name "dynmon";
+    polycube-base:service-min-kernel-version "4.14.0";
+
+    uses polycube-transparent-base:transparent-base-yang-module;
+
+    container dataplane {
+        description
+          "Running dataplane";
+        leaf name {
+            type string;
+            description
+              "eBPF program name";
+            polycube-base:init-only-config;
+        }
+        leaf code {
+            type string;
+            description
+              "eBPF source code";
+            polycube-base:init-only-config;
+        }
+        list metrics {
+            key "name";
+            description
+              "Exported Metric";
+            polycube-base:init-only-config;
+            leaf name {
+                type string;
+                description
+                  "Name of the metric (e.g., number of HTTP requests)";
+                polycube-base:init-only-config;
+            }
+            leaf map-name {
+                type string;
+                description
+                  "Corrisponding eBPF map name";
+                polycube-base:init-only-config;
+            }
+            container open-metrics-metadata {
+                presence
+                  "The metric will be exported with the OpenMetric format";
+                description
+                  "Open-Metrics metadata";
+                polycube-base:init-only-config;
+                leaf help {
+                    type string;
+                    description
+                      "Metric description";
+                    polycube-base:init-only-config;
+                }
+                leaf type {
+                    type enumeration{
+                        enum Counter;
+                        enum Gauge;
+                        enum Histogram;
+                        enum Summary;
+                        enum Untyped;
+                    }
+                    description
+                      "Metric type";
+                    polycube-base:init-only-config;
+                }
+                list labels {
+                    key "name";
+                    description
+                      "Label attached to the metric";
+                    polycube-base:init-only-config;
+                    leaf name {
+                        type string;
+                        description
+                          "Name of the label (e.g., 'method')";
+                        polycube-base:init-only-config;
+                    }
+                    leaf value {
+                        type string;
+                        description
+                          "Label value (e.g., 'POST')";
+                        polycube-base:init-only-config;
+                    }
+                }
+            }
+        }
+    }
+    list metrics {
+        config false;
+        key "name";
+        description
+          "Collected metrics";
+        leaf name {
+            config false;
+            type string;
+            description
+              "Name of the metric (e.g, number of HTTP requests)";
+        }
+        leaf value {
+            config false;
+            type string;
+            description
+              "Value of the metric";
+        }
+        leaf timestamp {
+            config false;
+            type int64;
+            description
+              "Timestamp";
+        }
+    }
+    leaf open-metrics {
+        config false;
+        type string;
+        description
+          "Collected metrics in OpenMetrics Format";
+    }
+}
