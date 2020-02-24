@@ -21,6 +21,7 @@
 #include "polycube/services/port_iface.h"
 #include "polycube/services/table.h"
 #include "polycube/services/types.h"
+#include "polycube/services/table_desc.h"
 
 #include <map>
 #include <string>
@@ -63,7 +64,9 @@ class BaseCubeIface {
   virtual uint16_t get_index(ProgramType type) const = 0;
   virtual int get_table_fd(const std::string &table_name, int index,
                            ProgramType type) = 0;
-
+  virtual const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
+                                     ProgramType type) = 0;
+                                     
   virtual void set_log_level(LogLevel level) = 0;
   virtual LogLevel get_log_level() const = 0;
 

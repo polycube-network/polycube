@@ -40,6 +40,7 @@ struct metadata {
   u16 cube_id;
   u16 port_id;
   u32 packet_len;
+  u32 traffic_class;
   u16 reason;
   u32 md[3];  // generic metadata
 } __attribute__((packed));
@@ -69,6 +70,7 @@ int controller_module_tx(struct __sk_buff *ctx) {
   md.cube_id = module_index;
   md.port_id = in_port;
   md.packet_len = ctx->len;
+  md.traffic_class = ctx->mark;
   md.reason = reason;
 
   x = ctx->cb[2];
@@ -173,6 +175,7 @@ struct pkt_metadata {
   u16 cube_id;
   u16 in_port;
   u32 packet_len;
+  u32 traffic_class;
 
   // used to send data to controller
   u16 reason;
@@ -199,6 +202,7 @@ int controller_module_tx(struct xdp_md *ctx) {
   md.cube_id = int_md->cube_id;
   md.in_port = int_md->in_port;
   md.packet_len = (u32)(data_end - data);
+  md.traffic_class = int_md->traffic_class;
   md.reason = int_md->reason;
 
   x = int_md->md[0];
@@ -239,6 +243,7 @@ struct pkt_metadata {
   u16 module_index;
   u16 in_port;
   u32 packet_len;
+  u32 traffic_class;
 
   // used to send data to controller
   u16 reason;

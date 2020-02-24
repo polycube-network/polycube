@@ -140,6 +140,16 @@ int BaseCube::get_table_fd(const std::string &table_name, int index,
   }
 }
 
+const ebpf::TableDesc &BaseCube::get_table_desc(const std::string &table_name,
+                                         int index, ProgramType type) {
+  switch (type) {
+  case ProgramType::INGRESS:
+    return ingress_programs_[index]->get_table(table_name).getTableDescription();
+  case ProgramType::EGRESS:
+    return egress_programs_[index]->get_table(table_name).getTableDescription();
+  }
+}
+
 void BaseCube::reload(const std::string &code, int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   return do_reload(code, index, type);
@@ -422,9 +432,10 @@ enum {
 };
 
 struct pkt_metadata {
-  u16 cube_id;      //__attribute__((deprecated)) // use CUBE_ID instead
-  u16 in_port;      // The interface on which a packet was received.
-  u32 packet_len;   //__attribute__((deprecated)) // Use ctx->len
+  u16 cube_id;        //__attribute__((deprecated)) // use CUBE_ID instead
+  u16 in_port;        // The interface on which a packet was received.
+  u32 packet_len;     //__attribute__((deprecated)) // Use ctx->len
+  u32 traffic_class;  // The traffic class the packet belongs to
 
   // used to send data to controller
   u16 reason;
@@ -458,9 +469,17 @@ void call_ingress_program(struct CTXTYPE *skb, int index) {
 }
 
 static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index);
+
+static __always_inline
 void call_egress_program(struct CTXTYPE *skb, int index) {
   egress_programs.call(skb, index);
 }
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index);
 
 /* checksum related */
 

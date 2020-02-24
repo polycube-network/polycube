@@ -29,6 +29,7 @@
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/table.h"
 #include "polycube/services/utils.h"
+#include "polycube/services/table_desc.h"
 
 namespace polycube {
 namespace service {
@@ -71,6 +72,9 @@ class BaseCube {
       const std::string &table_name, int index = 0,
       ProgramType type = ProgramType::INGRESS);
 
+  const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
+                                     ProgramType type);
+                                     
   virtual void datapath_log_msg(const LogMsg *msg);
 
   void set_log_level(LogLevel level);

@@ -116,15 +116,19 @@ int RestServer::client_verify_callback(int preverify_ok, void *ctx) {
   return preverify_ok;
 }
 
-void RestServer::init(size_t thr, const std::string &server_cert,
+void RestServer::init(size_t thr,
+                      size_t max_payload_size,
+                      const std::string &server_cert,
                       const std::string &server_key,
                       const std::string &root_ca_cert,
                       const std::string &whitelist_cert_path_,
                       const std::string &blacklist_cert_path_) {
   logger->debug("rest server will use {0} thread(s)", thr);
-  auto opts = Pistache::Http::Endpoint::options().threads(thr).flags(
-      Pistache::Tcp::Options::InstallSignalHandler |
-      Pistache::Tcp::Options::ReuseAddr);
+  auto opts = Pistache::Http::Endpoint::options()
+                  .threads(thr)
+                  .maxPayload(max_payload_size)
+                  .flags(Pistache::Tcp::Options::InstallSignalHandler |
+                         Pistache::Tcp::Options::ReuseAddr);
   httpEndpoint_->init(opts);
 
   if (!server_cert.empty()) {
