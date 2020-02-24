@@ -5,4 +5,6 @@ build/*
 swagger-codegen*
 .vscode/*
 .idea/*
+cmake-build-debug/*
 Vagrantfile
+libyang/*
