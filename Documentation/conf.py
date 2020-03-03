@@ -20,7 +20,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = u'Polycube'
-copyright = u'2018-2019, The Polycube Authors'
+copyright = u'2018-2020, The Polycube Authors'
 author = u'The Polycube Authors'
 
 # The short X.Y version

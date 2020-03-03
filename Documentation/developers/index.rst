@@ -8,7 +8,7 @@ This guide represents an initial starting point for developers that want to impl
    :maxdepth: 2
    :caption: Contents:
 
-   datapath
+   dataplane
    controlplane
    datamodel
    codegen
@@ -25,7 +25,7 @@ The process to create or update service could be summarized in these steps:
 
   1. :doc:`Write or update a datamodel for the service <datamodel>`
   2. :doc:`Use the datamodel for generating a service stub or updating an existing service stub <codegen>`
-  3. :doc:`Implement or update the eBPF datapath <datapath>`
+  3. :doc:`Implement or update the eBPF datapath <dataplane>`
   4. :doc:`Implement or update the control plane <controlplane>`
 
 Please note that steps (1) and (2) are needed only when there is a change to the the YANG data model.

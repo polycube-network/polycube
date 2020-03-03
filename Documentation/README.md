@@ -16,6 +16,12 @@ cd Documentation
 pip install -r requirements.txt
 ```
 
+### Edit it
+
+Documentation is created in the ReSTructured text format.
+A nice document listing important commands is the [Restructured Text (reST) and Sphinx CheatSheet](https://thomas-cokelaer.info/tutorials/sphinx/rest_syntax.html).
+
+
 ### Build it
 
 ```
