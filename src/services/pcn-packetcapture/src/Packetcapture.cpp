@@ -17,57 +17,44 @@
 
 #include <string>
 #include <sys/time.h>
-#include <iomanip>
 #include <iostream>
 #include <ctime>
-#include <fstream>
 #include <chrono>
+#include <pcap/pcap.h>
 #include "unistd.h"
+#include "cbpf2c.h"
 #include "Packetcapture.h"
 #include "Packetcapture_dp_ingress.h"
 #include "Packetcapture_dp_egress.h"
-#define ON_T 0
-#define OFF_T 1
 #define BILLION 1000000000
 
-typedef int bpf_int32; 
 typedef u_int bpf_u_int32;
 
-struct pcap_file_header {
-  bpf_u_int32 magic;      /* magic number */
-  u_short version_major;  /* major version number */
-  u_short version_minor;  /* minor version number */
-  bpf_int32 thiszone;     /* GMT to local correction */
-  bpf_u_int32 sigfigs;    /* accuracy of timestamps */
-  bpf_u_int32 snaplen;    /* max length of captured packets, in octets */
-  bpf_u_int32 linktype;   /* data link type */
-};
-
-struct pcap_pkthdr {
-  bpf_u_int32 ts_sec;
-  bpf_u_int32 ts_usec;  
-  bpf_u_int32 caplen;     /* number of octets of packet saved in file */
-  bpf_u_int32 len;        /* actual length of packet */
+struct pcap_pt{
+    bpf_u_int32 ts_sec;
+    bpf_u_int32 ts_usec;
+    bpf_u_int32 len;
+    bpf_u_int32 caplen;
 };
 
 Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObject &conf)
   : TransparentCube(conf.getBase(), { packetcapture_code_ingress }, { packetcapture_code_egress }),
     PacketcaptureBase(name) {
-  
+
   /*
    * The timestamp of the packet is acquired in the fast path using 'bpf_ktime_get_ns()'
    * This function returns the time elapsed since system booted, in nanoseconds.
-   * See line 173 in Packetcapture_dp_egress.c and Packetcapture_dp_ingress.c
-   * 
+   * See line 59 in Packetcapture_dp_egress.c and Packetcapture_dp_ingress.c
+   *
    * The packet's timestamp must be in epoch so now we will store the current
    * time in epoch format and then the packet capture time offset,that was stored in the fast path,
    * will be added to it.
-   * 
+   *
    * Now we are calculating the system start time in epoch.
    * 'timeval struct ts' rapresents the system start time in epoch calculated as
    * actual time - system uptime
-   * 
-   * See line 161 or 329 of this file for more details
+   *
+   * See line 164 of this file for more details
    */
 
 
@@ -86,25 +73,36 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
 
   logger()->info("Creating Packetcapture instance");
     setCapture(conf.getCapture());
-    setAnomimize(conf.getAnomimize());
+    setAnonimize(conf.getAnonimize());
 
   if (conf.dumpIsSet()) {
     setDump(conf.getDump());
   }
+  addGlobalheader(conf.getGlobalheader());
+
+  if (conf.snaplenIsSet()) {
+    setSnaplen(conf.getSnaplen());
+  }
 
   setNetworkmode(conf.getNetworkmode());
-  addFilters(conf.getFilters());
-  addGlobalheader(conf.getGlobalheader());
-  CapStatus = (uint8_t) conf.getCapture();
 
-  auto t_filters_in = get_array_table<filters_table>("filters_map", 0, ProgramType::INGRESS);
-  auto t_filters_out = get_array_table<filters_table>("filters_map", 0, ProgramType::EGRESS);
-  filters_table ft_init;
-  ft_init.dst_port_flag = ft_init.src_port_flag = ft_init.network_filter_src_flag = ft_init.network_filter_dst_flag = ft_init.l4proto_flag = false;
-  t_filters_in.set(0x0, ft_init);
-  t_filters_out.set(0x0, ft_init);
+  CapStatus = (uint8_t) conf.getCapture();
+  updateFilter();
+
+  bootstrap = false;
   writeHeader = true;
   dt = "";
+}
+
+std::string Packetcapture::replaceAll(std::string str, const std::string &from, const std::string &to) {
+    if (from.empty())
+        return nullptr;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+      str.replace(start_pos, from.length(), to);
+      start_pos += to.length();  // In case 'to' contains 'from', like replacing 'x' with 'yx// '
+    }
+    return str;
 }
 
 void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
@@ -140,7 +138,7 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     temp_folder.append("/");
     random_number = std::to_string(rand()%1000);    //to avoid two files that using the same name
   }
-  
+
   myFile.open(temp_folder + "capture_" + dt + "_" + random_number + ".pcap", std::ios::binary | std::ios::app);
 
   if (writeHeader == true) {
@@ -150,7 +148,7 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     pcap_header->version_minor = global_header->getVersionMinor();
     pcap_header->thiszone = global_header->getThiszone();   //timestamp are always in GMT
     pcap_header->sigfigs = global_header->getSigfigs();
-    pcap_header->snaplen = filters->getSnaplen();
+    pcap_header->snaplen = getSnaplen();
     pcap_header->linktype = global_header->getLinktype();
 
     myFile.write(reinterpret_cast<const char*>(pcap_header), sizeof(*pcap_header));
@@ -159,29 +157,29 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
 
   /*
    * Here the packet capture time offset must be added to the system boot time stored in epoch format.
-   * See line 58 of this file to see system boot time stored in epoch algorithm
+   * See line 61 of this file to see system boot time stored in epoch algorithm
    */
 
   struct timeval tp;
   std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
   to_timeval(tp_dur, tp);
-  
+
   p->setTimestampSeconds((uint32_t) tp.tv_sec);
   p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
   p->setPacketlen((uint32_t) packet.size());
-  if (p->getPacketlen() > filters->getSnaplen()) {
-    p->setCapturelen(filters->getSnaplen());
+  if (p->getPacketlen() > getSnaplen()) {
+    p->setCapturelen(getSnaplen());
   } else {
     p->setCapturelen(p->getPacketlen());
   }
   p->setRawPacketData(packet);
 
-  struct pcap_pkthdr *pkt_hdr = new struct pcap_pkthdr;
+  struct pcap_pt *pkt_hdr = new struct pcap_pt;
   pkt_hdr->ts_sec = p->getTimestampSeconds();
   pkt_hdr->ts_usec = p->getTimestampMicroseconds();
   pkt_hdr->len = p->getPacketlen();
   pkt_hdr->caplen = p->getCapturelen();
-  filters->getSnaplen() < p->getRawPacketData().size() ? len = filters->getSnaplen() : len = p->getRawPacketData().size();
+  getSnaplen() < p->getRawPacketData().size() ? len = getSnaplen() : len = p->getRawPacketData().size();
 
   myFile.write(reinterpret_cast<const char*>(pkt_hdr), sizeof(*pkt_hdr));
   myFile.write(reinterpret_cast<const char*>(&p->getRawPacketData()[0]), len );
@@ -195,7 +193,7 @@ Packetcapture::~Packetcapture() {
 void Packetcapture::packet_in(polycube::service::Direction direction,
     polycube::service::PacketInMetadata &md,
     const std::vector<uint8_t> &packet) {
-  
+
   Tins::EthernetII pkt(&packet[0], packet.size());
 
   switch (direction) {
@@ -224,39 +222,27 @@ PacketcaptureCaptureEnum Packetcapture::getCapture() {
 }
 
 void Packetcapture::setCapture(const PacketcaptureCaptureEnum &value) {
-
-  auto t_in = get_array_table<uint8_t>("working", 0, ProgramType::INGRESS);
-  auto t_out = get_array_table<uint8_t>("working", 0, ProgramType::EGRESS);
-
   switch (value) {
     case PacketcaptureCaptureEnum::INGRESS:
-      t_in.set(0x0, ON_T);
-      t_out.set(0x0, OFF_T);
       CapStatus = 0;
     break;
     case PacketcaptureCaptureEnum::EGRESS:
-      t_in.set(0x0, OFF_T);
-      t_out.set(0x0, ON_T);
       CapStatus = 1;
     break;
     case PacketcaptureCaptureEnum::BIDIRECTIONAL:
-      t_in.set(0x0, ON_T);
-      t_out.set(0x0, ON_T);
       CapStatus = 2;
     break;
     case PacketcaptureCaptureEnum::OFF:
-      t_in.set(0x0, OFF_T);
-      t_out.set(0x0, OFF_T);
       CapStatus = 3;
     break;
   }
 }
 
-bool Packetcapture::getAnomimize() {
+bool Packetcapture::getAnonimize() {
   //TODO
 }
 
-void Packetcapture::setAnomimize(const bool &value) {
+void Packetcapture::setAnonimize(const bool &value) {
   //TODO
 }
 
@@ -272,7 +258,7 @@ std::string Packetcapture::getDump() {
   } else{
     dump << "no packets captured";
   }
-  
+
   return dump.str();
 }
 
@@ -288,30 +274,14 @@ void Packetcapture::setNetworkmode(const bool &value) {
   network_mode_flag = value;
 }
 
-std::shared_ptr<Filters> Packetcapture::getFilters() {
-  return filters;
-}
-
-void Packetcapture::addFilters(const FiltersJsonObject &value) {
-  filters = std::shared_ptr<Filters>(new Filters(*this, value));
-}
-
-void Packetcapture::replaceFilters(const FiltersJsonObject &conf) {
-  PacketcaptureBase::replaceFilters(conf);
-}
-
-void Packetcapture::delFilters() {
-  throw std::runtime_error("Packetcapture::delFilters: method not implemented");
-}
-
 /* return the first packet in the queue if exist */
 std::shared_ptr<Packet> Packetcapture::getPacket() {
   if (packets_captured.size() != 0) {
     auto p = packets_captured.front();
     if (network_mode_flag) {                            /* pop this element */
       packets_captured.erase(packets_captured.begin());
-      if (filters->getSnaplen() < p->getPacketlen()) {
-        p->packet.resize(filters->getSnaplen());
+      if (getSnaplen() < p->getPacketlen()) {
+        p->packet.resize(getSnaplen());
       }
     }
     return p;
@@ -324,7 +294,7 @@ std::shared_ptr<Packet> Packetcapture::getPacket() {
 void Packetcapture::addPacket(const std::vector<uint8_t> &packet) {
     PacketJsonObject pj;
     auto p = std::shared_ptr<Packet>(new Packet(*this, pj));
-  
+
   /*
    * Here the packet capture time offset must be added to the system boot time stored in epoch format.
    * See line 58 of this file to see system boot time stored in epoch algorithm
@@ -337,8 +307,8 @@ void Packetcapture::addPacket(const std::vector<uint8_t> &packet) {
     p->setTimestampSeconds((uint32_t) tp.tv_sec);
     p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
     p->setPacketlen((uint32_t) packet.size());
-    if (p->getPacketlen() > filters->getSnaplen()) {
-      p->setCapturelen(filters->getSnaplen());
+    if (p->getPacketlen() > getSnaplen()) {
+      p->setCapturelen(getSnaplen());
     } else {
       p->setCapturelen(p->getPacketlen());
     }
@@ -363,54 +333,25 @@ void Packetcapture::attach() {
   logger()->debug("{0} attached", this->get_name());
 }
 
-void Packetcapture::updateFiltersMaps() {
-  filters_table ft;
-  
-  if (filters->l4proto_is_set()) {
-    ft.l4proto_flag = true;
-    filters->getL4proto().compare("tcp") == 0? ft.l4proto_filter = 1 : ft.l4proto_filter = 2;
-  } else {
-    ft.l4proto_flag = false;
-  }
+void Packetcapture::updateFilter() {
+    if (bootstrap)
+        filterCode = "return RX_OK;"; // Default filter captures no packets (the eBPF datapath simply returns ok)
 
-  if (filters->srcPort_is_set()) {
-    ft.src_port_flag = true;
-    ft.src_port_filter = filters->getSport();
-  } else {
-    ft.src_port_flag = false;
-  }
+    std::string codeINGRESS = replaceAll(packetcapture_code_ingress, "//CUSTOM_FILTER_CODE", filterCode);
+    std::string codeEGRESS = replaceAll(packetcapture_code_egress, "//CUSTOM_FILTER_CODE", filterCode);
 
-  if (filters->dstPort_is_set()) {
-    ft.dst_port_flag = true;
-    ft.dst_port_filter = filters->getDport();
-  } else {
-    ft.dst_port_flag = false;
-  }
+    if (CapStatus == 3 || CapStatus == 2) {
+      reload(codeINGRESS,0,ProgramType::INGRESS);
+      reload(codeEGRESS,0,ProgramType::EGRESS);
+    } else {
+        if (CapStatus == 0) {
+          reload(codeINGRESS,0,ProgramType::INGRESS);
+        } else {
+            reload(codeEGRESS,0,ProgramType::EGRESS);
+        }
+    }
 
-  if (filters->srcIp_is_set()) {
-    ft.network_filter_src_flag = true;
-    ft.network_filter_src = filters->getNetworkFilterSrc();
-    ft.netmask_filter_src = filters->getNetmaskFilterSrc();
-    logger()->debug("network filter: {0}\nnetmask filter: {1}", ft.network_filter_src, ft.netmask_filter_src);
-  } else {
-    ft.network_filter_src_flag = false;
-  }
-
-  if (filters->dstIp_is_set()) {
-    ft.network_filter_dst_flag = true;
-    ft.network_filter_dst = filters->getNetworkFilterDst();
-    ft.netmask_filter_dst = filters->getNetmaskFilterDst();
-  } else {
-    ft.network_filter_dst_flag = false;
-  }
-
-  ft.snaplen = filters->getSnaplen();
-
-  auto ft_fast_in = get_array_table<filters_table>("filters_map", 0, ProgramType::INGRESS);
-  auto ft_fast_out = get_array_table<filters_table>("filters_map", 0, ProgramType::EGRESS);
-
-  ft_fast_in.set(0x0, ft);
-  ft_fast_out.set(0x0, ft);
+    logger()->debug("FilterCode:\n{0}", filterCode);
 }
 
 std::shared_ptr<Globalheader> Packetcapture::getGlobalheader() {
@@ -419,7 +360,6 @@ std::shared_ptr<Globalheader> Packetcapture::getGlobalheader() {
 
 void Packetcapture::addGlobalheader(const GlobalheaderJsonObject &value) {
     global_header = std::shared_ptr<Globalheader>(new Globalheader(*this, value));
-    global_header->setSnaplen(filters->getSnaplen());
 }
 
 void Packetcapture::replaceGlobalheader(const GlobalheaderJsonObject &conf) {
@@ -435,4 +375,64 @@ void Packetcapture::to_timeval(std::chrono::system_clock::duration& d, struct ti
 
     tv.tv_sec  = sec.count();
     tv.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(d - sec).count();
+}
+
+void Packetcapture::setFilter(const std::string &value) {
+    this->filter = value;
+    logger()->info("Inserted filter: {0}", filter);
+    if (filter == "all") {
+      filterCode = "return pcn_pkt_controller(ctx, md, reason);";
+    }else {
+        memset(&cbpf, 0, sizeof(cbpf));
+        filterCompile(filter, &cbpf);
+    }
+    updateFilter();
+}
+
+std::string Packetcapture::getFilter() {
+  return this->filter;
+}
+
+uint32_t Packetcapture::getSnaplen() {
+  return global_header->getSnaplen();
+}
+
+void Packetcapture::setSnaplen(const uint32_t &value) {
+    global_header->setSnaplen(value);
+}
+
+void Packetcapture::filterCompile(std::string str, struct sock_fprog * cbpf) {
+    int ret,i;
+    struct bpf_program _bpf;
+    const struct bpf_insn *ins;
+    struct sock_filter *out;
+    int link_type = 1;   //ETHERNET type
+
+    ret = pcap_compile_nopcap(65535, link_type, &_bpf, str.c_str(), 1, 0xffffffff);
+    if (ret < 0) {
+      logger()->info("Cannot compile filter: {0}", str);
+      filterCode = "return RX_OK;";
+      return;
+    }
+
+    cbpf->len = _bpf.bf_len;
+    /*
+     * Here I realloc the struct that will contains the cBPF instructions to the right
+     * size: _bpf len * sizeof(sock_filter struct) and then I do the static_cast because the
+     * realloc returns a void*
+     */
+    cbpf->filter = static_cast<sock_filter *>(realloc(cbpf->filter, cbpf->len * sizeof(*out)));
+
+    for (i = 0, ins = _bpf.bf_insns, out = cbpf->filter; i < cbpf->len; ++i, ++ins, ++out) {
+        out->code = ins->code;
+        out->jt = ins->jt;
+        out->jf = ins->jf;
+        out->k = ins->k;
+
+        if (out->code == 0x06 && out->k > 0)
+            out->k = 0xFFFFFFFF;
+    }
+
+    pcap_freecode(&_bpf);
+    filterCode = cbpf2c::ToC(cbpf);
 }

@@ -30,6 +30,8 @@ PACKAGES+=" sudo" # needed for pcn-iptables, when building docker image
 PACKAGES+=" kmod" # needed for pcn-iptables, when using lsmod to unload conntrack if not needed
 PACKAGES+=" jq bash-completion" # needed for polycubectl bash autocompletion
 PACKAGES+=" libpcre3-dev" # needed for libyang
+PACKAGES+=" libpcap-dev" # needed for packetcapture filter
+
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary

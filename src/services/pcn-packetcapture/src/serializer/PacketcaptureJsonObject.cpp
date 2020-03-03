@@ -21,12 +21,13 @@ PacketcaptureJsonObject::PacketcaptureJsonObject() {
   m_nameIsSet = false;
   m_capture = PacketcaptureCaptureEnum::OFF;
   m_captureIsSet = true;
-  m_anomimize = false;
-  m_anomimizeIsSet = true;
+  m_anonimize = false;
+  m_anonimizeIsSet = true;
   m_dumpIsSet = false;
   m_networkmode = false;
   m_networkmodeIsSet = true;
-  m_filtersIsSet = false;
+  m_snaplenIsSet = false;
+  m_filterIsSet = false;
   m_globalheaderIsSet = false;
   m_packetIsSet = false;
 }
@@ -35,10 +36,11 @@ PacketcaptureJsonObject::PacketcaptureJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_nameIsSet = false;
   m_captureIsSet = false;
-  m_anomimizeIsSet = false;
+  m_anonimizeIsSet = false;
   m_dumpIsSet = false;
   m_networkmodeIsSet = false;
-  m_filtersIsSet = false;
+  m_snaplenIsSet = false;
+  m_filterIsSet = false;
   m_globalheaderIsSet = false;
   m_packetIsSet = false;
 
@@ -51,8 +53,8 @@ PacketcaptureJsonObject::PacketcaptureJsonObject(const nlohmann::json &val) :
     setCapture(string_to_PacketcaptureCaptureEnum(val.at("capture").get<std::string>()));
   }
 
-  if (val.count("anomimize")) {
-    setAnomimize(val.at("anomimize").get<bool>());
+  if (val.count("anonimize")) {
+    setAnonimize(val.at("anonimize").get<bool>());
   }
 
   if (val.count("dump")) {
@@ -63,11 +65,12 @@ PacketcaptureJsonObject::PacketcaptureJsonObject(const nlohmann::json &val) :
     setNetworkmode(val.at("networkmode").get<bool>());
   }
 
-  if (val.count("filters")) {
-    if (!val["filters"].is_null()) {
-      FiltersJsonObject newItem { val["filters"] };
-      setFilters(newItem);
-    }
+  if (val.count("snaplen")) {
+    setSnaplen(val.at("snaplen").get<uint32_t>());
+  }
+
+  if (val.count("filter")) {
+    setFilter(val.at("filter").get<std::string>());
   }
 
   if (val.count("globalheader")) {
@@ -99,8 +102,8 @@ nlohmann::json PacketcaptureJsonObject::toJson() const {
     val["capture"] = PacketcaptureCaptureEnum_to_string(m_capture);
   }
 
-  if (m_anomimizeIsSet) {
-    val["anomimize"] = m_anomimize;
+  if (m_anonimizeIsSet) {
+    val["anonimize"] = m_anonimize;
   }
 
   if (m_dumpIsSet) {
@@ -111,8 +114,12 @@ nlohmann::json PacketcaptureJsonObject::toJson() const {
     val["networkmode"] = m_networkmode;
   }
 
-  if (m_filtersIsSet) {
-    val["filters"] = JsonObjectBase::toJson(m_filters);
+  if (m_snaplenIsSet) {
+    val["snaplen"] = m_snaplen;
+  }
+
+  if (m_filterIsSet) {
+    val["filter"] = m_filter;
   }
 
   if (m_globalheaderIsSet) {
@@ -184,21 +191,21 @@ PacketcaptureCaptureEnum PacketcaptureJsonObject::string_to_PacketcaptureCapture
     return PacketcaptureCaptureEnum::OFF;
   throw std::runtime_error("Packetcapture capture is invalid");
 }
-bool PacketcaptureJsonObject::getAnomimize() const {
-  return m_anomimize;
+bool PacketcaptureJsonObject::getAnonimize() const {
+  return m_anonimize;
 }
 
-void PacketcaptureJsonObject::setAnomimize(bool value) {
-  m_anomimize = value;
-  m_anomimizeIsSet = true;
+void PacketcaptureJsonObject::setAnonimize(bool value) {
+  m_anonimize = value;
+  m_anonimizeIsSet = true;
 }
 
-bool PacketcaptureJsonObject::anomimizeIsSet() const {
-  return m_anomimizeIsSet;
+bool PacketcaptureJsonObject::anonimizeIsSet() const {
+  return m_anonimizeIsSet;
 }
 
-void PacketcaptureJsonObject::unsetAnomimize() {
-  m_anomimizeIsSet = false;
+void PacketcaptureJsonObject::unsetAnonimize() {
+  m_anonimizeIsSet = false;
 }
 
 std::string PacketcaptureJsonObject::getDump() const {
@@ -235,21 +242,38 @@ void PacketcaptureJsonObject::unsetNetworkmode() {
   m_networkmodeIsSet = false;
 }
 
-FiltersJsonObject PacketcaptureJsonObject::getFilters() const {
-  return m_filters;
+uint32_t PacketcaptureJsonObject::getSnaplen() const {
+  return m_snaplen;
 }
 
-void PacketcaptureJsonObject::setFilters(FiltersJsonObject value) {
-  m_filters = value;
-  m_filtersIsSet = true;
+void PacketcaptureJsonObject::setSnaplen(uint32_t value) {
+  m_snaplen = value;
+  m_snaplenIsSet = true;
 }
 
-bool PacketcaptureJsonObject::filtersIsSet() const {
-  return m_filtersIsSet;
+bool PacketcaptureJsonObject::snaplenIsSet() const {
+  return m_snaplenIsSet;
 }
 
-void PacketcaptureJsonObject::unsetFilters() {
-  m_filtersIsSet = false;
+void PacketcaptureJsonObject::unsetSnaplen() {
+  m_snaplenIsSet = false;
+}
+
+std::string PacketcaptureJsonObject::getFilter() const {
+  return m_filter;
+}
+
+void PacketcaptureJsonObject::setFilter(std::string value) {
+  m_filter = value;
+  m_filterIsSet = true;
+}
+
+bool PacketcaptureJsonObject::filterIsSet() const {
+  return m_filterIsSet;
+}
+
+void PacketcaptureJsonObject::unsetFilter() {
+  m_filterIsSet = false;
 }
 
 GlobalheaderJsonObject PacketcaptureJsonObject::getGlobalheader() const {

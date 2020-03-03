@@ -8,3 +8,5 @@ swagger-codegen*
 cmake-build-debug/*
 Vagrantfile
 libyang/*
+
+cmake-build-debug/

@@ -30,7 +30,7 @@ module packetcapture {
     description "Packet capture status";
   }
   
-  leaf anomimize {
+  leaf anonimize {
      type boolean;
      default false;
   }
@@ -43,40 +43,18 @@ module packetcapture {
   leaf networkmode {
     type boolean;
     default false;
-    description "operative mode";
+    description "Operating mode";
   }
 
-  container filters {
-    leaf snaplen {
-      type uint32;
-      default 262144;
-      description "Snapshot length";
-    }
- 
-    leaf src {
-      type inet:ipv4-prefix;
-      description "IP source filter";
-    }
- 
-    leaf dst {
-      type inet:ipv4-prefix;
-      description "IP destination filter";
-    }
- 
-    leaf l4proto {
-      type string;
-      description "Level 4 protocol filter";
-    }
- 
-    leaf sport {
-      type uint16;
-      description "Source port filter";
-    }
- 
-    leaf dport {
-      type uint16;
-      description "Destination port filter";
-    }    
+  leaf snaplen {
+    type uint32;
+    default 262144;
+    description "Snapshot length";
+  }
+
+  leaf filter {
+    type string;
+    description "filtering string (e.g., 'host 1.2.3.4 and src port 80')";
   }
 
   container globalheader {

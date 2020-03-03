@@ -21,19 +21,18 @@
 #include <fstream>
 #include <chrono>
 #include "../base/PacketcaptureBase.h"
-#include "Filters.h"
 #include "Packet.h"
 #include "Globalheader.h"
 #include <tins/ethernetII.h>
 #include <tins/tins.h>
+#include <linux/filter.h>
 
 using namespace polycube::service::model;
 using polycube::service::ProgramType;
 using polycube::service::Direction;
 
 class Packetcapture : public PacketcaptureBase {
- 
- std::shared_ptr<Filters> filters;
+
  std::shared_ptr<Globalheader> global_header;
  std::list<std::shared_ptr<Packet>> packets_captured;
  uint8_t CapStatus;
@@ -45,7 +44,14 @@ class Packetcapture : public PacketcaptureBase {
  std::string random_number;
  std::chrono::system_clock::time_point timeP;
  std::chrono::nanoseconds temp_offset;
+ std::string filter;
+ bool bootstrap = true; /* variable used to set default filter when the service is created */
 
+private:
+    struct sock_fprog cbpf;
+    std::string filterCode;
+
+public:
  void addPacket(const std::vector<uint8_t> &packet);
  void to_timeval(std::chrono::system_clock::duration& d, struct timeval& tv);
 
@@ -68,8 +74,8 @@ class Packetcapture : public PacketcaptureBase {
   /// <summary>
   ///
   /// </summary>
-  bool getAnomimize() override;
-  void setAnomimize(const bool &value) override;
+  bool getAnonimize() override;
+  void setAnonimize(const bool &value) override;
 
   /// <summary>
   /// dump capture
@@ -77,18 +83,16 @@ class Packetcapture : public PacketcaptureBase {
   std::string getDump() override;
   void setDump(const std::string &value) override;
   /// <summary>
-  /// operative mode
+  /// Operating mode
   /// </summary>
   bool getNetworkmode() override;
   void setNetworkmode(const bool &value) override;
 
   /// <summary>
-  ///
+  /// filtering string (e.g., 'host 1.2.3.4 and src port 80')
   /// </summary>
-  std::shared_ptr<Filters> getFilters() override;
-  void addFilters(const FiltersJsonObject &value) override;
-  void replaceFilters(const FiltersJsonObject &conf) override;
-  void delFilters() override;
+  void setFilter(const std::string &value) override;
+  std::string getFilter() override;
 
   /// <summary>
   ///
@@ -106,6 +110,16 @@ class Packetcapture : public PacketcaptureBase {
   void replaceGlobalheader(const GlobalheaderJsonObject &conf) override;
   void delGlobalheader() override;
 
-  void updateFiltersMaps();
+  /// <summary>
+  /// Snapshot length
+  /// </summary>
+  uint32_t getSnaplen() override;
+  void setSnaplen(const uint32_t &value) override;
+
+  void updateFilter();
   void writeDump(const std::vector<uint8_t> &packet);
+
+  void filterCompile(std::string str, struct sock_fprog *cbpf);
+
+  std::string replaceAll(std::string str, const std::string &from, const std::string &to);
 };
