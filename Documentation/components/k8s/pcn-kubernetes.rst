@@ -1,5 +1,6 @@
-pcn-k8s: A pod network provider for kubernetes
-==============================================
+Introduction
+============
+
 
 ``pcn-k8s`` leverages some polycube services to provide network support for pods running in Kubernetes.
 It supports the `cluster Kubernetes networking model <https://kubernetes.io/docs/concepts/cluster-administration/networking/>`_, ``ClusterIP`` and ``NodePort`` services.
@@ -13,10 +14,11 @@ Security policies and ``LoadBalancing`` service mode are not yet supported.
 
 .. image:: pcn_k8s_architecture.png
 
+
 Networking Mode
 ---------------
 
-The ``pcn-k8s`` solution supports different methods to communicate pods running in different hosts
+``pcn-k8s`` supports different methods to communicate pods running in different hosts
 
 - **overlay networking**: when nodes are on different subnets and the user does not have direct control over the physical network an overlay networking is used. The default (and only supported yet) technology is ``VxLAN``
 - **direct routing**: when nodes are on the same subnet packets can be exchanged between nodes without encapsulating them
@@ -24,18 +26,26 @@ The ``pcn-k8s`` solution supports different methods to communicate pods running 
 
 See `Configuring pcn-k8s`_ to get more info about how to configure the different modes.
 
-Installation:
+
+Compatibility
 -------------
+
+`pcn-k8s`` is compatible with all versions of Kubernetes equal or greater than 1.9, although we recommend the latest version.
+
+
+Installation
+============
 You may choose either of the below options.
 
 1. Quick setup with ``vagrant`` (development environment)
 2. Using ``kubeadm`` on Bare-Metal or VMs (Single or HA cluster)
 
-1. Quick Setup with ``vagrant``
--------------------------------
+
+1. Quick Setup with vagrant
+---------------------------
 - The fastest mode to test ``pcn-k8s`` including setup.
 
-**Pre-requisite:**
+**Prerequisites**
 
 Download and set up the following packages.
 
@@ -51,8 +61,8 @@ Download and set up the following packages.
 
 Note: This vagrant setup takes care of setting up the kubeadm and joining the nodes along with the ``pcn-k8s`` CNI.
 
-2. Using ``kubeadm`` on Bare-Metal or VMs (Single or HA cluster)
-----------------------------------------------------------------
+2. Using kubeadm on Bare-Metal or VMs (Single or HA cluster)
+------------------------------------------------------------
 
 The easiest way to get started with ``pcn-k8s`` using ``kubeadm``.
 
@@ -144,8 +154,8 @@ You can see all the nodes in the cluster using the following command:
 
 After that, the cluster will be ready to accept requests and deploy pods.
 
-Removing ``pcn-k8s``
-^^^^^^^^^^^^^^^^^^^^
+Removing pcn-k8s
+^^^^^^^^^^^^^^^^
 
 In order to remove ``pcn-k8s`` execute on the master node:
 
@@ -154,20 +164,15 @@ In order to remove ``pcn-k8s`` execute on the master node:
     kubectl delete -f |SCM_RAW_WEB|/src/components/k8s/pcn-k8s.yaml
 
 
-Testing pcn-k8s
----------------
-
-Please refer to :doc:`testing <testing>` to learn how to deploy and test some basic services.
-
 
 Configuring pcn-k8s
--------------------
+===================
 
 ``pcn-k8s`` uses ``etcd`` to save the different configuration parameters.
 It is exposed at port `30901` of the master node if you used the `standalone_etcd.yaml` template to deploy it.
 
 Installing etcdctl
-^^^^^^^^^^^^^^^^^^
+------------------
 
 The easiest way to get ``etcdctl`` is to download a `etcd release <https://github.com/etcd-io/etcd/releases>`_ and take the binary from there.
 
@@ -202,7 +207,7 @@ Note that in order to use that feature `directRouting` must be enabled in both n
 
 
 Running in `aws`
-^^^^^^^^^^^^^^^^
+----------------
 
 In order to let ``pcn-k8s`` interact with `aws` an `Identity and Access Management (IAM)` role is needed.
 
@@ -238,11 +243,137 @@ Assign the IAM role (that you've created in above step) to the EC2 instances whi
 
 Note: VxLAN exchanges traffic on port `4789/UDP`, be sure that you have configured security rules to allow it.
 
+
+Testing your pcn-k8s installation
+=================================
+
+We present here some commands to test that your ``pcn-k8s`` deployment works as expected.
+
+In order to run these tests, a cluster having at least two schedulable nodes (not tainted) is needed.
+
+Deploy services and pods to test
+--------------------------------
+
+.. parsed-literal::
+
+    kubectl create -f |SCM_RAW_WEB|/src/components/k8s/examples/echoserver_nodeport.yaml
+    kubectl run curl1 --image=tutum/curl --replicas=5 --command -- sleep 600000
+
+
+After a short period of time, all pods should be in the `Running` state
+
+::
+
+    k8s@k8s-master:~$ kubectl get pods -o wide
+    NAME                            READY     STATUS    RESTARTS   AGE       IP              NODE
+    curl1-5df485555f-2dpwx          1/1       Running   0          1m        192.168.1.3     k8s-worker2
+    curl1-5df485555f-l7ql4          1/1       Running   0          1m        192.168.0.246   k8s-master
+    curl1-5df485555f-s9wsv          1/1       Running   0          1m        192.168.1.5     k8s-worker2
+    curl1-5df485555f-xh4wv          1/1       Running   0          1m        192.168.1.4     k8s-worker2
+    curl1-5df485555f-xqmxn          1/1       Running   0          1m        192.168.0.245   k8s-master
+    myechoserver-86856fd86f-fkzg6   1/1       Running   0          32s       192.168.1.6     k8s-worker2
+
+
+Tests
+-----
+
+The following section present some test cases to check everything is working as expected.
+
+Test Node to Pod connectivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+    # ping pod in master node
+    k8s@k8s-master:~$ ping 192.168.0.245
+
+    k8s@k8s-master:~$ ping 192.168.1.3
+
+
+Test Pod to Pod connectivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+    # select one pod running on master, in this case (192.168.0.245)
+    k8s@k8s-master:~$ ID=curl1-5df485555f-xqmxn
+
+    # ping pod in master
+    k8s@k8s-master:~$ kubectl exec $ID ping 192.168.0.246
+
+    # ping pod in worker
+    k8s@k8s-master:~$ kubectl exec $ID ping 192.168.1.5
+
+
+Test Pod to Internet connectivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+    # ping to internet
+    k8s@k8s-master:~$ kubectl exec $ID ping 8.8.8.8
+
+
+Test ClusterIP service
+^^^^^^^^^^^^^^^^^^^^^^
+
+The following command will give us the details about the service we created:
+
+::
+
+    k8s@k8s-master:~$ kubectl describe service myechoserver
+    Name:                     myechoserver
+    Namespace:                default
+    Labels:                   app=myechoserver
+    Annotations:              <none>
+    Selector:                 app=myechoserver
+    Type:                     NodePort
+    IP:                       10.96.23.23
+    Port:                     <unset>  8080/TCP
+    TargetPort:               8080/TCP
+    NodePort:                 <unset>  31333/TCP
+    Endpoints:                192.168.1.6:8080
+    Session Affinity:         None
+    External Traffic Policy:  Cluster
+    Events:                   <none>
+
+::
+
+    # direct access to the backend
+    k8s@k8s-master:~$ curl 192.168.1.6:8080
+
+    # access from node to ClusterIP
+    curl 10.96.23.23:8080
+
+    # access from a pod (change ID to both, a pod in the local node and also a pod in a remote node)
+    kubectl exec $ID curl 10.96.23.23:8080
+
+
+Test NodePort service
+^^^^^^^^^^^^^^^^^^^^^
+
+The service is exposed in port `31333`, perform a request to the public IP of the master and the node from a remote host.
+
+::
+
+    # request to master
+    curl 130.192.225.143:31333
+
+    # request to worker
+    curl 130.192.225.144:31333
+
+
+TODO:
+- test dns service
+- test scale-up scale down
+
+
+
+
 Troubleshooting
----------------
+===============
 
 Recovering from a pcn-k8s failure
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 ``pcn-k8s`` expects a clean environment to start with and it is likely to fail if this is not verified.
 In case you hit any problems, please follow the next steps to recover from a failure:
@@ -269,10 +400,9 @@ In case you hit any problems, please follow the next steps to recover from a fai
     kubectl -n kube-system scale --replicas=1 deployment/kube-dns
 
 Inspect cube status inside pcn-k8s
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 ``pcn-k8s`` is deployed as container in each node, sometimes it is helpful to inspect the cube(s) status
-within the container for debugging or other purposes. You can login into each node where the pcn-k8s container
-is running and get the information via :doc:`polycubectl<../../quickstart#docker>` command locally.
+within the container for debugging or other purposes. You can login into each node where the pcn-k8s container is running and get the information via :doc:`polycubectl <../../../polycubectl/polycubectl>` command locally.
 
 A more convenient way to do that is using kubectl in k8s master node, first identify the name of pcn-k8s pod
 running in a particular node you are intereted by executing the following command:
@@ -314,16 +444,3 @@ Here is the output for example,
 	 k8switch0  c058b8fb-0e57-4ff6-be4d-5f3e99e71690  k8switch      TC    TRACE     false   false  [7 items]
 
 
-pcn-k8s networking policy
--------------------------
-pcn-k8s CNI implemented both :doc:`standard kubernetes networking policy <kubernetes-network-policies>` and :doc:`advanced polycube networking policy <polycube-network-policies>`.
-
-Developing
-----------
-
-Refer to :doc:`Developers <developers>`
-
-Compatibility
--------------
-
-Pcn-k8s is compatible with all versions equal or greater than 1.9, although we recommend the latest version of Kubernetes.

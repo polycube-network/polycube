@@ -45,18 +45,19 @@ Vlan Support
 
 The vlan handling in TC and XDP eBPF programs is a little bit different, so polycube includes a set of helpers to uniform this accross.
 
-- bool pcn_is_vlan_present(struct CTXTYPE *pkt)
+- bool pcn_is_vlan_present(struct CTXTYPE* pkt)
 
-- int pcn_get_vlan_id(struct CTXTYPE *pkt, uint16_t *vlan_id, uint16_t *eth_proto);
+- int pcn_get_vlan_id(struct CTXTYPE* pkt, uint16_t* vlan_id, uint16_t* eth_proto);
 
-- uint8_t pcn_vlan_pop_tag(struct CTXTYPE *pkt);
+- uint8_t pcn_vlan_pop_tag(struct CTXTYPE* pkt);
 
-- uint8_t pcn_vlan_push_tag(struct CTXTYPE *pkt, u16 eth_proto, u32 vlan_id);
+- uint8_t pcn_vlan_push_tag(struct CTXTYPE* pkt, u16 eth_proto, u32 vlan_id);
 
 
 Known limitations:
 ******************
 - It is not possible to send a packet through multiple ports, then multicast, broadcast of any similar functionality has to be implemented in the control path.
+
 
 TODO:
 *****
@@ -66,4 +67,4 @@ TODO:
 
 Debugging the data plane
 ***************************************
-See how to debug by :ref:`logging in the dataplane <logging-in-the-data-plane>`.
+See how to debug by :ref:`logging in the dataplane <logging-data-plane>`.

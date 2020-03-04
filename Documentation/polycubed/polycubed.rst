@@ -1,14 +1,14 @@
 polycubed: the Polycube System Daemon
 =====================================
 
-.. The Polycube system daemon (polycubed) is in charge of managing the lifecycle of cubes, such as creating/updating/deleting network services.
+The Polycube system daemon (polycubed) is in charge of managing the lifecycle of cubes, such as creating/updating/deleting network services.
 
-.. In addition, it provides a single point of entry (a rest API server) for the configuration of any network function.
+In addition, it provides a single point of entry (a rest API server) for the configuration of any network function.
 
-.. The preferred way to interact with polycubed is through `polycubectl <../polycubectl.rst>`_.
+The preferred way to interact with polycubed is through :doc:`polycubectl <../polycubectl/polycubectl>`.
 
 The Polycube System Daemon ``polycubed`` provides a kernel abstraction layer that is used by the different services.
-It exposes a configuration mechanism of the different service instances through a rest API server.  Users can interact with it using the :ref:`polycubectl CLI <polycubectl>`
+It exposes a configuration mechanism of the different service instances through a rest API server.  Users can interact with it using :doc:`polycubectl <../polycubectl/polycubectl>`.
 
 It requires root privileges and only an instance can be launched system wide.
 
@@ -105,6 +105,12 @@ There are some limitations: (1) YANG actions, such as "append" for firewall and 
     # start polycubed with an empty topology
     polycubed --cubes-dump-enable --cubes-dump-clean-init
 
+
+.. _polycubed-debugging:
+
+Debugging
+^^^^^^^^^
+The debugging of polycubed can be turned on by starting the daemon with the ``--loglevel=debug`` flag.
 
 
 Rest API

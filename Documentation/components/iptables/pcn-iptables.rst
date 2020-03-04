@@ -61,8 +61,8 @@ Prerequisites
 pcn-iptables comes as a component of polycube framework.
 Refer to :doc:`polycube install guide<../../../installation>` for dependencies, kernel requirements and basic checkout and install guide.
 
-Install Steps
-^^^^^^^^^^^^^
+Install
+^^^^^^^
 
 To compile and install ``pcn-iptables``, you should enable the ``ENABLE_PCN_IPTABLES`` flag in the polycube CMakeFile, which is set to ``OFF`` by default;
 this allows to compile the customized version of ``iptables`` used to translate commands, and install in the system pcn-iptables-init pcn-iptables and pcn-iptables-clean utils.
@@ -160,14 +160,29 @@ Limitations
 pcn-iptables components
 -----------------------
 
+``pcn-iptables`` is composed by three main components:
+
+  1. ``pcn-iptables`` service (``src/services/pcn-iptables``): a Polycube service, a special one since performs some extra work, but basically expose its API and CLI, according to Polycube standard.
+
 iptables submodule
 ^^^^^^^^^^^^^^^^^^
 
 A customized fork of iptables is included as submodule under :scm_web:`src/components/iptables/iptables <src/components/iptables>`.
-We customized this version of iptables in order not to inject iptables command into netfilter, but convert them, after a validation step, into polycube syntax.
+This modified version of iptables is in charge of validate commands, translate them from iptables to polycube syntax, then forward them to pcn-iptables service instead of pushing them into the kernel via netfilter.
 
 scripts folder
 ^^^^^^^^^^^^^^
 
 Scripts are used as a glue logic to make pcn-iptables run. Main purpose is initialize, cleanup and run pcn-iptables, pass pcn-iptables parameters through iptables (in charge of converting them), then pass converted commands to pcn-iptables service.
 Scripts are installed under ``/usr/local/bin``.
+
+pcn-iptables components
+-----------------------
+
+``pcn-iptables`` is composed by three main components:
+
+1. ``pcn-iptables`` service (``src/services/pcn-iptables``): a Polycube service that is especially tailored to work with the ``pcn-iptables`` executable; as usual, it exposes its API and CLI according to Polycube standard.
+
+2. ``iptables*`` (``src/components/iptables/iptables``): a modified version of iptables, in charge of validate commands, translate them from iptables to polycube syntax, then forward them to pcn-iptables service instead of push them into the kernel via netfilter.
+
+3. ``scripts`` (``src/components/iptables/scripts``): this is a folder containing some glue logic and scripts to initialize, cleanup and use ``pcn-iptables``. ``pcn-iptables`` itself is a script that forwards commands to ``iptables*`` (2), then forwards the translated command to ``pcn-iptables`` (1). Scripts are installed under ``/usr/local/bin``.

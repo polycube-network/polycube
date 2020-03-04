@@ -18,7 +18,8 @@ Welcome to Polycube's documentation!
    polycubed/polycubed
    polycubectl/polycubectl
    security
-   components/index
+   components/iptables/pcn-iptables
+   components/k8s/index
    services/index
    tutorials/index
    developers/index

@@ -25,4 +25,26 @@ This is especially important if your setup is based on a Virtual Machine: virtua
 Examples
 ^^^^^^^^
 
-Please see :doc:`tutorial 2 <../../tutorials/tutorial2/tutorial2>`
+Please see :doc:`Tutorial 2 <../../tutorials/tutorial2/tutorial2>`.
+
+
+Implementation details
+----------------------
+
+Data plane - fast path
+^^^^^^^^^^^^^^^^^^^^^^
+
+This flowchart summarizes the fast path algorithm of the router, which is implemented in `Router_dp.c <https://github.com/polycube-network/polycube/blob/master/src/services/pcn-router/src/Router_dp.c>`_.
+
+.. image:: datapath.png
+    :align: center
+
+
+Data plane - slow path
+^^^^^^^^^^^^^^^^^^^^^^
+
+This flowchart summarizes the slow path algorithm of the router, which is implemented in the control plane (`source code <https://github.com/polycube-network/polycube/blob/master/src/services/pcn-router/src/>`_).
+
+.. image:: slowpath.png
+    :align: center
+
