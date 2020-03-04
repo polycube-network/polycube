@@ -7,6 +7,7 @@ An example of a client that uses the REST api of the packetcapture service is av
 
 Features
 --------
+
 - Transparent service, can be attached to any interface of any Polycube service
 - Support for filters (i.e., source prefix, destination prefix, source port, destination port, layer 4 protocol, etc.).
 - Support partial capture of packets (i.e., snaplen)
@@ -14,7 +15,9 @@ Features
 
 Limitations
 -----------
+
 - Traffic is returned as is, without any anonimization primitive.
+
 
 How to use
 ----------
@@ -104,6 +107,7 @@ Examples of possible filters
     # In this case we capture only the first 80 bytes of each packet
     polycubectl mysniffer set snaplen=80
 
+
 Get the capture dump
 --------------------
 When the service is not set in *networkmode*, the dump is automatically written in a resilient way in the temporary user folder.
@@ -111,6 +115,7 @@ When the service is not set in *networkmode*, the dump is automatically written 
 The path of the capture file can be shown using the command: **polycubectl mysniffer show dump**
 
 Otherwise, if the service is set in network mode, the capture file can be requested through the use of the provided Python client, or queried simply through the service API.
+
 
 How to use the demo client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,3 +134,51 @@ Set network mode
 
     # Start sniffer in local model
     polycubectl mysniffer set networkmode=false
+
+
+Implementation details
+----------------------
+The pipeline to convert into C code the filtering string entered in the packetcapture service is the following:
+
+**pcap filter** → *libpcap* → **cBPF** → *cbpf2c* → **C code**
+
+More in details, the first step is to obtain the cBPF (assembly) code from the filtering string, using the ``libpcap``/``tcpdump`` format. The filtering string is read from ``polycubed`` REST interface, then it is compiled in cBPF using the ``pcap_compile_nopcap()`` function that returns a ``bpf_program`` structure containing a list of ``bpf_insn``.
+
+Then, the code creates a ``sock_fprog`` structure called ``cbpf`` that contains all the required filter blocks.
+
+The second step (traslation from cBPF to C) starts with the validation of the cBPF code.
+Function ``_cbpf_dump()`` is called for each filtering block and it returns a string containing the equivalent C code for that block.
+
+Inside ``_cbpf_dump()``, a switch statement creates two variables, ``op`` (operation) and ``fmt`` (operand) depending on the type of instruction of the block (e.g.,return, load, store, alu op. etc.); the above variables will be used to generate the final C code.
+
+This ASM-to-C traslator is ispired to a similar project proposed by `Cloudflare <https://blog.cloudflare.com/xdpcap/>`_; however, in Polycube the translator is written in C/C++ (the CLoudfare one is in Go); furthermore, in Polycube the final output of the translator is a C equivalent of the packet filter, while in the latest version of the Cloudfare project, the final outcome of the translation are eBPF assembly instructions.
+
+The C output facilitates any further modification of the code, e.g., with when additional processing steps are needed, although it impacts on the overall filter conversion time as it requires one additional processing pass involving CLANG/LLVM to convert the C code into eBPF assembly.
+
+
+Example of C code generated
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As a example, we list here is the generated C code for the filter ``icmp``:
+
+::
+
+    L0:	 if ((data + 14) > data_end) {
+           return RX_DROP;
+         }
+         a = ntohs(* ((uint16_t *) &data[12]));
+    L1:	 if (a == 0x0800) {
+           goto L2;
+         } else {
+           goto L5;
+         }
+    L2:	 if ((data + 24) > data_end) {
+           return RX_DROP;
+         }
+         a = * ((uint8_t *) &data[23]);
+    L3:	 if (a == 0x01) {
+           goto L4;
+         } else {
+           goto L5;
+         }
+    L4:	 return pcn_pkt_controller(ctx, md, reason);
+    L5:	 return RX_OK;
