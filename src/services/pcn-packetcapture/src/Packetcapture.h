@@ -46,6 +46,9 @@ class Packetcapture : public PacketcaptureBase {
  std::chrono::nanoseconds temp_offset;
  std::string filter;
  bool bootstrap = true; /* variable used to set default filter when the service is created */
+ bool dumpFlag = false; /* variable used to know if the user set a custom dump folder */
+ bool ts = false;  /* true when service not TC type or sk_buff->tstamp == 0 see line 412 in cbpf2c.cpp */
+ polycube::service::CubeType cubeType;
 
 private:
     struct sock_fprog cbpf;

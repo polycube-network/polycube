@@ -110,7 +110,19 @@ Examples of possible filters
 
 Get the capture dump
 --------------------
-When the service is not set in *networkmode*, the dump is automatically written in a resilient way in the temporary user folder.
+When the service is not set in *networkmode*, the dump is by default written in a resilient way in the temporary user folder.
+The folder where the dump is written can be changed by using the syntax:
+
+    polycubectl <service name> set dump="<string value>"
+
+::
+
+    # Example of new dump folder
+    polycubectl mysniffer set dump="/home/user_name/Desktop/capture"
+
+At the end of the file name will be added the file extension ".pcap"
+
+If a file with the same name already exists it will be overwritten otherwise it will be created
 
 The path of the capture file can be shown using the command: **polycubectl mysniffer show dump**
 

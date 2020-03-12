@@ -7,7 +7,7 @@
 # between the two interfaces of the simplebridge is captured.
 # Finally it is checked that the capture dump is stored correctly.
 
-source "${BASH_SOURCE%/*}/../helpers.bash"
+source "${BASH_SOURCE%/*}/helpers.bash"
 
 set -e
 set -x

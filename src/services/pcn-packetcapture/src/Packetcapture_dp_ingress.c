@@ -32,31 +32,15 @@
 #include <uapi/linux/tcp.h>
 #include <uapi/linux/udp.h>
 
-struct eth_hdr {
-    __be64 dst : 48;
-    __be64 src : 48;
-    __be16 proto;
-} __attribute__((packed));
-
-/*
- * BPF map where a single element, packet timestamp
- */
-BPF_ARRAY(packet_timestamp, uint64_t, 1);
-
 
 static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     unsigned int key = 0;
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
-    struct eth_hdr *ethernet = data;
     u16 reason = 1;
     uint32_t a, x, m[16];
-
-    uint64_t *pkt_timestamp = packet_timestamp.lookup(&key);
-    if (!pkt_timestamp){
-        return RX_DROP;
-    }
-    *pkt_timestamp = bpf_ktime_get_ns();
+    u32 mdata[3];
+    uint64_t pkt_timestamp;
 
     //CUSTOM_FILTER_CODE
 

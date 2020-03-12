@@ -42,9 +42,12 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
     PacketcaptureBase(name) {
 
   /*
-   * The timestamp of the packet is acquired in the fast path using 'bpf_ktime_get_ns()'
+   * The timestamp of the packet is acquired in the fast path using:
+   * if BPF_PROG_TYPE_XDP is TC and ctx->tstamp != 0 we use ctx->tstamp
+   * it returns the current Unix epoch time
+   *
+   * otherwise if BPF_PROG_TYPE_XDP is not TC or ctx->tstamp == 0 we use 'bpf_ktime_get_ns()'
    * This function returns the time elapsed since system booted, in nanoseconds.
-   * See line 59 in Packetcapture_dp_egress.c and Packetcapture_dp_ingress.c
    *
    * The packet's timestamp must be in epoch so now we will store the current
    * time in epoch format and then the packet capture time offset,that was stored in the fast path,
@@ -54,7 +57,7 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
    * 'timeval struct ts' rapresents the system start time in epoch calculated as
    * actual time - system uptime
    *
-   * See line 164 of this file for more details
+   * See line 167 of this file for more details
    */
 
 
@@ -88,7 +91,7 @@ Packetcapture::Packetcapture(const std::string name, const PacketcaptureJsonObje
 
   CapStatus = (uint8_t) conf.getCapture();
   updateFilter();
-
+  cubeType = BaseCube::get_type();
   bootstrap = false;
   writeHeader = true;
   dt = "";
@@ -118,28 +121,38 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     tmstmp << ltm->tm_mday << "-" << ltm->tm_mon << "-" << (ltm->tm_year + 1900) << "-" << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec;
     dt = tmstmp.str();
 
-    //getting temp folder
-    //std::filesystem::temp_directory_path only in c++17
-    //according to ISO/IEC 9945 (POSIX)
-    char const *folder = getenv("TMPDIR");
-    if (folder == 0){
-      folder = getenv("TMP");
-      if (folder == 0){
-        folder = getenv("TEMP");
-        if (folder == 0){
-          folder = getenv("TEMPDIR");
-          if (folder == 0){
-            folder = "/tmp";
+    if (dumpFlag == false) {
+      //getting temp folder
+      //std::filesystem::temp_directory_path only in c++17
+      //according to ISO/IEC 9945 (POSIX)
+      char const *folder = getenv("TMPDIR");
+      if (folder == 0) {
+        folder = getenv("TMP");
+        if (folder == 0) {
+          folder = getenv("TEMP");
+          if (folder == 0) {
+            folder = getenv("TEMPDIR");
+            if (folder == 0) {
+              folder = "/tmp";
+            }
           }
         }
       }
+      temp_folder = std::string(folder);
+      temp_folder.append("/");
+      random_number = std::to_string(rand() % 1000);    //to avoid two files that using the same name
     }
-    temp_folder = std::string(folder);
-    temp_folder.append("/");
-    random_number = std::to_string(rand()%1000);    //to avoid two files that using the same name
   }
 
-  myFile.open(temp_folder + "capture_" + dt + "_" + random_number + ".pcap", std::ios::binary | std::ios::app);
+  if (dumpFlag == true) {
+    if (writeHeader == true) {
+      myFile.open(temp_folder + ".pcap", std::ios::binary | std::ios::trunc);
+    } else {
+      myFile.open(temp_folder + ".pcap", std::ios::binary | std::ios::app);
+    }
+  } else {
+    myFile.open(temp_folder + "capture_" + dt + "_" + random_number + ".pcap", std::ios::binary | std::ios::app);
+  }
 
   if (writeHeader == true) {
     struct pcap_file_header *pcap_header = new struct pcap_file_header;
@@ -155,14 +168,17 @@ void Packetcapture::writeDump(const std::vector<uint8_t> &packet){
     writeHeader = false;
   }
 
-  /*
-   * Here the packet capture time offset must be added to the system boot time stored in epoch format.
-   * See line 61 of this file to see system boot time stored in epoch algorithm
-   */
-
   struct timeval tp;
-  std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
-  to_timeval(tp_dur, tp);
+  if (ts) {
+      /*
+       * Here the packet capture time offset must be added to the system boot time stored in epoch format.
+       * See line 64 of this file to see system boot time stored in epoch algorithm
+       */
+      std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
+      to_timeval(tp_dur, tp);
+  } else {
+      to_timeval(temp_offset, tp);
+  }
 
   p->setTimestampSeconds((uint32_t) tp.tv_sec);
   p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
@@ -195,10 +211,16 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     const std::vector<uint8_t> &packet) {
 
   Tins::EthernetII pkt(&packet[0], packet.size());
+  uint64_t t;
+  ts = false;
 
   switch (direction) {
     case polycube::service::Direction::INGRESS:
-    temp_offset = std::chrono::nanoseconds(static_cast<unsigned long long>(get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::INGRESS).get(0x0)));
+    t = (((uint64_t) (md.metadata[1]) << 32) | (uint64_t) md.metadata[0]);
+    if (md.metadata[2] == 0) {
+        ts = true;
+    }
+    temp_offset = std::chrono::nanoseconds(t);
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {
@@ -206,7 +228,11 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     }
     break;
     case polycube::service::Direction::EGRESS:
-    temp_offset = std::chrono::nanoseconds(static_cast<unsigned long long>(get_array_table<uint64_t>("packet_timestamp", 0, ProgramType::EGRESS).get(0x0)));
+    t = (((uint64_t) (md.metadata[1]) << 32) | (uint64_t) md.metadata[0]);
+    if (md.metadata[2] == 0) {
+        ts = true;
+    }
+    temp_offset = std::chrono::nanoseconds(t);
     if (getNetworkmode() == true) {
       addPacket(packet);    /* store the packet in the FIFO queue*/
     } else {
@@ -251,11 +277,15 @@ std::string Packetcapture::getDump() {
 
   if (network_mode_flag) {
     dump << "the service is running in network mode";
-  } else if (temp_folder != ""){
+  } else if (temp_folder != "" || dumpFlag == true) {
       char *cwdr_ptr = get_current_dir_name();
       std::string wdr(cwdr_ptr);
-      dump << "capture dump in " << temp_folder << "capture_" + dt + "_" + random_number + ".pcap" << std::endl;
-  } else{
+      if (dumpFlag == true) {
+        dump << "capture dump in " << temp_folder + ".pcap" << std::endl;
+      } else {
+        dump << "capture dump in " << temp_folder << "capture_" + dt + "_" + random_number + ".pcap" << std::endl;
+      }
+  } else {
     dump << "no packets captured";
   }
 
@@ -263,7 +293,9 @@ std::string Packetcapture::getDump() {
 }
 
 void Packetcapture::setDump(const std::string &value) {
-    throw std::runtime_error("Packetcapture::setDump: Method not implemented");
+    dumpFlag = true;
+    temp_folder = value;
+    writeHeader = true;
 }
 
 bool Packetcapture::getNetworkmode() {
@@ -295,15 +327,17 @@ void Packetcapture::addPacket(const std::vector<uint8_t> &packet) {
     PacketJsonObject pj;
     auto p = std::shared_ptr<Packet>(new Packet(*this, pj));
 
-  /*
-   * Here the packet capture time offset must be added to the system boot time stored in epoch format.
-   * See line 58 of this file to see system boot time stored in epoch algorithm
-   */
-
     struct timeval tp;
-    std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
-    to_timeval(tp_dur, tp);
-
+    if (ts) {
+        /*
+         * Here the packet capture time offset must be added to the system boot time stored in epoch format.
+         * See line 64 of this file to see system boot time stored in epoch algorithm
+         */
+        std::chrono::system_clock::duration tp_dur = (timeP + temp_offset).time_since_epoch();
+        to_timeval(tp_dur, tp);
+    } else {
+        to_timeval(temp_offset, tp);
+    }
     p->setTimestampSeconds((uint32_t) tp.tv_sec);
     p->setTimestampMicroseconds((uint32_t) tp.tv_usec);
     p->setPacketlen((uint32_t) packet.size());
@@ -378,14 +412,21 @@ void Packetcapture::to_timeval(std::chrono::system_clock::duration& d, struct ti
 }
 
 void Packetcapture::setFilter(const std::string &value) {
-    this->filter = value;
-    logger()->info("Inserted filter: {0}", filter);
-    if (filter == "all") {
-      filterCode = "return pcn_pkt_controller(ctx, md, reason);";
-    }else {
+    logger()->info("Inserted filter: {0}", value);
+    if (value == "all") {
+        if (cubeType == polycube::CubeType::TC) {
+            filterCode = "if (ctx->tstamp == 0) {\n\tpkt_timestamp = bpf_ktime_get_ns();\n\tmdata[0] = *(&pkt_timestamp);\n\t"
+                         "mdata[1] = (*(&pkt_timestamp)) >> 32;\n\tmdata[2] = 0;\n} else {\n\tmdata[0] = *(&ctx->tstamp);\n\t"
+                         "mdata[1] = (*(&ctx->tstamp)) >> 32;\n\tmdata[2] = 1;\n}\nreturn pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);";
+        } else { /* CubeType::XDP_DRV or CubeType::XDP_SKB */
+            filterCode = "pkt_timestamp = bpf_ktime_get_ns();\nmdata[0] = *(&pkt_timestamp);\n"
+                         "mdata[1] = (*(&pkt_timestamp)) >> 32;\nmdata[2] = 0;\nreturn pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);";
+        }
+    } else {
         memset(&cbpf, 0, sizeof(cbpf));
-        filterCompile(filter, &cbpf);
+        filterCompile(value, &cbpf);
     }
+    this->filter = value;
     updateFilter();
 }
 
@@ -410,9 +451,8 @@ void Packetcapture::filterCompile(std::string str, struct sock_fprog * cbpf) {
 
     ret = pcap_compile_nopcap(65535, link_type, &_bpf, str.c_str(), 1, 0xffffffff);
     if (ret < 0) {
-      logger()->info("Cannot compile filter: {0}", str);
-      filterCode = "return RX_OK;";
-      return;
+      logger()->error("Cannot compile filter: {0}", str);
+      throw std::runtime_error("Filter not valid");
     }
 
     cbpf->len = _bpf.bf_len;
@@ -434,5 +474,5 @@ void Packetcapture::filterCompile(std::string str, struct sock_fprog * cbpf) {
     }
 
     pcap_freecode(&_bpf);
-    filterCode = cbpf2c::ToC(cbpf);
+    filterCode = cbpf2c::ToC(cbpf, cubeType);
 }
