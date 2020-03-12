@@ -21,7 +21,6 @@
 #include "polycube/services/response.h"
 #include "polycube/services/shared_lib_elements.h"
 
-#include "FiltersJsonObject.h"
 #include "GlobalheaderJsonObject.h"
 #include "PacketJsonObject.h"
 #include "PacketcaptureJsonObject.h"
@@ -33,24 +32,16 @@ extern "C" {
 #endif
 
 Response create_packetcapture_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response create_packetcapture_filters_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_packetcapture_globalheader_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_packetcapture_packet_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response delete_packetcapture_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response delete_packetcapture_filters_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_packetcapture_globalheader_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response delete_packetcapture_packet_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_anomimize_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_packetcapture_anonimize_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_capture_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_dump_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_dport_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_dst_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_l4proto_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_snaplen_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_sport_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_packetcapture_filters_src_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_packetcapture_filter_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_globalheader_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_globalheader_linktype_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_globalheader_magic_by_id_handler(const char *name, const Key *keys, size_t num_keys);
@@ -67,21 +58,15 @@ Response read_packetcapture_packet_packetlen_by_id_handler(const char *name, con
 Response read_packetcapture_packet_rawdata_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_packet_timestamp_microseconds_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_packetcapture_packet_timestamp_seconds_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_packetcapture_snaplen_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_packetcapture_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response replace_packetcapture_filters_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_packetcapture_globalheader_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_packetcapture_packet_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_anomimize_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_packetcapture_anonimize_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_capture_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_dump_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_dport_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_dst_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_l4proto_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_snaplen_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_sport_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_packetcapture_filters_src_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_packetcapture_filter_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_globalheader_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_globalheader_linktype_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_globalheader_magic_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -98,6 +83,7 @@ Response update_packetcapture_packet_packetlen_by_id_handler(const char *name, c
 Response update_packetcapture_packet_rawdata_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_packet_timestamp_microseconds_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_packetcapture_packet_timestamp_seconds_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_packetcapture_snaplen_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response packetcapture_list_by_id_help(const char *name, const Key *keys, size_t num_keys);
 

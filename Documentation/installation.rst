@@ -99,7 +99,7 @@ Install dependencies
 
     # Install polycube dependencies
     sudo apt-get -y install git build-essential cmake bison flex \
-        libelf-dev libllvm5.0 llvm-5.0-dev libclang-5.0-dev \
+        libelf-dev libllvm5.0 llvm-5.0-dev libclang-5.0-dev libpcap-dev \
         libnl-route-3-dev libnl-genl-3-dev uuid-dev pkg-config \
         autoconf libtool m4 automake libssl-dev kmod jq bash-completion \
         gnupg2

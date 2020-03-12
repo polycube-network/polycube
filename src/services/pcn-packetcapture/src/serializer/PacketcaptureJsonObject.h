@@ -19,7 +19,6 @@
 
 #include "JsonObjectBase.h"
 
-#include "FiltersJsonObject.h"
 #include "GlobalheaderJsonObject.h"
 #include "PacketJsonObject.h"
 #include "polycube/services/cube.h"
@@ -63,10 +62,10 @@ public:
   /// <summary>
   ///
   /// </summary>
-  bool getAnomimize() const;
-  void setAnomimize(bool value);
-  bool anomimizeIsSet() const;
-  void unsetAnomimize();
+  bool getAnonimize() const;
+  void setAnonimize(bool value);
+  bool anonimizeIsSet() const;
+  void unsetAnonimize();
 
   /// <summary>
   /// dump capture
@@ -77,7 +76,7 @@ public:
   void unsetDump();
 
   /// <summary>
-  /// operative mode
+  /// Operating mode
   /// </summary>
   bool getNetworkmode() const;
   void setNetworkmode(bool value);
@@ -85,12 +84,20 @@ public:
   void unsetNetworkmode();
 
   /// <summary>
-  ///
+  /// Snapshot length
   /// </summary>
-  FiltersJsonObject getFilters() const;
-  void setFilters(FiltersJsonObject value);
-  bool filtersIsSet() const;
-  void unsetFilters();
+  uint32_t getSnaplen() const;
+  void setSnaplen(uint32_t value);
+  bool snaplenIsSet() const;
+  void unsetSnaplen();
+
+  /// <summary>
+  /// filtering string (e.g., 'host 1.2.3.4 and src port 80')
+  /// </summary>
+  std::string getFilter() const;
+  void setFilter(std::string value);
+  bool filterIsSet() const;
+  void unsetFilter();
 
   /// <summary>
   ///
@@ -113,14 +120,16 @@ private:
   bool m_nameIsSet;
   PacketcaptureCaptureEnum m_capture;
   bool m_captureIsSet;
-  bool m_anomimize;
-  bool m_anomimizeIsSet;
+  bool m_anonimize;
+  bool m_anonimizeIsSet;
   std::string m_dump;
   bool m_dumpIsSet;
   bool m_networkmode;
   bool m_networkmodeIsSet;
-  FiltersJsonObject m_filters;
-  bool m_filtersIsSet;
+  uint32_t m_snaplen;
+  bool m_snaplenIsSet;
+  std::string m_filter;
+  bool m_filterIsSet;
   GlobalheaderJsonObject m_globalheader;
   bool m_globalheaderIsSet;
   PacketJsonObject m_packet;

@@ -41,6 +41,7 @@ Refer to :doc:`Quick Start <../quickstart>`.
         pbforwarder       service   Policy-Based Forwarder Service
         bridge            service   Bridge Service
         nat               service   NAT Service
+        packetcapture     service   Packetcapture Service
 
         connect           command   Connect ports
         disconnect        command   Disconnect ports

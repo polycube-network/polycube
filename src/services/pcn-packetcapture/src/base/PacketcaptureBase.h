@@ -18,7 +18,6 @@
 
 #include "../serializer/PacketcaptureJsonObject.h"
 
-#include "../Filters.h"
 #include "../Globalheader.h"
 #include "../Packet.h"
 
@@ -51,8 +50,8 @@ class PacketcaptureBase: public virtual polycube::service::TransparentCube {
   /// <summary>
   ///
   /// </summary>
-  virtual bool getAnomimize() = 0;
-  virtual void setAnomimize(const bool &value) = 0;
+  virtual bool getAnonimize() = 0;
+  virtual void setAnonimize(const bool &value) = 0;
 
   /// <summary>
   /// dump capture
@@ -61,18 +60,22 @@ class PacketcaptureBase: public virtual polycube::service::TransparentCube {
   virtual void setDump(const std::string &value) = 0;
 
   /// <summary>
-  /// operative mode
+  /// Operating mode
   /// </summary>
   virtual bool getNetworkmode() = 0;
   virtual void setNetworkmode(const bool &value) = 0;
 
   /// <summary>
-  ///
+  /// Snapshot length
   /// </summary>
-  virtual std::shared_ptr<Filters> getFilters() = 0;
-  virtual void addFilters(const FiltersJsonObject &value) = 0;
-  virtual void replaceFilters(const FiltersJsonObject &conf);
-  virtual void delFilters() = 0;
+  virtual uint32_t getSnaplen() = 0;
+  virtual void setSnaplen(const uint32_t &value) = 0;
+
+  /// <summary>
+  /// filtering string (e.g., 'host 1.2.3.4 and src port 80')
+  /// </summary>
+  virtual std::string getFilter() = 0;
+  virtual void setFilter(const std::string &value) = 0;
 
   /// <summary>
   ///

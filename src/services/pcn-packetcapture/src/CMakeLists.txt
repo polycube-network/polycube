@@ -6,6 +6,9 @@ aux_source_directory(base BASE_SOURCES)
 
 include_directories(serializer)
 
+find_library(PCAP_LIBRARY
+        NAMES pcap)
+
 if (NOT DEFINED POLYCUBE_STANDALONE_SERVICE OR POLYCUBE_STANDALONE_SERVICE)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(POLYCUBE libpolycube)
@@ -19,11 +22,11 @@ add_library(pcn-packetcapture SHARED
   ${SERIALIZER_SOURCES}
   ${API_SOURCES}
   ${BASE_SOURCES}
-  Filters.cpp
   Globalheader.cpp
   Packet.cpp
   Packetcapture.cpp
-  Packetcapture-lib.cpp)
+  Packetcapture-lib.cpp
+  cbpf2c.cpp)
 
 # load ebpf datapath code a variable
 load_file_as_variable(pcn-packetcapture
@@ -39,10 +42,12 @@ load_file_as_variable(pcn-packetcapture
   packetcapture_datamodel)
 
 target_link_libraries(pcn-packetcapture ${POLYCUBE_LIBRARIES})
+target_link_libraries(pcn-packetcapture ${PCAP_LIBRARY})
 
 # Specify shared library install directory
 
 set(CMAKE_INSTALL_LIBDIR /usr/lib)
+set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LIBRARY})
 
 install(
     TARGETS
