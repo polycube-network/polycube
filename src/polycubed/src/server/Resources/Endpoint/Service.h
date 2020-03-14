@@ -60,6 +60,8 @@ class Service : public ParentResource, public Body::Service {
                                             nlohmann::json &body,
                                             bool update, bool initialization);
 
+  std::vector<Response> get_list();
+
  private:
   const std::string body_rest_endpoint_;
   Validators::InSetValidator cube_names_;

@@ -208,6 +208,14 @@ void ListResource::get_multiple(const Request &request,
     ListKeyValues keys{};
     dynamic_cast<const ParentResource *const>(parent_)->Keys(request, keys);
     errors.push_back(ReadWhole(cube_name, keys));
+    if (errors[0].error_tag == ErrorTag::kOk) {
+        auto port = core_->get_rest_server()->getPort();
+        auto host = core_->get_rest_server()->getHost();
+
+        /* first level _links are been attached to the response */
+        Hateoas::HateoasSupport_multiple(request, errors,
+                host, port, this);
+    }
   }
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }

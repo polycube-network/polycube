@@ -31,6 +31,7 @@
 
 #include "LeafResource.h"
 #include "ListResource.h"
+#include "LeafListResource.h"
 
 namespace polycube::polycubed::Rest::Resources::Endpoint {
 ParentResource::ParentResource(
@@ -185,8 +186,16 @@ void ParentResource::get(const Request &request, ResponseWriter response) {
     if (parent_ != nullptr) {
       Keys(request, keys);
     }
-    errors.push_back(ReadValue(cube_name, keys));
+      errors.push_back(ReadValue(cube_name, keys));
+      if (errors[0].error_tag == ErrorTag::kOk) {
+          auto port = core_->get_rest_server()->getPort();
+          auto host = core_->get_rest_server()->getHost();
+
+          /* first level _links are been attached to the response */
+          Hateoas::HateoasSupport(request, errors, host, port, children_);
+      }
   }
+
   Server::ResponseGenerator::Generate(std::move(errors), std::move(response));
 }
 
@@ -496,4 +505,6 @@ ParentResource::ParentResource(
       Endpoint::Resource(""),
       has_endpoints_(false),
       rpc_action_(false) {}
+
+
 }  // namespace polycube::polycubed::Rest::Resources::Endpoint

@@ -63,12 +63,16 @@ class RestServer {
   void start();
   void shutdown();
   void load_last_topology();
+  const std::string& getHost();
+  const std::string& getPort();
 
  private:
   void setup_routes();
   // this function has to be static because has to be passed as a callback.
   static int client_verify_callback(int preverify_ok, void *ctx);
 
+  void get_root_handler(const Pistache::Rest::Request &request,
+                    Pistache::Http::ResponseWriter response);
   void root_handler(const Pistache::Rest::Request &request,
                     Pistache::Http::ResponseWriter response);
   void root_help(HelpType type, Pistache::Http::ResponseWriter response);
@@ -143,7 +147,8 @@ class RestServer {
   PolycubedCore &core;
   std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
   std::shared_ptr<Pistache::Rest::Router> router_;
-
+  const std::string host;
+  const std::string port;
   static std::string whitelist_cert_path;
   static std::string blacklist_cert_path;
 
