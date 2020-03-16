@@ -36,7 +36,7 @@ PortsSecondaryip::PortsSecondaryip(Ports &parent, const PortsSecondaryipJsonObje
   /*
   * Add two routes in the routing table
   */
-  int index = parent.parent_.Cube::get_port(parent.getName())->index();
+  int index = parent.index();
   parent.parent_.add_local_route(ip_, parent.getName(), index);
 }
 

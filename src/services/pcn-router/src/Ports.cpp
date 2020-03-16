@@ -142,6 +142,14 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
   };
 
   if (!parent_.get_shadow()) {
+    // Align parameters of the port with the ones of the interface if connected
+    if (conf.macIsSet()) {
+      set_peer_parameter("MAC", conf.getMac());
+    }
+    if (conf.ipIsSet()) {
+      set_peer_parameter("IP", conf.getIp());
+    }
+
     /* Register the new port to IP and MAC notifications arriving from ExtIface
      * do not use define because strings are easier to manipulate
      * for future extensions */
@@ -203,6 +211,7 @@ void Ports::doSetIp(const std::string &new_ip) {
     r_port value = router_port.get(index);
     value.ip = ip_string_to_nbo_uint(ip_address);
     value.netmask = ip_string_to_nbo_uint(netmask);
+    router_port.set(index, value);
   } catch (...) {
     logger()->error("Port {0} not found in the data path", this->name());
   }
