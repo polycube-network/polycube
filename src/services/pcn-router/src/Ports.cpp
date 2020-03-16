@@ -142,6 +142,14 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
   };
 
   if (!parent_.get_shadow()) {
+    // Align parameters of the port with the ones of the interface if connected
+    if (conf.macIsSet()) {
+      set_peer_parameter("MAC", conf.getMac());
+    }
+    if (conf.ipIsSet()) {
+      set_peer_parameter("IP", conf.getIp());
+    }
+
     /* Register the new port to IP and MAC notifications arriving from ExtIface
      * do not use define because strings are easier to manipulate
      * for future extensions */
