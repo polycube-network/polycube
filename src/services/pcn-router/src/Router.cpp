@@ -549,45 +549,43 @@ void Router::add_local_route(const std::string &interface_ip,
       "Added route [network: {0}/32 - nexthop: {1} - interface: {2}]",
       ip_route, "0.0.0.0", port_name);
 
-  /*
-  * Add a route to the local network, i.e., to the network directly reachable
-  * through the inteface
-  */
+  // If the new address is not a /32, add a route to the local network
+  // (i.e. the network directly reachable through the inteface)
+  if (netmask_route != "255.255.255.255") {
 
-  // Add the route in the fast path
-  uint32_t networkDec = ip_string_to_nbo_uint(ip_route) &
-                        ip_string_to_nbo_uint(netmask_route);
-  std::string network = nbo_uint_to_ip_string(networkDec);
-  rt_k key2{
-      .netmask_len = get_netmask_length(netmask_route),
-      .network = networkDec,
-  };
+    // Add the route in the fast path
+    uint32_t networkDec = ip_string_to_nbo_uint(ip_route) &
+                          ip_string_to_nbo_uint(netmask_route);
+    std::string network = nbo_uint_to_ip_string(networkDec);
+    rt_k key2{
+        .netmask_len = get_netmask_length(netmask_route),
+        .network = networkDec,
+    };
 
-  rt_v value2{
-      .port = uint32_t(port_index),
-      .nexthop = 0, /* 0.0.0.0 */
-      .type = TYPE_NOLOCALINTERFACE,
-  };
+    rt_v value2{
+        .port = uint32_t(port_index),
+        .nexthop = 0, /* 0.0.0.0 */
+        .type = TYPE_NOLOCALINTERFACE,
+    };
 
-  routing_table.set(key2, value2);
+    routing_table.set(key2, value2);
 
-  logger()->info(
-      "Added route [network: {0}/{1} - nexthop: {2} - interface: {3}]",
-      network, get_netmask_length(netmask_route), "0.0.0.0", port_name);
+    logger()->info(
+        "Added route [network: {0}/{1} - nexthop: {2} - interface: {3}]",
+        network, get_netmask_length(netmask_route), "0.0.0.0", port_name);
 
-  // Add the route in the table of the control plane
+    // Add the route in the table of the control plane
 
-  std::string nexthop("local");
-  std::string route = network + "/" +
-              std::to_string(get_netmask_length(netmask_route));
-  std::tuple<string, string> keyF(route, nexthop);
-  uint32_t pathcost = 0;
+    std::string nexthop("local");
+    std::string route = network + "/" +
+                std::to_string(get_netmask_length(netmask_route));
+    std::tuple<string, string> keyF(route, nexthop);
+    uint32_t pathcost = 0;
 
-  routes_.emplace(std::piecewise_construct, std::forward_as_tuple(keyF),
-                  std::forward_as_tuple(*this, route, nexthop,
-                                        port_name, pathcost));
-
-  // FIXME: add also the /32 route?
+    routes_.emplace(std::piecewise_construct, std::forward_as_tuple(keyF),
+                    std::forward_as_tuple(*this, route, nexthop,
+                                          port_name, pathcost));
+  }
 }
 
 /*
