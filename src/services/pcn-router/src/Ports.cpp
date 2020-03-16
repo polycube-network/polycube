@@ -203,6 +203,7 @@ void Ports::doSetIp(const std::string &new_ip) {
     r_port value = router_port.get(index);
     value.ip = ip_string_to_nbo_uint(ip_address);
     value.netmask = ip_string_to_nbo_uint(netmask);
+    router_port.set(index, value);
   } catch (...) {
     logger()->error("Port {0} not found in the data path", this->name());
   }
