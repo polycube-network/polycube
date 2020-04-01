@@ -56,8 +56,7 @@ BPF_ARRAY(ports_map, uint16_t, 2);
  * Please look at the polycube documentation for more details.
  */
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Receiving packet from port %d", md->in_port);
-  pcn_pkt_log(ctx, LOG_DEBUG);
+  pcn_log(ctx, LOG_DEBUG, "[INGRESS] Receiving packet from port %d", md->in_port);
 
   unsigned int zero = 0;
   unsigned int one = 1;

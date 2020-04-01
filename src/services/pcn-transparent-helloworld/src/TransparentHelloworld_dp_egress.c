@@ -51,10 +51,12 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     pcn_log(ctx, LOG_DEBUG, "Egress: passing packet");
     return RX_OK;
   case SLOWPATH:
+#ifndef POLYCUBE_XDP
     if (ctx->cb[2] & MD_PKT_FROM_CONTROLLER) {
         pcn_log(ctx, LOG_DEBUG, "packet from controller, return");
         return RX_OK;
     }
+#endif
     pcn_log(ctx, LOG_DEBUG, "Egress: sending packet to slow path");
     return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
   default:

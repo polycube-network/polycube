@@ -91,7 +91,7 @@ class ExtIface : public PeerIface {
   virtual std::string get_tx_code() const = 0;
   virtual bpf_prog_type get_program_type() const = 0;
 
-  void update_indexes() override;
+  virtual void update_indexes() override;
 
   ebpf::BPF ingress_program_;
   ebpf::BPF egress_program_;

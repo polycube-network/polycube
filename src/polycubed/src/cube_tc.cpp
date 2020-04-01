@@ -27,9 +27,10 @@ namespace polycubed {
 
 CubeTC::CubeTC(const std::string &name, const std::string &service_name,
                const std::vector<std::string> &ingress_code,
-               const std::vector<std::string> &egress_code, LogLevel level, bool shadow, bool span)
-    : Cube(name, service_name, PatchPanel::get_tc_instance(),
-           PatchPanel::get_tc_instance(), level, CubeType::TC, shadow, span) {
+               const std::vector<std::string> &egress_code, LogLevel level,
+               bool shadow, bool span)
+    : Cube(name, service_name, PatchPanel::get_tc_instance(), level,
+           CubeType::TC, shadow, span) {
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
@@ -61,18 +62,20 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
   std::string all_code(get_wrapper_code() +
                        DatapathLog::get_instance().parse_log(code));
 
-  std::vector<std::string> cflags_(Cube::cflags);
-  cflags_.push_back("-DCUBE_ID=" + std::to_string(id));
-  cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
-  cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  std::vector<std::string> cflags(cflags_);
+  cflags.push_back("-DCUBE_ID=" + std::to_string(id));
+  cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
+  cflags.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
+                   std::to_string(static_cast<int>(type))));
   if (shadow) {
-    cflags_.push_back("-DSHADOW");
+    cflags.push_back("-DSHADOW");
     if (span)
-      cflags_.push_back("-DSPAN");
+      cflags.push_back("-DSPAN");
   }
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
-  auto init_res = bpf.init(all_code, cflags_);
+  auto init_res = bpf.init(all_code, cflags);
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -376,8 +379,30 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
       return TC_ACT_SHOT;
     case RX_CONTROLLER:
       return to_controller(skb, md.reason);
-    case RX_OK:
+
+    case RX_OK: {
+#if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
+      // If there is another egress program call it, otherwise let the packet
+      // pass
+
+      int port = md.in_port;
+      u32 *next = egress_next.lookup(&port);
+      if (!next) {
+        return TC_ACT_SHOT;
+      }
+
+      if (*next == 0) {
+        return TC_ACT_SHOT;
+      } else if ((*next & 0xffff) == 0xffff) {
+        return TC_ACT_OK;
+      } else {
+        nodes.call(skb, *next & 0xffff);
+      }
+
+#else  // INGRESS
       return TC_ACT_OK;
+#endif
+    }
   }
   return TC_ACT_SHOT;
 }

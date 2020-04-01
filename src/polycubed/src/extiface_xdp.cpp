@@ -21,6 +21,7 @@
 #include "extiface_tc.h"
 #include "patchpanel.h"
 #include "utils/netlink.h"
+#include "transparent_cube_xdp.h"
 
 #include <iostream>
 
@@ -36,6 +37,7 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, int attach_flags)
     load_egress();
 
     index_ = PatchPanel::get_xdp_instance().add(fd_tx);
+    redir_index_ = index_;
     Netlink::getInstance().attach_to_xdp(iface_, fd_rx, attach_flags_);
   } catch (...) {
     used_ifaces.erase(iface);
@@ -46,6 +48,79 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, int attach_flags)
 ExtIfaceXDP::~ExtIfaceXDP() {
   PatchPanel::get_xdp_instance().remove(index_);
   Netlink::getInstance().detach_from_xdp(iface_, attach_flags_);
+}
+
+void ExtIfaceXDP::update_indexes() {
+  uint16_t next;
+
+  // Link cubes of ingress chain
+  // peer/stack <- cubes[N-1] <- ... <- cubes[0] <- iface
+  
+  next = peer_ ? peer_->get_index() : 0xffff;
+  for (int i = cubes_.size()-1; i >= 0; i--) {
+    if (cubes_[i]->get_index(ProgramType::INGRESS)) {
+      cubes_[i]->set_next(next, ProgramType::INGRESS);
+      next = cubes_[i]->get_index(ProgramType::INGRESS);
+    }
+  }
+
+  set_next(next, ProgramType::INGRESS);
+
+  // Link cubes of egress chain
+  // iface <- cubes[0] <- ... <- cubes[N-1] <- (peer_egress) <- peer/stack
+
+  bool first = true;
+  next = redir_index_;
+  for (int i = 0; i < cubes_.size(); i++) {
+    if (cubes_[i]->get_index(ProgramType::EGRESS)) {
+      if (first) {
+        // The last TC egress program (first in the list) must pass the packet
+        // (it is executed in the TC_EGRESS hook) (lower 16 bits)
+        // The last XDP egress program (first in the list) must use the XDP
+        // redir program (higer 16 bits)
+        cubes_[i]->set_next(redir_index_ << 16 | 0xffff, ProgramType::EGRESS);
+        first = false;
+
+      } else {
+        cubes_[i]->set_next(next, ProgramType::EGRESS);
+      }
+
+      next = cubes_[i]->get_index(ProgramType::EGRESS);
+    }
+  }
+
+  // If the peer cube has an egress program add it at the beginning of the chain
+  Port *peer_port = dynamic_cast<Port *>(peer_);
+  if (peer_port && peer_port->get_egress_index()) {
+    if (first) {
+      // If there are not transparent egress programs set two different next
+      // indexes for the TC and the XDP version of the egress program of the
+      // peer cube:
+      // TC: pass the packet (0xffff), lower 16 bits
+      // XDP: index of the XDP redir program, higher 16 bits
+      peer_port->set_parent_egress_next(redir_index_ << 16 | 0xffff);
+      first = false;
+    
+    } else {
+      peer_port->set_parent_egress_next(next);
+    }
+
+    next = peer_port->get_egress_index();
+  }
+
+  if (first) {
+    // There aren't egress cubes
+    // The TC egress program must pass the packet
+    set_next(0xffff, ProgramType::EGRESS);
+  
+  } else {
+    set_next(next, ProgramType::EGRESS);
+  }
+
+  index_ = next;
+  if (peer_) {
+    peer_->set_next_index(next);
+  }
 }
 
 std::string ExtIfaceXDP::get_ingress_code() const {

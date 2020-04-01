@@ -51,10 +51,8 @@ namespace polycubed {
 class BaseCube : virtual public BaseCubeIface {
  public:
   explicit BaseCube(const std::string &name, const std::string &service_name,
-                    const std::string &master_code,
-                    PatchPanel &patch_panel_ingress_,
-                    PatchPanel &patch_panel_egress_, LogLevel level,
-                    CubeType type);
+                    const std::string &master_code, PatchPanel &patch_panel,
+                    LogLevel level, CubeType type);
   virtual ~BaseCube();
 
   // It is not possible to copy nor assign nor move an cube.
@@ -62,9 +60,9 @@ class BaseCube : virtual public BaseCubeIface {
   BaseCube &operator=(const BaseCube &) = delete;
   BaseCube(BaseCube &&a) = delete;
 
-  void reload(const std::string &code, int index, ProgramType type);
-  int add_program(const std::string &code, int index, ProgramType type);
-  void del_program(int index, ProgramType type);
+  virtual void reload(const std::string &code, int index, ProgramType type);
+  virtual int add_program(const std::string &code, int index, ProgramType type);
+  virtual void del_program(int index, ProgramType type);
 
   static std::string get_wrapper_code();
 
@@ -93,7 +91,7 @@ class BaseCube : virtual public BaseCubeIface {
   static_assert(_POLYCUBE_MAX_PORTS <= 0xffff,
           "_POLYCUBE_MAX_PORTS shouldn't be great than 0xffff, "
           "id 0xffff was used by iptables wild card index");
-  static std::vector<std::string> cflags;
+  static std::vector<std::string> cflags_;
 
   virtual int load(ebpf::BPF &bpf, ProgramType type) = 0;
   virtual void unload(ebpf::BPF &bpf, ProgramType type) = 0;
@@ -104,10 +102,30 @@ class BaseCube : virtual public BaseCubeIface {
             const std::vector<std::string> &egress_code);
   void uninit();
 
-  void reload_all();
+  virtual void reload_all();
 
-  PatchPanel &patch_panel_ingress_;
-  PatchPanel &patch_panel_egress_;
+  void do_reload(
+    const std::string &code, int index, ProgramType type,
+    std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+        &programs,
+    std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+    std::unique_ptr<ebpf::BPFProgTable> &programs_table,
+    uint16_t first_program_index);
+  int do_add_program(
+      const std::string &code, int index, ProgramType type,
+      std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+          &programs,
+      std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+      std::unique_ptr<ebpf::BPFProgTable> &programs_table,
+      uint16_t *first_program_index);
+  void do_del_program(
+    int index, ProgramType type,
+    std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+        &programs,
+    std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+    std::unique_ptr<ebpf::BPFProgTable> &programs_table);
+
+  PatchPanel &patch_panel_;
 
   CubeType type_;
   std::string name_;
@@ -115,8 +133,6 @@ class BaseCube : virtual public BaseCubeIface {
   Guid uuid_;
   uint32_t id_;
 
-  int ingress_fd_;
-  int egress_fd_;
   uint16_t ingress_index_;
   uint16_t egress_index_;
 
@@ -142,7 +158,6 @@ class BaseCube : virtual public BaseCubeIface {
   static const std::string BASECUBE_MASTER_CODE;
   static const std::string BASECUBE_WRAPPER;
 
-  void do_reload(const std::string &code, int index, ProgramType type);
   static IDGenerator id_generator_;
 
   polycube::service::set_log_level_cb log_level_cb_;

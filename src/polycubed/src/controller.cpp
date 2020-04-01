@@ -34,6 +34,10 @@ using namespace Tins;
 namespace polycube {
 namespace polycubed {
 
+std::map<int, const packet_in_cb &> Controller::cbs_;
+
+std::mutex Controller::cbs_mutex_;
+
 // Sends the packet to the controller
 const std::string CTRL_TC_TX = R"(
 struct metadata {
@@ -286,9 +290,14 @@ int controller_module_rx(struct xdp_md *ctx) {
 
   port_md.update(&key, &xdp_md);
 
-  xdp_nodes.call(ctx, xdp_md.module_index);
-  pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: 'xdp_nodes.call'. Module is: %d", xdp_md.module_index);
-  return XDP_DROP;
+  if (xdp_md.module_index == 0xffff) {
+    pcn_log(ctx, LOG_INFO, "[xdp-decapsulator]: NH is stack");
+    return XDP_PASS;
+  } else {
+    xdp_nodes.call(ctx, xdp_md.module_index);
+    pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: 'xdp_nodes.call'. Module is: %d", xdp_md.module_index);
+    return XDP_DROP;
+  }
 }
 )";
 
@@ -321,7 +330,7 @@ Controller &Controller::get_tc_instance() {
   if (!initialized) {
     Netlink::getInstance().attach_to_tc(instance.iface_->getName(),
                                         instance.fd_rx_);
-    PatchPanel::get_tc_instance().add(instance,
+    PatchPanel::get_tc_instance().add(instance.get_fd(),
                                       PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
@@ -337,7 +346,7 @@ Controller &Controller::get_xdp_instance() {
     attach_flags |= 2 << 0;
     Netlink::getInstance().attach_to_xdp(instance.iface_->getName(),
                                          instance.fd_rx_, attach_flags);
-    PatchPanel::get_xdp_instance().add(instance,
+    PatchPanel::get_xdp_instance().add(instance.get_fd(),
                                        PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }

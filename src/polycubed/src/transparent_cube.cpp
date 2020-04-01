@@ -30,12 +30,10 @@ namespace polycubed {
 
 TransparentCube::TransparentCube(const std::string &name,
                                  const std::string &service_name,
-                                 PatchPanel &patch_panel_ingress_,
-                                 PatchPanel &patch_panel_egress_,
-                                 LogLevel level, CubeType type,
+                                 PatchPanel &patch_panel, LogLevel level,
+                                 CubeType type,
                                  const service::attach_cb &attach)
-    : BaseCube(name, service_name, "", patch_panel_ingress_,
-               patch_panel_egress_, level, type),
+    : BaseCube(name, service_name, "", patch_panel, level, type),
       ingress_next_(0),
       egress_next_(0),
       attach_(attach),
@@ -54,7 +52,7 @@ std::string TransparentCube::get_wrapper_code() {
   return BaseCube::get_wrapper_code();
 }
 
-void TransparentCube::set_next(uint16_t next, ProgramType type) {
+void TransparentCube::set_next(uint32_t next, ProgramType type) {
   switch (type) {
   case ProgramType::INGRESS:
     if (ingress_next_ == next)
@@ -119,17 +117,28 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
         port = parent_port->index();
         break;
       case service::Direction::EGRESS:
-        // packet is going, set port to next one
         if (parent_port->peer_port_) {
-          port = parent_port->peer_port_->get_port_id();
+          if (dynamic_cast<ExtIface *>(parent_port->peer_port_)) {
+            // If peer is an interface use parent port anyway, so it can be used
+            // by the possible egress program of the parent
+            port = parent_port->index();
+
+          } else {
+            // packet is going, set port to next one
+            port = parent_port->peer_port_->get_port_id();
+          }
         }
         break;
       }
   } else if (parent_iface = dynamic_cast<ExtIface *>(parent_)) {
+    if (parent_iface->get_peer_iface()) {
+      port = parent_iface->get_peer_iface()->get_port_id();
+    } else {
       port = parent_iface->get_port_id();
+    }
   } else {
-      logger->error("cube doesn't have a valid parent.");
-      return;
+    logger->error("cube doesn't have a valid parent.");
+    return;
   }
 
   // calculate module index
@@ -145,7 +154,12 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
     if (recirculate) {
       module = egress_index_;  // myself in egress
     } else {
-      module = egress_next_;
+      if (get_type() != CubeType::TC && egress_next_ >> 16 != 0) {
+        // Use the override egress next for XDP cubes if present
+        module = egress_next_ >> 16;
+      } else {
+        module = egress_next_;
+      }
     }
     break;
   }

@@ -45,7 +45,7 @@ class TransparentCubeTC : virtual public TransparentCube {
   virtual ~TransparentCubeTC();
 
  protected:
-  static void do_compile(int module_index, uint32_t next, ProgramType type,
+  static void do_compile(int module_index, uint16_t next, ProgramType type,
                          LogLevel level_, ebpf::BPF &bpf,
                          const std::string &code, int index);
   static std::string get_wrapper_code();

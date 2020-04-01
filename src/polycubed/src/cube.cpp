@@ -29,15 +29,20 @@ namespace polycube {
 namespace polycubed {
 
 Cube::Cube(const std::string &name, const std::string &service_name,
-           PatchPanel &patch_panel_ingress, PatchPanel &patch_panel_egress,
-           LogLevel level, CubeType type, bool shadow, bool span)
-    : BaseCube(name, service_name, MASTER_CODE, patch_panel_ingress,
-               patch_panel_egress, level, type), shadow_(shadow), span_(span) {
+           PatchPanel &patch_panel, LogLevel level, CubeType type, bool shadow,
+           bool span)
+    : BaseCube(name, service_name, MASTER_CODE, patch_panel, level, type),
+      shadow_(shadow),
+      span_(span) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   auto forward_ = master_program_->get_array_table<uint32_t>("forward_chain_");
   forward_chain_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
       new ebpf::BPFArrayTable<uint32_t>(forward_));
+
+  auto egress_next = master_program_->get_array_table<uint32_t>("egress_next");
+  egress_next_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
+      new ebpf::BPFArrayTable<uint32_t>(egress_next));
 
   // add free ports
   for (uint16_t i = 0; i < _POLYCUBE_MAX_PORTS; i++)
@@ -279,6 +284,10 @@ void Cube::update_forwarding_table(int index, int value) {
     forward_chain_->update_value(index, value);
 }
 
+void Cube::set_egress_next(int port, uint32_t index) {
+  egress_next_->update_value(port, index);
+}
+
 const bool Cube::get_shadow() const {
   return shadow_;
 }
@@ -308,10 +317,19 @@ const std::string Cube::get_veth_name_from_index(const int ifindex) {
 const std::string Cube::MASTER_CODE = R"(
 // table used to save ports to endpoint relation
 BPF_TABLE_SHARED("array", int, u32, forward_chain_, _POLYCUBE_MAX_PORTS);
+
+// Table used to store, for every port, the potential index of the program to
+// call after the egress program.
+// The higher 16 bits are reserved for XDP programs, if they are set they
+// override the value of the lower 16 bits.
+BPF_TABLE_SHARED("array", int, u32, egress_next, _POLYCUBE_MAX_PORTS);
 )";
 
 const std::string Cube::CUBE_WRAPPER = R"(
 BPF_TABLE("extern", int, u32, forward_chain_, _POLYCUBE_MAX_PORTS);
+#if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
+BPF_TABLE("extern", int, u32, egress_next, _POLYCUBE_MAX_PORTS);
+#endif
 )";
 
 }  // namespace polycubed
