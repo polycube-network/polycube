@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// WARNING: log messages from this program are used by programs_chain tests,
+//          changing them may cause those tests to fail
+
 /*
  * This file contains the eBPF code that implements the service datapath.
  * Of course it is no required to have this into a separated file, however
