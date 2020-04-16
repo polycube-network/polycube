@@ -15,6 +15,7 @@ This guide represents an initial starting point for developers that want to impl
    debugging
    profiler
    hints
+   hateoas
 
 
 
