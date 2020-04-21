@@ -43,7 +43,7 @@ void Hateoas::HateoasSupport(const Request &request,
     std::string host_and_port("//" + host + ":" + port);
     auto js_hateoas = Hateoas::writeSelfRecord(host_and_port, self_endpoint);
 
-    /* here all cildren resources are processed in
+    /* here all children resources are processed in
      * order to extract their endpoints */
     try {
         for (auto child : children) {
@@ -97,7 +97,6 @@ void Hateoas::HateoasSupport_multiple(const Request &request,
             lr_endpoint.end(), delim);
 
     // writing "self" record
-    auto hateoas_record = record;
     std::string host_and_port("//" + host + ":" + port);
     auto js_hateoas = Hateoas::writeSelfRecord(host_and_port, self_endpoint);
     std::string base(host_and_port + self_endpoint);

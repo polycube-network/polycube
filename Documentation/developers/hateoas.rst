@@ -11,15 +11,15 @@ From the :doc:`polycubed<../polycubed/polycubed>` root you can explore the servi
 What can Hateoas be used for?
 -----------------------------
 
-The Hateoas standard can be used to explore endpoints that can be used in polycube.
-In this way a client will be able to access polycube resources and thus cubes independently.
+The Hateoas standard can be used to explore endpoints that can be used in Polycube.
+In this way a client will be able to access Polycube resources and thus cubes independently.
 This feature can also be useful in case you want to implement an alternative client to :doc:`polycubectl<../polycubectl/polycubectl>`.
 
 
 How to use Hateoas
 ------------------
 This feature can be used by observing the json of :doc:`polycubed<../polycubed/polycubed>` responses.
-You can use an http client (e.g. Postman) to execute requests to the polycube daemon.
+You can use an http client (e.g. Postman) to execute requests to the Polycube daemon.
 
 
 
@@ -123,3 +123,23 @@ As we can see from this answer json, the "_links" section contains all the endpo
 that the client can use to contact :doc:`polycubed<../polycubed/polycubed>` starting from the service name (sb1).
 
 In this way a client can explore the service level by level.
+
+
+
+How to know endpoints without hateoas?
+--------------------------------------
+Well, there is an alternative (harder) way to know the endpoints of a cube that can be used in a Polycube.
+The swaggerfile must be produced from the yang datamodel of a service (option **-s** in swagger-codegen_).
+
+To do this you have to provide the datamodel of a service as input to the swagger codegen (**-i** option).
+The swaggerfile is a large and not very understandable json.
+How can we study it in order to know APIs?
+We have to use the swagger-editor_ that can accept the swaggerfile generated and
+provides a more user friendly way to observe api's of a service.
+Swagger editor allows you to view endpoints and verbs that can be used to interact with a Polycube.
+
+Note: using this method you will only know the endpoints of a cube and not all the endpoints offered by :doc:`polycubed<../polycubed/polycubed>`.
+
+
+.. _swagger-codegen: https://github.com/polycube-network/polycube-codegen#full-installation-from-sources
+.. _swagger-editor: https://editor.swagger.io/

@@ -40,7 +40,7 @@ std::string RestServer::blacklist_cert_path;
 const std::string RestServer::base = "/polycube/v1/";
 
 // start http server for Management APIs
-// Incapsultate a core object // TODO probably there are best ways...
+// Encapsulate a core object // TODO probably there are best ways...
 RestServer::RestServer(Pistache::Address addr, PolycubedCore &core)
     : core(core),
       host(addr.host()),
