@@ -21,42 +21,61 @@ module dynmon {
     description
       "YANG data model for the Polycube Dynamic Traffic Monitor transparent service";
     polycube-base:service-description "Dynamic Traffic Monitor transparent service";
-    polycube-base:service-version "1.0";
+    polycube-base:service-version "1.1";
     polycube-base:service-name "dynmon";
     polycube-base:service-min-kernel-version "4.14.0";
 
     uses polycube-transparent-base:transparent-base-yang-module;
 
-    container dataplane {
-        description
-          "Running dataplane";
+    grouping path-config {
         leaf name {
             type string;
             description
-              "eBPF program name";
-            polycube-base:init-only-config;
+              "Configuration name";
         }
         leaf code {
+            mandatory true;
             type string;
             description
-              "eBPF source code";
+              "Ingress eBPF source code";
             polycube-base:init-only-config;
         }
-        list metrics {
+        list metric-configs {
             key "name";
             description
               "Exported Metric";
             polycube-base:init-only-config;
             leaf name {
                 type string;
+                mandatory true;
                 description
                   "Name of the metric (e.g., number of HTTP requests)";
                 polycube-base:init-only-config;
             }
             leaf map-name {
                 type string;
+                mandatory true;
                 description
-                  "Corrisponding eBPF map name";
+                  "Corresponding eBPF map name";
+                polycube-base:init-only-config;
+            }
+            container extraction-options {
+                description
+                  "Metric extraction options";
+                leaf empty-on-read {
+                    type boolean;
+                    default false;
+                    description
+                      "When true, map entries are deleted after being extracted";
+                    polycube-base:init-only-config;
+                }
+                leaf swap-on-read {
+                    type boolean;
+                    default false;
+                    description
+                      "When true, the map is swapped with a new one before reading its content to provide thread safety and atomicity on read/write operations";
+                    polycube-base:init-only-config;
+                }
                 polycube-base:init-only-config;
             }
             container open-metrics-metadata {
@@ -69,6 +88,7 @@ module dynmon {
                     type string;
                     description
                       "Metric description";
+                    mandatory true;
                     polycube-base:init-only-config;
                 }
                 leaf type {
@@ -81,57 +101,110 @@ module dynmon {
                     }
                     description
                       "Metric type";
+                    mandatory true;
                     polycube-base:init-only-config;
                 }
                 list labels {
                     key "name";
                     description
                       "Label attached to the metric";
+                    min-elements 0;
                     polycube-base:init-only-config;
                     leaf name {
                         type string;
                         description
                           "Name of the label (e.g., 'method')";
+                        mandatory true;
                         polycube-base:init-only-config;
                     }
                     leaf value {
                         type string;
                         description
                           "Label value (e.g., 'POST')";
+                        mandatory true;
                         polycube-base:init-only-config;
                     }
                 }
             }
         }
     }
-    list metrics {
-        config false;
-        key "name";
+
+    container dataplane-config {
         description
-          "Collected metrics";
-        leaf name {
-            config false;
-            type string;
+          "Dataplane configuration";
+        container ingress-path {
+            presence ingress;
             description
-              "Name of the metric (e.g, number of HTTP requests)";
+              "Dataplane configuration for the INGRESS path";
+            uses path-config;
         }
-        leaf value {
-            config false;
-            type string;
+        container egress-path {
+            presence egress;
             description
-              "Value of the metric";
-        }
-        leaf timestamp {
-            config false;
-            type int64;
-            description
-              "Timestamp";
+              "Dataplane configuration for the EGRESS path";
+            uses path-config;
         }
     }
+
+    container metrics {
+        config false;
+        description
+          "Collected metrics in JSON format";
+        list ingress-metrics {
+            config false;
+            key "name";
+            description
+              "Collected metrics from the ingress dataplane path";
+            leaf name {
+                config false;
+                type string;
+                description
+                  "Name of the metric (e.g, number of HTTP requests)";
+            }
+            leaf value {
+                config false;
+                type string;
+                description
+                  "Value of the metric";
+            }
+            leaf timestamp {
+                config false;
+                type int64;
+                description
+                  "Timestamp";
+            }
+        }
+
+        list egress-metrics {
+            config false;
+            key "name";
+            description
+              "Collected metrics from the egress dataplane path";
+            leaf name {
+                config false;
+                type string;
+                description
+                  "Name of the metric (e.g, number of HTTP requests)";
+            }
+            leaf value {
+                config false;
+                type string;
+                description
+                  "Value of the metric";
+            }
+            leaf timestamp {
+                config false;
+                type int64;
+                description
+                  "Timestamp";
+            }
+        }
+    }
+
     leaf open-metrics {
         config false;
         type string;
         description
-          "Collected metrics in OpenMetrics Format";
+          "Collected metrics in OpenMetrics format of both ingress and egress paths";
     }
 }
