@@ -31,8 +31,7 @@ TransparentCubeTC::TransparentCubeTC(
     const std::vector<std::string> &egress_code, LogLevel level,
     const service::attach_cb &attach)
     : TransparentCube(name, service_name, PatchPanel::get_tc_instance(),
-                      PatchPanel::get_tc_instance(), level, CubeType::TC,
-                      attach) {
+                      level, CubeType::TC, attach) {
   TransparentCube::init(ingress_code, egress_code);
 }
 
@@ -46,22 +45,22 @@ std::string TransparentCubeTC::get_wrapper_code() {
          CubeTC::CUBETC_HELPERS + TRANSPARENTCUBETC_WRAPPER;
 }
 
-void TransparentCubeTC::do_compile(int id, uint32_t next, ProgramType type,
+void TransparentCubeTC::do_compile(int id, uint16_t next, ProgramType type,
                                    LogLevel level_, ebpf::BPF &bpf,
                                    const std::string &code, int index) {
   std::string all_code(get_wrapper_code() +
                        DatapathLog::get_instance().parse_log(code));
 
-  std::vector<std::string> cflags_(cflags);
-  cflags_.push_back("-DCUBE_ID=" + std::to_string(id));
-  cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
-  cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
-  cflags_.push_back(std::string("-DNEXT=" + std::to_string(next)));
-  cflags_.push_back(
-      std::string("-DTYPE=" + std::to_string(static_cast<int>(type))));
+  std::vector<std::string> cflags(cflags_);
+  cflags.push_back("-DCUBE_ID=" + std::to_string(id));
+  cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
+  cflags.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  cflags.push_back(std::string("-DNEXT=" + std::to_string(next)));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
+                   std::to_string(static_cast<int>(type))));
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
-  auto init_res = bpf.init(all_code, cflags_);
+  auto init_res = bpf.init(all_code, cflags);
   if (init_res.code() != 0) {
     throw BPFError("failed to init ebpf program: " + init_res.msg());
   }
@@ -105,7 +104,8 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
     case RX_DROP:
       return TC_ACT_SHOT;
     case RX_CONTROLLER:
-      skb->cb[0] = (skb->cb[0] & 0x8000) | CUBE_ID | TYPE << 16;
+      skb->cb[0] =
+          (skb->cb[0] & 0x8000) | CUBE_ID | POLYCUBE_PROGRAM_TYPE << 16;
       return to_controller(skb, md.reason);
     case RX_OK:
 #if NEXT == 0xffff

@@ -98,7 +98,7 @@ class CubeIface : virtual public BaseCubeIface {
 
 class TransparentCubeIface : virtual public BaseCubeIface {
  public:
-  virtual void set_next(uint16_t next, ProgramType type) = 0;
+  virtual void set_next(uint32_t next, ProgramType type) = 0;
   virtual void set_parameter(const std::string &parameter,
                              const std::string &value) = 0;
   virtual void send_packet_out(const std::vector<uint8_t> &packet, Direction direction,

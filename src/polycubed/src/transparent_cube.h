@@ -30,12 +30,15 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
  public:
   explicit TransparentCube(const std::string &name,
                            const std::string &service_name,
-                           PatchPanel &patch_panel_ingress_,
-                           PatchPanel &patch_panel_egress_, LogLevel level,
+                           PatchPanel &patch_panel, LogLevel level,
                            CubeType type, const service::attach_cb &attach);
   virtual ~TransparentCube();
 
-  void set_next(uint16_t next, ProgramType type);
+  // Sets the index of the next program to call after the program of the given
+  // direction is executed.
+  // The higher 16 bits are reserved for XDP programs, if they are set they
+  // override the value of the lower 16 bits.
+  void set_next(uint32_t next, ProgramType type);
   uint16_t get_next(ProgramType type);
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
@@ -56,8 +59,8 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   service::attach_cb attach_;
   PeerIface *parent_;
   static std::string get_wrapper_code();
-  uint16_t ingress_next_;
-  uint16_t egress_next_;
+  uint32_t ingress_next_;
+  uint32_t egress_next_;
 
   std::unordered_map<std::string, ParameterEventCallback> subscription_list;
   std::mutex subscription_list_mutex;

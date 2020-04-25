@@ -25,22 +25,33 @@ const std::string PatchPanel::PATCHPANEL_CODE = R"(
 BPF_TABLE_PUBLIC("prog", int, int, _MAP_NAME, _POLYCUBE_MAX_NODES);
 )";
 
+std::set<uint16_t> PatchPanel::node_ids_ = std::set<uint16_t>();
+
+std::array<bool, PatchPanel::_POLYCUBE_MAX_NODES>
+    PatchPanel::nodes_present_tc_ = {false};
+
+std::array<bool, PatchPanel::_POLYCUBE_MAX_NODES>
+    PatchPanel::nodes_present_xdp_ = {false};
+
 PatchPanel &PatchPanel::get_tc_instance() {
-  static PatchPanel tc_instance("nodes", PatchPanel::_POLYCUBE_MAX_NODES);
+  static PatchPanel tc_instance("nodes", nodes_present_tc_);
   return tc_instance;
 }
 
 PatchPanel &PatchPanel::get_xdp_instance() {
-  static PatchPanel xdp_instance("xdp_nodes", PatchPanel::_POLYCUBE_MAX_NODES);
+  static PatchPanel xdp_instance("xdp_nodes", nodes_present_xdp_);
   return xdp_instance;
 }
 
-PatchPanel::PatchPanel(const std::string &map_name, int max_nodes)
-    : max_nodes_(max_nodes), logger(spdlog::get("polycubed")) {
+PatchPanel::PatchPanel(const std::string &map_name,
+                       std::array<bool, _POLYCUBE_MAX_NODES> &nodes_present)
+    : logger(spdlog::get("polycubed")), nodes_present_(nodes_present) {
+  static bool initialized = false;
+
   std::vector<std::string> flags;
   // flags.push_back(std::string("-DMAP_NAME=") + map_name);
   flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
-                  std::to_string(max_nodes_));
+                  std::to_string(_POLYCUBE_MAX_NODES));
   std::string code(PATCHPANEL_CODE);
   code.replace(code.find("_MAP_NAME"), 9, map_name);
 
@@ -50,8 +61,13 @@ PatchPanel::PatchPanel(const std::string &map_name, int max_nodes)
     throw std::runtime_error("Error creating patch panel");
   }
 
-  for (uint16_t i = 1; i < max_nodes_; i++)
-    node_ids_.insert(i);
+  if (!initialized) {
+    for (uint16_t i = 1; i < _POLYCUBE_MAX_NODES; i++) {
+      node_ids_.insert(i);
+    }
+
+    initialized = true;
+  }
 
   // TODO: is this code valid?
   // (implicit copy constructor should be ok for this case)
@@ -61,55 +77,35 @@ PatchPanel::PatchPanel(const std::string &map_name, int max_nodes)
 
 PatchPanel::~PatchPanel() {}
 
-void PatchPanel::add(Node &n) {
-  // FIXME: what happens if all ports are busy?
-  int p = *node_ids_.begin();
-  node_ids_.erase(p);
-  nodes_->update_value(p, n.get_fd());
-  n.set_index(p);
-}
-
-void PatchPanel::add(Node &n, uint16_t index) {
-  if (node_ids_.count(index) == 0) {
-    logger->error("index '{0}' is busy in patch panel", index);
-    throw std::runtime_error("Index is busy");
-  }
-
-  node_ids_.erase(index);
-  nodes_->update_value(index, n.get_fd());
-  n.set_index(index);
-}
-
 uint16_t PatchPanel::add(int fd) {
   int p = *node_ids_.begin();
   node_ids_.erase(p);
   nodes_->update_value(p, fd);
+  nodes_present_[p] = true;
   return p;
 }
 
-void PatchPanel::remove(Node &n) {
-  int index = n.get_index();
-  node_ids_.insert(index);
-  nodes_->remove_value(index);
+void PatchPanel::add(int fd, uint16_t index) {
+  if (nodes_present_[index]) {
+    logger->error("Index '{0}' is busy in patch panel", index);
+    throw std::runtime_error("Index is busy");
+  }
+
+  node_ids_.erase(index);
+  nodes_->update_value(index, fd);
+  nodes_present_[index] = true;
 }
 
 void PatchPanel::remove(uint16_t index) {
-  node_ids_.insert(index);
   nodes_->remove_value(index);
-}
-
-void PatchPanel::update(Node &n) {
-  if (node_ids_.count(n.get_index()) != 0) {
-    logger->error("index '{0}' is not registered", n.get_index());
-    throw std::runtime_error("Index is not registered");
-  }
-
-  nodes_->update_value(n.get_index(), n.get_fd());
+  nodes_present_tc_[index] = false;
+  nodes_present_xdp_[index] = false;
+  node_ids_.insert(index);
 }
 
 void PatchPanel::update(uint16_t index, int fd) {
-  if (node_ids_.count(index) != 0) {
-    logger->error("index '{0}' is not registered", index);
+  if (!nodes_present_[index]) {
+    logger->error("Index '{0}' is not registered", index);
     throw std::runtime_error("Index is not registered");
   }
 

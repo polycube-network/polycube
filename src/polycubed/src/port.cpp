@@ -95,6 +95,11 @@ PeerIface *Port::get_peer_iface() {
   return peer_port_;
 }
 
+void Port::set_parent_egress_next(uint32_t index) {
+  Cube &parent = dynamic_cast<Cube &>(parent_);
+  parent.set_egress_next(get_port_id(), index);
+}
+
 const Guid &Port::uuid() const {
   return uuid_;
 }
@@ -109,7 +114,19 @@ uint16_t Port::get_egress_index() const {
 }
 
 void Port::update_parent_fwd_table(uint16_t next) {
-  uint16_t id = peer_port_ ? peer_port_->get_port_id() : 0;
+  uint16_t id;
+
+  if (dynamic_cast<Port *>(peer_port_)) {
+    // If the peer is a port set the id of that port, it can be used by the next
+    // cube to know the ingress port
+    id = peer_port_->get_port_id();
+
+  } else {
+    // If the peer is a interface preserve the id of this port, it can be used
+    // by the optional egress program to know the egress port
+    id = get_port_id();
+  }
+
   parent_.update_forwarding_table(index(), next | id << 16);
 }
 
@@ -218,8 +235,16 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
     module = get_parent_index();
     port = index();
   } else if (peer_port_) {
-    port = peer_port_->get_port_id();
     module = peer_port_->get_index();
+    if (dynamic_cast<ExtIface *>(peer_port_)) {
+      // If peer is an interface use this port anyway, so it can be used by the
+      // possible egress program of the parent
+      port = get_port_id();
+
+    } else {
+      // packet is going, set port to next one
+      port = peer_port_->get_port_id();
+    }
   }
   c.send_packet_to_cube(module, port, packet);
 }

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "cube.h"
-#include "node.h"
 #include "polycube/services/guid.h"
 
 #include <api/BPF.h>
@@ -52,6 +51,11 @@ class CubeXDP : public Cube {
   virtual ~CubeXDP();
   int get_attach_flags() const;
 
+  void reload(const std::string &code, int index, ProgramType type) override;
+  int add_program(const std::string &code, int index,
+                  ProgramType type) override;
+  void del_program(int index, ProgramType type) override;
+
  protected:
   static std::string get_wrapper_code();
 
@@ -60,12 +64,17 @@ class CubeXDP : public Cube {
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
 
+  void reload_all() override;
+
   static void do_unload(ebpf::BPF &bpf);
   static int do_load(ebpf::BPF &bpf);
-  void compileIngress(ebpf::BPF &bpf, const std::string &code);
-  void compileEgress(ebpf::BPF &bpf, const std::string &code);
+  void compileTC(ebpf::BPF &bpf, const std::string &code);
 
   int attach_flags_;
+
+  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+      egress_programs_tc_;
+  std::unique_ptr<ebpf::BPFProgTable> egress_programs_table_tc_;
 
  private:
   static const std::string CUBEXDP_COMMON_WRAPPER;
