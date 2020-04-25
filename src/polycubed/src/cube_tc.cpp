@@ -198,13 +198,16 @@ BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
 BPF_PERF_OUTPUT(span_slowpath);
 #endif
 
-static __always_inline
-int to_controller(struct CTXTYPE *skb, u16 reason) {
-  skb->cb[1] = reason;
-  nodes.call(skb, CONTROLLER_MODULE_INDEX);
-  //bpf_trace_printk("to controller miss\n");
-  return TC_ACT_OK;
-}
+struct controller_table_t {
+  int key;
+  u32 leaf;
+  /* map.perf_submit(ctx, data, data_size) */
+  int (*perf_submit) (void *, void *, u32);
+  int (*perf_submit_skb) (void *, u32, void *, u32);
+  u32 data[0];
+};
+__attribute__((section("maps/extern")))
+struct controller_table_t controller_tc;
 
 #if defined(SHADOW) && defined(SPAN)
 static __always_inline
@@ -220,32 +223,13 @@ int pcn_pkt_drop(struct CTXTYPE *skb, struct pkt_metadata *md) {
 }
 
 static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
-                       u16 reason) {
-  md->reason = reason;
-  return RX_CONTROLLER;
-}
-
-static __always_inline
-int pcn_pkt_controller_with_metadata_stack(struct CTXTYPE *skb,
-                                           struct pkt_metadata *md,
-                                           u16 reason,
-                                           u32 metadata[3]) {
-  skb->cb[0] |= 0x8000;
-  skb->cb[2] = metadata[0];
-  skb->cb[3] = metadata[1];
-  skb->cb[4] = metadata[2];
-  return pcn_pkt_controller(skb, md, reason);
-}
-
-static __always_inline
 int pcn_pkt_controller_with_metadata(struct CTXTYPE *skb,
                                      struct pkt_metadata *md,
                                      u16 reason,
                                      u32 metadata[3]) {
-  skb->cb[2] = metadata[0];
-  skb->cb[3] = metadata[1];
-  skb->cb[4] = metadata[2];
+  md->md[0] = metadata[0];
+  md->md[1] = metadata[1];
+  md->md[2] = metadata[2];
   return pcn_pkt_controller(skb, md, reason);
 }
 
@@ -377,9 +361,6 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
       return forward(skb, md.reason);
     case RX_DROP:
       return TC_ACT_SHOT;
-    case RX_CONTROLLER:
-      return to_controller(skb, md.reason);
-
     case RX_OK: {
 #if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
       // If there is another egress program call it, otherwise let the packet
@@ -430,6 +411,24 @@ int pcn_pkt_redirect_ns(struct CTXTYPE *skb,
   return RX_REDIRECT;
 #endif
   return TC_ACT_SHOT;
+}
+
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
+                       u16 reason) {
+  // If the packet is tagged add the tagged in the packet itself, otherwise it
+  // will be lost
+  if (skb->vlan_present) {
+    volatile __u32 vlan_tci = skb->vlan_tci;
+    volatile __u32 vlan_proto = skb->vlan_proto;
+    bpf_skb_vlan_push(skb, vlan_proto, vlan_tci);
+  }
+
+  md->cube_id = CUBE_ID;
+  md->packet_len = skb->len;
+  md->reason = reason;
+
+  return controller_tc.perf_submit_skb(skb, skb->len, md, sizeof(*md));
 }
 )";
 

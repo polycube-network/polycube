@@ -38,65 +38,9 @@ std::map<int, const packet_in_cb &> Controller::cbs_;
 
 std::mutex Controller::cbs_mutex_;
 
-// Sends the packet to the controller
-const std::string CTRL_TC_TX = R"(
-struct metadata {
-  u16 cube_id;
-  u16 port_id;
-  u32 packet_len;
-  u32 traffic_class;
-  u16 reason;
-  u32 md[3];  // generic metadata
-} __attribute__((packed));
-
-BPF_PERF_OUTPUT(controller);
-
-int controller_module_tx(struct __sk_buff *ctx) {
-  pcn_log(ctx, LOG_TRACE, "[tc-encapsulator]: to controller");
-  // If the packet is tagged add the tagged in the packet itself, otherwise it
-  // will be lost
-  if (ctx->vlan_present) {
-    volatile __u32 vlan_tci = ctx->vlan_tci;
-    volatile __u32 vlan_proto = ctx->vlan_proto;
-    bpf_skb_vlan_push(ctx, vlan_proto, vlan_tci);
-  }
-
-  volatile u32 x; // volatile to avoid verifier error on kernels < 4.10
-  x = ctx->cb[0];
-  u16 in_port = x >> 16;
-  u16 module_index = x & 0x7fff;
-  u16 pass_to_stack = x & 0x8000;
-
-  x = ctx->cb[1];
-  u16 reason = x & 0xffff;
-
-  struct metadata md = {0};
-  md.cube_id = module_index;
-  md.port_id = in_port;
-  md.packet_len = ctx->len;
-  md.traffic_class = ctx->mark;
-  md.reason = reason;
-
-  x = ctx->cb[2];
-  md.md[0] = x;
-  x = ctx->cb[3];
-  md.md[1] = x;
-  x = ctx->cb[4];
-  md.md[2] = x;
-
-  int r = controller.perf_submit_skb(ctx, ctx->len, &md, sizeof(md));
-  if (r != 0) {
-    pcn_log(ctx, LOG_ERR, "[tc-encapsulator]: perf_submit_skb error: %d", r);
-  }
-  if (pass_to_stack) {
-    pcn_log(ctx, LOG_DEBUG, "[tc-encapsulator]: passing to stack");
-    return 0;
-  }
-  return 7;
-ERROR:
-  pcn_log(ctx, LOG_ERR, "[tc-encapsulator]: unknown error");
-  return 7;	//TODO: check code
-}
+// Perf buffer used to send packets to the controller
+const std::string CTRL_PERF_BUFFER = R"(
+BPF_TABLE_PUBLIC("perf_output", int, __u32, _BUFFER_NAME, 0);
 )";
 
 // Receives packet from controller and forwards it to the Cube
@@ -168,66 +112,6 @@ int controller_module_rx(struct __sk_buff *ctx) {
 }
 )";
 
-const std::string CTRL_XDP_TX = R"(
-#include <bcc/helpers.h>
-#include <bcc/proto.h>
-
-#include <uapi/linux/bpf.h>
-#include <uapi/linux/if_ether.h>
-
-struct pkt_metadata {
-  u16 cube_id;
-  u16 in_port;
-  u32 packet_len;
-  u32 traffic_class;
-
-  // used to send data to controller
-  u16 reason;
-  u32 md[3];  // generic metadata
-} __attribute__((packed));
-
-BPF_PERF_OUTPUT(controller);
-BPF_TABLE_PUBLIC("percpu_array", u32, struct pkt_metadata, port_md, 1);
-
-int controller_module_tx(struct xdp_md *ctx) {
-  pcn_log(ctx, LOG_TRACE, "[xdp-encapsulator]: to controller");
-  void* data_end = (void*)(long)ctx->data_end;
-  void* data = (void*)(long)ctx->data;
-  u32 inport_key = 0;
-  struct pkt_metadata *int_md;
-  struct pkt_metadata md = {0};
-  volatile u32 x;
-
-  int_md = port_md.lookup(&inport_key);
-  if (int_md == NULL) {
-    goto ERROR;
-  }
-
-  md.cube_id = int_md->cube_id;
-  md.in_port = int_md->in_port;
-  md.packet_len = (u32)(data_end - data);
-  md.traffic_class = int_md->traffic_class;
-  md.reason = int_md->reason;
-
-  x = int_md->md[0];
-  md.md[0] = x;
-  x = int_md->md[1];
-  md.md[1] = x;
-  x = int_md->md[2];
-  md.md[2] = x;
-
-  int r = controller.perf_submit_skb(ctx, md.packet_len, &md, sizeof(md));
-  if (r != 0) {
-    pcn_log(ctx, LOG_ERR, "[xdp-encapsulator]: perf_submit_skb error: %d", r);
-  }
-
-  return BPF_REDIRECT;
-ERROR:
-  pcn_log(ctx, LOG_ERR, "[xdp-encapsulator]: unknown error");
-  return XDP_DROP;
-}
-)";
-
 // Receives packet from controller and forwards it to the CubeXDP
 const std::string CTRL_XDP_RX = R"(
 #include <bcc/helpers.h>
@@ -255,7 +139,7 @@ struct pkt_metadata {
 } __attribute__((packed));
 
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
-BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
+BPF_TABLE_PUBLIC("percpu_array", u32, struct pkt_metadata, port_md, 1);
 BPF_TABLE("array", u32, struct xdp_metadata, md_map_rx, MD_MAP_SIZE);
 BPF_TABLE("array", u32, u32, xdp_index_map_rx, 1);
 
@@ -324,38 +208,34 @@ void Controller::call_back_proxy(void *cb_cookie, void *data, int data_size) {
 }
 
 Controller &Controller::get_tc_instance() {
-  PatchPanel::get_tc_instance();
-  static Controller instance(CTRL_TC_TX, CTRL_TC_RX, BPF_PROG_TYPE_SCHED_CLS);
+  static Controller instance("controller_tc", CTRL_TC_RX,
+                             BPF_PROG_TYPE_SCHED_CLS);
   static bool initialized = false;
   if (!initialized) {
     Netlink::getInstance().attach_to_tc(instance.iface_->getName(),
                                         instance.fd_rx_);
-    PatchPanel::get_tc_instance().add(instance.get_fd(),
-                                      PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
 }
 
 Controller &Controller::get_xdp_instance() {
-  PatchPanel::get_xdp_instance();
-  static Controller instance(CTRL_XDP_TX, CTRL_XDP_RX, BPF_PROG_TYPE_XDP);
+  static Controller instance("controller_xdp", CTRL_XDP_RX, BPF_PROG_TYPE_XDP);
   static bool initialized = false;
   if (!initialized) {
     int attach_flags = 0;
     attach_flags |= 2 << 0;
     Netlink::getInstance().attach_to_xdp(instance.iface_->getName(),
                                          instance.fd_rx_, attach_flags);
-    PatchPanel::get_xdp_instance().add(instance.get_fd(),
-                                       PatchPanel::_POLYCUBE_MAX_NODES - 1);
     initialized = true;
   }
   return instance;
 }
 
-Controller::Controller(const std::string &tx_code, const std::string &rx_code,
-                       enum bpf_prog_type type)
-    : ctrl_rx_md_index_(0),
+Controller::Controller(const std::string &buffer_name,
+                       const std::string &rx_code, enum bpf_prog_type type)
+    : buffer_name_(buffer_name),
+      ctrl_rx_md_index_(0),
       logger(spdlog::get("polycubed")),
       id_(PatchPanel::_POLYCUBE_MAX_NODES - 1) {
   ebpf::StatusTuple res(0);
@@ -382,23 +262,18 @@ Controller::Controller(const std::string &tx_code, const std::string &rx_code,
 
   datapath_log.register_cb(get_id(), handle_log_msg);
 
-  std::string tx_code_(datapath_log.parse_log(tx_code));
-  std::string rx_code_(datapath_log.parse_log(rx_code));
-
-  res = tx_module_.init(tx_code_, flags);
+  // Load perf buffer
+  std::string buffer_code(CTRL_PERF_BUFFER);
+  buffer_code.replace(buffer_code.find("_BUFFER_NAME"), 12, buffer_name);
+ 
+  res = buffer_module_.init(buffer_code, flags);
   if (res.code() != 0) {
-    logger->error("cannot init ctrl_tx: {0}", res.msg());
-    throw BPFError("cannot init controller tx program");
+    logger->error("cannot init ctrl perf buffer: {0}", res.msg());
+    throw BPFError("cannot init controller perf buffer");
   }
 
-  res = tx_module_.load_func("controller_module_tx", type, fd_tx_);
-  if (res.code() != 0) {
-    logger->error("cannot load ctrl_tx: {0}", res.msg());
-    throw BPFError("cannot load controller_module_tx");
-  }
-
-  res =
-      tx_module_.open_perf_buffer("controller", call_back_proxy, nullptr, this);
+  res = buffer_module_.open_perf_buffer(buffer_name_, call_back_proxy, nullptr,
+                                        this);
   if (res.code() != 0) {
     logger->error("cannot open perf ring buffer for controller: {0}",
                   res.msg());
@@ -411,7 +286,7 @@ Controller::Controller(const std::string &tx_code, const std::string &rx_code,
   iface_->setMTU(9000);
   iface_->up();
 
-  res = rx_module_.init(rx_code_, flags);
+  res = rx_module_.init(datapath_log.parse_log(rx_code), flags);
   if (res.code() != 0) {
     logger->error("cannot init ctrl_rx: {0}", res.msg());
     throw BPFError("cannot init controller rx program");
@@ -483,7 +358,7 @@ void Controller::start() {
   auto f = [&]() -> void {
     stop_ = false;
     while (!stop_) {
-      tx_module_.poll_perf_buffer("controller", 500);
+      buffer_module_.poll_perf_buffer(buffer_name_, 500);
     }
 
     // TODO: this causes a segmentation fault

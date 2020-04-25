@@ -51,7 +51,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_OK;
   case SLOWPATH:
     pcn_log(ctx, LOG_DEBUG, "[INGRESS] sending packet to slow path");
-    return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    return RX_DROP;
   default:
     pcn_log(ctx, LOG_ERR, "[INGRESS] bad action %d", *action);
     return RX_DROP;

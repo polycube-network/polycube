@@ -412,10 +412,10 @@ char *cbpf2c::_cbpf_dump(const struct sock_filter bpf, int n, polycube::service:
                   if (cubeType == polycube::CubeType::TC) {
                     snprintf(ret, sizeof(ret), "L%d:\tif (ctx->tstamp == 0) {\n\t\tpkt_timestamp = bpf_ktime_get_ns();\n\t\tmdata[0] = *(&pkt_timestamp);\n\t\t"
                                                 "mdata[1] = (*(&pkt_timestamp)) >> 32;\n\t\tmdata[2] = 0;\n\t} else {\n\t\tmdata[0] = *(&ctx->tstamp);\n\t\t"
-                                                "mdata[1] = (*(&ctx->tstamp)) >> 32;\n\t\tmdata[2] = 1;\n\t}\n\t%s pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n", n, op);
+                                                "mdata[1] = (*(&ctx->tstamp)) >> 32;\n\t\tmdata[2] = 1;\n\t}\n\tpcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n", n);
                   } else { /* CubeType::XDP_DRV or CubeType::XDP_SKB */
                     snprintf(ret, sizeof(ret), "L%d:\tpkt_timestamp = bpf_ktime_get_ns();\n\tmdata[0] = *(&pkt_timestamp);\n\t"
-                    "mdata[1] = (*(&pkt_timestamp)) >> 32;\n\tmdata[2] = 0;\n\t%s pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n", n, op);
+                    "mdata[1] = (*(&pkt_timestamp)) >> 32;\n\tmdata[2] = 0;\n\tpcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n", n);
                   }
                 } else {
                   snprintf(ret, sizeof(ret), "L%d:\t unimp\n", n);

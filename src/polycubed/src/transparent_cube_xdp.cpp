@@ -294,19 +294,20 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
 }
 
 static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md, u16 reason) {
-  u32 inport_key = 0;
-  md->reason = reason;
-  // For transparent cubes controller uses md.in_port to know the direction
+int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
+                       u16 reason) {
+  void *data_end = (void*)(long)pkt->data_end;
+  void *data = (void*)(long)pkt->data;
+
+  md->cube_id = CUBE_ID;
+  // For transparent cubes in_port is used by the controller to know the
+  // direction of the packet
   md->in_port = POLYCUBE_PROGRAM_TYPE;
+  md->packet_len = (u32)(data_end - data);
+  md->reason = reason;
 
-  port_md.update(&inport_key, md);
-
-  xdp_nodes.call(pkt, CONTROLLER_MODULE_INDEX);
-  //pcn_log(ctx, LOG_ERROR, md->module_index, 0, "to controller miss");
-  return XDP_DROP;
+  return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));
 }
-
 )";
 
 }  // namespace polycubed

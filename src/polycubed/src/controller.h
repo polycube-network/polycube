@@ -93,7 +93,8 @@ class Controller {
 
   bool stop_;
 
-  ebpf::BPF tx_module_;
+  std::string buffer_name_;
+  ebpf::BPF buffer_module_;
   ebpf::BPF rx_module_;
   int fd_tx_;
   int fd_rx_;

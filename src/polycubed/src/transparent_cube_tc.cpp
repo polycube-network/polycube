@@ -103,10 +103,6 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   switch (rc) {
     case RX_DROP:
       return TC_ACT_SHOT;
-    case RX_CONTROLLER:
-      skb->cb[0] =
-          (skb->cb[0] & 0x8000) | CUBE_ID | POLYCUBE_PROGRAM_TYPE << 16;
-      return to_controller(skb, md.reason);
     case RX_OK:
 #if NEXT == 0xffff
       return TC_ACT_OK;
@@ -116,6 +112,27 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
 #endif
   }
   return TC_ACT_SHOT;
+}
+
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
+                       u16 reason) {
+  // If the packet is tagged add the tagged in the packet itself, otherwise it
+  // will be lost
+  if (skb->vlan_present) {
+    volatile __u32 vlan_tci = skb->vlan_tci;
+    volatile __u32 vlan_proto = skb->vlan_proto;
+    bpf_skb_vlan_push(skb, vlan_proto, vlan_tci);
+  }
+
+  md->cube_id = CUBE_ID;
+  // For transparent cubes in_port is used by the controller to know the
+  // direction of the packet
+  md->in_port = POLYCUBE_PROGRAM_TYPE;
+  md->packet_len = skb->len;
+  md->reason = reason;
+
+  return controller_tc.perf_submit_skb(skb, skb->len, md, sizeof(*md));
 }
 )";
 

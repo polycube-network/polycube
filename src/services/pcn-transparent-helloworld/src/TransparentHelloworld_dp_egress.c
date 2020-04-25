@@ -61,7 +61,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     }
 #endif
     pcn_log(ctx, LOG_DEBUG, "[EGRESS] sending packet to slow path");
-    return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    return RX_DROP;
   default:
     pcn_log(ctx, LOG_ERR, "[EGRESS] bad action %d", *action);
     return RX_DROP;

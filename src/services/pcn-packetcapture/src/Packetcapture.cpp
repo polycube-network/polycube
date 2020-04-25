@@ -240,7 +240,6 @@ void Packetcapture::packet_in(polycube::service::Direction direction,
     }
     break;
   }
-  send_packet_out(pkt, direction, false);
 }
 
 PacketcaptureCaptureEnum Packetcapture::getCapture() {
@@ -417,10 +416,12 @@ void Packetcapture::setFilter(const std::string &value) {
         if (cubeType == polycube::CubeType::TC) {
             filterCode = "if (ctx->tstamp == 0) {\n\tpkt_timestamp = bpf_ktime_get_ns();\n\tmdata[0] = *(&pkt_timestamp);\n\t"
                          "mdata[1] = (*(&pkt_timestamp)) >> 32;\n\tmdata[2] = 0;\n} else {\n\tmdata[0] = *(&ctx->tstamp);\n\t"
-                         "mdata[1] = (*(&ctx->tstamp)) >> 32;\n\tmdata[2] = 1;\n}\nreturn pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);";
+                         "mdata[1] = (*(&ctx->tstamp)) >> 32;\n\tmdata[2] = 1;\n}\npcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n"
+                         "return RX_OK;";
         } else { /* CubeType::XDP_DRV or CubeType::XDP_SKB */
             filterCode = "pkt_timestamp = bpf_ktime_get_ns();\nmdata[0] = *(&pkt_timestamp);\n"
-                         "mdata[1] = (*(&pkt_timestamp)) >> 32;\nmdata[2] = 0;\nreturn pcn_pkt_controller_with_metadata(ctx, md, reason, mdata);";
+                         "mdata[1] = (*(&pkt_timestamp)) >> 32;\nmdata[2] = 0;\npcn_pkt_controller_with_metadata(ctx, md, reason, mdata);\n"
+                         "return RX_OK;";
         }
     } else {
         memset(&cbpf, 0, sizeof(cbpf));
