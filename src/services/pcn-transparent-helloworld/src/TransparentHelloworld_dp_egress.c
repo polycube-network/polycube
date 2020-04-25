@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// WARNING: log messages from this program are used by programs_chain tests,
+//          changing them may cause those tests to fail
+
 #include <bcc/helpers.h>
 
 /* TODO: move the definition to a file shared by control & data path*/
@@ -45,20 +48,22 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // what action should be performed in the packet?
   switch (*action) {
   case DROP:
-    pcn_log(ctx, LOG_DEBUG, "Egress: dropping packet");
+    pcn_log(ctx, LOG_DEBUG, "[EGRESS] dropping packet");
     return RX_DROP;
   case PASS:
-    pcn_log(ctx, LOG_DEBUG, "Egress: passing packet");
+    pcn_log(ctx, LOG_DEBUG, "[EGRESS] passing packet");
     return RX_OK;
   case SLOWPATH:
+#ifndef POLYCUBE_XDP
     if (ctx->cb[2] & MD_PKT_FROM_CONTROLLER) {
         pcn_log(ctx, LOG_DEBUG, "packet from controller, return");
         return RX_OK;
     }
-    pcn_log(ctx, LOG_DEBUG, "Egress: sending packet to slow path");
+#endif
+    pcn_log(ctx, LOG_DEBUG, "[EGRESS] sending packet to slow path");
     return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
   default:
-    pcn_log(ctx, LOG_ERR, "Egress: bad action %d", *action);
+    pcn_log(ctx, LOG_ERR, "[EGRESS] bad action %d", *action);
     return RX_DROP;
   }
 

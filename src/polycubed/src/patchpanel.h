@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "node.h"
-
 #include <set>
 
 #include <api/BPF.h>
@@ -36,23 +34,23 @@ class PatchPanel {
   static PatchPanel &get_tc_instance();
   static PatchPanel &get_xdp_instance();
   ~PatchPanel();
-  void add(Node &n);
-  void add(Node &n, uint16_t index);  // add node at specific position
   uint16_t add(int fd);               // returns the index
-  void remove(Node &n);
+  void add(int fd, uint16_t index);
   void remove(uint16_t index);
-  void update(Node &n);
   void update(uint16_t index, int fd);
 
   static const int _POLYCUBE_MAX_NODES = 1024;
 
  private:
-  PatchPanel(const std::string &map_name, int max_nodes);
+  PatchPanel(const std::string &map_name,
+             std::array<bool, _POLYCUBE_MAX_NODES> &nodes_present);
   ebpf::BPF program_;
-  std::set<uint16_t> node_ids_;
+  static std::set<uint16_t> node_ids_;
   std::unique_ptr<ebpf::BPFProgTable> nodes_;
+  static std::array<bool, _POLYCUBE_MAX_NODES> nodes_present_tc_;
+  static std::array<bool, _POLYCUBE_MAX_NODES> nodes_present_xdp_;
+  std::array<bool, _POLYCUBE_MAX_NODES> &nodes_present_;
   static const std::string PATCHPANEL_CODE;
-  int max_nodes_;
 
   std::shared_ptr<spdlog::logger> logger;
 };

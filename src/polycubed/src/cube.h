@@ -19,7 +19,6 @@
 #include "base_cube.h"
 #include "bcc_mutex.h"
 #include "id_generator.h"
-#include "node.h"
 #include "patchpanel.h"
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/guid.h"
@@ -54,8 +53,8 @@ namespace polycubed {
 class Cube : public BaseCube, public CubeIface {
  public:
   explicit Cube(const std::string &name, const std::string &service_name,
-                PatchPanel &patch_panel_ingress_,
-                PatchPanel &patch_panel_egress_, LogLevel level, CubeType type, bool shadow, bool span);
+                PatchPanel &patch_panel, LogLevel level, CubeType type,
+                bool shadow, bool span);
   virtual ~Cube();
 
   std::shared_ptr<PortIface> add_port(const std::string &name,
@@ -65,6 +64,12 @@ class Cube : public BaseCube, public CubeIface {
   std::map<std::string, std::shared_ptr<PortIface>> &get_ports();
 
   void update_forwarding_table(int index, int value);
+  
+  // Sets the index of the next program to call after the egress program of this
+  // cube is executed.
+  // The higher 16 bits are reserved for XDP programs, if they are set they
+  // override the value of the lower 16 bits.
+  void set_egress_next(int port, uint32_t index);
 
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
@@ -80,6 +85,7 @@ class Cube : public BaseCube, public CubeIface {
   void release_port_id(uint16_t id);
 
   std::unique_ptr<ebpf::BPFArrayTable<uint32_t>> forward_chain_;
+  std::unique_ptr<ebpf::BPFArrayTable<uint32_t>> egress_next_;
 
   std::map<std::string, std::shared_ptr<PortIface>> ports_by_name_;
   std::map<int, std::shared_ptr<PortIface>> ports_by_index_;

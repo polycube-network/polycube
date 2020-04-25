@@ -17,7 +17,6 @@
 #pragma once
 
 #include "cube_tc.h"
-#include "node.h"
 
 #include <cstdint>
 #include <functional>
@@ -59,7 +58,7 @@ struct __attribute__((__packed__)) metadata {
  * packet-ins (packets going to the slow-path) and the other one managing the
  * packet-outs (packets coming from the slow-path).
  */
-class Controller : public Node {
+class Controller {
  public:
   static Controller &get_tc_instance();
   static Controller &get_xdp_instance();
@@ -104,8 +103,8 @@ class Controller : public Node {
 
   std::unique_ptr<std::thread> pkt_in_thread_;
 
-  std::map<int, const packet_in_cb &> cbs_;
-  std::mutex cbs_mutex_;  // protects the cbs_ container
+  static std::map<int, const packet_in_cb &> cbs_;
+  static std::mutex cbs_mutex_;  // protects the cbs_ container
 
   std::shared_ptr<spdlog::logger> logger;
 };
