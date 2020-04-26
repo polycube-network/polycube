@@ -1,5 +1,106 @@
-Some hints for programmers
---------------------------
+Hints for programmers
+---------------------
+
+Compiling a Polycube service
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Polycube services can be compiled in two ways:
+
+- together with the entire Polycube source code
+- as stand-alone services that can be loaded into Polycube at runtime
+
+Compiling together with the Polycube source code
+************************************************
+1. Place the service into the :SCM_WEB:`src/services <src/services>` folder;
+
+2. Update the :SCM_WEB:`src/services/CMakeLists.txt <src/services/CMakeLists.txt>` file adding a new `cmake` instruction:
+  
+    ::
+
+      add_service(service_name service_folder)
+
+where the first argument is the service name used in the Polycube REST API, while second argument is the folder name of the service.
+
+**Note**: the service folder name must follow the ``pcn-service_name`` naming convention (E.g. pcn-bridge, pcn-router).
+
+3. Compile and re-install Polycube:
+    
+  ::
+
+    # having Polycube root folder as working directory
+    mkdir build && cd build
+    cmake ..
+    make -j $(getconf _NPROCESSORS_ONLN)
+    sudo make install
+
+.. _stand_alone_compilation:
+
+Compiling a stand-alone service
+*******************************
+1. create a `build` folder in the root folder of the service and set it as working directory:
+
+  ::
+
+    mkdir build && cd build
+
+2. generate a Makefile:
+
+  ::
+
+    cmake ..
+
+3. compile the service to build a shared library object:
+
+  ::
+
+    make -j $(getconf _NPROCESSORS_ONLN)
+
+At this point the service has been compiled and the built shared library object can be found into the ``build/src`` folder named as ``libpcn-service_name.so``
+
+The compiled service, completely encapsulated in the .so file, is now ready to be loaded by the Polycube daemon.
+
+Loading/unloading Polycube services at runtime
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In order to load a new service at runtime, we should provide to Polycube daemon the shared library object (.so) we compiled before.
+
+Loading a service
+*****************
+In order to load a new service into Polycube a shared library object must be provided.
+Please see :ref:`stand_alone_compilation` to generate this object.
+
+To load a service into a running Polycube instance use:
+
+  ::
+
+    polycubectl services add type=lib uri=/absolute/path/to/libpcn-service_name.so name=service_name
+
+- the ``uri`` parameter indicates the absolute path to the shared library object of the service;
+- the ``name`` parameter indicates the name that will be use in the Polycube rest API for the service.
+
+After having loaded the service, it can be instantiated as a normal service using ``polycubectl``.
+
+To verify the service has been loaded correctly and is ready to be instantiated:
+
+  ::
+
+    # show available services list; the loaded service should be present
+    polycubectl services show
+
+    # create an instance of the service
+    polycubectl service_name add instance_name
+
+    # dump the service
+    polycubectl instance_name show
+
+
+Unloading a service
+*******************
+To unload a service from a running Polycube instance use:
+
+  ::
+
+    polycubectl services del service_name
+
+where ``service_name`` indicates the name used by the Polycube rest API for the service (E.g. bridge, router)
 
 
 Install the provided git-hooks
