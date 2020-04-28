@@ -21,7 +21,7 @@
 namespace polycube {
 namespace polycubed {
 
-std::vector<std::string> BaseCube::cflags = {
+std::vector<std::string> BaseCube::cflags_ = {
     std::string("-D_POLYCUBE_MAX_NODES=") +
         std::to_string(PatchPanel::_POLYCUBE_MAX_NODES),
     std::string("-D_POLYCUBE_MAX_BPF_PROGRAMS=") +
@@ -30,18 +30,13 @@ std::vector<std::string> BaseCube::cflags = {
 };
 
 BaseCube::BaseCube(const std::string &name, const std::string &service_name,
-                   const std::string &master_code,
-                   PatchPanel &patch_panel_ingress,
-                   PatchPanel &patch_panel_egress, LogLevel level,
-                   CubeType type)
+                   const std::string &master_code, PatchPanel &patch_panel,
+                   LogLevel level, CubeType type)
     : name_(name),
       service_name_(service_name),
       logger(spdlog::get("polycubed")),
       uuid_(GuidGenerator().newGuid()),
-      patch_panel_ingress_(patch_panel_ingress),
-      patch_panel_egress_(patch_panel_egress),
-      ingress_fd_(0),
-      egress_fd_(0),
+      patch_panel_(patch_panel),
       ingress_index_(0),
       egress_index_(0),
       level_(level),
@@ -52,7 +47,7 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   // create master program that contains some maps definitions
   master_program_ =
       std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
-  master_program_->init(BASECUBE_MASTER_CODE + master_code, cflags);
+  master_program_->init(BASECUBE_MASTER_CODE + master_code, cflags_);
 
   // get references to those maps
   auto ingress_ = master_program_->get_prog_table("ingress_programs");
@@ -77,10 +72,10 @@ void BaseCube::init(const std::vector<std::string> &ingress_code,
 
 void BaseCube::uninit() {
   if (ingress_index_)
-    patch_panel_ingress_.remove(ingress_index_);
+    patch_panel_.remove(ingress_index_);
 
   if (egress_index_)
-    patch_panel_egress_.remove(egress_index_);
+    patch_panel_.remove(egress_index_);
 
   for (int i = 0; i < ingress_programs_.size(); i++) {
     if (ingress_programs_[i]) {
@@ -152,171 +147,147 @@ const ebpf::TableDesc &BaseCube::get_table_desc(const std::string &table_name,
 
 void BaseCube::reload(const std::string &code, int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
-  return do_reload(code, index, type);
-}
-
-void BaseCube::do_reload(const std::string &code, int index, ProgramType type) {
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
-  std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
-  int fd;
 
   switch (type) {
-  case ProgramType::INGRESS:
-    programs = &ingress_programs_;
-    code_ = &ingress_code_;
-    break;
-  case ProgramType::EGRESS:
-    programs = &egress_programs_;
-    code_ = &egress_code_;
-    break;
-  default:
-    throw std::runtime_error("Bad program type");
+    case ProgramType::INGRESS:
+      return do_reload(code, index, type, ingress_programs_, ingress_code_,
+                       ingress_programs_table_, ingress_index_);
+
+    case ProgramType::EGRESS:
+      return do_reload(code, index, type, egress_programs_, egress_code_,
+                       egress_programs_table_, egress_index_);
+
+    default:
+      throw std::runtime_error("Bad program type");
   }
-
-  if (index >= programs->size()) {
-    throw std::runtime_error("Invalid ebpf program index");
-  }
-
-  if (programs->at(index) == nullptr) {
-    throw std::runtime_error("ebpf does not exist");
-  }
-
-  // create new ebpf program, telling to steal the maps of this program
-  std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-  std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
-      new ebpf::BPF(0, nullptr, false, name_, false, &*programs->at(index)));
-
-  bcc_guard.unlock();
-  compile(*new_bpf_program, code, index, type);
-  fd = load(*new_bpf_program, type);
-
-  switch (type) {
-  case ProgramType::INGRESS:
-    ingress_programs_table_->update_value(index, fd);
-    // update patch panel if program is master
-    if (index == 0) {
-      ingress_fd_ = fd;
-      patch_panel_ingress_.update(ingress_index_, ingress_fd_);
-    }
-    break;
-  case ProgramType::EGRESS:
-    egress_programs_table_->update_value(index, fd);
-    // update patch panel if program is master
-    if (index == 0) {
-      egress_fd_ = fd;
-      patch_panel_egress_.update(egress_index_, egress_fd_);
-    }
-    break;
-  }
-
-  unload(*programs->at(index), type);
-  bcc_guard.lock();
-  (*programs)[index] = std::move(new_bpf_program);
-  // update last used code
-  (*code_)[index] = code;
 }
 
 void BaseCube::reload_all() {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
   for (int i = 0; i < ingress_programs_.size(); i++) {
     if (ingress_programs_[i]) {
-      do_reload(ingress_code_[i], i, ProgramType::INGRESS);
+      do_reload(ingress_code_[i], i, ProgramType::INGRESS, ingress_programs_,
+                ingress_code_, ingress_programs_table_, ingress_index_);
     }
   }
 
   for (int i = 0; i < egress_programs_.size(); i++) {
     if (egress_programs_[i]) {
-      do_reload(egress_code_[i], i, ProgramType::EGRESS);
+      do_reload(egress_code_[i], i, ProgramType::EGRESS, egress_programs_,
+                egress_code_, egress_programs_table_, egress_index_);
     }
   }
+}
+
+void BaseCube::do_reload(
+    const std::string &code, int index, ProgramType type,
+    std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+        &programs,
+    std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+    std::unique_ptr<ebpf::BPFProgTable> &programs_table,
+    uint16_t first_program_index) {
+  if (index >= programs.size()) {
+    throw std::runtime_error("Invalid ebpf program index");
+  }
+
+  if (programs.at(index) == nullptr) {
+    throw std::runtime_error("ebpf does not exist");
+  }
+
+  // create new ebpf program, telling to steal the maps of this program
+  std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+  std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
+      new ebpf::BPF(0, nullptr, false, name_, false, programs.at(index).get()));
+
+  bcc_guard.unlock();
+  compile(*new_bpf_program, code, index, type);
+  int fd = load(*new_bpf_program, type);
+
+  programs_table->update_value(index, fd);
+
+  if (index == 0) {
+    patch_panel_.update(first_program_index, fd);
+  }
+
+  unload(*programs.at(index), type);
+  bcc_guard.lock();
+  programs[index] = std::move(new_bpf_program);
+  // update last used code
+  programs_code[index] = code;
 }
 
 int BaseCube::add_program(const std::string &code, int index,
                           ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
 
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
-  std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
-
   switch (type) {
-  case ProgramType::INGRESS:
-    programs = &ingress_programs_;
-    code_ = &ingress_code_;
-    break;
-  case ProgramType::EGRESS:
-    programs = &egress_programs_;
-    code_ = &egress_code_;
-    break;
-  default:
-    throw std::runtime_error("Bad program type");
+    case ProgramType::INGRESS:
+      return do_add_program(code, index, type, ingress_programs_, ingress_code_,
+                            ingress_programs_table_, &ingress_index_);
+
+    case ProgramType::EGRESS:
+      return do_add_program(code, index, type,  egress_programs_, egress_code_,
+                            egress_programs_table_, &egress_index_);
+
+    default:
+      throw std::runtime_error("Bad program type");
   }
+}
+
+int BaseCube::do_add_program(
+    const std::string &code, int index, ProgramType type,
+    std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+        &programs,
+    std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+    std::unique_ptr<ebpf::BPFProgTable> &programs_table,
+    uint16_t *first_program_index) {
 
   // check index boundaries
-  if (index < 0 || index >= programs->size()) {
+  if (index < -1 || index >= programs.size()) {
     throw std::runtime_error("Invalid ebpf program index");
   }
 
   if (index != -1) {
-    if (programs->at(index) != nullptr) {
+    if (programs.at(index) != nullptr) {
       throw std::runtime_error("Program is not empty");
     }
+
   } else {
     int i;
-    for (i = 0; i < programs->size(); i++) {
-      if (programs->at(i) == nullptr) {
+    for (i = 0; i < programs.size(); i++) {
+      if (programs.at(i) == nullptr) {
         index = i;
         break;
       }
     }
 
-    if (i == programs->size()) {
+    if (i == programs.size()) {
       throw std::runtime_error("Maximum number of programs reached");
     }
   }
 
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   // load and add this program to the list
-  int fd_;
-  (*programs)[index] =
+  programs[index] =
       std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name_));
 
   bcc_guard.unlock();
-  compile(*programs->at(index), code, index, type);
-  fd_ = load(*programs->at(index), type);
+  compile(*programs.at(index), code, index, type);
+  int fd = load(*programs.at(index), type);
   bcc_guard.lock();
 
-  // TODO: this switch could also be removed creating variables in the switch
-  // above
-  switch (type) {
-  case ProgramType::INGRESS:
-    ingress_programs_table_->update_value(index, fd_);
-    if (index == 0) {
-      ingress_fd_ = fd_;
-      if (ingress_index_) {
-        // already registed in patch panel, just update
-        patch_panel_ingress_.update(ingress_index_, ingress_fd_);
-      } else {
-        // register in patch panel
-        ingress_index_ = patch_panel_ingress_.add(ingress_fd_);
-      }
-    }
-    break;
-  case ProgramType::EGRESS:
-    egress_programs_table_->update_value(index, fd_);
-    if (index == 0) {
-      egress_fd_ = fd_;
-      if (egress_index_) {
-        // already registed in patch panel, just update
-        patch_panel_egress_.update(egress_index_, egress_fd_);
-      } else {
-        // register in patch panel
-        egress_index_ = patch_panel_egress_.add(egress_fd_);
-      }
-      break;
+  programs_table->update_value(index, fd);
+  if (index == 0) {
+    if (*first_program_index) {
+      // already registed in patch panel, just update
+      patch_panel_.update(*first_program_index, fd);
+    } else {
+      // register in patch panel
+      *first_program_index = patch_panel_.add(fd);
     }
   }
 
-  (*code_)[index] = code;
+  programs_code[index] = code;
 
   return index;
 }
@@ -324,39 +295,42 @@ int BaseCube::add_program(const std::string &code, int index,
 void BaseCube::del_program(int index, ProgramType type) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
 
-  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS> *programs;
-  std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> *code_;
-  ebpf::BPFProgTable *programs_table;
-
   switch (type) {
-  case ProgramType::INGRESS:
-    programs = &ingress_programs_;
-    code_ = &ingress_code_;
-    programs_table = ingress_programs_table_.get();  // TODO: is this valid?
-    break;
-  case ProgramType::EGRESS:
-    programs = &egress_programs_;
-    code_ = &egress_code_;
-    programs_table = egress_programs_table_.get();  // TODO: is this valid?
-    break;
-  default:
-    throw std::runtime_error("Bad program type");
-  }
+    case ProgramType::INGRESS:
+      do_del_program(index, type, ingress_programs_, ingress_code_,
+                     ingress_programs_table_);
+      break;
 
-  if (index < 0 || index >= programs->size()) {
+    case ProgramType::EGRESS:
+      do_del_program(index, type, egress_programs_, egress_code_,
+                     egress_programs_table_);
+      break;
+
+    default:
+      throw std::runtime_error("Bad program type");
+  }
+}
+
+void BaseCube::do_del_program(
+    int index, ProgramType type,
+    std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+        &programs,
+    std::array<std::string, _POLYCUBE_MAX_BPF_PROGRAMS> &programs_code,
+    std::unique_ptr<ebpf::BPFProgTable> &programs_table) {
+  if (index < 0 || index >= programs.size()) {
     logger->error("Invalid ebpf program index");
     throw std::runtime_error("Invalid ebpf program index");
   }
 
-  if (programs->at(index) == nullptr) {
+  if (programs.at(index) == nullptr) {
     throw std::runtime_error("ebpf program does not exist");
   }
 
   programs_table->remove_value(index);
-  unload(*programs->at(index), type);
+  unload(*(programs.at(index)), type);
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-  programs->at(index).reset();
-  code_->at(index).clear();
+  programs.at(index).reset();
+  programs_code.at(index).clear();
 }
 
 std::string BaseCube::get_wrapper_code() {
@@ -403,9 +377,15 @@ nlohmann::json BaseCube::to_json() const {
 IDGenerator BaseCube::id_generator_(PatchPanel::_POLYCUBE_MAX_NODES - 2);
 
 const std::string BaseCube::BASECUBE_MASTER_CODE = R"(
-// tables to save file descriptor of ingress and egress programs
-BPF_TABLE_SHARED("prog", int, int, ingress_programs, _POLYCUBE_MAX_BPF_PROGRAMS);
+// Tables to save file descriptor of ingress and egress programs
+// In TC cubes only egress_programs is used
+// In XDP cubes egress_programs holds fds of TC programs, while
+// egress_programs_xdp holds XDP programs
+BPF_TABLE_SHARED("prog", int, int, ingress_programs,
+                 _POLYCUBE_MAX_BPF_PROGRAMS);
 BPF_TABLE_SHARED("prog", int, int, egress_programs, _POLYCUBE_MAX_BPF_PROGRAMS);
+BPF_TABLE_SHARED("prog", int, int, egress_programs_xdp,
+                 _POLYCUBE_MAX_BPF_PROGRAMS);
 )";
 
 const std::string BaseCube::BASECUBE_WRAPPER = R"(
@@ -421,13 +401,13 @@ const std::string BaseCube::BASECUBE_WRAPPER = R"(
 // maps definitions, same as in master program but "extern"
 BPF_TABLE("extern", int, int, ingress_programs, _POLYCUBE_MAX_BPF_PROGRAMS);
 BPF_TABLE("extern", int, int, egress_programs, _POLYCUBE_MAX_BPF_PROGRAMS);
+BPF_TABLE("extern", int, int, egress_programs_xdp, _POLYCUBE_MAX_BPF_PROGRAMS);
 
 enum {
   RX_OK,
   RX_REDIRECT,
   RX_DROP,
   RX_RECIRCULATE,
-  RX_CONTROLLER,
   RX_ERROR,
 };
 
@@ -474,7 +454,11 @@ void call_ingress_program_with_metadata(struct CTXTYPE *skb,
 
 static __always_inline
 void call_egress_program(struct CTXTYPE *skb, int index) {
+#ifdef POLYCUBE_XDP
+  egress_programs_xdp.call(skb, index);
+#else
   egress_programs.call(skb, index);
+#endif
 }
 
 static __always_inline

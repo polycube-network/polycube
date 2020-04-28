@@ -41,15 +41,24 @@ class TransparentCubeXDP : virtual public TransparentCube {
                               const service::attach_cb &attach);
   virtual ~TransparentCubeXDP();
 
+  void reload(const std::string &code, int index, ProgramType type) override;
+  int add_program(const std::string &code, int index,
+                  ProgramType type) override;
+  void del_program(int index, ProgramType type) override;
+
  protected:
   static std::string get_wrapper_code();
+
+  void reload_all() override;
+
+  std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
+      egress_programs_tc_;
+  std::unique_ptr<ebpf::BPFProgTable> egress_programs_table_tc_;
 
   void compile(ebpf::BPF &bpf, const std::string &code, int index,
                ProgramType type);
   int load(ebpf::BPF &bpf, ProgramType type);
   void unload(ebpf::BPF &bpf, ProgramType type);
-  void compileIngress(ebpf::BPF &bpf, const std::string &code, uint16_t next);
-  void compileEgress(ebpf::BPF &bpf, const std::string &code, uint16_t next);
 
  private:
   static const std::string TRANSPARENTCUBEXDP_WRAPPER;

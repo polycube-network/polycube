@@ -32,6 +32,21 @@ function create_veth {
   done
 }
 
+function create_veth_no_ipv6 {
+  for i in `seq 1 $1`;
+  do
+    sudo ip netns del ns${i} || true
+    sudo ip netns add ns${i}
+    sudo ip link add veth${i}_ type veth peer name veth${i}
+    sudo ip link set veth${i}_ netns ns${i}
+    sudo sysctl -w net.ipv6.conf.veth${i}.disable_ipv6=1
+    sudo ip netns exec ns${i} sysctl -w net.ipv6.conf.veth${i}_.disable_ipv6=1
+    sudo ip netns exec ns${i} ip link set dev veth${i}_ up
+    sudo ip link set dev veth${i} up
+    sudo ip netns exec ns${i} ifconfig veth${i}_ 10.0.0.${i}/24
+  done
+}
+
 function create_link {
   for i in `seq 1 $1`;
   do

@@ -18,11 +18,18 @@ Polycube architecture adds a wrapper around the user's code, this wrapper calls 
 
 - **pcn_pkt_drop(struct __sk_buff *skb, struct pkt_metadata *md);**: drops the packet. It is the same that just returning `RX_DROP`. [Example](services/pcn-helloworld/src/Helloworld_dp.h#L78)
 
-- **pcn_pkt_controller(struct __sk_buff *skb, struct pkt_metadata *md, u16 reason)**: sends the packet to the control path controller. Reason can be used to indicate why the packet is being sent to the custom code running in the control path. If there is not any reason `RX_CONTROLLER` could be directly returned. [Example](services/pcn-helloworld/src/Helloworld_dp.h#L82)
-
-- **pcn_pkt_controller_with_metadata(struct __sk_buff *skb, struct pkt_metadata *md, u16 reason, u32 metadata[3])**: Sends the packet to the custom code running in the control path. In addition to the reason the user can also send some additional medatada.
-
 - **pcn_pkt_redirect_ns(struct __sk_buff *skb, struct pkt_metadata *md, u16 port)**: (it is only available for shadow services) sends the packet to the namespace as if it came from the port indicated as parameter
+
+Processing packets in the slowpath
+**********************************
+
+A copy of the packet can be sent to the controller to be processed by the slowpath using the following helpers:
+
+- **pcn_pkt_controller(struct __sk_buff *skb, struct pkt_metadata *md, u16 reason)**: sends a copy of the packet to the controller. Reason can be used to indicate why the packet is being sent to the custom code running in the control path. [Example](services/pcn-helloworld/src/Helloworld_dp.h#L82)
+ 
+- **pcn_pkt_controller_with_metadata(struct __sk_buff *skb, struct pkt_metadata *md, u16 reason, u32 metadata[3])**: sends a copy of the packet to the custom code running in the control path. In addition to the reason the user can also send some additional metadata.
+ 
+The packet will be processed by the ``packet_in`` method of the controller.
 
 Checksum calculation
 ********************

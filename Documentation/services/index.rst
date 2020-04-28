@@ -23,3 +23,4 @@ This folder contains the list of services (a.k.a. *cubes*) currently available i
     pcn-simpleforwarder/simpleforwarder
     pcn-synflood/synflood
     pcn-packetcapture/packetcapture
+    pcn-dynmon/dynmon

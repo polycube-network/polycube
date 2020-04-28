@@ -226,7 +226,8 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
     u32 mdata[3];
     mdata[0] = vlanid;
     mdata[1] = tagged;
-    return pcn_pkt_controller_with_metadata(ctx, md, BPDU_REASON, mdata);
+    pcn_pkt_controller_with_metadata(ctx, md, BPDU_REASON, mdata);
+    return RX_DROP;
   }
 
   // Should learning be performed?
@@ -360,7 +361,8 @@ DO_FLOODING:;
   u32 mdata[3];
   mdata[0] = vlanid;
   mdata[1] = tagged;
-  return pcn_pkt_controller_with_metadata(ctx, md, BROADCAST_REASON, mdata);
+  pcn_pkt_controller_with_metadata(ctx, md, BROADCAST_REASON, mdata);
+  return RX_DROP;
 
 DROP:
   pcn_log(ctx, LOG_TRACE, "drop");

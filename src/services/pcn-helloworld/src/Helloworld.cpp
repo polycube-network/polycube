@@ -25,7 +25,7 @@
 using namespace polycube::service;
 
 Helloworld::Helloworld(const std::string name, const HelloworldJsonObject &conf)
-    : Cube(conf.getBase(), {helloworld_code_ingress}, {}),
+    : Cube(conf.getBase(), {helloworld_code_ingress}, {helloworld_code_egress}),
       HelloworldBase(name) {
   logger()->info("Creating Helloworld instance");
   setAction(conf.getAction());
