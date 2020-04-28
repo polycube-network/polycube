@@ -76,7 +76,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_DROP;
   case SLOWPATH:
     pcn_log(ctx, LOG_DEBUG, "Sending packet to slow path");
-    return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    return RX_DROP;
   case FORWARD: ;
     // Get ports ids
     uint16_t *p1 = ports_map.lookup(&zero);

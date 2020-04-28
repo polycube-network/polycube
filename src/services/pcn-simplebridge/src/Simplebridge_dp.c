@@ -126,5 +126,6 @@ FORWARD:;
 
 DO_FLOODING:
   pcn_log(ctx, LOG_DEBUG, "Flooding required: sending packet to controller");
-  return pcn_pkt_controller(ctx, md, REASON_FLOODING);
+  pcn_pkt_controller(ctx, md, REASON_FLOODING);
+  return RX_DROP;
 }

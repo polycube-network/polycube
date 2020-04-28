@@ -105,7 +105,7 @@ function find_sequence {
 # correcly
 # Cubes chain:
 #       +-----+        +-----+-----+-----+        +-----+
-# veth1-| th1 |--------| th2 | hw1 | th2 |--------| hw2 |-------- veth2
+# veth1-| th1 |--------| th2 | hw1 | th3 |--------| hw2 |-------- veth2
 #       +-----+        +-----+-----+-----+        +-----+
 # th = TransparentHelloworld
 # hw = HelloWorld

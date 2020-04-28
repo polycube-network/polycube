@@ -192,5 +192,5 @@ As a example, we list here is the generated C code for the filter ``icmp``:
          } else {
            goto L5;
          }
-    L4:	 return pcn_pkt_controller(ctx, md, reason);
+    L4:  pcn_pkt_controller(ctx, md, reason);
     L5:	 return RX_OK;

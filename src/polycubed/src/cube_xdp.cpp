@@ -297,6 +297,17 @@ const std::string CubeXDP::CUBEXDP_COMMON_WRAPPER = R"(
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 
+struct controller_table_t {
+  int key;
+  u32 leaf;
+  /* map.perf_submit(ctx, data, data_size) */
+  int (*perf_submit) (void *, void *, u32);
+  int (*perf_submit_skb) (void *, u32, void *, u32);
+  u32 data[0];
+};
+__attribute__((section("maps/extern")))
+struct controller_table_t controller_xdp;
+
 static __always_inline
 int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *md,
                                      u16 reason, u32 metadata[3]) {
@@ -388,18 +399,6 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
 }
 
 static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md, u16 reason) {
-  u32 inport_key = 0;
-  md->reason = reason;
-
-  port_md.update(&inport_key, md);
-
-  xdp_nodes.call(pkt, CONTROLLER_MODULE_INDEX);
-  //pcn_log(ctx, LOG_ERROR, md->module_index, 0, "to controller miss");
-  return XDP_DROP;
-}
-
-static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
   u32 *next = forward_chain_.lookup(&out_port);
   if (next) {
@@ -410,6 +409,19 @@ int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port)
   }
 
   return XDP_ABORTED;
+}
+
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
+                       u16 reason) {
+  void *data_end = (void*)(long)pkt->data_end;
+  void *data = (void*)(long)pkt->data;
+
+  md->cube_id = CUBE_ID;
+  md->packet_len = (u32)(data_end - data);
+  md->reason = reason;
+
+  return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));
 }
 )";
 
