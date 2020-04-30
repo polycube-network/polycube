@@ -5,25 +5,13 @@ set -x
 # assume polycubed is already running
 # sudo polycubed -d
 
-# assume veth1 and veth2 already created and configured
-# ./setup_veth.sh
+# assume standard cube (br) and firewall (fw) already created and running
+# ./setup_env.sh
 
-function fwcleanup {
-  set +e
-  polycubectl firewall del fw
-}
-trap fwcleanup EXIT
-
-echo -e '\nExample using transactions \n'
+echo 'Example using transactions'
 
 set -e
 set -x
-
-polycubectl firewall add fw
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
 
 echo 'Activating the transaction mode'
 polycubectl firewall fw set interactive=false
