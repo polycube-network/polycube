@@ -20,6 +20,7 @@
 #include <vector>
 #include <spdlog/logger.h>
 
+#include "Hateoas.h"
 #include "../Body/ParentResource.h"
 #include "Resource.h"
 
@@ -57,6 +58,7 @@ class ParentResource : public Resource, public virtual Body::ParentResource {
 
   Response Completion(const std::string &cube_name, HelpType type,
                       const ListKeyValues &keys);
+
 
  protected:
   /**

@@ -49,6 +49,7 @@ Service::Service(const std::string &name, const std::string &description,
   router->post(body_rest_endpoint_, bind(&Service::post_body, this));
   router->patch(body_rest_endpoint_, bind(&Service::patch_body, this));
   router->options(body_rest_endpoint_, bind(&Service::options_body, this));
+  Hateoas::addRoute(std::move(name), base_address);
 }
 
 Service::~Service() {
@@ -58,6 +59,7 @@ Service::~Service() {
   router->removeRoute(Method::Post, body_rest_endpoint_);
   router->removeRoute(Method::Patch, body_rest_endpoint_);
   router->removeRoute(Method::Options, body_rest_endpoint_);
+  Hateoas::removeRoute(Name());
 }
 
 const std::string Service::Cube(const Pistache::Rest::Request &request) {
@@ -118,6 +120,9 @@ Service::CreateReplaceUpdate(const std::string &name, nlohmann::json &body,
       auto port = cube->get_port(k);
       port->set_conf(cubes_list[k]);
     }
+    /* now we need to store the cube name in order
+     * to provide it from base root route */
+    Hateoas::addRoute(std::string(name), core_->get_rest_server()->base);
     return std::vector<Response>{resp};
   } else {
     return std::vector<Response>{{ErrorTag::kDataExists, nullptr}};
@@ -131,9 +136,15 @@ void Service::get_body(const Request &request, ResponseWriter response) {
         std::move(response));
     return;
   }
-  // TODO call get-list
+
+  auto resp = get_list();
+  auto port = core_->get_rest_server()->getPort();
+  auto host = core_->get_rest_server()->getHost();
+  Hateoas::HateoasSupport_services(request, resp, cube_names_.Values(),
+          host, port);
+
   Server::ResponseGenerator::Generate(
-      std::vector<Response>{{ErrorTag::kOk, nullptr}}, std::move(response));
+      std::move(resp), std::move(response));
 }
 
 void Service::post_body(const Request &request, ResponseWriter response) {
@@ -214,6 +225,8 @@ void Service::del(const Pistache::Rest::Request &request,
   }
 
   cube_names_.RemoveValue(name);
+  /* removing cube route from root endpoint */
+  Hateoas::removeRoute(name);
   auto k = ListKeyValues{};
   auto res = DeleteValue(name, k);
   Server::ResponseGenerator::Generate(std::vector<Response>{res},
@@ -346,6 +359,17 @@ Response Service::CompletionService(HelpType type) {
   }
 
   return {kOk, ::strdup(val.dump().c_str())};
+}
+
+std::vector<Response> Service::get_list() {
+    json json_cubes = json::parse(core_->get_cubes());
+    if (json_cubes[Name()].empty()) {
+        return {{ErrorTag::kOk,
+                 nullptr}};
+    } else {
+        return {{ErrorTag::kOk,
+                 ::strdup(json_cubes[Name()].dump().c_str())}};
+    }
 }
 
 

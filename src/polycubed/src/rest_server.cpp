@@ -29,6 +29,7 @@
 #include "server/Server/ResponseGenerator.h"
 #include "config.h"
 #include "cubes_dump.h"
+#include "server/Resources/Endpoint/Hateoas.h"
 
 namespace polycube {
 namespace polycubed {
@@ -39,9 +40,11 @@ std::string RestServer::blacklist_cert_path;
 const std::string RestServer::base = "/polycube/v1/";
 
 // start http server for Management APIs
-// Incapsultate a core object // TODO probably there are best ways...
+// Encapsulate a core object // TODO probably there are best ways...
 RestServer::RestServer(Pistache::Address addr, PolycubedCore &core)
     : core(core),
+      host(addr.host()),
+      port(addr.port().toString()),
       httpEndpoint_(std::make_unique<Pistache::Http::Endpoint>(addr)),
       logger(spdlog::get("polycubed")) {
   logger->info("rest server listening on '{0}:{1}'", addr.host(), addr.port());
@@ -218,6 +221,15 @@ void RestServer::setup_routes() {
   using Pistache::Rest::Routes::bind;
   router_->options(base + std::string("/"),
                    bind(&RestServer::root_handler, this));
+
+  /* binding root_handler in order to handle get at root.
+   * It's necessary to provide a way to reach the root to the client.
+   * Thanks this the client can explore the service using Hateoas.
+   *
+   *        see server/Resources/Endpoint/Hateoas.h
+   */
+  router_->get(base + std::string("/"),
+                   bind(&RestServer::get_root_handler, this));
   // servicectrls
   router_->post(base + std::string("/services"),
                 bind(&RestServer::post_servicectrl, this));
@@ -227,6 +239,7 @@ void RestServer::setup_routes() {
                bind(&RestServer::get_servicectrl, this));
   router_->del(base + std::string("/services/:name"),
                bind(&RestServer::delete_servicectrl, this));
+  Hateoas::addRoute("services", base);
 
   // cubes
   router_->get(base + std::string("/cubes"),
@@ -242,6 +255,7 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/cubes/:cubeName"),
                    bind(&RestServer::cube_help, this));
+  Hateoas::addRoute("cubes", base);
 
   // netdevs
   router_->get(base + std::string("/netdevs"),
@@ -254,10 +268,12 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/netdevs/:netdevName"),
                    bind(&RestServer::netdev_help, this));
+  Hateoas::addRoute("netdevs", base);
 
   // version
   router_->get(base + std::string("/version"),
                bind(&RestServer::get_version, this));
+  Hateoas::addRoute("version", base);
 
   // connect & disconnect
   router_->post(base + std::string("/connect"),
@@ -267,10 +283,14 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/connect"),
                    bind(&RestServer::connect_help, this));
+  Hateoas::addRoute("connect", base);
+  Hateoas::addRoute("disconnect", base);
 
   // attach & detach
   router_->post(base + std::string("/attach"), bind(&RestServer::attach, this));
   router_->post(base + std::string("/detach"), bind(&RestServer::detach, this));
+  Hateoas::addRoute("attach", base);
+  Hateoas::addRoute("detach", base);
 
   // topology
   router_->get(base + std::string("/topology"),
@@ -280,6 +300,7 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/topology"),
                    bind(&RestServer::topology_help, this));
+  Hateoas::addRoute("topology", base);
 
   router_->addNotFoundHandler(bind(&RestServer::redirect, this));
 }
@@ -297,6 +318,14 @@ void RestServer::logJson(json j) {
   logger->debug("JSON Dump: \n");
   logger->debug(j.dump());
 #endif
+}
+
+void RestServer::get_root_handler(const Pistache::Rest::Request &request,
+                                  Pistache::Http::ResponseWriter response) {
+
+    auto js = Hateoas::HateoasSupport_root(request, host, port);
+    Rest::Server::ResponseGenerator::Generate({{kOk,
+                           ::strdup(js.dump().c_str())}}, std::move(response));
 }
 
 void RestServer::root_handler(const Pistache::Rest::Request &request,
@@ -892,6 +921,14 @@ void RestServer::redirect(const Pistache::Rest::Request &request,
   auto location = Pistache::Http::Header::Location(redirect);
   response.headers().add<Pistache::Http::Header::Location>(location);
   response.send(Pistache::Http::Code::Permanent_Redirect);
+}
+
+const std::string &RestServer::getHost() {
+    return host;
+}
+
+const std::string &RestServer::getPort() {
+    return port;
 }
 
 }  // namespace polycubed

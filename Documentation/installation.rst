@@ -60,6 +60,7 @@ Note: if you have llvm 6.0 installed (check with ``apt list --installed | grep "
 In this case, remove llvm 6.0 before starting the installation script:
 
 ::
+
     sudo apt remove llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
 
 
