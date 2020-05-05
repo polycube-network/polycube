@@ -38,6 +38,10 @@ ExtIface::ExtIface(const std::string &iface)
     : PeerIface(iface_mutex_),
       iface_(iface),
       peer_(nullptr),
+      ingress_next_(0xffff),
+      ingress_port_(0),
+      egress_next_(0xffff),
+      egress_port_(0),
       logger(spdlog::get("polycubed")) {
   if (used_ifaces.count(iface) != 0) {
     throw std::runtime_error("Iface already in use");
@@ -50,12 +54,8 @@ ExtIface::ExtIface(const std::string &iface)
 }
 
 ExtIface::~ExtIface() {
-  // std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-  ingress_program_.unload_func("handler");
-  tx_.unload_func("handler");
-  if (egress_program_loaded) {
+  if (egress_program_) {
     Netlink::getInstance().detach_from_tc(iface_, ATTACH_MODE::EGRESS);
-    egress_program_.unload_func("handler");
   }
   used_ifaces.erase(iface_);
 }
@@ -70,31 +70,6 @@ ExtIface* ExtIface::get_extiface(const std::string &iface_name) {
 
 uint16_t ExtIface::get_index() const {
   return index_;
-}
-
-int ExtIface::load_ingress() {
-  ebpf::StatusTuple res(0);
-
-  std::vector<std::string> flags;
-
-  flags.push_back(std::string("-DMOD_NAME=") + iface_);
-  flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
-                  std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
-
-  res = ingress_program_.init(get_ingress_code(), flags);
-  if (res.code() != 0) {
-    logger->error("Error compiling ingress program: {}", res.msg());
-    throw BPFError("failed to init ebpf program:" + res.msg());
-  }
-
-  int fd_rx;
-  res = ingress_program_.load_func("handler", get_program_type(), fd_rx);
-  if (res.code() != 0) {
-    logger->error("Error loading ingress program: {}", res.msg());
-    throw BPFError("failed to load ebpf program: " + res.msg());
-  }
-
-  return fd_rx;
 }
 
 int ExtIface::load_tx() {
@@ -122,30 +97,46 @@ int ExtIface::load_tx() {
 }
 
 int ExtIface::load_egress() {
+  if (egress_next_ == 0xffff) {
+    // No next program, remove the rx program
+    if (egress_program_) {
+      Netlink::getInstance().detach_from_tc(iface_, ATTACH_MODE::EGRESS);
+      egress_program_.reset();
+    }
+
+    return -1;
+  }
+
   ebpf::StatusTuple res(0);
+
   std::vector<std::string> flags;
   flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
                   std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
+  flags.push_back(std::string("-DNEXT_PROGRAM=") +
+                  std::to_string(egress_next_));
+  flags.push_back(std::string("-DNEXT_PORT=") + std::to_string(egress_port_));
 
-  res = egress_program_.init(get_egress_code(), flags);
+  std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>();
+
+  res = program->init(get_egress_code(), flags);
   if (res.code() != 0) {
     logger->error("Error compiling egress program: {}", res.msg());
     throw BPFError("failed to init ebpf program:" + res.msg());
   }
 
-  int fd_egress;
-  res =
-      egress_program_.load_func("handler", BPF_PROG_TYPE_SCHED_CLS, fd_egress);
+  int fd;
+  res = program->load_func("handler", BPF_PROG_TYPE_SCHED_CLS, fd);
   if (res.code() != 0) {
     logger->error("Error loading egress program: {}", res.msg());
     throw std::runtime_error("failed to load ebpf program: " + res.msg());
   }
-  egress_program_loaded = true;
 
   // attach to TC
-  Netlink::getInstance().attach_to_tc(iface_, fd_egress, ATTACH_MODE::EGRESS);
+  Netlink::getInstance().attach_to_tc(iface_, fd, ATTACH_MODE::EGRESS);
 
-  return fd_egress;
+  egress_program_ = std::move(program);
+
+  return fd;
 }
 
 uint16_t ExtIface::get_port_id() const {
@@ -165,9 +156,10 @@ PeerIface *ExtIface::get_peer_iface() {
 
 void ExtIface::set_next_index(uint16_t index) {
   std::lock_guard<std::mutex> guard(iface_mutex_);
-  auto *next = get_next_cube(ProgramType::INGRESS);
-  if (next != NULL) {
-    next->set_next(index, ProgramType::INGRESS);
+
+  if (cubes_.size() != 0) {
+    auto last_cube = cubes_.back();
+    last_cube->set_next(index, ProgramType::INGRESS);
   } else {
     set_next(index, ProgramType::INGRESS);
   }
@@ -175,37 +167,32 @@ void ExtIface::set_next_index(uint16_t index) {
 
 void ExtIface::set_next(uint16_t next, ProgramType type) {
   uint16_t port_id = peer_ ? peer_->get_port_id() : 0;
-  uint32_t value = port_id << 16 | next;
-  if (type == ProgramType::INGRESS) {
-    auto index_map = ingress_program_.get_array_table<uint32_t>("index_map");
-    index_map.update_value(0, value);
-  } else if (type == ProgramType::EGRESS) {
-    auto index_map = egress_program_.get_array_table<uint32_t>("index_map");
-    index_map.update_value(0, value);
-  }
-}
 
-TransparentCube* ExtIface::get_next_cube(ProgramType type) {
-  auto next = get_next(type);
-  for (auto &it : cubes_) {
-      if (it->get_index(type) == next) {
-          return it;
-      }
+  if (type == ProgramType::INGRESS) {
+    if (next == ingress_next_ && port_id == ingress_port_) {
+      return;
+    }
+    ingress_next_ = next;
+    ingress_port_ = port_id;
+    load_ingress();
+    
+
+  } else if (type == ProgramType::EGRESS) {
+    if (next == egress_next_ && port_id == egress_port_) {
+      return;
+    }
+    egress_next_ = next;
+    egress_port_ = port_id;
+    load_egress();
   }
-  return NULL;
 }
 
 uint16_t ExtIface::get_next(ProgramType type) {
-  int zero = 0;
-  unsigned int value = 0;
-  auto program = (type == ProgramType::INGRESS) ? &ingress_program_ : &egress_program_;
-  auto index_map = program->get_array_table<uint32_t>("index_map");
-  auto st = index_map.get_value(zero, value);
-  if (st.code() == -1) {
-    logger->error("failed to get interface {0} nexthop", get_iface_name());
+  if (type == ProgramType::INGRESS) {
+    return ingress_next_;
+  } else {
+    return egress_next_;
   }
-
-  return value & 0xffff;
 }
 
 std::vector<std::string> ExtIface::get_service_chain(ProgramType type) {

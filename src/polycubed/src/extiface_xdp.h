@@ -47,6 +47,8 @@ class ExtIfaceXDP : public ExtIface {
   virtual ~ExtIfaceXDP();
 
  protected:
+  int load_ingress();
+
   // XDP egress programs can't rely on the TC_EGRESS hook to be executed.
   // This version of update_indexes() also connects the egress programs chain to
   // the peer of the interface (if present).

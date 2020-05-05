@@ -32,13 +32,10 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, int attach_flags)
     : ExtIface(iface), attach_flags_(attach_flags) {
   try {
     std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-    int fd_rx = load_ingress();
     int fd_tx = load_tx();
-    load_egress();
-
     index_ = PatchPanel::get_xdp_instance().add(fd_tx);
     redir_index_ = index_;
-    Netlink::getInstance().attach_to_xdp(iface_, fd_rx, attach_flags_);
+
   } catch (...) {
     used_ifaces.erase(iface);
     throw;
@@ -47,7 +44,53 @@ ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, int attach_flags)
 
 ExtIfaceXDP::~ExtIfaceXDP() {
   PatchPanel::get_xdp_instance().remove(index_);
-  Netlink::getInstance().detach_from_xdp(iface_, attach_flags_);
+  if (ingress_program_) {
+    Netlink::getInstance().detach_from_xdp(iface_, attach_flags_);
+  }
+}
+
+int ExtIfaceXDP::load_ingress() {
+  if (ingress_next_ == 0xffff) {
+    // No next program, remove the rx program
+    if (ingress_program_) {
+      Netlink::getInstance().detach_from_xdp(iface_, attach_flags_);
+      ingress_program_.reset();
+    }
+
+    return -1;
+  }
+
+  ebpf::StatusTuple res(0);
+
+  std::vector<std::string> flags;
+
+  flags.push_back(std::string("-DMOD_NAME=") + iface_);
+  flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
+                  std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
+  flags.push_back(std::string("-DNEXT_PROGRAM=") +
+                  std::to_string(ingress_next_));
+  flags.push_back(std::string("-DNEXT_PORT=") + std::to_string(ingress_port_));
+
+  std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>();
+
+  res = program->init(get_ingress_code(), flags);
+  if (res.code() != 0) {
+    logger->error("Error compiling ingress program: {}", res.msg());
+    throw BPFError("failed to init ebpf program:" + res.msg());
+  }
+
+  int fd;
+  res = program->load_func("handler", BPF_PROG_TYPE_XDP, fd);
+  if (res.code() != 0) {
+    logger->error("Error loading ingress program: {}", res.msg());
+    throw BPFError("failed to load ebpf program: " + res.msg());
+  }
+
+  Netlink::getInstance().attach_to_xdp(iface_, fd, attach_flags_);
+
+  ingress_program_ = std::move(program);
+
+  return fd;
 }
 
 void ExtIfaceXDP::update_indexes() {
@@ -163,34 +206,26 @@ struct pkt_metadata {
 
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
-BPF_TABLE("array", int, u32, index_map, 1);
 
 int handler(struct xdp_md *ctx) {
-    void* data_end = (void*)(long)ctx->data_end;
-    void* data = (void*)(long)ctx->data;
-    u32 key = 0;
+  void* data_end = (void*)(long)ctx->data_end;
+  void* data = (void*)(long)ctx->data;
+  u32 key = 0;
 
-    struct ethhdr *eth = data;
-    if (data + sizeof(*eth)  > data_end)
-        return XDP_DROP;
-
-    struct pkt_metadata md = {};
-
-    u32 *index = index_map.lookup(&key);
-    if (!index)
+  struct ethhdr *eth = data;
+  if (data + sizeof(*eth)  > data_end)
       return XDP_DROP;
 
-    md.in_port = *index >> 16;
-    md.module_index = *index & 0xffff;
-    md.packet_len = (u32)(data_end - data);
+  struct pkt_metadata md = {};
 
-    port_md.update(&key, &md);
+  md.in_port = NEXT_PORT;
+  md.packet_len = (u32)(data_end - data);
 
-    //bpf_trace_printk("Executing tail call for port %d\n", md.in_port);
-    xdp_nodes.call(ctx, md.module_index );
-    //bpf_trace_printk("Tail call not executed for port %d\n", md.in_port);
+  port_md.update(&key, &md);
 
-    return XDP_DROP;
+  xdp_nodes.call(ctx, NEXT_PROGRAM);
+
+  return XDP_ABORTED;
 }
 )";
 

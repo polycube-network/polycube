@@ -307,19 +307,19 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   t.tcm_family = AF_UNSPEC;
   t.tcm_ifindex = rtnl_link_get_ifindex(link);
 
-  t.tcm_handle = TC_HANDLE(0, 0);
+  t.tcm_handle = TC_HANDLE(0, 1);
 
   switch (mode) {
   case ATTACH_MODE::EGRESS:
-    t.tcm_parent = TC_H_MAKE(TC_H_INGRESS, 0xFFF3U);  // why that number?
+    t.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_EGRESS);
     break;
   case ATTACH_MODE::INGRESS:
-    t.tcm_parent = TC_H_MAKE(TC_H_INGRESS, 0xFFF2U);  // why that number?
+    t.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_INGRESS);
     break;
   }
 
   protocol = htons(ETH_P_ALL);
-  prio = 0;
+  prio = 1;
   t.tcm_info = TC_H_MAKE(prio << 16, protocol);
 
   struct nl_msg *msg;
@@ -333,7 +333,7 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   }
 
   hdr = nlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, RTM_NEWTFILTER, sizeof(t),
-                  NLM_F_REQUEST | NLM_F_EXCL | NLM_F_CREATE);
+                  NLM_F_REQUEST | NLM_F_CREATE);
   memcpy(nlmsg_data(hdr), &t, sizeof(t));
 
   NLA_PUT_STRING(msg, TCA_KIND, "bpf");

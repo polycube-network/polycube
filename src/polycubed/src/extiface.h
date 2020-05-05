@@ -67,7 +67,6 @@ class ExtIface : public PeerIface {
   void set_parameter(const std::string &param_name,
                      const std::string &value) override;
   uint16_t get_next(ProgramType type);
-  TransparentCube* get_next_cube(ProgramType type);
   std::vector<std::string> get_service_chain(ProgramType type);
 
  protected:
@@ -82,7 +81,7 @@ class ExtIface : public PeerIface {
   std::mutex event_mutex;
 
   static std::map<std::string, ExtIface*> used_ifaces;
-  int load_ingress();
+  virtual int load_ingress() = 0;
   int load_egress();
   int load_tx();
 
@@ -93,8 +92,8 @@ class ExtIface : public PeerIface {
 
   virtual void update_indexes() override;
 
-  ebpf::BPF ingress_program_;
-  ebpf::BPF egress_program_;
+  std::unique_ptr<ebpf::BPF> ingress_program_;
+  std::unique_ptr<ebpf::BPF> egress_program_;
   void set_next(uint16_t next, ProgramType type);
 
   ebpf::BPF tx_;
@@ -103,9 +102,11 @@ class ExtIface : public PeerIface {
   PeerIface *peer_;  // the interface is connected to
 
   uint16_t index_;
-  uint16_t next_index_;
-
-  bool egress_program_loaded;
+  // 0xffff means there is no next program, let the packet pass
+  uint16_t ingress_next_;
+  uint16_t ingress_port_;
+  uint16_t egress_next_;
+  uint16_t egress_port_;
 
   mutable std::mutex iface_mutex_;
 

@@ -42,6 +42,8 @@ class ExtIfaceTC : public ExtIface {
   virtual ~ExtIfaceTC();
 
  protected:
+  int load_ingress();
+
   virtual std::string get_ingress_code() const;
   virtual std::string get_egress_code() const;
   virtual std::string get_tx_code() const;
