@@ -37,7 +37,8 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
   pcn_log(ctx, LOG_TRACE, "XDP Cube", md->in_port);
 #endif
   pcn_log(ctx, LOG_TRACE, "Receiving packet from port %d", md->in_port);
-  struct action *x = actions.lookup(&md->in_port);
+  u16 in_port_index = md->in_port;
+  struct action *x = actions.lookup(&in_port_index);
   if (!x) {
     pcn_log(ctx, LOG_DEBUG, "No action associated to port %d: dropping packet.",
             md->in_port);

@@ -183,16 +183,7 @@ bpf_prog_type ExtIfaceXDP::get_program_type() const {
 }
 
 const std::string ExtIfaceXDP::XDP_PROG_CODE = R"(
-#define KBUILD_MODNAME "MOD_NAME"
-#include <bcc/helpers.h>
-#include <bcc/proto.h>
-#include <uapi/linux/bpf.h>
-#include <uapi/linux/if_ether.h>
-#include <uapi/linux/if_packet.h>
-#include <uapi/linux/if_vlan.h>
-#include <uapi/linux/in.h>
-#include <uapi/linux/ip.h>
-#include <uapi/linux/ipv6.h>
+#include <linux/string.h>
 
 struct pkt_metadata {
   u16 module_index;
@@ -208,20 +199,18 @@ BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
 
 int handler(struct xdp_md *ctx) {
-  void* data_end = (void*)(long)ctx->data_end;
-  void* data = (void*)(long)ctx->data;
-  u32 key = 0;
+  int zero = 0;
 
-  struct ethhdr *eth = data;
-  if (data + sizeof(*eth)  > data_end)
-      return XDP_DROP;
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
+  }
 
-  struct pkt_metadata md = {};
-
-  md.in_port = NEXT_PORT;
-  md.packet_len = (u32)(data_end - data);
-
-  port_md.update(&key, &md);
+  // Initialize metadata
+  md->in_port = NEXT_PORT;
+  md->packet_len = ctx->data_end - ctx->data;
+  md->traffic_class = 0;
+  memset(md->md, 0, sizeof(md->md));
 
   xdp_nodes.call(ctx, NEXT_PROGRAM);
 

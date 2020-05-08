@@ -261,52 +261,47 @@ const std::string TransparentCubeXDP::TRANSPARENTCUBEXDP_WRAPPER = R"(
 //BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
-  u32 inport_key = 0;
-  struct pkt_metadata *int_md;
-  struct pkt_metadata md = {};
+  int zero = 0;
 
-  int_md = port_md.lookup(&inport_key);
-  if (int_md) {
-    md.cube_id = CUBE_ID;
-    md.packet_len = int_md->packet_len;
-    md.traffic_class = int_md->traffic_class;
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
+  }
 
-    int rc = handle_rx(ctx, &md);
+  int rc = handle_rx(ctx, md);
 
-    // Save the traffic class for the next program in case it was changed
-    // by the current one
-    int_md->traffic_class = md.traffic_class;
-
-    switch (rc) {
+  switch (rc) {
     case RX_DROP:
       return XDP_DROP;
+
     case RX_OK:
 #if NEXT == 0xffff
     return XDP_PASS;
 #else
     xdp_nodes.call(ctx, NEXT);
-    return XDP_DROP;
+    return XDP_ABORTED;
 #endif
-    }
   }
 
-  return XDP_DROP;
+  return XDP_ABORTED;
 }
 
 static __always_inline
 int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
                        u16 reason) {
-  void *data_end = (void*)(long)pkt->data_end;
-  void *data = (void*)(long)pkt->data;
+  u16 in_port = md->in_port;
 
   md->cube_id = CUBE_ID;
   // For transparent cubes in_port is used by the controller to know the
   // direction of the packet
   md->in_port = POLYCUBE_PROGRAM_TYPE;
-  md->packet_len = (u32)(data_end - data);
+  md->packet_len = pkt->data_end - pkt->data;
   md->reason = reason;
 
   return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));
+
+  // Restore original port
+  md->in_port = in_port;
 }
 )";
 

@@ -345,36 +345,29 @@ void call_egress_program_with_metadata(struct CTXTYPE *skb,
 
 const std::string CubeXDP::CUBEXDP_WRAPPER = R"(
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
-  u32 inport_key = 0;
-  struct pkt_metadata *int_md;
-  struct pkt_metadata md = {};
+  int zero = 0;
 
-  int_md = port_md.lookup(&inport_key);
-  if (int_md) {
-    md.cube_id = CUBE_ID;
-    md.in_port = int_md->in_port;
-    md.packet_len = int_md->packet_len;
-    md.traffic_class = int_md->traffic_class;
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
+  }
 
-    int rc = handle_rx(ctx, &md);
+  int rc = handle_rx(ctx, md);
 
-    // Save the traffic class for the next program in case it was changed
-    // by the current one
-    int_md->traffic_class = md.traffic_class;
-
-    switch (rc) {
+  switch (rc) {
     case RX_DROP:
       return XDP_DROP;
+
     case RX_OK: {
 #if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
-      int port = md.in_port;
+      int port = md->in_port;
       u32 *next = egress_next.lookup(&port);
       if (!next) {
-        return XDP_DROP;
+        return XDP_ABORTED;
       }
       
       if (*next == 0) {
-        return XDP_DROP;
+        return XDP_ABORTED;
 
       } else if (*next >> 16 != 0) {
         // Use the XDP specific index if set
@@ -389,22 +382,16 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
       return XDP_PASS;
 #endif
     }
-
-    default:
-      return rc;
-    }
   }
 
-  return XDP_DROP;
+  return XDP_ABORTED;
 }
 
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
   u32 *next = forward_chain_.lookup(&out_port);
   if (next) {
-    u32 inport_key = 0;
-    md->in_port = (*next) >> 16;  // update port_id for next module.
-    port_md.update(&inport_key, md);
+    md->in_port = (*next) >> 16;  // update port_id for next module
     xdp_nodes.call(pkt, *next & 0xffff);
   }
 
@@ -414,11 +401,8 @@ int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port)
 static __always_inline
 int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
                        u16 reason) {
-  void *data_end = (void*)(long)pkt->data_end;
-  void *data = (void*)(long)pkt->data;
-
   md->cube_id = CUBE_ID;
-  md->packet_len = (u32)(data_end - data);
+  md->packet_len = pkt->data_end - pkt->data;
   md->reason = reason;
 
   return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));

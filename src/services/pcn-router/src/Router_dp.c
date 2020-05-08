@@ -275,7 +275,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_TRACE, "in_port: %d, proto: 0x%x, mac_src: %M mac_dst: %M",
           md->in_port, bpf_htons(eth->proto), eth->src, eth->dst);
 
-  struct r_port *in_port = router_port.lookup(&md->in_port);
+  u16 in_port_index = md->in_port;
+  struct r_port *in_port = router_port.lookup(&in_port_index);
   if (!in_port) {
     pcn_log(ctx, LOG_ERR, "received packet from non valid port: %d",
             md->in_port);

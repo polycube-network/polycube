@@ -114,12 +114,7 @@ int controller_module_rx(struct __sk_buff *ctx) {
 
 // Receives packet from controller and forwards it to the CubeXDP
 const std::string CTRL_XDP_RX = R"(
-#include <bcc/helpers.h>
-#include <bcc/proto.h>
-
-#include <uapi/linux/bpf.h>
-#include <uapi/linux/if_ether.h>
-
+#include <linux/string.h>
 #include <linux/rcupdate.h>
 
 struct xdp_metadata {
@@ -145,14 +140,17 @@ BPF_TABLE("array", u32, u32, xdp_index_map_rx, 1);
 
 int controller_module_rx(struct xdp_md *ctx) {
   pcn_log(ctx, LOG_TRACE, "[xdp-decapsulator]: from controller");
-  u32 key = 0;
-  struct pkt_metadata xdp_md = {0};
+  int zero = 0;
 
-  u32 zero = 0;
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
+  }
+
   u32 *index = xdp_index_map_rx.lookup(&zero);
   if (!index) {
     pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: !index");
-    return XDP_DROP;
+    return XDP_ABORTED;
   }
 
   rcu_read_lock();
@@ -163,24 +161,25 @@ int controller_module_rx(struct xdp_md *ctx) {
 
   u32 i = *index;
 
-  struct xdp_metadata *md = md_map_rx.lookup(&i);
-  if (!md) {
-    pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: !md");
-    return XDP_DROP;
+  struct xdp_metadata *xdp_md = md_map_rx.lookup(&i);
+  if (!xdp_md) {
+    pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: !xdp_md");
+    return XDP_ABORTED;
   }
 
-  xdp_md.in_port = md->port_id;
-  xdp_md.module_index = md->module_index;
+  // Initialize metadata
+  md->in_port = xdp_md->port_id;
+  md->packet_len = ctx->data_end - ctx->data;
+  md->traffic_class = 0;
+  memset(md->md, 0, sizeof(md->md));
 
-  port_md.update(&key, &xdp_md);
-
-  if (xdp_md.module_index == 0xffff) {
+  if (xdp_md->module_index == 0xffff) {
     pcn_log(ctx, LOG_INFO, "[xdp-decapsulator]: NH is stack");
     return XDP_PASS;
   } else {
-    xdp_nodes.call(ctx, xdp_md.module_index);
-    pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: 'xdp_nodes.call'. Module is: %d", xdp_md.module_index);
-    return XDP_DROP;
+    xdp_nodes.call(ctx, xdp_md->module_index);
+    pcn_log(ctx, LOG_ERR, "[xdp-decapsulator]: 'xdp_nodes.call'. Module is: %d", xdp_md->module_index);
+    return XDP_ABORTED;
   }
 }
 )";

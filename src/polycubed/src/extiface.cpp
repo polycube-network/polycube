@@ -157,12 +157,16 @@ PeerIface *ExtIface::get_peer_iface() {
 void ExtIface::set_next_index(uint16_t index) {
   std::lock_guard<std::mutex> guard(iface_mutex_);
 
-  if (cubes_.size() != 0) {
-    auto last_cube = cubes_.back();
-    last_cube->set_next(index, ProgramType::INGRESS);
-  } else {
-    set_next(index, ProgramType::INGRESS);
+  // Find the last cube with an egress program
+  for (int i = cubes_.size() - 1; i >= 0; i++) {
+    if (cubes_[i]->get_index(ProgramType::INGRESS)) {
+      cubes_[i]->set_next(index, ProgramType::INGRESS);
+      return;
+    }
   }
+  
+  // If there is no cube, set next index of the rx program of the interface
+  set_next(index, ProgramType::INGRESS);
 }
 
 void ExtIface::set_next(uint16_t next, ProgramType type) {
