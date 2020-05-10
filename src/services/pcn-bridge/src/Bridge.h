@@ -119,7 +119,6 @@ class Bridge : public BridgeBase {
   bool stp_enabled_;
   std::shared_ptr<Fdb> fdb_;
   std::unordered_map<uint16_t, std::shared_ptr<Stp>> stps_;
-  std::mutex ports_mutex_;
   std::thread timestamp_update_thread_;
   std::atomic<bool> quit_thread_;
 };
