@@ -139,9 +139,9 @@ const ebpf::TableDesc &BaseCube::get_table_desc(const std::string &table_name,
                                          int index, ProgramType type) {
   switch (type) {
   case ProgramType::INGRESS:
-    return ingress_programs_[index]->get_table(table_name).getTableDescription();
+    return ingress_programs_[index]->get_table(table_name).get_table_desc();
   case ProgramType::EGRESS:
-    return egress_programs_[index]->get_table(table_name).getTableDescription();
+    return egress_programs_[index]->get_table(table_name).get_table_desc();
   }
 }
 
