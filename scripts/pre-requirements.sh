@@ -8,8 +8,14 @@ mkdir -p $WORKDIR
 $SUDO apt update
 $SUDO bash -c "apt install --allow-unauthenticated -y wget gnupg2 software-properties-common"
 
-# golang v1.12 still not available in repos
-$SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
+os_limit="20.04"
+os_version=`cat /etc/os-release | grep -Po 'VERSION_ID="\K.*?(?=")'`
+
+# golang v1.12 still not available in repos for Ubuntu versions < 20.04
+if (( $(echo "$os_version < $os_limit" | bc -l) ))
+then
+  $SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
+fi
 
 $SUDO apt update
 PACKAGES=""

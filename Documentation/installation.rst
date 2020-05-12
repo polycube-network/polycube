@@ -72,6 +72,13 @@ Install GO
 
 Go 1.8+ is needed to run ``polycubectl``, if you only plan to install ``polycubed`` you can skip this step.
 
+Since Ubuntu 20.04, support for ``golang-go`` has been introduced into the main repositories. Thus, you just need to run
+
+::
+	sudo apt install golang-go
+
+Instead, for all the previous versions (< 20.04) please refer to the following instructions:
+
 ::
 
     # If you are running a previous Ubuntu version, you could add the
