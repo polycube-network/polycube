@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 
+#include <linux/bpf.h>
+
 #include "polycube/services/table_desc.h"
 
 #define INT "int"
@@ -121,11 +123,48 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
   auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
 
   json j_entries;
-  // Extracting the value of each map entry
-  for (auto &entry : entries) {
-    int offset = 0;
-    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
-    j_entries.push_back(j_entry);
+  switch (desc.type) {
+    // In this cases the value is the user defined type and we also need to
+    // export keys
+  case BPF_MAP_TYPE_DEVMAP_HASH:
+  case BPF_MAP_TYPE_LRU_HASH:
+  case BPF_MAP_TYPE_LRU_PERCPU_HASH:
+  case BPF_MAP_TYPE_PERCPU_HASH:
+  case BPF_MAP_TYPE_HASH: {
+    json key_desc = json::parse(string{desc.key_desc});
+    cube_ref.logger()->debug("{0} key_desc:\n{1}", map_name, key_desc.dump(2));
+    for (auto &entry : entries) {
+      int val_offset = 0, key_offset = 0;
+      json entry_obj;
+      entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+      entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
+      j_entries.push_back(entry_obj);
+    }
+    break;
+  }
+    // In these cases the value is the FileDescriptor of the inner map
+  case BPF_MAP_TYPE_HASH_OF_MAPS:
+  case BPF_MAP_TYPE_ARRAY_OF_MAPS: {
+    // TODO: we have the inner table file descriptor, not the map_name, so how do we get table description to parse the map?
+    /*
+    for (auto &entry : entries) {
+      int offset = 0;
+      auto inner_table_fd = recExtract(value_desc, entry->getValue(), offset).get<int>();
+      RawTable t(&inner_table_fd);
+    }
+    */
+    break;
+  }
+    // Default case, the value is the user defined type and there is no need to export keys
+  default: {
+    // Extracting the value of each map entry
+    for (auto &entry : entries) {
+      int offset = 0;
+      auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+      j_entries.push_back(j_entry);
+    }
+    break;
+  }
   }
   return j_entries;
 }
