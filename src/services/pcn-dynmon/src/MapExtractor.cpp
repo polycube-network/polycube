@@ -116,21 +116,18 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
   auto value_desc = json::parse(string{desc.leaf_desc});
   cube_ref.logger()->debug("{0} leaf_desc:\n{1}",map_name,value_desc.dump(2));
 
-  // Getting the RawTable
+  // Getting the RawTable, but parse entries only if map type is supported
   auto table = cube_ref.get_raw_table(map_name, index, type);
-
-  // Getting the map entries
-  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
 
   json j_entries;
   switch (desc.type) {
-    // In this cases the value is the user defined type and we also need to
-    // export keys
-  case BPF_MAP_TYPE_DEVMAP_HASH:
   case BPF_MAP_TYPE_LRU_HASH:
-  case BPF_MAP_TYPE_LRU_PERCPU_HASH:
-  case BPF_MAP_TYPE_PERCPU_HASH:
   case BPF_MAP_TYPE_HASH: {
+    // Case to handle simple hash types (key->value)
+
+    // Getting the map entries
+    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+
     json key_desc = json::parse(string{desc.key_desc});
     cube_ref.logger()->debug("{0} key_desc:\n{1}", map_name, key_desc.dump(2));
     for (auto &entry : entries) {
@@ -142,28 +139,21 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
     }
     break;
   }
-    // In these cases the value is the FileDescriptor of the inner map
-  case BPF_MAP_TYPE_HASH_OF_MAPS:
-  case BPF_MAP_TYPE_ARRAY_OF_MAPS: {
-    // TODO: we have the inner table file descriptor, not the map_name, so how do we get table description to parse the map?
-    /*
-    for (auto &entry : entries) {
-      int offset = 0;
-      auto inner_table_fd = recExtract(value_desc, entry->getValue(), offset).get<int>();
-      RawTable t(&inner_table_fd);
-    }
-    */
-    break;
-  }
-    // Default case, the value is the user defined type and there is no need to export keys
-  default: {
-    // Extracting the value of each map entry
+  case BPF_MAP_TYPE_ARRAY: {
+    // Case to handle simple array types (index->value)
+
+    // Getting the map entries
+    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+
     for (auto &entry : entries) {
       int offset = 0;
       auto j_entry = recExtract(value_desc, entry->getValue(), offset);
       j_entries.push_back(j_entry);
     }
     break;
+  }
+  default: {
+    throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
   }
   }
   return j_entries;
