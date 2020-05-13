@@ -52,9 +52,11 @@ class CubeTC : public Cube {
 
  protected:
   static std::string get_wrapper_code();
+  std::string get_redirect_code();
 
-  static void do_compile(int module_index, ProgramType type, LogLevel level_,
-                         ebpf::BPF &bpf, const std::string &code, int index, bool shadow, bool span);
+  void do_compile(int module_index, ProgramType type, LogLevel level_,
+                  ebpf::BPF &bpf, const std::string &code, int index,
+                  bool shadow, bool span);
   static int do_load(ebpf::BPF &bpf);
   static void do_unload(ebpf::BPF &bpf);
 

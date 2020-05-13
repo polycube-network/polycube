@@ -56,8 +56,12 @@ class CubeXDP : public Cube {
                   ProgramType type) override;
   void del_program(int index, ProgramType type) override;
 
+  void set_egress_next(int port, uint16_t index) override;
+  void set_egress_next_netdev(int port, uint16_t index);
+
  protected:
   static std::string get_wrapper_code();
+  std::string get_redirect_code();
 
   void compile(ebpf::BPF &bpf, const std::string &code, int index,
                ProgramType type);
@@ -75,6 +79,8 @@ class CubeXDP : public Cube {
   std::array<std::unique_ptr<ebpf::BPF>, _POLYCUBE_MAX_BPF_PROGRAMS>
       egress_programs_tc_;
   std::unique_ptr<ebpf::BPFProgTable> egress_programs_table_tc_;
+
+  std::unique_ptr<ebpf::BPFArrayTable<uint32_t>> egress_next_xdp_;
 
  private:
   static const std::string CUBEXDP_COMMON_WRAPPER;

@@ -26,20 +26,9 @@
 namespace polycube {
 namespace polycubed {
 
-ExtIfaceTC::ExtIfaceTC(const std::string &iface) : ExtIface(iface) {
-  try {
-    std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-    int fd_tx = load_tx();
-    index_ = PatchPanel::get_tc_instance().add(fd_tx);
-
-  } catch (...) {
-    used_ifaces.erase(iface);
-    throw;
-  }
-}
+ExtIfaceTC::ExtIfaceTC(const std::string &iface) : ExtIface(iface) {}
 
 ExtIfaceTC::~ExtIfaceTC() {
-  PatchPanel::get_tc_instance().remove(index_);
   if (ingress_program_) {
     Netlink::getInstance().detach_from_tc(iface_);
   }
@@ -97,10 +86,6 @@ std::string ExtIfaceTC::get_egress_code() const {
   return RX_CODE;
 }
 
-std::string ExtIfaceTC::get_tx_code() const {
-  return TX_CODE;
-}
-
 bpf_prog_type ExtIfaceTC::get_program_type() const {
   return BPF_PROG_TYPE_SCHED_CLS;
 }
@@ -115,15 +100,6 @@ int handler(struct __sk_buff *skb) {
   nodes.call(skb, NEXT_PROGRAM);
 
   return TC_ACT_SHOT;
-}
-)";
-
-const std::string ExtIfaceTC::TX_CODE = R"(
-#include <uapi/linux/pkt_cls.h>
-int handler(struct __sk_buff *skb) {
-  //bpf_trace_printk("egress %d\n", INTERFACE_INDEX);
-  bpf_redirect(INTERFACE_INDEX, 0);
-  return TC_ACT_REDIRECT;
 }
 )";
 

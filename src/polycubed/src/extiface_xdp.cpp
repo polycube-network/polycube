@@ -29,21 +29,9 @@ namespace polycube {
 namespace polycubed {
 
 ExtIfaceXDP::ExtIfaceXDP(const std::string &iface, int attach_flags)
-    : ExtIface(iface), attach_flags_(attach_flags) {
-  try {
-    std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-    int fd_tx = load_tx();
-    index_ = PatchPanel::get_xdp_instance().add(fd_tx);
-    redir_index_ = index_;
-
-  } catch (...) {
-    used_ifaces.erase(iface);
-    throw;
-  }
-}
+    : ExtIface(iface), attach_flags_(attach_flags) {}
 
 ExtIfaceXDP::~ExtIfaceXDP() {
-  PatchPanel::get_xdp_instance().remove(index_);
   if (ingress_program_) {
     Netlink::getInstance().detach_from_xdp(iface_, attach_flags_);
   }
@@ -113,15 +101,16 @@ void ExtIfaceXDP::update_indexes() {
   // iface <- cubes[0] <- ... <- cubes[N-1] <- (peer_egress) <- peer/stack
 
   bool first = true;
-  next = redir_index_;
+  next = 0xffff;
   for (int i = 0; i < cubes_.size(); i++) {
     if (cubes_[i]->get_index(ProgramType::EGRESS)) {
       if (first) {
+        // The last XDP egress program (first in the list) must redir the packet
+        // to the interface
         // The last TC egress program (first in the list) must pass the packet
-        // (it is executed in the TC_EGRESS hook) (lower 16 bits)
-        // The last XDP egress program (first in the list) must use the XDP
-        // redir program (higer 16 bits)
-        cubes_[i]->set_next(redir_index_ << 16 | 0xffff, ProgramType::EGRESS);
+        // (it is executed in the TC_EGRESS hook)
+        auto *cube = dynamic_cast<TransparentCubeXDP *>(cubes_[i]);
+        cube->set_egress_next(get_port_id(), true, 0xffff, false);
         first = false;
 
       } else {
@@ -136,12 +125,7 @@ void ExtIfaceXDP::update_indexes() {
   Port *peer_port = dynamic_cast<Port *>(peer_);
   if (peer_port && peer_port->get_egress_index()) {
     if (first) {
-      // If there are not transparent egress programs set two different next
-      // indexes for the TC and the XDP version of the egress program of the
-      // peer cube:
-      // TC: pass the packet (0xffff), lower 16 bits
-      // XDP: index of the XDP redir program, higher 16 bits
-      peer_port->set_parent_egress_next(redir_index_ << 16 | 0xffff);
+      peer_port->set_parent_egress_next(0xffff);
       first = false;
     
     } else {
@@ -160,10 +144,11 @@ void ExtIfaceXDP::update_indexes() {
     set_next(next, ProgramType::EGRESS);
   }
 
-  index_ = next;
-  if (peer_) {
+  if (peer_ && index_ != next) {
     peer_->set_next_index(next);
   }
+
+  index_ = next;
 }
 
 std::string ExtIfaceXDP::get_ingress_code() const {
@@ -172,10 +157,6 @@ std::string ExtIfaceXDP::get_ingress_code() const {
 
 std::string ExtIfaceXDP::get_egress_code() const {
   return ExtIfaceTC::RX_CODE;
-}
-
-std::string ExtIfaceXDP::get_tx_code() const {
-  return XDP_REDIR_PROG_CODE;
 }
 
 bpf_prog_type ExtIfaceXDP::get_program_type() const {
@@ -215,13 +196,6 @@ int handler(struct xdp_md *ctx) {
   xdp_nodes.call(ctx, NEXT_PROGRAM);
 
   return XDP_ABORTED;
-}
-)";
-
-const std::string ExtIfaceXDP::XDP_REDIR_PROG_CODE = R"(
-int handler(struct xdp_md *ctx) {
-  //bpf_trace_printk("Redirect to ifindex %d\n", INTERFACE_INDEX);
-  return bpf_redirect(INTERFACE_INDEX, 0);
 }
 )";
 

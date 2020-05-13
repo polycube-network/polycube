@@ -38,6 +38,7 @@ ExtIface::ExtIface(const std::string &iface)
     : PeerIface(iface_mutex_),
       iface_(iface),
       peer_(nullptr),
+      index_(0xffff),
       ingress_next_(0xffff),
       ingress_port_(0),
       egress_next_(0xffff),
@@ -70,30 +71,6 @@ ExtIface* ExtIface::get_extiface(const std::string &iface_name) {
 
 uint16_t ExtIface::get_index() const {
   return index_;
-}
-
-int ExtIface::load_tx() {
-  ebpf::StatusTuple res(0);
-  std::vector<std::string> flags;
-
-  int iface_index = Netlink::getInstance().get_iface_index(iface_);
-  flags.push_back(std::string("-DINTERFACE_INDEX=") +
-                  std::to_string(iface_index));
-
-  res = tx_.init(get_tx_code(), flags);
-  if (res.code() != 0) {
-    logger->error("Error compiling tx program: {}", res.msg());
-    throw BPFError("failed to init ebpf program:" + res.msg());
-  }
-
-  int fd_tx_;
-  auto load_res = tx_.load_func("handler", get_program_type(), fd_tx_);
-  if (load_res.code() != 0) {
-    logger->error("Error loading tx program: {}", load_res.msg());
-    throw BPFError("failed to load ebpf program: " + load_res.msg());
-  }
-
-  return fd_tx_;
 }
 
 int ExtIface::load_egress() {

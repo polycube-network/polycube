@@ -41,6 +41,14 @@ class TransparentCubeXDP : virtual public TransparentCube {
                               const service::attach_cb &attach);
   virtual ~TransparentCubeXDP();
 
+  void set_next(uint16_t next, ProgramType type,
+                bool is_netdev = false) override;
+
+  // Allows to set a different next program or interface for the XDP and TC
+  // versions of the egress program
+  void set_egress_next(uint16_t next_xdp, bool next_xdp_is_netdev,
+                       uint16_t next_tc, bool next_tc_is_netdev);
+
   void reload(const std::string &code, int index, ProgramType type) override;
   int add_program(const std::string &code, int index,
                   ProgramType type) override;
@@ -62,6 +70,9 @@ class TransparentCubeXDP : virtual public TransparentCube {
 
  private:
   static const std::string TRANSPARENTCUBEXDP_WRAPPER;
+
+  uint16_t egress_next_tc_;
+  bool egress_next_tc_is_netdev_;
 };
 
 }  // namespace polycubed

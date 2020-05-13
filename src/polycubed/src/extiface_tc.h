@@ -46,11 +46,9 @@ class ExtIfaceTC : public ExtIface {
 
   virtual std::string get_ingress_code() const;
   virtual std::string get_egress_code() const;
-  virtual std::string get_tx_code() const;
   virtual bpf_prog_type get_program_type() const;
 
   static const std::string RX_CODE;
-  static const std::string TX_CODE;
 };
 
 }  // namespace polycubed

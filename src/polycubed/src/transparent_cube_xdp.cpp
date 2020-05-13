@@ -33,7 +33,9 @@ TransparentCubeXDP::TransparentCubeXDP(
     const std::vector<std::string> &egress_code, LogLevel level, CubeType type,
     const service::attach_cb &attach)
     : TransparentCube(name, service_name, PatchPanel::get_xdp_instance(), level,
-                      type, attach) {
+                      type, attach),
+      egress_next_tc_(0),
+      egress_next_tc_is_netdev_(false) {
   egress_programs_table_tc_ = std::move(egress_programs_table_);
   auto table = master_program_->get_prog_table("egress_programs_xdp");
   egress_programs_table_ =
@@ -45,6 +47,28 @@ TransparentCubeXDP::TransparentCubeXDP(
 TransparentCubeXDP::~TransparentCubeXDP() {
   // it cannot be done in Cube::~Cube() because calls a virtual method
   TransparentCube::uninit();
+}
+
+void TransparentCubeXDP::set_next(uint16_t next, ProgramType type,
+                                  bool is_netdev) {
+  if (type == ProgramType::EGRESS) {
+    egress_next_tc_ = next;
+    egress_next_tc_is_netdev_ = is_netdev;
+  }
+
+  TransparentCube::set_next(next, type, is_netdev);
+}
+
+void TransparentCubeXDP::set_egress_next(uint16_t next_xdp,
+                                         bool next_xdp_is_netdev,
+                                         uint16_t next_tc,
+                                         bool next_tc_is_netdev) {
+  egress_next_ = next_xdp;
+  egress_next_is_netdev_ = next_xdp_is_netdev;
+  egress_next_tc_ = next_tc;
+  egress_next_tc_is_netdev_ = next_tc_is_netdev;
+  
+  reload_all();
 }
 
 std::string TransparentCubeXDP::get_wrapper_code() {
@@ -75,7 +99,8 @@ void TransparentCubeXDP::reload(const std::string &code, int index,
                           egress_programs_tc_.at(index).get()));
 
         bcc_guard.unlock();
-        TransparentCubeTC::do_compile(get_id(), egress_next_,
+        TransparentCubeTC::do_compile(get_id(), egress_next_tc_,
+                                      egress_next_tc_is_netdev_,
                                       ProgramType::EGRESS, level_,
                                       *new_bpf_program, code, 0);
         int fd = CubeTC::do_load(*new_bpf_program);
@@ -121,7 +146,8 @@ void TransparentCubeXDP::reload_all() {
                           egress_programs_tc_.at(i).get()));
 
         bcc_guard.unlock();
-        TransparentCubeTC::do_compile(get_id(), egress_next_,
+        TransparentCubeTC::do_compile(get_id(), egress_next_tc_,
+                                      egress_next_tc_is_netdev_,
                                       ProgramType::EGRESS, level_,
                                       *new_bpf_program, egress_code_[i], 0);
         int fd = CubeTC::do_load(*new_bpf_program);
@@ -164,7 +190,8 @@ int TransparentCubeXDP::add_program(const std::string &code, int index, ProgramT
                                 egress_programs_.at(index).get()));
 
         bcc_guard.unlock();
-        TransparentCubeTC::do_compile(get_id(), egress_next_,
+        TransparentCubeTC::do_compile(get_id(), egress_next_tc_,
+                                      egress_next_tc_is_netdev_,
                                       ProgramType::EGRESS, level_,
                                       *egress_programs_tc_.at(index), code, 0);
         int fd = CubeTC::do_load(*egress_programs_tc_.at(index));
@@ -216,12 +243,15 @@ void TransparentCubeXDP::del_program(int index, ProgramType type) {
 void TransparentCubeXDP::compile(ebpf::BPF &bpf, const std::string &code,
                                  int index, ProgramType type) {
   uint16_t next;
+  bool is_netdev;
   switch (type) {
   case ProgramType::INGRESS:
     next = ingress_next_;
+    is_netdev = false;
     break;
   case ProgramType::EGRESS:
-    next = egress_next_ >> 16 == 0 ? egress_next_ : egress_next_ >> 16;
+    next = egress_next_;
+    is_netdev = egress_next_is_netdev_;
     break;
   }
 
@@ -236,8 +266,10 @@ void TransparentCubeXDP::compile(ebpf::BPF &bpf, const std::string &code,
   cflags.push_back(std::string("-DPOLYCUBE_XDP=1"));
   cflags.push_back(std::string("-DCTXTYPE=") + std::string("xdp_md"));
   cflags.push_back(std::string("-DNEXT=" + std::to_string(next)));
-  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
-                   std::to_string(static_cast<int>(type))));
+  cflags.push_back(std::string("-DNEXT_IS_NETDEV=") +
+                   std::to_string(int(is_netdev)));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=") +
+                   std::to_string(static_cast<int>(type)));
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags);
@@ -275,11 +307,13 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
       return XDP_DROP;
 
     case RX_OK:
-#if NEXT == 0xffff
-    return XDP_PASS;
+#if NEXT_IS_NETDEV
+      return bpf_redirect(NEXT, 0);
+#elif NEXT == 0xffff
+      return XDP_PASS;
 #else
-    xdp_nodes.call(ctx, NEXT);
-    return XDP_ABORTED;
+      xdp_nodes.call(ctx, NEXT);
+      return XDP_ABORTED;
 #endif
   }
 

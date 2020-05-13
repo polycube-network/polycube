@@ -83,11 +83,9 @@ class ExtIface : public PeerIface {
   static std::map<std::string, ExtIface*> used_ifaces;
   virtual int load_ingress() = 0;
   int load_egress();
-  int load_tx();
 
   virtual std::string get_ingress_code() const = 0;
   virtual std::string get_egress_code() const = 0;
-  virtual std::string get_tx_code() const = 0;
   virtual bpf_prog_type get_program_type() const = 0;
 
   virtual void update_indexes() override;
@@ -96,7 +94,6 @@ class ExtIface : public PeerIface {
   std::unique_ptr<ebpf::BPF> egress_program_;
   void set_next(uint16_t next, ProgramType type);
 
-  ebpf::BPF tx_;
   std::string iface_;
   unsigned int ifindex_iface;
   PeerIface *peer_;  // the interface is connected to

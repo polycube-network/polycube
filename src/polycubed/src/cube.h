@@ -63,13 +63,11 @@ class Cube : public BaseCube, public CubeIface {
   std::shared_ptr<PortIface> get_port(const std::string &name);
   std::map<std::string, std::shared_ptr<PortIface>> &get_ports();
 
-  void update_forwarding_table(int index, int value);
+  void update_forwarding_table(uint16_t port, uint32_t next, bool is_netdev);
   
   // Sets the index of the next program to call after the egress program of this
   // cube is executed.
-  // The higher 16 bits are reserved for XDP programs, if they are set they
-  // override the value of the lower 16 bits.
-  void set_egress_next(int port, uint32_t index);
+  virtual void set_egress_next(int port, uint16_t index);
 
   void set_conf(const nlohmann::json &conf);
   nlohmann::json to_json() const;
@@ -84,11 +82,11 @@ class Cube : public BaseCube, public CubeIface {
   uint16_t allocate_port_id();
   void release_port_id(uint16_t id);
 
-  std::unique_ptr<ebpf::BPFArrayTable<uint32_t>> forward_chain_;
-  std::unique_ptr<ebpf::BPFArrayTable<uint32_t>> egress_next_;
+  std::unique_ptr<ebpf::BPFArrayTable<uint16_t>> egress_next_;
 
   std::map<std::string, std::shared_ptr<PortIface>> ports_by_name_;
   std::map<int, std::shared_ptr<PortIface>> ports_by_index_;
+  std::map<uint16_t, std::pair<uint32_t, bool>> forward_chain_;
   std::set<uint16_t> free_ports_;  // keeps track of available ports
 
   std::map<std::string, std::shared_ptr<Veth>> veth_by_name_;

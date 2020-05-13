@@ -19,6 +19,7 @@
 #include "datapath_log.h"
 #include "exceptions.h"
 #include "patchpanel.h"
+#include "utils/utils.h"
 
 #include <iostream>
 
@@ -46,6 +47,11 @@ CubeXDP::CubeXDP(const std::string &name, const std::string &service_name,
   auto table = master_program_->get_prog_table("egress_programs_xdp");
   egress_programs_table_ =
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(table));
+
+  auto egress_next_xdp =
+      master_program_->get_array_table<uint32_t>("egress_next_xdp");
+  egress_next_xdp_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
+      new ebpf::BPFArrayTable<uint32_t>(egress_next_xdp));
 
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
@@ -212,14 +218,52 @@ void CubeXDP::del_program(int index, ProgramType type) {
   }
 }
 
+void CubeXDP::set_egress_next(int port, uint16_t index) {
+  Cube::set_egress_next(port, index);
+  egress_next_xdp_->update_value(port, index);
+}
+
+void CubeXDP::set_egress_next_netdev(int port, uint16_t index) {
+  Cube::set_egress_next(port, 0xffff);
+  uint32_t val = 1 << 16 | index;
+  egress_next_xdp_->update_value(port, val);
+}
+
 std::string CubeXDP::get_wrapper_code() {
   return Cube::get_wrapper_code() + CUBEXDP_COMMON_WRAPPER + CUBEXDP_WRAPPER +
          CUBEXDP_HELPERS;
 }
 
+std::string CubeXDP::get_redirect_code() {
+  std::stringstream ss;
+
+  for(auto const& [index, val] : forward_chain_) {
+    ss << "case " << index << ":\n";
+
+    if (val.second) {
+      // It is a net interface
+      ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
+    } else {
+      ss << "md->in_port = " << (val.first >> 16) << ";\n";
+      ss << "xdp_nodes.call(pkt, " << (val.first & 0xffff) << ");\n";
+    }
+
+    ss << "break;\n";
+  }
+
+  return ss.str();
+}
+
 void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code, int index,
                       ProgramType type) {
-  std::string all_code(get_wrapper_code() +
+  std::string wrapper_code = get_wrapper_code();
+
+  if (type == ProgramType::INGRESS) {
+    utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", get_redirect_code());
+  }
+  
+  // compile ebpf program
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags(cflags_);
@@ -251,8 +295,11 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
 }
 
 void CubeXDP::compileTC(ebpf::BPF &bpf, const std::string &code) {
+  std::string wrapper_code = CubeTC::get_wrapper_code();
+  utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", "");
+
   // compile ebpf program
-  std::string all_code(CubeTC::get_wrapper_code() +
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags(cflags_);
@@ -361,7 +408,7 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
     case RX_OK: {
 #if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
       int port = md->in_port;
-      u32 *next = egress_next.lookup(&port);
+      u32 *next = egress_next_xdp.lookup(&port);
       if (!next) {
         return XDP_ABORTED;
       }
@@ -369,12 +416,12 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
       if (*next == 0) {
         return XDP_ABORTED;
 
-      } else if (*next >> 16 != 0) {
-        // Use the XDP specific index if set
-        xdp_nodes.call(ctx, *next >> 16);
+      } else if (*next >> 16 == 1) {
+        // Next is a netdev
+        return bpf_redirect(*next & 0xffff, 0);
       
       } else {
-        // Otherwise use the generic index
+        // Next is a program
         xdp_nodes.call(ctx, *next & 0xffff);
       }
 
@@ -382,21 +429,25 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
       return XDP_PASS;
 #endif
     }
+
+    default:
+      // Called in case pcn_pkt_redirect() returned XDP_REDIRECT
+      return rc;
   }
 
   return XDP_ABORTED;
 }
 
+#if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
-  u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
-    md->in_port = (*next) >> 16;  // update port_id for next module
-    xdp_nodes.call(pkt, *next & 0xffff);
+  switch (out_port) {
+    _REDIRECT_CODE;
   }
 
   return XDP_ABORTED;
 }
+#endif
 
 static __always_inline
 int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,

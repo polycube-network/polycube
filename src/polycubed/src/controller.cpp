@@ -60,9 +60,10 @@ BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
 
 struct metadata {
 	u16 module_index;
+  u8 is_netdev;
 	u16 port_id;
-    u32 flags;
-};
+  u32 flags;
+} __attribute__((packed));
 
 BPF_TABLE("array", u32, struct metadata, md_map_rx, MD_MAP_SIZE);
 BPF_TABLE("array", u32, u32, index_map_rx, 1);
@@ -93,18 +94,21 @@ int controller_module_rx(struct __sk_buff *ctx) {
 
 	u16 in_port = md->port_id;
 	u16 module_index = md->module_index;
-    u32 flags = md->flags;
+  u8 is_netdev = md->is_netdev;
+  u32 flags = md->flags;
 
 	ctx->cb[0] = in_port << 16 | module_index;
-    ctx->cb[2] = flags;
-    if (module_index == 0xffff) {
-        pcn_log(ctx, LOG_INFO, "[tc-decapsulator]: NH is stack, flags: 0x%x", flags);
-        if (flags & MD_EGRESS_CONTEXT) {
-            return bpf_redirect(in_port, 0);
-        } else {
-            return 0;
-        }
+  ctx->cb[2] = flags;
+  if (is_netdev) {
+    return bpf_redirect(module_index, 0);
+  } else if (module_index == 0xffff) {
+    pcn_log(ctx, LOG_INFO, "[tc-decapsulator]: NH is stack, flags: 0x%x", flags);
+    if (flags & MD_EGRESS_CONTEXT) {
+        return bpf_redirect(in_port, 0);
+    } else {
+        return 0;
     }
+  }
 
 	nodes.call(ctx, module_index);
   pcn_log(ctx, LOG_ERR, "[tc-decapsulator]: 'nodes.call'. Module is: %d", module_index);
@@ -119,8 +123,9 @@ const std::string CTRL_XDP_RX = R"(
 
 struct xdp_metadata {
   u16 module_index;
+  u8 is_netdev;
   u16 port_id;
-};
+} __attribute__((packed));
 
 struct pkt_metadata {
   u16 module_index;
@@ -173,7 +178,9 @@ int controller_module_rx(struct xdp_md *ctx) {
   md->traffic_class = 0;
   memset(md->md, 0, sizeof(md->md));
 
-  if (xdp_md->module_index == 0xffff) {
+  if (xdp_md->is_netdev) {
+    return bpf_redirect(xdp_md->module_index, 0);
+  } else if (xdp_md->module_index == 0xffff) {
     pcn_log(ctx, LOG_INFO, "[xdp-decapsulator]: NH is stack");
     return XDP_PASS;
   } else {
@@ -323,13 +330,16 @@ void Controller::unregister_cb(int id) {
 }
 
 // caller must guarantee that module_index and port_id are valid
-void Controller::send_packet_to_cube(uint16_t module_index, uint16_t port_id,
+void Controller::send_packet_to_cube(uint16_t module_index, bool is_netdev,
+                                     uint16_t port_id,
                                      const std::vector<uint8_t> &packet,
-                                     service::Direction direction, bool mac_overwrite) {
+                                     service::Direction direction,
+                                     bool mac_overwrite) {
   ctrl_rx_md_index_++;
   ctrl_rx_md_index_ %= MD_MAP_SIZE;
 
-  metadata md_temp = {module_index, port_id, MD_PKT_FROM_CONTROLLER};
+  metadata md_temp = {module_index, (uint8_t)int(is_netdev), port_id,
+                      MD_PKT_FROM_CONTROLLER};
   if (direction == service::Direction::EGRESS) {
       md_temp.flags |= MD_EGRESS_CONTEXT;
   }

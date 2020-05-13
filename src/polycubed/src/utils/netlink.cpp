@@ -276,8 +276,8 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   }
 
   if (!(link = rtnl_link_get_by_name(cache, iface.c_str()))) {
-    logger->error("unable get link");
-    throw std::runtime_error("Unable get link");
+    logger->warn("Unable to get link {0}", iface);
+    return;
   }
 
   // add ingress qdisc to the interface
@@ -975,6 +975,11 @@ std::string Netlink::get_iface_mac(const std::string &iface) {
     memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
   else {
     close(fd);
+    if (errno == NLE_NOADDR || errno == NLE_NODEV) {
+      // Device has been deleted
+      return std::string("");
+    }
+
     throw std::runtime_error(
         std::string("get_iface_mac error determining the MAC address: ") +
         std::strerror(errno));
