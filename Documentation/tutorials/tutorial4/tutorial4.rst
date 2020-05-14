@@ -1,4 +1,4 @@
-Tutorial 4: Attach/Detatch multiple transparent cubes
+Tutorial 4: Attach multiple transparent cubes
 =============================================================
 
 This simple tutorial aims to show how multiple cubes can be attached to the same interface/port. For the sake of semplicity the configuration presented in this tutorial is really simple, but enough to undestand the principle behind these operations.

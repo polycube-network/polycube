@@ -1,29 +1,21 @@
 #!/bin/bash
 
+set -x
+
 # assume polycubed is already running
 # sudo polycubed -d
 
-# assume veth1 and veth2 already created and configured
-# ./setup_veth.sh
+# assume standard cube (br) and firewall (fw) already created and running
+# ./setup_env.sh
 
-function fwcleanup {
-  set +e
-  polycubectl firewall del fw
-}
-trap fwcleanup EXIT
-
-echo -e '\Example showing counters \n'
-
-set -x
 set -e
+set -x
 
-polycubectl firewall add fw
+echo 'Example showing counters'
+
 polycubectl firewall fw set loglevel=OFF
-polycubectl firewall fw ports add fw-p1
-polycubectl firewall fw ports add fw-p2
-polycubectl firewall fw ports fw-p1 set peer=veth1
-polycubectl firewall fw ports fw-p2 set peer=veth2
 
+#add rule to allow ping
 polycubectl firewall fw chain INGRESS rule add 0 src=10.0.0.1 dst=10.0.0.2 l4proto=ICMP action=FORWARD
 
 polycubectl firewall fw chain EGRESS rule add 0 src=10.0.0.2/32 dst=10.0.0.1/32 l4proto=ICMP action=FORWARD

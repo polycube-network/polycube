@@ -1,37 +1,44 @@
 #!/bin/bash
 
-set -x
+#Argument 1 is the physical interface name
+if [ $# -ne 1 ];then
+    echo "No arguments <physical_interface_name> supplied"
+    exit 1
+fi
 
 # assume polycubed is already running
 # sudo polycubed -d
 
-# assume veth1 and veth2 already created and configured
-# ./setup_veth.sh
+# There is no need to run setup_env.sh
+# since this example attaches the firewall directly to the physical interface
 
 function fwcleanup {
   set +e
-  polycubectl firewall del fw
+  polycubectl firewall del fw1
 }
 trap fwcleanup EXIT
 
-echo -e '\nExample using the host mode \n'
-echo -e '\n+++ ONLY the ingress chain is supported at the moment! \n'
+echo 'Example using the host mode'
 
 set -e
 set -x
 
-polycubectl firewall add fw
+polycubectl firewall add fw1
 
-# Connecting the host
-polycubectl firewall fw ports add to_host
-polycubectl firewall fw ports to_host set peer=:host
+# Attaching the firewall to the physical interface
+polycubectl attach fw1 $1
 
-# ++ Replace <physicalInterface> with the physical interface name
-polycubectl firewall fw ports add to_ens
-polycubectl firewall fw ports to_ens set peer=<physicalInterface>
+polycubectl firewall fw1 chain INGRESS rule add 0 l4proto=UDP action=FORWARD
+polycubectl firewall fw1 chain INGRESS rule add 1 l4proto=ICMP action=FORWARD
 
-polycubectl firewall fw chain INGRESS rule add 0 l4proto=UDP action=FORWARD
-polycubectl firewall fw chain INGRESS rule add 1 l4proto=ICMP action=FORWARD
+polycubectl firewall fw1 chain EGRESS rule add 0 l4proto=UDP action=FORWARD
+polycubectl firewall fw1 chain EGRESS rule add 1 l4proto=ICMP action=FORWARD
 
-#ping
-ping www.google.it
+echo "Press any key to test applied rules"
+read
+
+#Ping allowed
+ping -c 2 google.com
+
+#TCP not allowed (no response)
+nping -c 2 google.com
