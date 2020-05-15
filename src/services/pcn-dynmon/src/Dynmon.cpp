@@ -105,6 +105,7 @@ std::vector<std::shared_ptr<Metrics>> Dynmon::getMetricsList() {
           Metrics(*this, it->getName(), value.dump(), Utils::genTimestampMicroSeconds());
       metrics.push_back(std::make_shared<Metrics>(metric));
     } catch (const std::exception &ex) {
+      logger()->warn("{0}",ex.what());
       logger()->warn("Unable to read {0} map", it->getMapName());
     }
   }
