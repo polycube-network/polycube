@@ -136,7 +136,7 @@ void ParentResource::AddChild(std::shared_ptr<Resource> &&child) {
 
 bool ParentResource::IsMandatory() const {
   if (container_presence_)
-    return true;
+    return false;
   if (rpc_action_)
     return false;
   return std::end(children_) !=

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 
+#include <linux/bpf.h>
+
 #include "polycube/services/table_desc.h"
 
 #define INT "int"
@@ -114,18 +116,45 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
   auto value_desc = json::parse(string{desc.leaf_desc});
   cube_ref.logger()->debug("{0} leaf_desc:\n{1}",map_name,value_desc.dump(2));
 
-  // Getting the RawTable
+  // Getting the RawTable, but parse entries only if map type is supported
   auto table = cube_ref.get_raw_table(map_name, index, type);
 
-  // Getting the map entries
-  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
-
   json j_entries;
-  // Extracting the value of each map entry
-  for (auto &entry : entries) {
-    int offset = 0;
-    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
-    j_entries.push_back(j_entry);
+  switch (desc.type) {
+  case BPF_MAP_TYPE_LRU_HASH:
+  case BPF_MAP_TYPE_HASH: {
+    // Case to handle simple hash types (key->value)
+
+    // Getting the map entries
+    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+
+    json key_desc = json::parse(string{desc.key_desc});
+    cube_ref.logger()->debug("{0} key_desc:\n{1}", map_name, key_desc.dump(2));
+    for (auto &entry : entries) {
+      int val_offset = 0, key_offset = 0;
+      json entry_obj;
+      entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+      entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
+      j_entries.push_back(entry_obj);
+    }
+    break;
+  }
+  case BPF_MAP_TYPE_ARRAY: {
+    // Case to handle simple array types (index->value)
+
+    // Getting the map entries
+    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+
+    for (auto &entry : entries) {
+      int offset = 0;
+      auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+      j_entries.push_back(j_entry);
+    }
+    break;
+  }
+  default: {
+    throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
+  }
   }
   return j_entries;
 }

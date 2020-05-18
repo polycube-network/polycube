@@ -1,0 +1,33 @@
+{
+  "name": "Feature extractor probe",
+  "code": "#define IPPROTO_ICMP 1\n\nstruct features {\n    uint64_t timestamp;\n    uint16_t length;\n} __attribute__((packed));\n\nstruct session_key {\n    __be32 saddr;\n    __be32 daddr;\n    __be16 sport;\n    __be16 dport;\n    __u8   proto;\n} __attribute__((packed));\n\n\nBPF_ARRAY(SIMPLE_ARRAY, struct features, 1);\nBPF_TABLE(\"hash\", struct session_key, int, SIMPLE_HASH, 1);\nBPF_HASH_OF_MAPS(SIMPLE_HASH_OF_HASH, \"SIMPLE_ARRAY\", 1);\n\nstatic __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {\n  struct session_key key = {.saddr=1, .daddr=2, .sport=11, .dport=22, .proto=0};\n  int i = 0;\n  int *value = SIMPLE_HASH.lookup_or_try_init(&key, &i);\n  \n  struct features newVal = {.timestamp=1010, .length=1010};\n  SIMPLE_ARRAY.update(&i, &newVal);\n\n  return RX_OK;\n}\n",
+  "metrics": [
+    {
+      "name": "SIMPLE_HASH_OF_HASH",
+      "map-name": "SIMPLE_HASH_OF_HASH",
+      "open-metrics-metadata": {
+        "help": "This metric is a simple hash of hash map.",
+        "type": "counter",
+        "labels": []
+      }
+    },
+    {
+      "name": "SIMPLE_ARRAY",
+      "map-name": "SIMPLE_ARRAY",
+      "open-metrics-metadata": {
+        "help": "This metric is a simple array.",
+        "type": "counter",
+        "labels": []
+      }
+    },
+    {
+      "name": "SIMPLE_HASH",
+      "map-name": "SIMPLE_HASH",
+      "open-metrics-metadata": {
+        "help": "This is a simple hash map.",
+        "type": "counter",
+        "labels": []
+      }
+    }
+  ]
+}
