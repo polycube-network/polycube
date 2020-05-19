@@ -69,5 +69,4 @@ class Simplebridge : public SimplebridgeBase {
 
   void flood_packet(Port &port, PacketInMetadata &md,
                     const std::vector<uint8_t> &packet);
-  std::mutex ports_mutex_;
 };

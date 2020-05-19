@@ -99,9 +99,6 @@ void Simplebridge::flood_packet(Port &port, PacketInMetadata &md,
                                 const std::vector<uint8_t> &packet) {
   EthernetII p(&packet[0], packet.size());
 
-  // avoid adding or removing ports while flooding packet
-  std::lock_guard<std::mutex> guard(ports_mutex_);
-
   for (auto &it : get_ports()) {
     if (it->name() == port.name()) {
       continue;

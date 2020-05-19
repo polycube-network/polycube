@@ -19,6 +19,7 @@
 #include "datapath_log.h"
 #include "exceptions.h"
 #include "patchpanel.h"
+#include "utils/utils.h"
 
 #include <iostream>
 
@@ -56,10 +57,33 @@ std::string CubeTC::get_wrapper_code() {
          CUBETC_HELPERS;
 }
 
+std::string CubeTC::get_redirect_code() {
+  std::stringstream ss;
+
+  for(auto const& [index, val] : forward_chain_) {
+    ss << "case " << index << ":\n";
+    ss << "skb->cb[0] = " << val.first << ";\n";
+
+    if (val.second) {
+      // It is a net interface
+      ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
+    } else {
+      ss << "nodes.call(skb, " << (val.first & 0xffff) << ");\n";
+    }
+
+    ss << "break;\n";
+  }
+
+  return ss.str();
+}
+
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
                         ebpf::BPF &bpf, const std::string &code, int index, bool shadow, bool span) {
+  std::string wrapper_code = get_wrapper_code();
+  utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", get_redirect_code());
+
   // compile ebpf program
-  std::string all_code(get_wrapper_code() +
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags(cflags_);
@@ -305,13 +329,10 @@ int pcn_vlan_push_tag(struct CTXTYPE *ctx, u16 eth_proto, u32 vlan_id) {
 const std::string CubeTC::CUBETC_WRAPPER = R"(
 static __always_inline
 int forward(struct CTXTYPE *skb, u32 out_port) {
-  u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
-    skb->cb[0] = *next;
-    //bpf_trace_printk("fwd: port: %d, next: 0x%x\n", out_port, *next);
-    nodes.call(skb, *next & 0xffff);
+  switch (out_port) {
+    _REDIRECT_CODE;
   }
-  //bpf_trace_printk("fwd:%d=0\n", out_port);
+
   return TC_ACT_SHOT;
 }
 
@@ -367,17 +388,17 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
       // pass
 
       int port = md.in_port;
-      u32 *next = egress_next.lookup(&port);
+      u16 *next = egress_next.lookup(&port);
       if (!next) {
         return TC_ACT_SHOT;
       }
 
       if (*next == 0) {
         return TC_ACT_SHOT;
-      } else if ((*next & 0xffff) == 0xffff) {
+      } else if (*next == 0xffff) {
         return TC_ACT_OK;
       } else {
-        nodes.call(skb, *next & 0xffff);
+        nodes.call(skb, *next);
       }
 
 #else  // INGRESS
@@ -388,6 +409,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   return TC_ACT_SHOT;
 }
 
+#if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *skb,
                      struct pkt_metadata *md, u32 port) {
@@ -399,6 +421,7 @@ int pcn_pkt_redirect(struct CTXTYPE *skb,
 #endif
   return RX_REDIRECT;
 }
+#endif
 
 static __always_inline
 int pcn_pkt_redirect_ns(struct CTXTYPE *skb,

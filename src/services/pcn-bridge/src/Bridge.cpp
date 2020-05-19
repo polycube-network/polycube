@@ -117,8 +117,6 @@ void Bridge::broadcastPacket(Ports &port,
   uint16_t vlan = md.metadata[0];
   logger()->trace("metadata vlan:{0} tagged:{1}", vlan, tagged);
 
-  std::lock_guard<std::mutex> guard(ports_mutex_);
-
   for (auto &it : get_ports()) {
     if (it->name() == port.name()) {
       continue;
@@ -137,8 +135,6 @@ std::vector<std::shared_ptr<Ports>> Bridge::getPortsList() {
 }
 
 void Bridge::addPorts(const std::string &name, const PortsJsonObject &conf) {
-  std::lock_guard<std::mutex> guard(ports_mutex_);
-
   BridgeBase::addPorts(name, conf);
 }
 
@@ -152,8 +148,6 @@ void Bridge::replacePorts(const std::string &name,
 }
 
 void Bridge::delPorts(const std::string &name) {
-  std::lock_guard<std::mutex> guard(ports_mutex_);
-
   BridgeBase::delPorts(name);
 }
 

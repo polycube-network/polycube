@@ -19,6 +19,7 @@
 #include "datapath_log.h"
 #include "exceptions.h"
 #include "patchpanel.h"
+#include "utils/utils.h"
 
 #include <iostream>
 
@@ -46,6 +47,11 @@ CubeXDP::CubeXDP(const std::string &name, const std::string &service_name,
   auto table = master_program_->get_prog_table("egress_programs_xdp");
   egress_programs_table_ =
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(table));
+
+  auto egress_next_xdp =
+      master_program_->get_array_table<uint32_t>("egress_next_xdp");
+  egress_next_xdp_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
+      new ebpf::BPFArrayTable<uint32_t>(egress_next_xdp));
 
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
@@ -212,14 +218,52 @@ void CubeXDP::del_program(int index, ProgramType type) {
   }
 }
 
+void CubeXDP::set_egress_next(int port, uint16_t index) {
+  Cube::set_egress_next(port, index);
+  egress_next_xdp_->update_value(port, index);
+}
+
+void CubeXDP::set_egress_next_netdev(int port, uint16_t index) {
+  Cube::set_egress_next(port, 0xffff);
+  uint32_t val = 1 << 16 | index;
+  egress_next_xdp_->update_value(port, val);
+}
+
 std::string CubeXDP::get_wrapper_code() {
   return Cube::get_wrapper_code() + CUBEXDP_COMMON_WRAPPER + CUBEXDP_WRAPPER +
          CUBEXDP_HELPERS;
 }
 
+std::string CubeXDP::get_redirect_code() {
+  std::stringstream ss;
+
+  for(auto const& [index, val] : forward_chain_) {
+    ss << "case " << index << ":\n";
+
+    if (val.second) {
+      // It is a net interface
+      ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
+    } else {
+      ss << "md->in_port = " << (val.first >> 16) << ";\n";
+      ss << "xdp_nodes.call(pkt, " << (val.first & 0xffff) << ");\n";
+    }
+
+    ss << "break;\n";
+  }
+
+  return ss.str();
+}
+
 void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code, int index,
                       ProgramType type) {
-  std::string all_code(get_wrapper_code() +
+  std::string wrapper_code = get_wrapper_code();
+
+  if (type == ProgramType::INGRESS) {
+    utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", get_redirect_code());
+  }
+  
+  // compile ebpf program
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags(cflags_);
@@ -251,8 +295,11 @@ void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
 }
 
 void CubeXDP::compileTC(ebpf::BPF &bpf, const std::string &code) {
+  std::string wrapper_code = CubeTC::get_wrapper_code();
+  utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", "");
+
   // compile ebpf program
-  std::string all_code(CubeTC::get_wrapper_code() +
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
   std::vector<std::string> cflags(cflags_);
@@ -345,43 +392,36 @@ void call_egress_program_with_metadata(struct CTXTYPE *skb,
 
 const std::string CubeXDP::CUBEXDP_WRAPPER = R"(
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
-  u32 inport_key = 0;
-  struct pkt_metadata *int_md;
-  struct pkt_metadata md = {};
+  int zero = 0;
 
-  int_md = port_md.lookup(&inport_key);
-  if (int_md) {
-    md.cube_id = CUBE_ID;
-    md.in_port = int_md->in_port;
-    md.packet_len = int_md->packet_len;
-    md.traffic_class = int_md->traffic_class;
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
+  }
 
-    int rc = handle_rx(ctx, &md);
+  int rc = handle_rx(ctx, md);
 
-    // Save the traffic class for the next program in case it was changed
-    // by the current one
-    int_md->traffic_class = md.traffic_class;
-
-    switch (rc) {
+  switch (rc) {
     case RX_DROP:
       return XDP_DROP;
+
     case RX_OK: {
 #if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
-      int port = md.in_port;
-      u32 *next = egress_next.lookup(&port);
+      int port = md->in_port;
+      u32 *next = egress_next_xdp.lookup(&port);
       if (!next) {
-        return XDP_DROP;
+        return XDP_ABORTED;
       }
       
       if (*next == 0) {
-        return XDP_DROP;
+        return XDP_ABORTED;
 
-      } else if (*next >> 16 != 0) {
-        // Use the XDP specific index if set
-        xdp_nodes.call(ctx, *next >> 16);
+      } else if (*next >> 16 == 1) {
+        // Next is a netdev
+        return bpf_redirect(*next & 0xffff, 0);
       
       } else {
-        // Otherwise use the generic index
+        // Next is a program
         xdp_nodes.call(ctx, *next & 0xffff);
       }
 
@@ -391,34 +431,29 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
     }
 
     default:
+      // Called in case pcn_pkt_redirect() returned XDP_REDIRECT
       return rc;
-    }
-  }
-
-  return XDP_DROP;
-}
-
-static __always_inline
-int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
-  u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
-    u32 inport_key = 0;
-    md->in_port = (*next) >> 16;  // update port_id for next module.
-    port_md.update(&inport_key, md);
-    xdp_nodes.call(pkt, *next & 0xffff);
   }
 
   return XDP_ABORTED;
 }
 
+#if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
+static __always_inline
+int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
+  switch (out_port) {
+    _REDIRECT_CODE;
+  }
+
+  return XDP_ABORTED;
+}
+#endif
+
 static __always_inline
 int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
                        u16 reason) {
-  void *data_end = (void*)(long)pkt->data_end;
-  void *data = (void*)(long)pkt->data;
-
   md->cube_id = CUBE_ID;
-  md->packet_len = (u32)(data_end - data);
+  md->packet_len = pkt->data_end - pkt->data;
   md->reason = reason;
 
   return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));

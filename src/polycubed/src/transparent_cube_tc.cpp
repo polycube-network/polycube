@@ -45,7 +45,8 @@ std::string TransparentCubeTC::get_wrapper_code() {
          CubeTC::CUBETC_HELPERS + TRANSPARENTCUBETC_WRAPPER;
 }
 
-void TransparentCubeTC::do_compile(int id, uint16_t next, ProgramType type,
+void TransparentCubeTC::do_compile(int id, uint16_t next,
+                                   bool is_netdev, ProgramType type,
                                    LogLevel level_, ebpf::BPF &bpf,
                                    const std::string &code, int index) {
   std::string all_code(get_wrapper_code() +
@@ -56,8 +57,11 @@ void TransparentCubeTC::do_compile(int id, uint16_t next, ProgramType type,
   cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
   cflags.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
   cflags.push_back(std::string("-DNEXT=" + std::to_string(next)));
-  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
-                   std::to_string(static_cast<int>(type))));
+  cflags.push_back(std::string("-DNEXT_IS_NETDEV=") +
+                   std::to_string(int(is_netdev)));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=") +
+                   std::to_string(static_cast<int>(type)));
+
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   auto init_res = bpf.init(all_code, cflags);
@@ -68,16 +72,19 @@ void TransparentCubeTC::do_compile(int id, uint16_t next, ProgramType type,
 
 void TransparentCubeTC::compile(ebpf::BPF &bpf, const std::string &code,
                                 int index, ProgramType type) {
-  uint32_t next;
+  uint16_t next;
+  bool is_netdev;
   switch (type) {
   case ProgramType::INGRESS:
     next = ingress_next_;
+    is_netdev = false;
     break;
   case ProgramType::EGRESS:
     next = egress_next_;
+    is_netdev = egress_next_is_netdev_;
     break;
   }
-  do_compile(get_id(), next, type, level_, bpf, code, index);
+  do_compile(get_id(), next, is_netdev, type, level_, bpf, code, index);
 }
 
 int TransparentCubeTC::load(ebpf::BPF &bpf, ProgramType type) {
@@ -104,7 +111,9 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
     case RX_DROP:
       return TC_ACT_SHOT;
     case RX_OK:
-#if NEXT == 0xffff
+#if NEXT_IS_NETDEV
+      return bpf_redirect(NEXT, 0);
+#elif NEXT == 0xffff
       return TC_ACT_OK;
 #else
       nodes.call(skb, NEXT);

@@ -276,8 +276,8 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   }
 
   if (!(link = rtnl_link_get_by_name(cache, iface.c_str()))) {
-    logger->error("unable get link");
-    throw std::runtime_error("Unable get link");
+    logger->warn("Unable to get link {0}", iface);
+    return;
   }
 
   // add ingress qdisc to the interface
@@ -307,19 +307,19 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   t.tcm_family = AF_UNSPEC;
   t.tcm_ifindex = rtnl_link_get_ifindex(link);
 
-  t.tcm_handle = TC_HANDLE(0, 0);
+  t.tcm_handle = TC_HANDLE(0, 1);
 
   switch (mode) {
   case ATTACH_MODE::EGRESS:
-    t.tcm_parent = TC_H_MAKE(TC_H_INGRESS, 0xFFF3U);  // why that number?
+    t.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_EGRESS);
     break;
   case ATTACH_MODE::INGRESS:
-    t.tcm_parent = TC_H_MAKE(TC_H_INGRESS, 0xFFF2U);  // why that number?
+    t.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_INGRESS);
     break;
   }
 
   protocol = htons(ETH_P_ALL);
-  prio = 0;
+  prio = 1;
   t.tcm_info = TC_H_MAKE(prio << 16, protocol);
 
   struct nl_msg *msg;
@@ -333,7 +333,7 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   }
 
   hdr = nlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, RTM_NEWTFILTER, sizeof(t),
-                  NLM_F_REQUEST | NLM_F_EXCL | NLM_F_CREATE);
+                  NLM_F_REQUEST | NLM_F_CREATE);
   memcpy(nlmsg_data(hdr), &t, sizeof(t));
 
   NLA_PUT_STRING(msg, TCA_KIND, "bpf");
@@ -975,6 +975,11 @@ std::string Netlink::get_iface_mac(const std::string &iface) {
     memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
   else {
     close(fd);
+    if (errno == NLE_NOADDR || errno == NLE_NODEV) {
+      // Device has been deleted
+      return std::string("");
+    }
+
     throw std::runtime_error(
         std::string("get_iface_mac error determining the MAC address: ") +
         std::strerror(errno));

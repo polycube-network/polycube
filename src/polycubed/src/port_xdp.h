@@ -36,6 +36,8 @@ class PortXDP : public Port {
   int get_attach_flags() const;
   unsigned int get_peer_ifindex() const;
 
+  void set_parent_egress_next(uint16_t index) override;
+
  private:
   void attach_xdp(const std::string &peer);
   void detach_xdp();

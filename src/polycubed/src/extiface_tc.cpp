@@ -26,24 +26,56 @@
 namespace polycube {
 namespace polycubed {
 
-ExtIfaceTC::ExtIfaceTC(const std::string &iface) : ExtIface(iface) {
-  try {
-    std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
-    int fd_rx = load_ingress();
-    int fd_tx = load_tx();
-    load_egress();
+ExtIfaceTC::ExtIfaceTC(const std::string &iface) : ExtIface(iface) {}
 
-    index_ = PatchPanel::get_tc_instance().add(fd_tx);
-    Netlink::getInstance().attach_to_tc(iface_, fd_rx);
-  } catch (...) {
-    used_ifaces.erase(iface);
-    throw;
+ExtIfaceTC::~ExtIfaceTC() {
+  if (ingress_program_) {
+    Netlink::getInstance().detach_from_tc(iface_);
   }
 }
 
-ExtIfaceTC::~ExtIfaceTC() {
-  PatchPanel::get_tc_instance().remove(index_);
-  Netlink::getInstance().detach_from_tc(iface_);
+int ExtIfaceTC::load_ingress() {
+  if (ingress_next_ == 0xffff) {
+    // No next program, remove the rx program
+    if (ingress_program_) {
+      Netlink::getInstance().detach_from_tc(iface_, ATTACH_MODE::INGRESS);
+      ingress_program_.reset();
+    }
+
+    return -1;
+  }
+
+  ebpf::StatusTuple res(0);
+
+  std::vector<std::string> flags;
+
+  flags.push_back(std::string("-DMOD_NAME=") + iface_);
+  flags.push_back(std::string("-D_POLYCUBE_MAX_NODES=") +
+                  std::to_string(PatchPanel::_POLYCUBE_MAX_NODES));
+  flags.push_back(std::string("-DNEXT_PROGRAM=") +
+                  std::to_string(ingress_next_));
+  flags.push_back(std::string("-DNEXT_PORT=") + std::to_string(ingress_port_));
+
+  std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>();
+
+  res = program->init(get_ingress_code(), flags);
+  if (res.code() != 0) {
+    logger->error("Error compiling ingress program: {}", res.msg());
+    throw BPFError("failed to init ebpf program:" + res.msg());
+  }
+
+  int fd;
+  res = program->load_func("handler", BPF_PROG_TYPE_SCHED_CLS, fd);
+  if (res.code() != 0) {
+    logger->error("Error loading ingress program: {}", res.msg());
+    throw BPFError("failed to load ebpf program: " + res.msg());
+  }
+
+  Netlink::getInstance().attach_to_tc(iface_, fd, ATTACH_MODE::INGRESS);
+
+  ingress_program_ = std::move(program);
+
+  return fd;
 }
 
 std::string ExtIfaceTC::get_ingress_code() const {
@@ -54,10 +86,6 @@ std::string ExtIfaceTC::get_egress_code() const {
   return RX_CODE;
 }
 
-std::string ExtIfaceTC::get_tx_code() const {
-  return TX_CODE;
-}
-
 bpf_prog_type ExtIfaceTC::get_program_type() const {
   return BPF_PROG_TYPE_SCHED_CLS;
 }
@@ -66,31 +94,12 @@ const std::string ExtIfaceTC::RX_CODE = R"(
 #include <uapi/linux/pkt_cls.h>
 
 BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
-// TODO: how does it impact the performance?
-BPF_TABLE("array", int, u32, index_map, 1);
 
 int handler(struct __sk_buff *skb) {
-  //bpf_trace_printk("ingress %d %x\n", skb->ifindex, INDEX);
+  skb->cb[0] = NEXT_PORT << 16;
+  nodes.call(skb, NEXT_PROGRAM);
 
-  int zero = 0;
-  u32 *index = index_map.lookup(&zero);
-  if (!index)
-    return TC_ACT_OK;
-
-  skb->cb[0] = *index;
-  nodes.call(skb, *index & 0xFFFF);
-
-  //bpf_trace_printk("miss tailcall\n");
-  return TC_ACT_OK;
-}
-)";
-
-const std::string ExtIfaceTC::TX_CODE = R"(
-#include <uapi/linux/pkt_cls.h>
-int handler(struct __sk_buff *skb) {
-  //bpf_trace_printk("egress %d\n", INTERFACE_INDEX);
-  bpf_redirect(INTERFACE_INDEX, 0);
-  return TC_ACT_REDIRECT;
+  return TC_ACT_SHOT;
 }
 )";
 
