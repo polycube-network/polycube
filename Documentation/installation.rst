@@ -8,7 +8,7 @@ Dependencies
 ------------
 
 Polycube requires following dependencies:
- - At least **Linux kernel v4.15** that includes a set of the eBPF features which are needed by polycube
+ - At least **Linux kernel v4.15** up to **v5.4**, which they include many set of the eBPF features which are needed by polycube
  - **pistache**: a library to build rest API servers
  - **libints**: a library for crafting packets (needed only for some services)
  - **Go language**: required to run ``polycubectl`` (polycube command line interface)
@@ -17,10 +17,15 @@ Following sections will detail the installation process for the above components
 
 .. _updating-linux-kernel:
 
-Updating Linux Kernel to v4.15
+Updating Linux Kernel
 -------------------------------
 
-Use ``uname -a`` to check the kernel version you are running, if this is ``<v4.15`` please use the following instructions to update it.
+Polycube is supported from **Linux kernel v4.15** to **Linux kernel v5.4**. Depending on the version, many features will not be enabled, since there would not be support from kernel. Our suggestion is that if you are willing to use the latest Polycube services (like Dynmon) where dynamically eBPF code injection is allowed and you need to use recently introduced kernel data structure, you should consider updating the kernel to at least **v5.0*.
+
+The following examples show how to update kernel to version **4.15** and **5.4**. To check the kernel version you are running, please use ``uname -a``.
+After a kernel update, please remember to reboot your machine at choose the newly installed one while the boot process starts.
+
+To update to kernel **v4.15**:
 
 ::
 
@@ -31,11 +36,22 @@ Use ``uname -a`` to check the kernel version you are running, if this is ``<v4.1
     sudo dpkg -i *.deb
     sudo reboot
 
+To update to kernel **v5.4**:
+
+    wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v5.4/linux-headers-5.4.0-050400_5.4.0-050400.201911242031_all.deb
+    wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v5.4/linux-headers-5.4.0-050400-generic_5.4.0-050400.201911242031_amd64.deb
+    wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v5.4/linux-image-5.4.0-050400-generic_5.4.0-050400.201911242031_amd64.deb
+    wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v5.4/linux-modules-5.4.0-050400-generic_5.4.0-050400.201911242031_amd64.deb
+
+    sudo dpkg -i *.deb
+    sudo reboot    
+
+
 Automatic installation from source files
 ----------------------------------------
 
 If you are running ``Ubuntu 18.04`` and you do not want to manually install polycube and its dependencies, you can use the install script available under the `scripts` folder.
-This is not guaranteed that the script works on versions or distributions other than ``Ubuntu 18.04``.
+This is not guaranteed that the script works on versions or distributions other than ``Ubuntu 18.04``, `Ubuntu 19.04`` and ``Ubuntu 20.04``.
 
 Please notice that this script does not update the kernel version.
 
@@ -75,7 +91,9 @@ Go 1.8+ is needed to run ``polycubectl``, if you only plan to install ``polycube
 Since Ubuntu 20.04, support for ``golang-go`` has been introduced into the main repositories. Thus, you just need to run
 
 ::
+
 	sudo apt install golang-go
+
 
 Instead, for all the previous versions (< 20.04) please refer to the following instructions:
 
