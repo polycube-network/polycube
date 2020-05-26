@@ -19,6 +19,11 @@
 #include "spdlog/spdlog.h"
 #include <string>
 
+#include <sys/utsname.h>
+
+#define QUEUE_STACK_KERNEL_RELEASE "5.0.0"
+#define BATCH_KERNEL_RELEASE "5.6.0"
+
 namespace polycube {
 
 namespace service {
@@ -60,5 +65,9 @@ std::string port_status_to_string(PortStatus status);
 PortStatus string_to_port_status(const std::string &status);
 
 size_t get_possible_cpu_count();
+
+std::string get_kernel_release();
+
+bool compare_kernel_release(std::string &current, const std::string& required);
 
 }  // namespace polycube

@@ -16,6 +16,7 @@
 
 #include "polycube/services/table.h"
 
+#include <libbpf/src/bpf.h>
 #include <api/BPFTable.h>
 
 using ebpf::BPFTable;
@@ -36,13 +37,23 @@ class RawTable::impl {
   int first(void *key);
   int next(const void *key, void *next);
 
+  int pop(void *value);
+  int push(const void *value);
+
  private:
+  bool is_queue_stack_enabled;
+  bool is_batch_enabled;
   int fd_;
 };
 
-RawTable::impl::~impl() {}
+RawTable::impl::~impl() {
+}
 
-RawTable::impl::impl(void *op) : fd_(*(int *)op) {}
+RawTable::impl::impl(void *op) : fd_(*(int *)op) {
+  auto version = get_kernel_release();
+  is_queue_stack_enabled = compare_kernel_release(version, QUEUE_STACK_KERNEL_RELEASE);
+  is_batch_enabled = compare_kernel_release(version, BATCH_KERNEL_RELEASE);
+}
 
 void RawTable::impl::get(const void *key, void *value) {
   if (bpf_lookup_elem(fd_, const_cast<void *>(key),
@@ -76,6 +87,20 @@ int RawTable::impl::next(const void *key, void *next) {
   return bpf_get_next_key(fd_, const_cast<void *>(key), next);
 }
 
+int RawTable::impl::pop(void *value) {
+  if(!is_queue_stack_enabled)
+    throw std::runtime_error("BPF map POP operation is not supported."
+                           "Update your kernel to version 5.0.0");
+  return bpf_map_lookup_and_delete_elem(fd_, nullptr, value);
+}
+
+int RawTable::impl::push(const void *value) {
+  if(!is_queue_stack_enabled)
+    throw std::runtime_error("BPF map PUSH operation is not supported."
+                           "Update your kernel to version 5.0.0");
+  return bpf_map_update_elem(fd_, nullptr, value, 0);
+}
+
 // PIMPL
 RawTable::~RawTable() {}
 
@@ -99,6 +124,14 @@ int RawTable::first(void *key) {
 
 int RawTable::next(const void *key, void *next) {
   return pimpl_->next(key, next);
+}
+
+int RawTable::pop(void *value) {
+  return pimpl_->pop(value);
+}
+
+int RawTable::push(const void *value) {
+  return pimpl_->push(value);
 }
 
 }  // namespace service

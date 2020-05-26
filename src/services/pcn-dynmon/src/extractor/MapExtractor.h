@@ -73,11 +73,12 @@ class MapExtractor {
    * @param[table] a RawTable object corresponding to the eBPF table
    * @param[key_size] the size of the table keys
    * @param[value_size] the size of the table values
+   * @param[isQueueStack] indicates whether the map has to be treated like a Queue/Stack
    *
    * @returns a vector of MapEntry objects
    */
   static std::vector<std::shared_ptr<MapEntry>> getMapEntries(
-      RawTable table, size_t key_size, size_t value_size);
+      RawTable table, size_t key_size, size_t value_size, bool isQueueStack = false);
 
   /**
    * Recursive method which identifies the type of an object
