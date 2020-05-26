@@ -8,7 +8,7 @@ Dependencies
 ------------
 
 Polycube requires following dependencies:
- - At least **Linux kernel v4.15** up to **v5.4**, which they include many set of the eBPF features which are needed by polycube
+ - **Recent Linux kernel**: most Polycube services work with kernel **>= v4.15**; however, there are cases in which a newer kernel may be required, e.g., in case we want to execute the ``dynmon`` service with a custom code that requires more recent kernel primitives. In case you are unsure, please upgrade to **kernel v5.4**.
  - **pistache**: a library to build rest API servers
  - **libints**: a library for crafting packets (needed only for some services)
  - **Go language**: required to run ``polycubectl`` (polycube command line interface)
@@ -20,7 +20,7 @@ Following sections will detail the installation process for the above components
 Updating Linux Kernel
 -------------------------------
 
-Polycube is supported from **Linux kernel v4.15** to **Linux kernel v5.4**. Depending on the version, many features will not be enabled, since there would not be support from kernel. Our suggestion is that if you are willing to use the latest Polycube services (like Dynmon) where dynamically eBPF code injection is allowed and you need to use recently introduced kernel data structure, you should consider updating the kernel to at least **v5.0*.
+Most Polycube services require at least the **Linux kernel v4.15**. However, the ``dynmon`` service allow the dynamic injection of a custom data plane, which may exploit latest eBPF kernel features and hence require more up-to-date kernel versions. Therefore we suggest to upgrade the to the latest Linux kernel (https://kernel.ubuntu.com/~kernel-ppa/mainline/) in order to be on the safe side.
 
 The following examples show how to update kernel to version **4.15** and **5.4**. To check the kernel version you are running, please use ``uname -a``.
 After a kernel update, please remember to reboot your machine at choose the newly installed one while the boot process starts.
@@ -50,19 +50,19 @@ To update to kernel **v5.4**:
 Automatic installation from source files
 ----------------------------------------
 
-If you are running ``Ubuntu 18.04`` and you do not want to manually install polycube and its dependencies, you can use the install script available under the `scripts` folder.
-This is not guaranteed that the script works on versions or distributions other than ``Ubuntu 18.04``, `Ubuntu 19.04`` and ``Ubuntu 20.04``.
+If you are running ``Ubuntu 18.04`` and you do not want to manually install Polycube and its dependencies, you can use the install script available under the `scripts` folder.
+This scripts has been tested on ``Ubuntu 18.04``, ``Ubuntu 19.04`` and ``Ubuntu 20.04``.
 
 Please notice that this script does not update the kernel version.
 
-In this case you have to:
+In order to install Polycube with the script, you have to:
 
 ::
 
     # install git
     sudo apt-get install git
 
-    # clone the polycube repository
+    # clone the Polycube repository
     git clone https://github.com/polycube-network/polycube
     cd polycube
     git submodule update --init --recursive
@@ -123,7 +123,7 @@ Install dependencies
 
 ::
 
-    # Install polycube dependencies
+    # Install Polycube dependencies
     sudo apt-get -y install git build-essential cmake bison flex \
         libelf-dev libllvm5.0 llvm-5.0-dev libclang-5.0-dev libpcap-dev \
         libnl-route-3-dev libnl-genl-3-dev uuid-dev pkg-config \
@@ -179,10 +179,10 @@ Install libtins
     sudo make install
     sudo ldconfig
 
-Installing polycube
+Installing Polycube
 ^^^^^^^^^^^^^^^^^^^
 
-This installs the polycube daemon (``polycubed``), the polycube CLI (``polycubectl``) and the services shipped with polycube.
+This installs the Polycube daemon (``polycubed``), the Polycube CLI (``polycubectl``) and the network services shipped with Polycube.
 If you want to disable some services, you can modify the cmake flags using ``ccmake``.
 
 ::
@@ -198,4 +198,4 @@ If you want to disable some services, you can modify the cmake flags using ``ccm
     sudo make install
 
 
-Hooray, you have ``polycube`` installed and ready to be used, please refer to :doc:`Quick Start <quickstart>` to start using your installation.
+Hooray, you have Polycube installed and ready to be used, please refer to :doc:`Quick Start <quickstart>` to start using your installation.
