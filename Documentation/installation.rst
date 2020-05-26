@@ -1,5 +1,5 @@
-Installing Polycube
-===================
+Installing Polycube from source files
+=====================================
 
 This installation guide includes instructions to install Polycube on ``Ubuntu 18.04``.
 However those should also work on other versions and distributions with a few changes.
