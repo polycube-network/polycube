@@ -139,13 +139,14 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
     }
     break;
   }
-  case BPF_MAP_TYPE_ARRAY: {
-    // Case to handle simple array types (index->value)
+  case BPF_MAP_TYPE_ARRAY:
+  case BPF_MAP_TYPE_QUEUE:
+  case BPF_MAP_TYPE_STACK:{
+    // Case to handle ARRAY (get/set) and QUEUE/STACK maps (no get/set operation, but push/pop)
 
-    // Getting the map entries
-    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size, desc.type != BPF_MAP_TYPE_ARRAY);
 
-    for (auto &entry : entries) {
+    for(auto &entry: entries) {
       int offset = 0;
       auto j_entry = recExtract(value_desc, entry->getValue(), offset);
       j_entries.push_back(j_entry);
@@ -153,6 +154,7 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
     break;
   }
   default: {
+    // The map type is not supported yet by Dynmon
     throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
   }
   }
@@ -160,22 +162,33 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index
 }
 
 std::vector<std::shared_ptr<MapEntry>> MapExtractor::getMapEntries(
-    RawTable table, size_t key_size, size_t value_size) {
+    RawTable table, size_t key_size, size_t value_size, bool isQueueStack) {
   std::vector<std::shared_ptr<MapEntry>> vec;
-  void *last_key = nullptr;
 
-  // Looping until the RawTable has a "next" entry
-  while (true) {
-    // Creating a MapEntry object which internally allocates the memory to
-    // contain the map entry's key and value
-    MapEntry entry(key_size, value_size);
-    int fd = table.next(last_key, entry.getKey());
-    last_key = entry.getKey();
-    if (fd > -1) {
-      table.get(entry.getKey(), entry.getValue());
+  if(isQueueStack) {
+    while(true) {
+      MapEntry entry(0, value_size);
+      if (table.pop(entry.getValue()) != 0) {
+        break;
+      }
       vec.push_back(std::make_shared<MapEntry>(entry));
-    } else
-      break;
+    }
+  } else {
+    void *last_key = nullptr;
+
+    // Looping until the RawTable has a "next" entry
+    while (true) {
+      // Creating a MapEntry object which internally allocates the memory to
+      // contain the map entry's key and value
+      MapEntry entry(key_size, value_size);
+      int fd = table.next(last_key, entry.getKey());
+      last_key = entry.getKey();
+      if (fd > -1) {
+        table.get(entry.getKey(), entry.getValue());
+        vec.push_back(std::make_shared<MapEntry>(entry));
+      } else
+        break;
+    }
   }
   return vec;
 }

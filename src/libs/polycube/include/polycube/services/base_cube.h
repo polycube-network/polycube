@@ -72,6 +72,11 @@ class BaseCube {
       const std::string &table_name, int index = 0,
       ProgramType type = ProgramType::INGRESS);
 
+  template <class ValueType>
+  QueueStackTable<ValueType> get_queuestack_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
+
   const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
                                      ProgramType type);
                                      
@@ -135,6 +140,14 @@ PercpuHashTable<KeyType, ValueType> BaseCube::get_percpuhash_table(
   int fd = get_table_fd(table_name, index, type);
   return PercpuHashTable<KeyType, ValueType>(&fd);
 }
+
+template <class ValueType>
+QueueStackTable<ValueType> BaseCube::get_queuestack_table(
+    const std::string &table_name, int index, ProgramType type) {
+  int fd = get_table_fd(table_name, index, type);
+  return QueueStackTable<ValueType>(&fd);
+}
+
 
 }  // namespace service
 }  // namespace polycube

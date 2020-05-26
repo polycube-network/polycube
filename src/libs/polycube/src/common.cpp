@@ -108,4 +108,38 @@ PortStatus string_to_port_status(const std::string &status) {
   }
 }
 
+std::string get_kernel_release() {
+  struct utsname buffer = {};
+  if (uname(&buffer) != 0)
+    throw std::runtime_error("Unable to execute `uname` command");
+  return buffer.release;
+}
+
+bool compare_kernel_release(std::string &current, const std::string& required) {
+  //  Variables to store numeric parts of the release
+  int vnum1 = 0, vnum2 = 0;
+
+  //  Loop until both string are processed. At each loop increase indexes, reset
+  //  numeric parts and go on parsing
+  for (int i=0,j=0; (i<current.length() && j<required.length()); i++, j++, vnum1=vnum2=0){
+    //  storing numeric part of current version in vnum1
+    while (i < current.length() && isdigit(current[i])) {
+      vnum1 = vnum1 * 10 + (current[i] - '0');
+      i++;
+    }
+
+    //  storing numeric part of required version in vnum2
+    while (j < required.length() && isdigit(required[j])) {
+      vnum2 = vnum2 * 10 + (required[j] - '0');
+      j++;
+    }
+
+    if (vnum1 > vnum2)
+      return true;
+    if (vnum2 > vnum1)
+      return false;
+  }
+  return true;
+}
+
 }  // namespace polycube

@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include <linux/version.h>
+
 #include "polycube/common.h"
 
 namespace polycube {
@@ -40,6 +42,9 @@ class RawTable {
 
   int first(void *key);
   int next(const void *key, void *next);
+
+  int pop(void *value);
+  int push(const void *value);
 
   // protected:
   RawTable(void *op);
@@ -229,6 +234,26 @@ class PercpuHashTable : protected RawTable {
   // private:
   PercpuHashTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
   unsigned int ncpus_;
+};
+
+template <class ValueType>
+class QueueStackTable : protected RawTable {
+
+ public:
+  QueueStackTable() : RawTable(){};
+  ~QueueStackTable(){};
+
+  ValueType pop() {
+    ValueType t;
+    RawTable::pop(&t);
+    return t;
+  };
+
+  void push(const ValueType &value) {
+    RawTable::push(&value);
+  }
+
+  QueueStackTable(void *op) : RawTable(op){};
 };
 
 }  // namespace service
