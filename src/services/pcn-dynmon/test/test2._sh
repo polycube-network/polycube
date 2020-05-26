@@ -83,4 +83,29 @@ then
     exit 1
 fi
 
+#Checking kernel version whether to test also queue/stack maps
+queuestack_major="5"
+read major null<<<$(uname -r | sed 's/\./ /g')
+if (( major >= queuestack_major ))
+then
+	# injecting a dataplane configuration
+	curl -H "Content-Type: application/json" "localhost:9000/polycube/v1/dynmon/dm/dataplane" --upload-file $DIR/test_queuestack.json
+	polycubectl dm show
+
+	set +e
+	sudo ip netns exec ns1 ping 10.0.0.2 -c 1 -w 1
+	set -e
+
+	simple_queue_value=$(polycubectl dm metrics SIMPLE_QUEUE value show)
+
+	if [ "$simple_queue_value" != "$expected_sa" ]
+	then
+		echo "SIMPLE_QUEUE extraction failed"
+    	echo "Expected: $expected_sa"
+    	echo "Got: $simple_queue_value"
+    	exit 1
+	fi
+
+fi
+
 echo "All tests passed!"
