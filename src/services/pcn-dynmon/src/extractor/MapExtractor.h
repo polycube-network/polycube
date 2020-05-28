@@ -58,13 +58,49 @@ class MapExtractor {
    *
    * @returns the content of a map as a JSON object
    */
-  static json extractFromMap(BaseCube &cube_ref, string map_name, int index = 0,
+  static json extractFromMap(BaseCube &cube_ref, const string& map_name, int index = 0,
                              ProgramType type = ProgramType::INGRESS);
 
  private:
   MapExtractor() = default;
 
   ~MapExtractor() = default;
+
+  /**
+   * Internal method to extract values from a Linear eBPF map (array/queue/stack)
+   *
+   * This method is called once the extractFromMap verifies that the map type is one
+   * of the just mentioned ones.
+   *
+   * @param[desc] description of the eBPF table
+   * @param[table] the eBPF table
+   * @return the content of the map as a JSON array
+   */
+  static json extractFromLinearMap(const TableDesc &desc, const RawTable& table);
+
+  /**
+   * Internal method to extract values from an Hash key-value eBPF map (hash/lru_hash)
+   *
+   * This method is called once the extractFromMap verifies that the map type is one
+   * of the just mentioned ones.
+   *
+   * @param[desc] description of the eBPF table
+   * @param[table] the eBPF table
+   * @return the content of the map as a JSON object ({id: ..., value: ...})
+   */
+  static json extractFromHashMap(const TableDesc &desc, const RawTable& table);
+
+  /**
+   * Internal method to extract values from a PerCPU map (arrays or hash)
+   *
+   * This method is called once the extractFromMap verifies that the map type is one
+   * of the just mentioned ones.
+   *
+   * @param[desc] description of the eBPF table
+   * @param[table] the eBPF table
+   * @return the content of the map as a JSON object ({id: ..., value: ...})
+   */
+  static json extractFromPerCPUMap(const TableDesc &desc, const RawTable& table);
 
   /**
    * Returns a vector of MapEntry objects which internally contain the pointers
@@ -228,6 +264,6 @@ class MapExtractor {
    *
    * @returns a JSON object which represents the value
    */
-  static json valueFromPrimitiveType(string type_name, void *data, int &offset,
+  static json valueFromPrimitiveType(const string& type_name, void *data, int &offset,
                                      int len = -1);
 };

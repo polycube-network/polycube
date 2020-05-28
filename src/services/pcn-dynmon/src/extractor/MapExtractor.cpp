@@ -1,7 +1,6 @@
 #include "MapExtractor.h"
 
 #include <functional>
-#include <iostream>
 #include <string>
 
 #include <linux/bpf.h>
@@ -88,7 +87,6 @@ objectType identifyObject(json object) {
       if (object[2].is_string()) {
         switch (hash(object[2])) {
         case STRUCT:
-          return Struct;
         case STRUCT_PACKED:
           return Struct;
         case UNION:
@@ -105,72 +103,106 @@ objectType identifyObject(json object) {
       throw runtime_error("Unknown element" + object[0].get<string>());
     }
   }
+  throw runtime_error("Unable to identifyObject " + object.dump());
 }
 
-json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index,
+json MapExtractor::extractFromLinearMap(const TableDesc &desc, const RawTable& table) {
+
+  // Getting the leaf_desc object which represents the structure of the a map entry
+  auto value_desc = json::parse(string{desc.leaf_desc});
+
+  // Getting the map entries (for these maps only the value is considered)
+  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size, desc.type != BPF_MAP_TYPE_ARRAY);
+
+  json j_entries;
+  for(auto &entry: entries) {
+    int offset = 0;
+    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+    j_entries.push_back(j_entry);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromHashMap(const TableDesc &desc, const RawTable& table) {
+
+  // Getting both key_desc and leaf_desc objects which represents the structure of the map entry
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  auto key_desc = json::parse(string{desc.key_desc});
+
+  // Getting the map entries (both key and value are considered)
+  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+
+  json j_entries;
+  for (auto &entry : entries) {
+    int val_offset = 0, key_offset = 0;
+    json entry_obj;
+    entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+    entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
+    j_entries.push_back(entry_obj);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, const RawTable &table) {
+  // Getting the maximux cpu available
+  size_t n_cpus = polycube::get_possible_cpu_count();
+
+  // Getting the map entries
+  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size * n_cpus);
+
+  // Getting key and value description to parse correctly
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  auto key_desc = json::parse(string{desc.key_desc});
+
+  json j_entries;
+  for(auto& entry : entries) {
+    int key_offset = 0;
+    json j_entry;
+
+    // Parse the current key and set the id of that entry
+    j_entry["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+
+    json j_values;
+    // The leaf_size is the size of a single leaf value, but potentially there is an
+    // array of values! So the entry->getValue() pointer must be manually shifted to parse
+    // all the per_cpu values
+    for(int i=0, offset=0; i<n_cpus; i++, offset=0){
+      auto val = recExtract(value_desc, static_cast<char*>(entry->getValue()) + (i * desc.leaf_size), offset);
+      j_values.emplace_back(val);
+    }
+    j_entry["value"] = j_values;
+    j_entries.push_back(j_entry);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromMap(BaseCube &cube_ref, const string& map_name, int index,
                                   ProgramType type) {
   // Getting the TableDesc object of the eBPF table
   auto &desc = cube_ref.get_table_desc(map_name, index, type);
 
-  // Getting the leaf_desc object which represents the structure of the a map entry
-  auto value_desc = json::parse(string{desc.leaf_desc});
-  cube_ref.logger()->debug("{0} leaf_desc:\n{1}",map_name,value_desc.dump(2));
-
-  // Getting the RawTable, but parse entries only if map type is supported
-  auto table = cube_ref.get_raw_table(map_name, index, type);
-
-  json j_entries;
-  switch (desc.type) {
-  case BPF_MAP_TYPE_LRU_HASH:
-  case BPF_MAP_TYPE_HASH: {
-    // Case to handle simple hash types (key->value)
-
-    // Getting the map entries
-    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
-
-    json key_desc = json::parse(string{desc.key_desc});
-    cube_ref.logger()->debug("{0} key_desc:\n{1}", map_name, key_desc.dump(2));
-    for (auto &entry : entries) {
-      int val_offset = 0, key_offset = 0;
-      json entry_obj;
-      entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
-      entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
-      j_entries.push_back(entry_obj);
-    }
-    break;
-  }
-  case BPF_MAP_TYPE_ARRAY:
-  case BPF_MAP_TYPE_QUEUE:
-  case BPF_MAP_TYPE_STACK:{
-    // Case to handle ARRAY (get/set) and QUEUE/STACK maps (no get/set operation, but push/pop)
-
-    auto entries = getMapEntries(table, desc.key_size, desc.leaf_size, desc.type != BPF_MAP_TYPE_ARRAY);
-
-    for(auto &entry: entries) {
-      int offset = 0;
-      auto j_entry = recExtract(value_desc, entry->getValue(), offset);
-      j_entries.push_back(j_entry);
-    }
-    break;
-  }
-  default: {
+  if(desc.type == BPF_MAP_TYPE_HASH || desc.type == BPF_MAP_TYPE_LRU_HASH)
+    return extractFromHashMap(desc, cube_ref.get_raw_table(map_name, index, type));
+  else if(desc.type == BPF_MAP_TYPE_ARRAY || desc.type == BPF_MAP_TYPE_QUEUE || desc.type == BPF_MAP_TYPE_STACK)
+    return extractFromLinearMap(desc, cube_ref.get_raw_table(map_name, index, type));
+  else if(desc.type == BPF_MAP_TYPE_PERCPU_HASH || desc.type == BPF_MAP_TYPE_PERCPU_ARRAY || desc.type == BPF_MAP_TYPE_LRU_PERCPU_HASH)
+    return extractFromPerCPUMap(desc, cube_ref.get_raw_table(map_name, index, type));
+  else
     // The map type is not supported yet by Dynmon
     throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
-  }
-  }
-  return j_entries;
 }
 
 std::vector<std::shared_ptr<MapEntry>> MapExtractor::getMapEntries(
     RawTable table, size_t key_size, size_t value_size, bool isQueueStack) {
   std::vector<std::shared_ptr<MapEntry>> vec;
 
+  // If it is a queue/stack then POP should be used, otherwise normal lookup
   if(isQueueStack) {
+    // Looping until pop extracts something
     while(true) {
       MapEntry entry(0, value_size);
-      if (table.pop(entry.getValue()) != 0) {
+      if (table.pop(entry.getValue()) != 0)
         break;
-      }
       vec.push_back(std::make_shared<MapEntry>(entry));
     }
   } else {
@@ -236,7 +268,7 @@ json MapExtractor::valueFromStruct(json struct_description, void *data,
                                    int &offset) {
   json array;
   // Getting the name of the C struct
-  auto structName = struct_description[0].get<string>();
+  // auto structName = struct_description[0].get<string>();
   // Getting the set of properties of the C struct
   auto structProperties = struct_description[1];
 
@@ -245,7 +277,7 @@ json MapExtractor::valueFromStruct(json struct_description, void *data,
     // Getting the property's name
     auto propertyName = property[0].get<std::string>();
     // Getting the property type object
-    auto propertyType = property[1];
+    // auto propertyType = property[1];
     // If the property is an alignment padding -> skipp it increasing the offset
     if (propertyName.rfind(PADDING, 0) == 0) {
       auto paddingSize = property[2][0].get<int>();
@@ -263,7 +295,7 @@ json MapExtractor::valueFromUnion(json union_description, void *data,
   int oldOffset = offset;
   int maxOffset = 0;
   // Getting the name of the C union
-  auto unionName = union_description[0].get<string>();
+  // auto unionName = union_description[0].get<string>();
   // Getting the set of properties of the C union
   auto unionProperties = union_description[1];
 
@@ -272,7 +304,7 @@ json MapExtractor::valueFromUnion(json union_description, void *data,
     // Getting the property's name
     auto propertyName = property[0].get<std::string>();
     // Getting the property type object
-    auto propertyType = property[1];
+    // auto propertyType = property[1];
     // Adding the property to the returning set extracting its value recursively
     array.push_back(value_type(propertyName, recExtract(property, data, offset)));
     // Saving the offset in order to increase it to the maximum property size
@@ -293,7 +325,7 @@ json MapExtractor::valueFromEnum(json enum_description, void *data,
   return enum_description[1][index].get<string>();
 }
 
-json MapExtractor::valueFromPrimitiveType(const string type_name, void *data,
+json MapExtractor::valueFromPrimitiveType(const string& type_name, void *data,
                                           int &offset, int len) {
   char *address = ((char *)data + offset);
   // Casting the memory pointed by *address to the corresponding C type
