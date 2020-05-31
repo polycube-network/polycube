@@ -8,20 +8,21 @@ Dependencies
 ------------
 
 Polycube requires following dependencies:
- - **Recent Linux kernel**: most Polycube services work with kernel **>= v4.15**; however, there are cases in a newer kernel may be required. In case you are unsure, please upgrade to **kernel v5.4** (section `Updating Linux kernel`_).
+ - **Recent Linux kernel**: most Polycube services work with kernel **>= v4.15**; however, there are cases in a newer kernel may be required. In case you are unsure, please upgrade to **kernel v5.4** (section :ref:`sec-updating-linux-kernel` ).
  - **pistache**: a library to build rest API servers
  - **libints**: a library for crafting packets (needed only for some services)
  - **Go language**: required to run ``polycubectl`` (polycube command line interface)
 
 Following sections will detail the installation process for the above components.
 
+.. _sec-updating-linux-kernel:
 
 Updating Linux kernel
 ---------------------
 
-Most Polycube services require at least the **Linux kernel v4.15**. However, the :ref:`rst_dynmon` service allow the dynamic injection of a custom data plane, which may exploit latest eBPF kernel features and hence require more up-to-date kernel versions. Therefore we suggest to upgrade the to the latest Linux kernel in order to be on the safe side.
+Most Polycube services require at least the **Linux kernel v4.15**. However, the :doc:`Dynmon service <services/pcn-dynmon/dynmon>` allows the dynamic injection of a custom data plane, which may exploit latest eBPF kernel features and hence require more up-to-date kernel versions. Therefore we suggest to upgrade the to the latest Linux kernel in order to be on the safe side.
 
-The following examples show how to update kernel to either version **4.15** and **5.4**. To check the kernel version you are running, please use ``uname -a``.
+The following examples show how to update kernel to either version **4.15** and **5.4**. To check your current kernel version, please use ``uname -a``.
 After a kernel update, please remember to reboot your machine at choose the newly installed one while the boot process starts.
 
 To update to kernel **v4.15**:
@@ -57,18 +58,30 @@ The list of available kernels is available at https://kernel.ubuntu.com/~kernel-
 Automatic installation from sources
 -----------------------------------
 
-If you are running ``Ubuntu >= 18.04`` and you do not want to manually install Polycube and its dependencies, you can use the install script available under the `scripts` folder.
+If you are running ``Ubuntu >= 18.04`` and you do not want to manually install Polycube and its dependencies, you can use the install script available under the ``scripts`` folder.
 This scripts has been tested on ``Ubuntu 18.04``, ``Ubuntu 19.04`` and ``Ubuntu 20.04``.
 
 Please notice that this script does not update the kernel version.
 
-In order to install Polycube with the script, you can either download the most recent released version, or compile the most recent snapshot directly from our GitHub repository.
+In order to install Polycube with the script, you can either download the most recent `Released version (stable)`_ or compile the `Most recent snapshot (from GitHub)`_.
 
-- **Released version** (stable):
+Once the installation is completed, you can follow the :doc:`quickstart` instructions.
+
+Note: if you have llvm 6.0 installed (check with ``apt list --installed | grep "llvm"``), the installation script will fail.
+In this case, remove llvm 6.0 before starting the installation script:
+
+::
+
+    sudo apt remove llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
+
+
+**Released version** (stable)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
     # Download the source pack from Polycube repository 
     #  (i.e., https://github.com/polycube-network/polycube/releases)
+    # Look at the most recent version and update the following lines accordingly
     wget https://github.com/polycube-network/polycube/archive/v0.9.0-rc.zip
 
     # Unpack the source files (e.g., this refers to version 0.9)
@@ -81,7 +94,8 @@ In order to install Polycube with the script, you can either download the most r
     ./scripts/install.sh
 
 
-- Most **up-to-date code** (from GitHub)
+**Most recent snapshot** (from GitHub)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
     # install git
@@ -97,18 +111,12 @@ In order to install Polycube with the script, you can either download the most r
 
 
 
-Once the installation is completed, you can follow the :doc:`quickstart` instructions.
+Manual installation from the most recent snapshop (on GitHub)
+-------------------------------------------------------------
 
-Note: if you have llvm 6.0 installed (check with ``apt list --installed | grep "llvm"``), the installation script will fail.
-In this case, remove llvm 6.0 before starting the installation script:
+This procedure is discouraged, as the `Automatic installation from sources`_ looks appropriate for most of the people.
 
-::
-
-    sudo apt remove llvm-6.0 llvm-6.0-dev llvm-6.0-runtime
-
-
-Manual installation from sources
---------------------------------
+The following steps are required only if you want to compile and install everything manually, without the provides install script (``./scripts/install.sh``).
 
 Install GO
 ^^^^^^^^^^

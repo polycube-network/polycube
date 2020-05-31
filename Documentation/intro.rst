@@ -1,21 +1,18 @@
 Introduction to Polycube
 ========================
 
-Polycube brief
---------------
+**Polycube** is an **open source** software framework for Linux that provides **fast** and **lightweight** **network functions**, such as `bridge`, `router`, `nat`, `load balancer`, `firewall`, `DDoS mitigator`, and more.
 
-``Polycube`` is an **open source** software framework for Linux that enables the creation of **virtual networks** and provides **fast** and **lightweight** **network functions**, such as `bridge`, `router`, `nat`, `load balancer`, `firewall`, `DDoS mitigator`, and more.
-  
-Within each virtual network, individual network functions can be composed to build arbitrary **service chains** and provide custom network connectivity to **namespaces**, **containers**, **virtual machines**, and **physical hosts**.
+Individual network functions can be composed to build arbitrary **service chains** and provide custom network connectivity to **namespaces**, **containers**, **virtual machines**, and **physical hosts**. Polycube supports also multitenancy, with multiple **virtual networks** that can be enabled concurrently.
 
-Virtual functions, called `cubes`, are extremely **efficient** because are based on the recent `BPF` and `XDP` Linux kernel technologies. In addition, cubes are easily **extensible** and **customizable**.
+Network functions, called `cubes`, are extremely **efficient** because are based on the recent `BPF` and `XDP` Linux kernel technologies. In addition, cubes are easily **extensible** and **customizable**.
 
-Polycube can control its entire virtual topology and all the network services with a simple and coherent command line, available through the `polycubectl` tool.
-A set of equivalent commands can be issued diretly to `polycubed`, the Polycube REST-based daemon, for better machine-to-machine interaction.
+Polycube can control its entire virtual topology and all the network services with a simple and coherent command line, available through the ``polycubectl`` tool.
+A set of equivalent commands can be issued diretly to ``polycubed``, the Polycube REST-based daemon, for better machine-to-machine interaction.
 
 Polycube also provides two working **standalone applications** built up using this framework.
-`pcn-K8s` is a Polycube-based CNI plug-in for *Kubernetes*, which can handle the network of an entire data center. It also delivers better throughput as compared with some of the existing CNI plug-ins.
-`pcn-iptables` is a more efficient and scalable clone of the existing Linux *iptables*.
+**pcn-k8s** is a Polycube-based CNI plug-in for *Kubernetes*, which can handle the network of an entire data center. It also delivers better throughput as compared with some of the existing CNI plug-ins.
+**pcn-iptables** is a more efficient and scalable clone of the existing Linux *iptables*.
 
 A brief overview of the Polycube layered structure, including the command line interface (CLI), standalone applications, and some of the available cubes, is shown in the picture below.
 
@@ -63,13 +60,13 @@ Outstanding performance with real applications
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Two standalone applications have been released to show the potential of Polycube, ``pcn-iptables`` and ``pcn-k8s``.
 
-- `pcn-iptables`: is a clone of **iptables** that is able to filter packets passing through a Linux host, demonstrating how packet filtering can be achieved with impressive performance, while at the same time guaranteeing the same command line and the same external behavior of the original software.
-- `pcn-k8s`: is a CNI network plugin for **Kubernetes**, i.e., a software that handles the entire virtual network of a Kubernetes cluster, which includes bridging, routing, NAT, load balancing and tunneling services. Our plug-in has been tested for scalability and guarantees outstanding performance in terms of network throughput.
+- **pcn-iptables**: is a clone of **iptables** that is able to filter packets passing through a Linux host, demonstrating how packet filtering can be achieved with impressive performance, while at the same time guaranteeing the same command line and the same external behavior of the original software.
+- **pcn-k8s**: is a CNI network plugin for **Kubernetes**, i.e., a software that handles the entire virtual network of a Kubernetes cluster, which includes bridging, routing, NAT, load balancing and tunneling services. Our plug-in has been tested for scalability and guarantees outstanding performance in terms of network throughput.
 
 
 Powered by eBPF and XDP
 ~~~~~~~~~~~~~~~~~~~~~~~
-`BPF` and `XDP` are the main Linux kernel technologies on which `Polycube` is based. `BPF` supports dynamic code injection in the Linux kernel at runtime, enabling the dynamic creation of a data plane. The `BPF` data plane has a minimal feature set which avoids processing overhead and is exactly tailored to user needs.
+`BPF` and `XDP` are the main Linux kernel technologies on which Polycube is based upon. `BPF` supports dynamic code injection in the Linux kernel at runtime, enabling the dynamic creation of a data plane. The `BPF` data plane has a minimal feature set which avoids processing overhead and is exactly tailored to user needs.
 
 - `bpf` (Extended Berkeley Packet Filter) code is dynamically compiled and injected, checked for safety to avoid any hazard in the kernel, while efficiency is achieved thanks to a just-in-time compiler (JIT) that transforms each instruction into a native 64-bit (x64) code for maximum performance.
 - `XDP` (eXpress Data Path) provides a new way to intercept network packets very early in Linux network stack, with a significant gain in performance thanks to the possibility to avoid costly operations such as `skbuff` handling.

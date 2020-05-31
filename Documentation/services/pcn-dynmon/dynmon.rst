@@ -1,5 +1,3 @@
-.. _rst_dynmon:
-
 Dynamic network monitor (``dynmon``)
 ====================================
 

@@ -1,4 +1,4 @@
-polycubectl: The command-line onterface for Polycube
+polycubectl: the command-line interface for Polycube
 ====================================================
 
 ``polycubectl`` is the Command Line Interface (CLI) for Polycube.

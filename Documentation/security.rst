@@ -1,5 +1,5 @@
-Polycube Security
-=================
+Securing the polycubed daemon
+=============================
 
 Polycube uses a security model based on X509 certificates to secure polycube daemon to polycube cli communication.
 
@@ -22,7 +22,7 @@ Example:
 Client authentication
 *********************
 
-Polycubed supports 3 different modes to perform client authentication.
+Polycubed supports thee different modes to perform client authentication.
 
 Mode 1: Certification authority based
 -------------------------------------
