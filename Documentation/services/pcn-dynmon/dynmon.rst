@@ -1,5 +1,7 @@
-Dynmon service
-==============
+.. _rst_dynmon:
+
+Dynamic network monitor (``dynmon``)
+====================================
 
 Dynmon is a transparent service that allows the dynamic injection of eBPF code in the linux kernel, enabling the monitoring of the network traffic and the collection and exportation of custom metrics.
 
@@ -75,6 +77,7 @@ Install
 ^^^^^^^
 Some dependencies are required for this tool to run:
 ::
+
     pip install -r requirements.txt
 
 
