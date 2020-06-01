@@ -1,17 +1,17 @@
-Packetcapture service
-=====================
+Packet capture service (``packetcapture``)
+==========================================
 
-Packetcapture is a transparent service that allows to capture packets flowing through the interface it is attached to, apply filters and obtain capture in *.pcap* format. In particular, the service supports either saving captured packets in the local filesystem (e.g., useful in case of high network traffic) or it can interact and deliver packets to a remote client that stores them in the remote filesystem.
+Packetcapture is a transparent service that allows to capture packets flowing through the interface it is attached to, apply filters and obtain capture in ``pcap`` format. In particular, the service supports either saving captured packets in the local filesystem (e.g., useful in case of massive load) or it can deliver packets to a remote client that stores them in the remote filesystem.
 
-An example of a client that uses the REST api of the packetcapture service is available in '*Packetcapture_Client*' directory.
+An example of a client that uses the REST api of the ``packetcapture`` service is available in the `packet capture client  <https://github.com/polycube-network/polycube/tree/master/src/services/pcn-packetcapture/client>`_ folder.
 
 Features
 --------
 
-- Transparent service, can be attached to any interface of any Polycube service
+- Transparent service, can be attached to any physical/virtual interface or any Polycube service
 - Support for filters (i.e., source prefix, destination prefix, source port, destination port, layer 4 protocol, etc.).
 - Support partial capture of packets (i.e., snaplen)
-- Support localmode (store data locally) or network mode (send packets to a remote client) operations
+- Support *local mode* (store data locally) or *network mode* (send packets to a remote client) operations.
 
 Limitations
 -----------
@@ -21,7 +21,7 @@ Limitations
 
 How to use
 ----------
-The packetcapture service is a transparent service, it can be attached to a cube port.
+The packetcapture service is a transparent service, it can be attached either to a netdev or to a cube port.
 
 Create the service
 ^^^^^^^^^^^^^^^^^^
@@ -31,17 +31,16 @@ Create the service
     #create the packetcapture service
     polycubectl packetcapture add mysniffer capture=bidirectional
 
-This service can operate in four working modes (actually, the forth mode is just to turn the capture off):
+The ``capture`` attribute indicates the direction of the packets that the service must capture. Four values are allowed:
 
 - capture only incoming packets: **capture=ingress**
 - capture only outgoing packets: **capture=egress**
 - capture both incoming and outgoing packets: **capture=bidirectional**
 - turn packet capture off: **capture=off**
 
-*capture* option indicates the direction of the packets that the service must capture.
-The direction of the captured packets is independent of the operation in "network mode" or "non network mode".
+The direction of the captured packets is independent of the operation in *network mode* or *local mode*.
 
-In this example the service named '*mysniffer*' will work in bidirectional mode.
+In this example the service named ``mysniffer`` will work in bidirectional mode.
 
 
 Attach to a cube port
@@ -52,57 +51,60 @@ Attach to a cube port
     # Attach the service to a cube port
     polycubectl attach mysniffer br1:toveth1
 
-Now the packetcapture service is attached to the port *toveth1* of the bridge *br1*
+Now the packetcapture service is attached to the port ``toveth1`` of the bridge ``br1``:
+
+::
+
+                             +----------+
+   veth1 ---**mysniffer**--- |   br1    | ------ veth2    
+                             +----------+
 
 
- veth1 ---**x**- |   br1    | ------ veth2    
 
+Set a filter
+------------
+Traffic can be selected by adding filters with a libpcap-compatible syntax:
 
-
-Filter
--------
-Traffic can be selected by adding filters with syntax (tcpdump like):
+::
 
     polycubectl <service name> set filter=<string value>
 
--if the filter contains only one word you can put it normally
--if the filter contains more than a word you have to put the string inside the ""
+Filter can be set in this way:
 
--if you want to capture all the traffic you can put as filter: all
+- if the filter contains only **one word**: write it normally
+
+- if the filter contains **more than one word**: write the string inside *double quotes* (i.e., " ")
+
+- if you want to capture **all traffic**: write the *all* keyword as string specifier:
+
+::
 
     polycubectl <service name> set filter=all
 
-- default filter captures no packets (the eBPF datapath simply returns ok)
+- **default filter**: the service captures no packets (the eBPF datapath simply returns ok)
 
-Filter can be viewed using the command **polycubectl mysniffer filter show**
-Snaplen can be viewed using the command **polycubectl mysniffer snaplen show**
+The currently active filter can be viewed using the command **polycubectl mysniffer filter show**.
+The current ``snaplen`` can be viewed using the command **polycubectl mysniffer snaplen show**.
 
-For further details of the implementation of the filter see :doc:`Packetcapture filter <packetcapture-filter>`
+For further details of the implementation of the filter look at the `Implementation details`_ section.
 
-For more details about the filters supported by libpcap (hence, the syntax allowed to specify filters) see `pcap-filter <https://linux.die.net/man/7/pcap-filter>`__
+For more details about the filters supported by libpcap (hence, the syntax allowed to specify filters) see the `pcap-filter Linux man page <https://linux.die.net/man/7/pcap-filter>`_.
 
 
 Examples of possible filters
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
     # Example of the source prefix filter
     polycubectl mysniffer set filter="ip src 10.0.2.11"
 
-::
-
     # Example of the source port filter
     polycubectl mysniffer set filter="src port 80"
 
-
-::
-    
     # Example of the layer 4 protocol filter
     polycubectl mysniffer set filter=tcp
 
-::
-    
     # Example of the snaplen filter
     # In this case we capture only the first 80 bytes of each packet
     polycubectl mysniffer set snaplen=80
@@ -113,28 +115,28 @@ Get the capture dump
 When the service is not set in *networkmode*, the dump is by default written in a resilient way in the temporary user folder.
 The folder where the dump is written can be changed by using the syntax:
 
-    polycubectl <service name> set dump="<string value>"
-
 ::
+
+    polycubectl <service name> set dump="<string value>"
 
     # Example of new dump folder
     polycubectl mysniffer set dump="/home/user_name/Desktop/capture"
 
-At the end of the file name will be added the file extension ".pcap"
+The file extension ``.pcap`` will be added at the end of the file name.
 
-If a file with the same name already exists it will be overwritten otherwise it will be created
+If a file with the same name already exists, it will be overwritten. 
 
-The path of the capture file can be shown using the command: **polycubectl mysniffer show dump**
+The path of the capture file can be shown using the command ``polycubectl mysniffer show dump``.
 
-Otherwise, if the service is set in network mode, the capture file can be requested through the use of the provided Python client, or queried simply through the service API.
+Otherwise, if the service is set in *network mode*, the capture file can be requested through the use of the provided Python client, or queried simply through the service API.
 
 
-How to use the demo client
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+How to use the packetcapture client
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
     
     # Start the client script
-    python3 client.py <IPv4 address> <file destination name>
+    python3 client.py <IPv4 address> <local_dump_name>
 
 
 Set network mode

@@ -5,12 +5,11 @@ This folder contains the list of services (a.k.a. *cubes*) currently available i
 
 .. toctree::
     :maxdepth: 2
-    :caption: Services:
 
+    pcn-helloworld/helloworld
     pcn-bridge/bridge
     pcn-ddosmitigator/ddosmitigator
     pcn-firewall/firewall
-    pcn-helloworld/helloworld
     pcn-iptables/iptables
     pcn-k8sfilter/k8sfilter
     pcn-k8switch/k8switch
