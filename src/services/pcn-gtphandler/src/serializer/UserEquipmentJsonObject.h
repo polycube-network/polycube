@@ -50,20 +50,11 @@ public:
   void setTunnelEndpoint(std::string value);
   bool tunnelEndpointIsSet() const;
 
-  /// <summary>
-  /// Tunnel Endpoint ID of the GTP tunnel used by the User Equipment
-  /// </summary>
-  uint32_t getTeid() const;
-  void setTeid(uint32_t value);
-  bool teidIsSet() const;
-
 private:
   std::string m_ip;
   bool m_ipIsSet;
   std::string m_tunnelEndpoint;
   bool m_tunnelEndpointIsSet;
-  uint32_t m_teid;
-  bool m_teidIsSet;
 };
 
 }

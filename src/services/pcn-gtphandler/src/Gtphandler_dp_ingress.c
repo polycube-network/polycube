@@ -23,7 +23,7 @@
 #include <uapi/linux/udp.h>
 
 
-// #define MAX_USER_EQUIPMENTS n
+// #define MAX_USER_EQUIPMENT n
 
 // Following constants are added to the program at user level once the cube
 // is attached to an interface
@@ -51,12 +51,8 @@ struct gtp1_header {	/* According to 3GPP TS 29.060. */
 	__be32 tid;
 } __attribute__((packed));
 
-struct user_equipment {
-  __be32 tunnel_endpoint;
-  __be32 teid;
-};
-
-BPF_TABLE_SHARED("hash", __be32, struct user_equipment, user_equipments, MAX_USER_EQUIPMENTS);
+BPF_TABLE_SHARED("hash", __be32, __be32, user_equipment_map,
+                 MAX_USER_EQUIPMENT);
 
 
 #define GTP_ENCAP_SIZE (sizeof(struct iphdr) +      \
@@ -72,7 +68,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // Check if packet is GTP encapsulated, if not pass it to the next cube
 
   struct eth_hdr *eth = data;
-  if (data + sizeof(*eth) > data_end) {
+  if ((void *)(eth + 1) > data_end) {
     return RX_DROP;
   }
 
@@ -84,8 +80,8 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_OK;
   }
 
-  struct iphdr *ip = data + sizeof(*eth);
-  if ((void *)ip + sizeof(*ip) > data_end) {
+  struct iphdr *ip = (void *)(eth + 1);
+  if ((void *)(ip + 1) > data_end) {
     return RX_DROP;
   }
 
@@ -98,7 +94,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   }
 
   struct udphdr *udp = (void *)ip + 4*ip->ihl;
-  if ((void *)udp + sizeof(*udp) > data_end) {
+  if ((void *)(udp + 1) > data_end) {
     return RX_DROP;
   }
  
@@ -106,8 +102,8 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_OK;
   }
 
-  struct gtp1_header *gtp = (void *)udp + sizeof(*udp);
-  if ((void *)gtp + sizeof(*gtp) > data_end) {
+  struct gtp1_header *gtp = (void *)(udp + 1);
+  if ((void *)(gtp + 1) > data_end) {
     return RX_DROP;
   }
 
@@ -118,10 +114,10 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
 #ifdef POLYCUBE_XDP
   // Move eth header forward
   struct eth_hdr *new_eth = data + GTP_ENCAP_SIZE;
-  if ((void *)new_eth + sizeof(*eth) > data_end) {
+  if ((void *)(new_eth + 1) > data_end) {
     return RX_DROP;
   }
-  memmove(new_eth, eth, sizeof(*eth));
+  __builtin_memcpy(new_eth, eth, sizeof(*eth));
   bpf_xdp_adjust_head(ctx, GTP_ENCAP_SIZE);
 
 #else

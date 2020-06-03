@@ -210,25 +210,6 @@ read_gtphandler_user_equipment_list_by_id(const std::string &name) {
 }
 
 /**
-* @brief   Read teid by ID
-*
-* Read operation of resource: teid*
-*
-* @param[in] name ID of name
-* @param[in] ip ID of ip
-*
-* Responses:
-* uint32_t
-*/
-uint32_t
-read_gtphandler_user_equipment_teid_by_id(const std::string &name, const std::string &ip) {
-  auto gtphandler = get_cube(name);
-  auto userEquipment = gtphandler->getUserEquipment(ip);
-  return userEquipment->getTeid();
-
-}
-
-/**
 * @brief   Read tunnel-endpoint by ID
 *
 * Read operation of resource: tunnel-endpoint*
@@ -349,26 +330,6 @@ update_gtphandler_user_equipment_by_id(const std::string &name, const std::strin
 void
 update_gtphandler_user_equipment_list_by_id(const std::string &name, const std::vector<UserEquipmentJsonObject> &value) {
   throw std::runtime_error("Method not supported");
-}
-
-/**
-* @brief   Update teid by ID
-*
-* Update operation of resource: teid*
-*
-* @param[in] name ID of name
-* @param[in] ip ID of ip
-* @param[in] value Tunnel Endpoint ID of the GTP tunnel used by the User Equipment
-*
-* Responses:
-*
-*/
-void
-update_gtphandler_user_equipment_teid_by_id(const std::string &name, const std::string &ip, const uint32_t &value) {
-  auto gtphandler = get_cube(name);
-  auto userEquipment = gtphandler->getUserEquipment(ip);
-
-  return userEquipment->setTeid(value);
 }
 
 /**

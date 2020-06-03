@@ -40,7 +40,6 @@ Response read_gtphandler_by_id_handler(const char *name, const Key *keys, size_t
 Response read_gtphandler_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_gtphandler_user_equipment_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_gtphandler_user_equipment_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_gtphandler_user_equipment_teid_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_gtphandler_user_equipment_tunnel_endpoint_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response replace_gtphandler_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response replace_gtphandler_user_equipment_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -49,7 +48,6 @@ Response update_gtphandler_by_id_handler(const char *name, const Key *keys, size
 Response update_gtphandler_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_gtphandler_user_equipment_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_gtphandler_user_equipment_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_gtphandler_user_equipment_teid_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_gtphandler_user_equipment_tunnel_endpoint_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response gtphandler_list_by_id_help(const char *name, const Key *keys, size_t num_keys);

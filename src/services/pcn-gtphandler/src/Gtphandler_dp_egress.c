@@ -23,7 +23,7 @@
 #include <uapi/linux/udp.h>
 
 
-// #define MAX_USER_EQUIPMENTS n
+// #define MAX_USER_EQUIPMENT n
 
 // Following constants are added to the program at user level once the cube
 // is attached to an interface
@@ -53,12 +53,8 @@ struct gtp1_header {	/* According to 3GPP TS 29.060. */
 	__be32 tid;
 } __attribute__((packed));
 
-struct user_equipment {
-  __be32 tunnel_endpoint;
-  __be32 teid;
-};
-
-BPF_TABLE("extern", __be32, struct user_equipment, user_equipments, MAX_USER_EQUIPMENTS);
+BPF_TABLE("extern", __be32, __be32, user_equipment_map,
+          MAX_USER_EQUIPMENT);
 
 
 #define IP_CSUM_OFFSET (sizeof(struct eth_hdr) + offsetof(struct iphdr, check))
@@ -73,7 +69,7 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   void *data_end = (void *)(long)ctx->data_end;
 
   struct eth_hdr *eth = data;
-  if (data + sizeof(*eth) > data_end) {
+  if ((void *)(eth + 1) > data_end) {
     return RX_DROP;
   }
 
@@ -81,14 +77,14 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
     return RX_OK;
   }
 
-  struct iphdr *ip = data + sizeof(*eth);
-  if ((void *)ip + sizeof(*ip) > data_end) {
+  struct iphdr *ip = (void *)(eth + 1);
+  if ((void *)(ip + 1) > data_end) {
     return RX_DROP;
   }
 
   // Check if packet is directed to a user equipment
-  struct user_equipment *ue = user_equipments.lookup(&ip->daddr);
-  if (!ue) {
+  __be32 *tunnel_endpoint = user_equipment_map.lookup(&ip->daddr);
+  if (!tunnel_endpoint) {
     return RX_OK;
   }
 
@@ -104,26 +100,26 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   data_end = (void *)(long)ctx->data_end;
 
   eth = data;
-  if (data + sizeof(*eth) > data_end) {
+  if ((void *)(eth + 1) > data_end) {
     return RX_DROP;
   }
 
 #ifdef POLYCUBE_XDP
   // Space allocated before packet buffer, move eth header
   struct eth_hdr *old_eth = data + GTP_ENCAP_SIZE;
-  if ((void *)old_eth + sizeof(*eth) > data_end) {
+  if ((void *)(old_eth + 1) > data_end) {
     return RX_DROP;
   }
-  memmove(eth, old_eth, sizeof(*eth));
+  __builtin_memcpy(eth, old_eth, sizeof(*eth));
 #endif
 
-  ip = data + sizeof(*eth);
-  if ((void *)ip + sizeof(*ip) > data_end) {
+  ip = (void *)(eth + 1);
+  if ((void *)(ip + 1) > data_end) {
     return RX_DROP;
   }
 
   struct iphdr *inner_ip = (void *)ip + GTP_ENCAP_SIZE;
-  if ((void *)inner_ip + sizeof(*inner_ip) > data_end) {
+  if ((void *)(inner_ip + 1) > data_end) {
     return RX_DROP;
   }
 
@@ -138,27 +134,28 @@ int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   ip->protocol = IPPROTO_UDP;
   ip->check = 0;
   ip->saddr = LOCAL_IP;
-  ip->daddr = ue->tunnel_endpoint;
+  ip->daddr = *tunnel_endpoint;
 
   // Add the UDP header
-  struct udphdr *udp = (void *)ip + sizeof(*ip);
-  if ((void *)udp + sizeof(*udp) > data_end) {
+  struct udphdr *udp = (void *)(ip + 1);
+  if ((void *)(udp + 1) > data_end) {
     return RX_DROP;
   }
   udp->source = htons(GTP_PORT);
   udp->dest = htons(GTP_PORT);
-  udp->len = htons(ntohs(inner_ip->tot_len) + sizeof(*udp) + sizeof(struct gtp1_header));
+  udp->len = htons(ntohs(inner_ip->tot_len) +
+             sizeof(*udp) + sizeof(struct gtp1_header));
   udp->check = 0;
 
   // Add the GTP header
-  struct gtp1_header *gtp = (void *)udp + sizeof(*udp);
-  if ((void *)gtp + sizeof(*gtp) > data_end) {
+  struct gtp1_header *gtp = (void *)(udp + 1);
+  if ((void *)(gtp + 1) > data_end) {
     return RX_DROP;
   }
   gtp->flags = GTP_FLAGS;  
   gtp->type = GTP_TYPE_GPDU;
   gtp->length = inner_ip->tot_len;
-  gtp->tid = ue->teid;
+  gtp->tid = md->traffic_class;
 
   // Compute l3 checksum
   __wsum l3sum = pcn_csum_diff(0, 0, (__be32 *)ip, sizeof(*ip), 0);

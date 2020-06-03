@@ -23,9 +23,6 @@ void UserEquipmentBase::update(const UserEquipmentJsonObject &conf) {
   if (conf.tunnelEndpointIsSet()) {
     setTunnelEndpoint(conf.getTunnelEndpoint());
   }
-  if (conf.teidIsSet()) {
-    setTeid(conf.getTeid());
-  }
 }
 
 UserEquipmentJsonObject UserEquipmentBase::toJsonObject() {
@@ -33,7 +30,6 @@ UserEquipmentJsonObject UserEquipmentBase::toJsonObject() {
 
   conf.setIp(getIp());
   conf.setTunnelEndpoint(getTunnelEndpoint());
-  conf.setTeid(getTeid());
 
   return conf;
 }

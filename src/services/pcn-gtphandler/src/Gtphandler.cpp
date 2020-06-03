@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-
 #include "Gtphandler.h"
 #include "Gtphandler_dp_ingress.h"
 #include "Gtphandler_dp_egress.h"
-
 
 using namespace polycube::service;
 
@@ -27,12 +25,15 @@ Gtphandler::Gtphandler(const std::string name, const GtphandlerJsonObject &conf)
     GtphandlerBase(name) {
   logger()->info("Creating Gtphandler instance");
 
-  add_program(getWrapperCode() + gtphandler_code_ingress, 0, ProgramType::INGRESS);
-  add_program(getWrapperCode() + gtphandler_code_egress, 0, ProgramType::EGRESS);
+  add_program(getWrapperCode() + gtphandler_code_ingress, 0,
+              ProgramType::INGRESS);
+  add_program(getWrapperCode() + gtphandler_code_egress, 0,
+              ProgramType::EGRESS);
 
   addUserEquipmentList(conf.getUserEquipment());
 
-  ParameterEventCallback cb_ip = [&](const std::string &parameter, const std::string &value) {
+  ParameterEventCallback cb_ip = [&](const std::string &parameter,
+                                     const std::string &value) {
     local_ip_ = utils::get_ip_from_string(value);
     logger()->info("Local IP set to {0}", local_ip_);
 
@@ -42,7 +43,8 @@ Gtphandler::Gtphandler(const std::string name, const GtphandlerJsonObject &conf)
   };
   subscribe_parent_parameter("ip", cb_ip);
 
-  ParameterEventCallback cb_mac = [&](const std::string &parameter, const std::string &value) {
+  ParameterEventCallback cb_mac = [&](const std::string &parameter,
+                                      const std::string &value) {
     local_mac_ = value;
     logger()->info("Local MAC set to {0}", local_mac_);
 
@@ -66,56 +68,61 @@ void Gtphandler::packet_in(polycube::service::Direction direction,
     logger()->debug("Packet received");
 }
 
-std::shared_ptr<UserEquipment> Gtphandler::getUserEquipment(const std::string &ip) {
-  if (user_equipments_.count(ip) == 0) {
+std::shared_ptr<UserEquipment> Gtphandler::getUserEquipment(
+    const std::string &ip) {
+  if (user_equipment_map_.count(ip) == 0) {
     throw std::runtime_error("No user equipment with the given ip");
   }
 
-  return user_equipments_.at(ip);
+  return user_equipment_map_.at(ip);
 }
 
 std::vector<std::shared_ptr<UserEquipment>> Gtphandler::getUserEquipmentList() {
-  std::vector<std::shared_ptr<UserEquipment>> user_equipments_v;
+  std::vector<std::shared_ptr<UserEquipment>> user_equipment_map_v;
 
-  user_equipments_v.reserve(user_equipments_v.size());
+  user_equipment_map_v.reserve(user_equipment_map_v.size());
 
-  for (auto const &entry : user_equipments_) {
-    user_equipments_v.push_back(entry.second);
+  for (auto const &entry : user_equipment_map_) {
+    user_equipment_map_v.push_back(entry.second);
   }
 
-  return user_equipments_v;
+  return user_equipment_map_v;
 }
 
-void Gtphandler::addUserEquipment(const std::string &ip, const UserEquipmentJsonObject &conf) {
-  if (user_equipments_.count(ip) != 0) {
-    throw std::runtime_error("User equipment with the given ip already registered");
+void Gtphandler::addUserEquipment(const std::string &ip,
+                                  const UserEquipmentJsonObject &conf) {
+  if (user_equipment_map_.count(ip) != 0) {
+    throw std::runtime_error(
+        "User equipment with the given ip already registered");
   }
 
-  if (user_equipments_.size() == MAX_USER_EQUIPMENTS) {
+  if (user_equipment_map_.size() == MAX_USER_EQUIPMENT) {
     throw std::runtime_error("Maximum number of user equipments reached");
   }
 
-  user_equipments_[ip] = std::make_shared<UserEquipment>(*this, conf);
+  user_equipment_map_[ip] = std::make_shared<UserEquipment>(*this, conf);
 }
 
 // Basic default implementation, place your extension here (if needed)
-void Gtphandler::addUserEquipmentList(const std::vector<UserEquipmentJsonObject> &conf) {
+void Gtphandler::addUserEquipmentList(
+    const std::vector<UserEquipmentJsonObject> &conf) {
   // call default implementation in base class
   GtphandlerBase::addUserEquipmentList(conf);
 }
 
 // Basic default implementation, place your extension here (if needed)
-void Gtphandler::replaceUserEquipment(const std::string &ip, const UserEquipmentJsonObject &conf) {
+void Gtphandler::replaceUserEquipment(const std::string &ip,
+                                      const UserEquipmentJsonObject &conf) {
   // call default implementation in base class
   GtphandlerBase::replaceUserEquipment(ip, conf);
 }
 
 void Gtphandler::delUserEquipment(const std::string &ip) {
-  if (user_equipments_.count(ip) == 0) {
+  if (user_equipment_map_.count(ip) == 0) {
     throw std::runtime_error("No user equipment with the given ip");
   }
 
-  user_equipments_.erase(ip);
+  user_equipment_map_.erase(ip);
 }
 
 // Basic default implementation, place your extension here (if needed)
@@ -126,14 +133,18 @@ void Gtphandler::delUserEquipmentList() {
 
 std::string Gtphandler::getWrapperCode() {
   std::ostringstream wrapper_code;
-  wrapper_code << "#define MAX_USER_EQUIPMENTS " << MAX_USER_EQUIPMENTS << "\n";
+  wrapper_code << "#define MAX_USER_EQUIPMENT " << MAX_USER_EQUIPMENT << "\n";
 
   if (local_ip_ != "") {
-    wrapper_code << "#define LOCAL_IP " << utils::ip_string_to_nbo_uint(local_ip_) << "\n";
+    wrapper_code << "#define LOCAL_IP " <<
+                    utils::ip_string_to_nbo_uint(local_ip_) <<
+                    "\n";
   }
 
   if (local_mac_ != "") {
-    wrapper_code << "#define LOCAL_MAC " << utils::mac_string_to_nbo_uint(local_mac_) << "\n";
+    wrapper_code << "#define LOCAL_MAC " <<
+                    utils::mac_string_to_nbo_uint(local_mac_) <<
+                    "\n";
   }
   
   return wrapper_code.str();

@@ -49,12 +49,6 @@ class UserEquipmentBase {
   virtual std::string getTunnelEndpoint() = 0;
   virtual void setTunnelEndpoint(const std::string &value) = 0;
 
-  /// <summary>
-  /// Tunnel Endpoint ID of the GTP tunnel used by the User Equipment
-  /// </summary>
-  virtual uint32_t getTeid() = 0;
-  virtual void setTeid(const uint32_t &value) = 0;
-
   std::shared_ptr<spdlog::logger> logger();
  protected:
   Gtphandler &parent_;

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-
 #include "UserEquipment.h"
 #include "Gtphandler.h"
 
-
 using namespace polycube::service;
 
-UserEquipment::UserEquipment(Gtphandler &parent, const UserEquipmentJsonObject &conf)
+UserEquipment::UserEquipment(Gtphandler &parent,
+                             const UserEquipmentJsonObject &conf)
     : UserEquipmentBase(parent) {
   ip_ = conf.getIp();
   tunnel_endpoint_ = conf.getTunnelEndpoint();
-  teid_ = conf.getTeid();
 
   updateDataplane();
 
@@ -33,7 +31,7 @@ UserEquipment::UserEquipment(Gtphandler &parent, const UserEquipmentJsonObject &
 }
 
 UserEquipment::~UserEquipment() {
-  parent_.get_hash_table<uint32_t, struct user_equipment>("user_equipments")
+  parent_.get_hash_table<uint32_t, uint32_t>("user_equipment_map")
          .remove(utils::ip_string_to_nbo_uint(ip_));
 
   logger()->info("User equipment {0} deleted", ip_);
@@ -59,38 +57,12 @@ void UserEquipment::setTunnelEndpoint(const std::string &value) {
   logger()->info("User equipment updated {0}", toString());
 }
 
-uint32_t UserEquipment::getTeid() {
-  return teid_;
-}
-
-void UserEquipment::setTeid(const uint32_t &value) {
-  if (teid_ == value) {
-    return;
-  }
-
-  teid_ = value;
-
-  updateDataplane();
-
-  logger()->info("User equipment updated {0}", toString());
-}
-
 std::string UserEquipment::toString() {
-  std::ostringstream out;
-
-  out << "[ip=" << ip_
-      << "; tunel-endpoint=" << tunnel_endpoint_
-      << "; teid=" << teid_ << "]";
-
-  return out.str();
+  return toJsonObject().toJson().dump();
 }
 
 void UserEquipment::updateDataplane() {
-  struct user_equipment ue = {
-    .tunnel_endpoint = utils::ip_string_to_nbo_uint(tunnel_endpoint_),
-    .teid = htonl(teid_)
-  };
-
-  parent_.get_hash_table<uint32_t, struct user_equipment>("user_equipments")
-         .set(utils::ip_string_to_nbo_uint(ip_), ue);
+  parent_.get_hash_table<uint32_t, uint32_t>("user_equipment_map")
+         .set(utils::ip_string_to_nbo_uint(ip_),
+              utils::ip_string_to_nbo_uint(tunnel_endpoint_));
 }

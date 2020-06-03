@@ -8,6 +8,7 @@
 src/*.c
 src/*.cpp
 src/*.h
+src/CMakeLists.txt
 
 !src/*Interface.h
 !src/*JsonObject.h

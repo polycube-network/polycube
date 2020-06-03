@@ -220,31 +220,6 @@ Response read_gtphandler_user_equipment_list_by_id_handler(
   }
 }
 
-Response read_gtphandler_user_equipment_teid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-
-    auto x = read_gtphandler_user_equipment_teid_by_id(unique_name, unique_ip);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response read_gtphandler_user_equipment_tunnel_endpoint_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ) {
@@ -431,32 +406,6 @@ Response update_gtphandler_user_equipment_list_by_id_handler(
       unique_value.push_back(a);
     }
     update_gtphandler_user_equipment_list_by_id(unique_name, unique_value);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response update_gtphandler_user_equipment_teid_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-  std::string unique_ip;
-  for (size_t i = 0; i < num_keys; ++i) {
-    if (!strcmp(keys[i].name, "ip")) {
-      unique_ip = std::string { keys[i].value.string };
-      break;
-    }
-  }
-
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    // The conversion is done automatically by the json library
-    uint32_t unique_value = request_body;
-    update_gtphandler_user_equipment_teid_by_id(unique_name, unique_ip, unique_value);
     return { kOk, nullptr };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };

@@ -43,7 +43,6 @@ namespace GtphandlerApiImpl {
   std::vector<GtphandlerJsonObject> read_gtphandler_list_by_id();
   UserEquipmentJsonObject read_gtphandler_user_equipment_by_id(const std::string &name, const std::string &ip);
   std::vector<UserEquipmentJsonObject> read_gtphandler_user_equipment_list_by_id(const std::string &name);
-  uint32_t read_gtphandler_user_equipment_teid_by_id(const std::string &name, const std::string &ip);
   std::string read_gtphandler_user_equipment_tunnel_endpoint_by_id(const std::string &name, const std::string &ip);
   void replace_gtphandler_by_id(const std::string &name, const GtphandlerJsonObject &value);
   void replace_gtphandler_user_equipment_by_id(const std::string &name, const std::string &ip, const UserEquipmentJsonObject &value);
@@ -52,7 +51,6 @@ namespace GtphandlerApiImpl {
   void update_gtphandler_list_by_id(const std::vector<GtphandlerJsonObject> &value);
   void update_gtphandler_user_equipment_by_id(const std::string &name, const std::string &ip, const UserEquipmentJsonObject &value);
   void update_gtphandler_user_equipment_list_by_id(const std::string &name, const std::vector<UserEquipmentJsonObject> &value);
-  void update_gtphandler_user_equipment_teid_by_id(const std::string &name, const std::string &ip, const uint32_t &value);
   void update_gtphandler_user_equipment_tunnel_endpoint_by_id(const std::string &name, const std::string &ip, const std::string &value);
 
   /* help related */

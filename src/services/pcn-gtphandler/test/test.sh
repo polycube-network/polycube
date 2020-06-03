@@ -49,7 +49,7 @@ sudo arp -s 10.0.0.2 ${BS_MAC}
 # Configure the GTP tunnel
 sudo ip netns exec ns1 $LIBGTPNL/gtp-link add gtp1 --sgsn &
 sleep 1
-sudo ip netns exec ns1 $LIBGTPNL/gtp-tunnel add gtp1 v1 100 100 172.99.0.1 10.0.0.1
+sudo ip netns exec ns1 $LIBGTPNL/gtp-tunnel add gtp1 v1 0 0 172.99.0.1 10.0.0.1
 sudo ip netns exec ns1 route add default dev gtp1
 
 set -e
@@ -57,7 +57,7 @@ set -e
 # Configure the gtphandler
 polycubectl gtphandler add gh1
 polycubectl attach gh1 veth1
-polycubectl gh1 user-equipment add 172.99.0.1 tunnel-endpoint=10.0.0.2 teid=100
+polycubectl gh1 user-equipment add 172.99.0.1 tunnel-endpoint=10.0.0.2
 
 ping -I 10.0.1.1 -c 1 172.99.0.1
 sudo ip netns exec ns1 ping -c 1 10.0.1.1

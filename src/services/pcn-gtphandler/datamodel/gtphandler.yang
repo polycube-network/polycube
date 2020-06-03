@@ -35,12 +35,5 @@ module gtphandler {
         description "IP address of the Base Station that connects the User Equipment";
         polycube-base:cli-example "110.0.0.1";
     }
-    
-    leaf teid {
-        type uint32;
-        mandatory true;
-        description "Tunnel Endpoint ID of the GTP tunnel used by the User Equipment";
-        polycube-base:cli-example "56000";
-    }
   }
 }

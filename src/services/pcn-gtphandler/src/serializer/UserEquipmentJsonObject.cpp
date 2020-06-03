@@ -20,14 +20,12 @@ namespace model {
 UserEquipmentJsonObject::UserEquipmentJsonObject() {
   m_ipIsSet = false;
   m_tunnelEndpointIsSet = false;
-  m_teidIsSet = false;
 }
 
 UserEquipmentJsonObject::UserEquipmentJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_ipIsSet = false;
   m_tunnelEndpointIsSet = false;
-  m_teidIsSet = false;
 
 
   if (val.count("ip")) {
@@ -36,10 +34,6 @@ UserEquipmentJsonObject::UserEquipmentJsonObject(const nlohmann::json &val) :
 
   if (val.count("tunnel-endpoint")) {
     setTunnelEndpoint(val.at("tunnel-endpoint").get<std::string>());
-  }
-
-  if (val.count("teid")) {
-    setTeid(val.at("teid").get<uint32_t>());
   }
 }
 
@@ -55,10 +49,6 @@ nlohmann::json UserEquipmentJsonObject::toJson() const {
 
   if (m_tunnelEndpointIsSet) {
     val["tunnel-endpoint"] = m_tunnelEndpoint;
-  }
-
-  if (m_teidIsSet) {
-    val["teid"] = m_teid;
   }
 
   return val;
@@ -90,21 +80,6 @@ void UserEquipmentJsonObject::setTunnelEndpoint(std::string value) {
 
 bool UserEquipmentJsonObject::tunnelEndpointIsSet() const {
   return m_tunnelEndpointIsSet;
-}
-
-
-
-uint32_t UserEquipmentJsonObject::getTeid() const {
-  return m_teid;
-}
-
-void UserEquipmentJsonObject::setTeid(uint32_t value) {
-  m_teid = value;
-  m_teidIsSet = true;
-}
-
-bool UserEquipmentJsonObject::teidIsSet() const {
-  return m_teidIsSet;
 }
 
 

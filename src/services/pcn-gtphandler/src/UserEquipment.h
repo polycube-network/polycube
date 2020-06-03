@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-
 #pragma once
-
 
 #include "../base/UserEquipmentBase.h"
 
-
-struct user_equipment {
-  uint32_t tunnel_endpoint;
-  uint32_t teid;
-};
-
 class Gtphandler;
-
 
 using namespace polycube::service::model;
 
@@ -47,18 +38,11 @@ class UserEquipment : public UserEquipmentBase {
   std::string getTunnelEndpoint() override;
   void setTunnelEndpoint(const std::string &value) override;
 
-  /// <summary>
-  /// Tunnel Endpoint ID of the GTP tunnel used by the User Equipment
-  /// </summary>
-  uint32_t getTeid() override;
-  void setTeid(const uint32_t &value) override;
-
   std::string toString();
 
  private:
   std::string ip_;
   std::string tunnel_endpoint_;
-  uint32_t teid_;
 
   void updateDataplane();
 };
