@@ -20,18 +20,8 @@
 
 
 Policer::Policer(const std::string name, const PolicerJsonObject &conf)
-  : TransparentCube(conf.getBase(), {}, {}), PolicerBase(name) {
+  : TransparentCube(conf.getBase(), {policer_code}, {policer_code}), PolicerBase(name) {
   logger()->info("Creating Policer instance");
-
-  // Inject ingress program
-  std::string code = std::string("#define MAX_CONTRACTS ") +
-                     std::to_string(MAX_CONTRACTS) + std::string("\n") +
-                     policer_code;
-  add_program(code, 0, polycube::service::ProgramType::INGRESS);
-
-  // Inject egress program
-  code = std::string("#define EGRESS_PROG\n") + code;
-  add_program(code, 0, polycube::service::ProgramType::EGRESS);
 
   default_contract_ =
       std::make_shared<DefaultContract>(*this, conf.getDefaultContract());

@@ -24,7 +24,7 @@
 #include "DefaultContract.h"
 
 
-#define MAX_CONTRACTS 1024
+#define MAX_CONTRACTS 100000
 
 
 struct bucket {

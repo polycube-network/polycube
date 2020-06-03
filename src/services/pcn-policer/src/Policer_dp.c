@@ -37,10 +37,12 @@ struct contract {
   struct bpf_spin_lock lock;
 };
 
-#ifdef EGRESS_PROG
+#define MAX_CONTRACTS 100000
+
+#if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
 BPF_TABLE("extern", int, struct contract, default_contract, 1);
 BPF_TABLE("extern", u32, struct contract, contracts, MAX_CONTRACTS);
-#else
+#else  // INGRESS
 BPF_TABLE_SHARED("array", int, struct contract, default_contract, 1);
 BPF_TABLE_SHARED("hash", u32, struct contract, contracts, MAX_CONTRACTS);
 #endif
