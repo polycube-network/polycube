@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../base/PolicerBase.h"
-
 #include "Contract.h"
 #include "DefaultContract.h"
 
-
 #define MAX_CONTRACTS 100000
 
-
 struct bucket {
-  uint64_t tokens;
-  uint64_t refill_rate;  // tokens/s
+  uint64_t tokens;       // 1 bit = 1000000 tokens
+  uint64_t refill_rate;  // tokens/us
   uint64_t capacity;
-  uint64_t last_update;
+  uint64_t last_update;  // timestamp in us
 };
 
 struct contract {
@@ -41,7 +36,6 @@ struct contract {
 };
 
 using namespace polycube::service::model;
-
 
 class Policer : public PolicerBase {
  public:

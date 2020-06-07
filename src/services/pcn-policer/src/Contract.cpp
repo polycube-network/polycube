@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-
 #include "Contract.h"
 #include "Policer.h"
-
 
 Contract::Contract(Policer &parent, const ContractJsonObject &conf)
     : ContractBase(parent) {
@@ -43,15 +41,11 @@ Contract::Contract(Policer &parent, const ContractJsonObject &conf)
   }
 
   updateDataplane();
-
-  logger()->info("Contract created {0}", toString());
 }
 
 Contract::~Contract() {
   parent_.get_hash_table<uint32_t, struct contract>("contracts")
          .remove(traffic_class_);
-
-  logger()->info("Contract for class {0} deleted", traffic_class_);
 }
 
 ContractJsonObject Contract::toJsonObject() {
@@ -127,9 +121,9 @@ void Contract::updateData(ContractUpdateDataInputJsonObject input) {
 
 void Contract::updateDataplane() {
   struct bucket bucket = {
-    .tokens = burst_limit_,
+    .tokens = burst_limit_ * 1000000,
     .refill_rate = rate_limit_,
-    .capacity = burst_limit_,
+    .capacity = burst_limit_ * 1000000,
     .last_update = 0
   };
 

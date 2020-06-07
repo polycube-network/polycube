@@ -25,10 +25,10 @@ enum {
 };
 
 struct bucket {
-  u64 tokens;
-  u64 refill_rate;  // tokens/s
+  u64 tokens;       // 1 bit = 1000000 tokens
+  u64 refill_rate;  // tokens/us
   u64 capacity;
-  u64 last_update;
+  u64 last_update;  // timestamp in us
 };
 
 struct contract {
@@ -53,7 +53,7 @@ static inline int limit_rate(struct CTXTYPE *ctx, struct contract *contract) {
   void *data = (void *)(long)ctx->data;
   void *data_end = (void *)(long)ctx->data_end;
 
-  u64 curtime = bpf_ktime_get_ns();
+  u64 curtime = bpf_ktime_get_ns() / 1000; // In us
   
   bpf_spin_lock(&contract->lock);
 
@@ -64,7 +64,7 @@ static inline int limit_rate(struct CTXTYPE *ctx, struct contract *contract) {
   
   } else if (curtime > bucket->last_update){
     u64 new_tokens =
-        (curtime - bucket->last_update) * bucket->refill_rate / 1000000000;
+        (curtime - bucket->last_update) * bucket->refill_rate;
     if (new_tokens > 0) {
       bucket->tokens += new_tokens;
       if (bucket->tokens > bucket->capacity) {
@@ -75,10 +75,10 @@ static inline int limit_rate(struct CTXTYPE *ctx, struct contract *contract) {
   }
 
   // Consume tokens
-  u32 size = (data_end - data) * 8;  // In bits
+  u32 needed_tokens = (data_end - data) * 8 * 1000000;
   u8 retval;
-  if (bucket->tokens >= size) {
-    bucket->tokens -= size;
+  if (bucket->tokens >= needed_tokens) {
+    bucket->tokens -= needed_tokens;
     retval = RX_OK;
   } else {
     retval = RX_DROP;

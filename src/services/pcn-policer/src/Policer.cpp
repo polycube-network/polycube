@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-
 #include "Policer.h"
 #include "Policer_dp.h"
-
 
 Policer::Policer(const std::string name, const PolicerJsonObject &conf)
   : TransparentCube(conf.getBase(), {policer_code}, {policer_code}), PolicerBase(name) {
@@ -85,12 +83,31 @@ void Policer::addContract(const uint32_t &trafficClass,
   }
 
   contracts_[trafficClass] = std::make_shared<Contract>(*this, conf);
+
+  logger()->info("Contract added {0}", contracts_[trafficClass]->toString());
 }
 
-// Basic default implementation, place your extension here (if needed)
 void Policer::addContractList(const std::vector<ContractJsonObject> &conf) {
-  // call default implementation in base class
-  PolicerBase::addContractList(conf);
+  if (conf.size() == 0) {
+    return;
+  }
+
+  if (contracts_.size() + conf.size() > MAX_CONTRACTS) {
+    throw std::runtime_error("Maximum number of traffic contracts reached");
+  }
+
+  for (auto &it : conf) {
+    if (contracts_.count(it.getTrafficClass()) != 0) {
+      throw std::runtime_error(std::string("Contract for traffic class ") +
+                               std::to_string(it.getTrafficClass()) +
+                               " already registered");
+    }
+  }
+  for (auto &it : conf) {
+    contracts_[it.getTrafficClass()] = std::make_shared<Contract>(*this, it);
+  }
+
+  logger()->info("Contract list added");
 }
 
 // Basic default implementation, place your extension here (if needed)
@@ -106,10 +123,12 @@ void Policer::delContract(const uint32_t &trafficClass) {
   }
 
   contracts_.erase(trafficClass);
+
+  logger()->info("Contract {0} deleted", trafficClass);
 }
 
-// Basic default implementation, place your extension here (if needed)
 void Policer::delContractList() {
-  // call default implementation in base class
-  PolicerBase::delContractList();
+  contracts_.clear();
+
+  logger()->info("Contract list deleted");
 }

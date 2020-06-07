@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-
 #pragma once
 
-
 #include "../base/DefaultContractBase.h"
-
 
 class Policer;
 
 using namespace polycube::service::model;
-
 
 class DefaultContract : public DefaultContractBase {
  public:

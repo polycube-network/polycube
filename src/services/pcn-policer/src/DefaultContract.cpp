@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-
 #include "DefaultContract.h"
 #include "Policer.h"
-
 
 DefaultContract::DefaultContract(Policer &parent,
                                  const DefaultContractJsonObject &conf)
@@ -118,9 +116,9 @@ void DefaultContract::updateData(
 
 void DefaultContract::updateDataplane() {
   struct bucket bucket = {
-    .tokens = burst_limit_,
+    .tokens = burst_limit_ * 1000000,
     .refill_rate = rate_limit_,
-    .capacity = burst_limit_,
+    .capacity = burst_limit_ * 1000000,
     .last_update = 0
   };
 
