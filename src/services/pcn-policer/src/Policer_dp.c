@@ -75,7 +75,7 @@ static inline int limit_rate(struct CTXTYPE *ctx, struct contract *contract) {
   }
 
   // Consume tokens
-  u32 needed_tokens = (data_end - data) * 8 * 1000000;
+  u64 needed_tokens = (data_end - data) * 8 * 1000000;
   u8 retval;
   if (bucket->tokens >= needed_tokens) {
     bucket->tokens -= needed_tokens;
