@@ -6,10 +6,9 @@ Dynmon::Dynmon(const std::string name, const DynmonJsonObject &conf)
     : TransparentCube(conf.getBase(), {dynmon_code}, {dynmon_code}),
       DynmonBase(name) {
   logger()->info("Creating Dynmon instance");
+  m_dpConfig = std::make_shared<DataplaneConfig>(*this);
   if (conf.dataplaneConfigIsSet())
     setDataplaneConfig(conf.getDataplaneConfig());
-  else
-    m_dpConfig = std::make_shared<DataplaneConfig>(*this);
 }
 
 Dynmon::~Dynmon() {

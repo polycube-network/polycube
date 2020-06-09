@@ -116,8 +116,8 @@ def createInstance(cube_name, dataplane):
     try:
         print(f'Creating new dynmon instance named {cube_name}')
         response = requests.post(f'{polycubed_endpoint}/dynmon/{cube_name}',
-                                json.dumps({'dataplane': dataplane}),
-                                timeout=REQUESTS_TIMEOUT)
+                                 json.dumps({'dataplane-config': dataplane}),
+                                 timeout=REQUESTS_TIMEOUT)
         response.raise_for_status()
     except requests.exceptions.HTTPError:
         print(f'Error: {response.content.decode("UTF-8")}')
