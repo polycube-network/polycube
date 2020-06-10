@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../models/ExtractionOptions.h"
 #include "MapEntry.h"
-#include "polycube/services/base_cube.h"// polycube::service::BaseCube
-#include "polycube/services/json.hpp"   // nlohmann::json
-#include "polycube/services/table.h"    // polycube::service::RawTable
+#include "polycube/services/base_cube.h"  // polycube::service::BaseCube
+#include "polycube/services/json.hpp"     // nlohmann::json
+#include "polycube/services/table.h"      // polycube::service::RawTable
 
 using ebpf::TableDesc;
 using namespace polycube::service;
@@ -55,11 +56,13 @@ class MapExtractor {
    * @param[map_name] name of the eBPF map
    * @param[index] index of the eBPF program which declares the map
    * @param[type] type of the eBPF program (INGRESS or EGRESS)
+   * @param[extractionOptions] the extraction options for this metric
    *
    * @returns the content of a map as a JSON object
    */
   static json extractFromMap(BaseCube &cube_ref, const string& map_name, int index = 0,
-                             ProgramType type = ProgramType::INGRESS);
+                             ProgramType type = ProgramType::INGRESS,
+                             std::shared_ptr<ExtractionOptions> extractionOptions = {});
 
  private:
   MapExtractor() = default;
@@ -67,16 +70,32 @@ class MapExtractor {
   ~MapExtractor() = default;
 
   /**
-   * Internal method to extract values from a Linear eBPF map (array/queue/stack)
+   * Internal method to extract values from an array eBPF map
    *
    * This method is called once the extractFromMap verifies that the map type is one
    * of the just mentioned ones.
    *
    * @param[desc] description of the eBPF table
    * @param[table] the eBPF table
+   * @param[extractionOptions] the extraction options for this metric
    * @return the content of the map as a JSON array
    */
-  static json extractFromLinearMap(const TableDesc &desc, const RawTable& table);
+  static json extractFromArrayMap(const TableDesc &desc, RawTable table,
+                                   std::shared_ptr<ExtractionOptions> &extractionOptions);
+
+  /**
+   * Internal method to extract values from a Queue/Stack eBPF map
+   *
+   * This method is called once the extractFromMap verifies that the map type is one
+   * of the just mentioned ones.
+   *
+   * @param[desc] description of the eBPF table
+   * @param[table] the eBPF table
+   * @param[extractionOptions] the extraction options for this metric
+   * @return the content of the map as a JSON array
+   */
+  static json extractFromQueueStackMap(const TableDesc &desc, RawTable table,
+                                  std::shared_ptr<ExtractionOptions> &extractionOptions);
 
   /**
    * Internal method to extract values from an Hash key-value eBPF map (hash/lru_hash)
@@ -86,9 +105,11 @@ class MapExtractor {
    *
    * @param[desc] description of the eBPF table
    * @param[table] the eBPF table
+   * @param[extractionOptions] the extraction options for this metric
    * @return the content of the map as a JSON object ({id: ..., value: ...})
    */
-  static json extractFromHashMap(const TableDesc &desc, const RawTable& table);
+  static json extractFromHashMap(const TableDesc &desc, RawTable table,
+                                 std::shared_ptr<ExtractionOptions> &extractionOptions);
 
   /**
    * Internal method to extract values from a PerCPU map (arrays or hash)
@@ -98,23 +119,11 @@ class MapExtractor {
    *
    * @param[desc] description of the eBPF table
    * @param[table] the eBPF table
+   * @param[extractionOptions] the extraction options for this metric
    * @return the content of the map as a JSON object ({id: ..., value: ...})
    */
-  static json extractFromPerCPUMap(const TableDesc &desc, const RawTable& table);
-
-  /**
-   * Returns a vector of MapEntry objects which internally contain the pointers
-   * to the map entries keys and values.
-   *
-   * @param[table] a RawTable object corresponding to the eBPF table
-   * @param[key_size] the size of the table keys
-   * @param[value_size] the size of the table values
-   * @param[isQueueStack] indicates whether the map has to be treated like a Queue/Stack
-   *
-   * @returns a vector of MapEntry objects
-   */
-  static std::vector<std::shared_ptr<MapEntry>> getMapEntries(
-      RawTable table, size_t key_size, size_t value_size, bool isQueueStack = false);
+  static json extractFromPerCPUMap(const TableDesc &desc, RawTable table,
+                                   std::shared_ptr<ExtractionOptions> &extractionOptions);
 
   /**
    * Recursive method which identifies the type of an object

@@ -161,12 +161,12 @@ std::shared_ptr<Metric> Dynmon::getEgressMetric(const std::string &name) {
   try {
     // Extracting the metric value from the corresponding eBPF map
     std::string mapName = metricConfig->getMapName();
-    if(metricConfig->getExtractionOptions()->getSwapOnRead() && !egressSwapState.hasSwapped()) {
+    auto extractionOptions = metricConfig->getExtractionOptions();
+    if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
       SwapStateConfig::formatMapName(mapName);
       logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
     }
-    auto value = MapExtractor::extractFromMap(*this, mapName,
-                                              0, ProgramType::EGRESS);
+    auto value = MapExtractor::extractFromMap(*this, mapName,0, ProgramType::EGRESS, extractionOptions);
     return std::make_shared<Metric>(*this, metricConfig->getName(), value,
                                     Utils::genTimestampMicroSeconds());
   } catch (const std::exception &ex) {
@@ -190,12 +190,14 @@ std::vector<std::shared_ptr<Metric>> Dynmon::getEgressMetrics() {
     try {
       // Extracting the metric value from the corresponding eBPF map
       std::string mapName = it->getMapName();
-      if(it->getExtractionOptions()->getSwapOnRead() && !egressSwapState.hasSwapped()) {
+      auto extractionOptions = it->getExtractionOptions();
+      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
         SwapStateConfig::formatMapName(mapName);
         logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
       }
       auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::EGRESS);
+                                                ProgramType::EGRESS,
+                                                extractionOptions);
       metrics.push_back(std::make_shared<Metric>(
           *this, it->getName(), value, Utils::genTimestampMicroSeconds()));
     } catch (const std::exception &ex) {
@@ -215,12 +217,14 @@ std::shared_ptr<Metric> Dynmon::getIngressMetric(const std::string &name) {
   try {
     // Extracting the metric value from the corresponding eBPF map
     std::string mapName = metricConfig->getMapName();
-    if(metricConfig->getExtractionOptions()->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
+    auto extractionOptions = metricConfig->getExtractionOptions();
+    if(extractionOptions->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
       SwapStateConfig::formatMapName(mapName);
       logger()->debug("[Dynmon] INGRESS - Reading from Map: {} since code has swapped back", mapName);
     }
     auto value = MapExtractor::extractFromMap(*this, mapName,
-                                              0, ProgramType::INGRESS);
+                                              0, ProgramType::INGRESS,
+                                              extractionOptions);
     return std::make_shared<Metric>(*this, metricConfig->getName(), value,
                                     Utils::genTimestampMicroSeconds());
   } catch (const std::exception &ex) {
@@ -244,12 +248,14 @@ std::vector<std::shared_ptr<Metric>> Dynmon::getIngressMetrics() {
     try {
       // Extracting the metric value from the corresponding eBPF map
       std::string mapName = it->getMapName();
-      if(it->getExtractionOptions()->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
+      auto extractionOptions = it->getExtractionOptions();
+      if(extractionOptions->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
         SwapStateConfig::formatMapName(mapName);
         logger()->debug("[Dynmon] INGRESS - Reading from Map: {} since code has swapped back", mapName);
       }
       auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::INGRESS);
+                                                ProgramType::INGRESS,
+                                                extractionOptions);
       metrics.push_back(std::make_shared<Metric>(
           *this, it->getName(), value, Utils::genTimestampMicroSeconds()));
     } catch (const std::exception &ex) {
@@ -287,13 +293,15 @@ std::string Dynmon::getEgressOpenMetrics() {
         continue;
 
       std::string mapName = it->getMapName();
-      if(it->getExtractionOptions()->getSwapOnRead() && !egressSwapState.hasSwapped()) {
+      auto extractionOptions = it->getExtractionOptions();
+      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
         SwapStateConfig::formatMapName(mapName);
         logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
       }
       // Extracting the metric value from the corresponding eBPF map
       auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::EGRESS);
+                                                ProgramType::EGRESS,
+                                                extractionOptions);
       auto metric = toOpenMetrics(it, value);
       metrics.push_back(metric);
     } catch (const std::exception &ex) {
@@ -320,7 +328,8 @@ std::string Dynmon::getIngressOpenMetrics() {
         continue;
 
       std::string mapName = it->getMapName();
-      if(it->getExtractionOptions()->getSwapOnRead() && !egressSwapState.hasSwapped()) {
+      auto extractionOptions = it->getExtractionOptions();
+      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
         SwapStateConfig::formatMapName(mapName);
         logger()->debug(
             "[Dynmon] EGRESS - Reading from Map: {} since code has swapped back",
@@ -328,7 +337,8 @@ std::string Dynmon::getIngressOpenMetrics() {
       }
       // Extracting the metric value from the corresponding eBPF map
       auto value = MapExtractor::extractFromMap(*this, it->getMapName(), 0,
-                                                ProgramType::INGRESS);
+                                                ProgramType::INGRESS,
+                                                extractionOptions);
       auto metric = toOpenMetrics(it, value);
       metrics.push_back(metric);
     } catch (const std::exception &ex) {

@@ -106,13 +106,26 @@ objectType identifyObject(json object) {
   throw runtime_error("Unable to identifyObject " + object.dump());
 }
 
-json MapExtractor::extractFromLinearMap(const TableDesc &desc, const RawTable& table) {
+json MapExtractor::extractFromArrayMap(const TableDesc &desc, RawTable table,
+                                             std::shared_ptr<ExtractionOptions> &extractionOptions) {
 
-  // Getting the leaf_desc object which represents the structure of the a map entry
   auto value_desc = json::parse(string{desc.leaf_desc});
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  MapEntry reset_value(0, desc.key_size);
+  void *last_key = nullptr;
 
-  // Getting the map entries (for these maps only the value is considered)
-  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size, desc.type != BPF_MAP_TYPE_ARRAY);
+  // Retrieving map entries
+  while (true) {
+    MapEntry entry(desc.key_size, desc.leaf_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
+      table.get(entry.getKey(), entry.getValue());
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.set(last_key, reset_value.getValue());
+    } else
+      break;
+  }
 
   json j_entries;
   for(auto &entry: entries) {
@@ -123,14 +136,49 @@ json MapExtractor::extractFromLinearMap(const TableDesc &desc, const RawTable& t
   return j_entries;
 }
 
-json MapExtractor::extractFromHashMap(const TableDesc &desc, const RawTable& table) {
+json MapExtractor::extractFromQueueStackMap(const TableDesc &desc, RawTable table,
+                                        std::shared_ptr<ExtractionOptions> &extractionOptions) {
 
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  std::vector<std::shared_ptr<MapEntry>> entries;
+
+  // Retrieving map entries
+  while(true) {
+    MapEntry entry(0, desc.leaf_size);
+    if (table.pop(entry.getValue()) != 0)
+      break;
+    entries.push_back(std::make_shared<MapEntry>(entry));
+  }
+
+  json j_entries;
+  for(auto &entry: entries) {
+    int offset = 0;
+    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+    j_entries.push_back(j_entry);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromHashMap(const TableDesc &desc, RawTable table,
+                                      std::shared_ptr<ExtractionOptions> &extractionOptions) {
   // Getting both key_desc and leaf_desc objects which represents the structure of the map entry
   auto value_desc = json::parse(string{desc.leaf_desc});
   auto key_desc = json::parse(string{desc.key_desc});
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  void *last_key = nullptr;
 
-  // Getting the map entries (both key and value are considered)
-  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+  // Retrieving map entries
+  while (true) {
+    MapEntry entry(desc.key_size, desc.leaf_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
+      table.get(entry.getKey(), entry.getValue());
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.remove(last_key);
+    } else
+      break;
+  }
 
   json j_entries;
   for (auto &entry : entries) {
@@ -143,12 +191,27 @@ json MapExtractor::extractFromHashMap(const TableDesc &desc, const RawTable& tab
   return j_entries;
 }
 
-json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, const RawTable &table) {
+json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, RawTable table,
+                                        std::shared_ptr<ExtractionOptions> &extractionOptions) {
   // Getting the maximux cpu available
   size_t n_cpus = polycube::get_possible_cpu_count();
+  size_t leaf_array_size = n_cpus * desc.leaf_size;
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  void *last_key = nullptr;
+  MapEntry reset_value(0, leaf_array_size);
 
-  // Getting the map entries
-  auto entries = getMapEntries(table, desc.key_size, desc.leaf_size * n_cpus);
+  // Retrieving map entries
+  while (true) {
+    MapEntry entry(desc.key_size, leaf_array_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
+      table.get(entry.getKey(), entry.getValue());
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.set(last_key, reset_value.getValue());
+    } else
+      break;
+  }
 
   // Getting key and value description to parse correctly
   auto value_desc = json::parse(string{desc.leaf_desc});
@@ -177,52 +240,21 @@ json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, const RawTable &t
 }
 
 json MapExtractor::extractFromMap(BaseCube &cube_ref, const string& map_name, int index,
-                                  ProgramType type) {
+                                  ProgramType type, std::shared_ptr<ExtractionOptions> extractionOptions) {
   // Getting the TableDesc object of the eBPF table
   auto &desc = cube_ref.get_table_desc(map_name, index, type);
 
   if(desc.type == BPF_MAP_TYPE_HASH || desc.type == BPF_MAP_TYPE_LRU_HASH)
-    return extractFromHashMap(desc, cube_ref.get_raw_table(map_name, index, type));
-  else if(desc.type == BPF_MAP_TYPE_ARRAY || desc.type == BPF_MAP_TYPE_QUEUE || desc.type == BPF_MAP_TYPE_STACK)
-    return extractFromLinearMap(desc, cube_ref.get_raw_table(map_name, index, type));
+    return extractFromHashMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+  else if(desc.type == BPF_MAP_TYPE_ARRAY)
+    return extractFromArrayMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+  else if(desc.type == BPF_MAP_TYPE_QUEUE || desc.type == BPF_MAP_TYPE_STACK)
+    return extractFromQueueStackMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
   else if(desc.type == BPF_MAP_TYPE_PERCPU_HASH || desc.type == BPF_MAP_TYPE_PERCPU_ARRAY || desc.type == BPF_MAP_TYPE_LRU_PERCPU_HASH)
-    return extractFromPerCPUMap(desc, cube_ref.get_raw_table(map_name, index, type));
+    return extractFromPerCPUMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
   else
     // The map type is not supported yet by Dynmon
     throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
-}
-
-std::vector<std::shared_ptr<MapEntry>> MapExtractor::getMapEntries(
-    RawTable table, size_t key_size, size_t value_size, bool isQueueStack) {
-  std::vector<std::shared_ptr<MapEntry>> vec;
-
-  // If it is a queue/stack then POP should be used, otherwise normal lookup
-  if(isQueueStack) {
-    // Looping until pop extracts something
-    while(true) {
-      MapEntry entry(0, value_size);
-      if (table.pop(entry.getValue()) != 0)
-        break;
-      vec.push_back(std::make_shared<MapEntry>(entry));
-    }
-  } else {
-    void *last_key = nullptr;
-
-    // Looping until the RawTable has a "next" entry
-    while (true) {
-      // Creating a MapEntry object which internally allocates the memory to
-      // contain the map entry's key and value
-      MapEntry entry(key_size, value_size);
-      int fd = table.next(last_key, entry.getKey());
-      last_key = entry.getKey();
-      if (fd > -1) {
-        table.get(entry.getKey(), entry.getValue());
-        vec.push_back(std::make_shared<MapEntry>(entry));
-      } else
-        break;
-    }
-  }
-  return vec;
 }
 
 json MapExtractor::recExtract(json object_description, void *data, int &offset) {
@@ -262,6 +294,7 @@ json MapExtractor::recExtract(json object_description, void *data, int &offset) 
   case Enum: // the object describes a C enum
     return valueFromEnum(object_description, data, offset);
   }
+  throw runtime_error("Unhandled object type " + std::to_string(objectType) + " - recExtract()");
 }
 
 json MapExtractor::valueFromStruct(json struct_description, void *data,
