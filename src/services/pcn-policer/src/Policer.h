@@ -70,4 +70,10 @@ class Policer : public PolicerBase {
  private:
   std::shared_ptr<DefaultContract> default_contract_;
   std::unordered_map<uint32_t, std::shared_ptr<Contract>> contracts_;
+
+  // Thread to update the clock for the data plane
+  std::thread clock_update_thread_;
+  std::atomic<bool> quit_thread_;
+
+  void updateClock();
 };

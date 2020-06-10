@@ -121,9 +121,9 @@ void Contract::updateData(ContractUpdateDataInputJsonObject input) {
 
 void Contract::updateDataplane() {
   struct bucket bucket = {
-    .tokens = burst_limit_ * 1000000,
+    .tokens = burst_limit_ * 1000,
     .refill_rate = rate_limit_,
-    .capacity = burst_limit_ * 1000000,
+    .capacity = burst_limit_ * 1000,
     .last_update = 0
   };
 
