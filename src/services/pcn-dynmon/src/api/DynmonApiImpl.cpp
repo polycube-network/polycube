@@ -299,9 +299,9 @@ namespace polycube {
         }
 
         /**
-         * @brief   Read swap-on-read by ID
+         * @brief   Read extraction-options-on-read by ID
          *
-         * Read operation of resource: swap-on-read*
+         * Read operation of resource: extraction-options-on-read*
          *
          * @param[in] name ID of name
          * @param[in] metricConfigsName ID of metric-configs_name
@@ -618,9 +618,9 @@ namespace polycube {
         }
 
         /**
-         * @brief   Read swap-on-read by ID
+         * @brief   Read extraction-options-on-read by ID
          *
-         * Read operation of resource: swap-on-read*
+         * Read operation of resource: extraction-options-on-read*
          *
          * @param[in] name ID of name
          * @param[in] metricConfigsName ID of metric-configs_name
@@ -855,6 +855,8 @@ namespace polycube {
         MetricsJsonObject
         read_dynmon_metrics_by_id(const std::string &name) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadIngress();
+          dynmon->triggerReadEgress();
           return dynmon->getMetrics()->toJsonObject();
         }
 
@@ -872,6 +874,7 @@ namespace polycube {
         MetricJsonObject
         read_dynmon_metrics_egress_metrics_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadEgress();
           auto metric = dynmon->getEgressMetric(metricName);
           return metric->toJsonObject();
         }
@@ -889,6 +892,7 @@ namespace polycube {
         std::vector<MetricJsonObject>
         read_dynmon_metrics_egress_metrics_list_by_id(const std::string &name) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadEgress();
           auto metrics = dynmon->getEgressMetrics();
           std::vector<MetricJsonObject> m;
           for (auto &i : metrics)
@@ -910,6 +914,7 @@ namespace polycube {
         int64_t
         read_dynmon_metrics_egress_metrics_timestamp_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadEgress();
           auto metric = dynmon->getEgressMetric(metricName);
           return metric->getTimestamp();
         }
@@ -928,6 +933,7 @@ namespace polycube {
         nlohmann::json
         read_dynmon_metrics_egress_metrics_value_by_id(const std::string &name, const std::string &egressName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadEgress();
           auto metric = dynmon->getEgressMetric(egressName);
           return metric->getValue();
         }
@@ -946,6 +952,7 @@ namespace polycube {
         MetricJsonObject
         read_dynmon_metrics_ingress_metrics_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadIngress();
           auto metric = dynmon->getIngressMetric(metricName);
           return metric->toJsonObject();
         }
@@ -963,6 +970,7 @@ namespace polycube {
         std::vector<MetricJsonObject>
         read_dynmon_metrics_ingress_metrics_list_by_id(const std::string &name) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadIngress();
           auto metrics = dynmon->getIngressMetrics();
           std::vector<MetricJsonObject> m{};
           for (auto &i : metrics)
@@ -984,6 +992,7 @@ namespace polycube {
         int64_t
         read_dynmon_metrics_ingress_metrics_timestamp_by_id(const std::string &name, const std::string &ingressName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadIngress();
           auto metric = dynmon->getIngressMetric(ingressName);
           return metric->getTimestamp();
         }
@@ -1002,6 +1011,7 @@ namespace polycube {
         nlohmann::json
         read_dynmon_metrics_ingress_metrics_value_by_id(const std::string &name, const std::string &ingressName) {
           auto dynmon = get_cube(name);
+          dynmon->triggerReadIngress();
           auto metric = dynmon->getIngressMetric(ingressName);
           return metric->getValue();
         }

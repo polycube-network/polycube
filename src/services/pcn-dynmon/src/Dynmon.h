@@ -3,6 +3,7 @@
 #include "../base/DynmonBase.h"
 #include "Dynmon_dp.h"
 #include "extractor/MapExtractor.h"
+#include "extractor/options/SwapStateConfig.h"
 #include "models/DataplaneConfig.h"
 #include "models/Metric.h"
 #include "models/Metrics.h"
@@ -70,10 +71,41 @@ class Dynmon : public DynmonBase {
    */
   std::string getIngressOpenMetrics();
 
+  /**
+   *  Method to notify dynmon that a user wants to read one or more egress metrics.
+   *  This way, if needed, the code is swapped before reading
+   */
+  void triggerReadEgress();
+
+  /**
+   *  Method to notify dynmon that a user wants to read one or more ingress metrics.
+   *  This way, if needed, the code is swapped before reading
+   */
+  void triggerReadIngress();
+
  private:
+  /**
+   * Method to modify both original and swapped code accordingly to the mapName to be swapped.
+   * Eg. if BPF_ARRAY(JOHN_DOE, u64, 1) needs to be swapped, then
+   *    - in the original code will be inserted also BPF_ARRAY(JOHN_DOE_1, u64, 1)
+   *    - in the swapped code all JOHN_DOE references will become JOHN_DOE_1
+   *    - in the swapped code will be inserted also BPF_ARRAY(JOHN_DOE, u64, 1)
+   * Those insertions are vital, since when reloading a program the new one must keep
+   * the original/swapped map alive, otherwise if it would not declare it the map would
+   * be destroyed, thus not able to be read.
+   *
+   * @param[original_code] the original code to be modified
+   * @param[swapped_code] the swapped code to be modified
+   * @param[mapName] the name of the map to be swapped
+   */
+  static void formatCodeToSwap(std::string &original_code, std::string &swapped_code,
+                        std::string mapName);
+
   string toOpenMetrics(std::shared_ptr<MetricConfig> conf,
                        nlohmann::json value);
 
+  SwapStateConfig ingressSwapState;
+  SwapStateConfig egressSwapState;
   std::shared_ptr<DataplaneConfig> m_dpConfig;
   std::mutex m_ingressPathMutex;
   std::mutex m_egressPathMutex;
