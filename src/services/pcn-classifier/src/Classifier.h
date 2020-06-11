@@ -25,7 +25,7 @@
 #include <linux/in.h>
 
 
-#define MAX_TRAFFIC_CLASSES 10000
+#define MAX_TRAFFIC_CLASSES 100000
 #define FIELDS_COUNT 8
 
 #define FIELD_INDEX(field) (static_cast<int>(field))
