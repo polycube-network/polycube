@@ -3,7 +3,7 @@
 #include "../base/DynmonBase.h"
 #include "Dynmon_dp.h"
 #include "extractor/MapExtractor.h"
-#include "extractor/options/SwapStateConfig.h"
+#include "extractor/options/SwapConfig.h"
 #include "models/DataplaneConfig.h"
 #include "models/Metric.h"
 #include "models/Metrics.h"
@@ -11,9 +11,20 @@
 using namespace polycube::service::model;
 using polycube::service::ProgramType;
 
+/**
+ * Dynmon implementation class.
+ *
+ * Every Dynmon class has 2 mutexes, one for the egress path and one for the ingress one.
+ * These two mutexes are public, since some operation needs to be protected already
+ * in the DynmonApiImpl (like the trigger of a read), because there could be scenarios
+ * in which even though the required operations may conceptually trigger the same events
+ * (eg. both getIngressMetric(name) and getIngressMetrics() trigger the IngressRead event)
+ * they need to be protected a priori, since they could possibly be related and call each other
+ * (eg. getIngressMetrics() calls n-times getIngressMetric(name))
+ */
 class Dynmon : public DynmonBase {
  public:
-  Dynmon(const std::string name, const DynmonJsonObject &conf);
+  Dynmon(const std::string& name, const DynmonJsonObject &conf);
   ~Dynmon() override;
   void packet_in(polycube::service::Direction direction,
                  polycube::service::PacketInMetadata &md,
@@ -83,30 +94,13 @@ class Dynmon : public DynmonBase {
    */
   void triggerReadIngress();
 
- private:
-  /**
-   * Method to modify both original and swapped code accordingly to the mapName to be swapped.
-   * Eg. if BPF_ARRAY(JOHN_DOE, u64, 1) needs to be swapped, then
-   *    - in the original code will be inserted also BPF_ARRAY(JOHN_DOE_1, u64, 1)
-   *    - in the swapped code all JOHN_DOE references will become JOHN_DOE_1
-   *    - in the swapped code will be inserted also BPF_ARRAY(JOHN_DOE, u64, 1)
-   * Those insertions are vital, since when reloading a program the new one must keep
-   * the original/swapped map alive, otherwise if it would not declare it the map would
-   * be destroyed, thus not able to be read.
-   *
-   * @param[original_code] the original code to be modified
-   * @param[swapped_code] the swapped code to be modified
-   * @param[mapName] the name of the map to be swapped
-   */
-  static void formatCodeToSwap(std::string &original_code, std::string &swapped_code,
-                        std::string mapName);
-
-  string toOpenMetrics(std::shared_ptr<MetricConfig> conf,
-                       nlohmann::json value);
-
-  SwapStateConfig ingressSwapState;
-  SwapStateConfig egressSwapState;
-  std::shared_ptr<DataplaneConfig> m_dpConfig;
   std::mutex m_ingressPathMutex;
   std::mutex m_egressPathMutex;
+ private:
+  string toOpenMetrics(const std::shared_ptr<MetricConfig>& conf,
+                       nlohmann::json value);
+
+  SwapConfig ingressSwapState;
+  SwapConfig egressSwapState;
+  std::shared_ptr<DataplaneConfig> m_dpConfig;
 };
