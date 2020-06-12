@@ -73,12 +73,16 @@ class Dynmon : public DynmonBase {
   std::string getOpenMetrics() override;
 
   /**
-   *  Collected metrics in OpenMetrics format in the Egress Path
+   *  Collected metrics in OpenMetrics format in the Egress Path.
+   *
+   *  UNUSED: left here for future endpoints development
    */
   std::string getEgressOpenMetrics();
 
   /**
    *  Collected metrics in OpenMetrics format in the Ingress Path
+   *
+   *  UNUSED: left here for future endpoints development
    */
   std::string getIngressOpenMetrics();
 
@@ -94,13 +98,18 @@ class Dynmon : public DynmonBase {
    */
   void triggerReadIngress();
 
-  std::mutex m_ingressPathMutex;
-  std::mutex m_egressPathMutex;
  private:
   string toOpenMetrics(const std::shared_ptr<MetricConfig>& conf,
                        nlohmann::json value);
 
+  std::shared_ptr<Metric> do_get_metric(const std::string& name, std::string mapName, ProgramType type,
+                                        const std::shared_ptr<ExtractionOptions>& extractionOptions);
+
+  std::string do_get_open_metric(const shared_ptr<MetricConfig>& config, ProgramType type);
+
   SwapConfig ingressSwapState;
   SwapConfig egressSwapState;
   std::shared_ptr<DataplaneConfig> m_dpConfig;
+  std::mutex m_ingressPathMutex;
+  std::mutex m_egressPathMutex;
 };

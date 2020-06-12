@@ -138,13 +138,39 @@ std::shared_ptr<Metrics> Dynmon::getMetrics() {
   {
     std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
     triggerReadEgress();
-    egressMetrics = getEgressMetrics();
+    auto egressMetricConfigs =
+        m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
+
+    // Extracting all metrics from the egress path
+    for (auto &it : egressMetricConfigs) {
+      try {
+        auto metric = do_get_metric(it->getName(), it->getMapName(),
+                                    ProgramType::EGRESS, it->getExtractionOptions());
+        egressMetrics.push_back(metric);
+      } catch (const std::exception &ex) {
+        logger()->warn("{0}", ex.what());
+        logger()->warn("Unable to read {0} map", it->getMapName());
+      }
+    }
   }
 
   {
     std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
     triggerReadIngress();
-    ingressMetrics = getIngressMetrics();
+    auto ingressMetricConfigs =
+        m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
+
+    // Extracting all metrics from the egress path
+    for (auto &it : ingressMetricConfigs) {
+      try {
+        auto metric = do_get_metric(it->getName(), it->getMapName(),
+                                    ProgramType::INGRESS, it->getExtractionOptions());
+        ingressMetrics.push_back(metric);
+      } catch (const std::exception &ex) {
+        logger()->warn("{0}", ex.what());
+        logger()->warn("Unable to read {0} map", it->getMapName());
+      }
+    }
   }
 
   Metrics metrics = Metrics(*this);
@@ -163,17 +189,12 @@ std::shared_ptr<Metric> Dynmon::getEgressMetric(const std::string &name) {
   auto egressPathConfig = m_dpConfig->getEgressPathConfig();
   auto metricConfig = egressPathConfig->getMetricConfig(name);
 
+  std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
+  triggerReadEgress();
+
   try {
-    // Extracting the metric value from the corresponding eBPF map
-    std::string mapName = metricConfig->getMapName();
-    auto extractionOptions = metricConfig->getExtractionOptions();
-    if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
-      SwapConfig::formatMapName(mapName);
-      logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
-    }
-    auto value = MapExtractor::extractFromMap(*this, mapName,0, ProgramType::EGRESS, extractionOptions);
-    return std::make_shared<Metric>(*this, metricConfig->getName(), value,
-                                    Utils::genTimestampMicroSeconds());
+    return do_get_metric(name, metricConfig->getMapName(),
+                         ProgramType::EGRESS, metricConfig->getExtractionOptions());
   } catch (const std::exception &ex) {
     logger()->warn("{0}", ex.what());
     std::string msg = "Unable to read " + metricConfig->getMapName() + " map";
@@ -188,21 +209,16 @@ std::vector<std::shared_ptr<Metric>> Dynmon::getEgressMetrics() {
   auto egressMetricConfigs =
       m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
 
+  std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
+  triggerReadEgress();
+
   // Extracting all metrics from the egress path
   for (auto &it : egressMetricConfigs) {
     try {
       // Extracting the metric value from the corresponding eBPF map
-      std::string mapName = it->getMapName();
-      auto extractionOptions = it->getExtractionOptions();
-      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
-        SwapConfig::formatMapName(mapName);
-        logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
-      }
-      auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::EGRESS,
-                                                extractionOptions);
-      metrics.push_back(std::make_shared<Metric>(
-          *this, it->getName(), value, Utils::genTimestampMicroSeconds()));
+      auto value = do_get_metric(it->getMapName(), it->getMapName(),
+                                 ProgramType::EGRESS, it->getExtractionOptions());
+      metrics.push_back(value);
     } catch (const std::exception &ex) {
       logger()->warn("{0}", ex.what());
       logger()->warn("Unable to read {0} map", it->getMapName());
@@ -216,19 +232,13 @@ std::shared_ptr<Metric> Dynmon::getIngressMetric(const std::string &name) {
   auto ingressPathConfig = m_dpConfig->getIngressPathConfig();
   auto metricConfig = ingressPathConfig->getMetricConfig(name);
 
+  std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
+  triggerReadIngress();
+
   try {
     // Extracting the metric value from the corresponding eBPF map
-    std::string mapName = metricConfig->getMapName();
-    auto extractionOptions = metricConfig->getExtractionOptions();
-    if(extractionOptions->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
-      SwapConfig::formatMapName(mapName);
-      logger()->debug("[Dynmon] INGRESS - Reading from Map: {} since code has swapped back", mapName);
-    }
-    auto value = MapExtractor::extractFromMap(*this, mapName,
-                                              0, ProgramType::INGRESS,
-                                              extractionOptions);
-    return std::make_shared<Metric>(*this, metricConfig->getName(), value,
-                                    Utils::genTimestampMicroSeconds());
+    return do_get_metric(name, metricConfig->getMapName(),
+                         ProgramType::INGRESS, metricConfig->getExtractionOptions());
   } catch (const std::exception &ex) {
     logger()->warn("{0}", ex.what());
     std::string msg = "Unable to read " + metricConfig->getMapName() + " map";
@@ -243,21 +253,16 @@ std::vector<std::shared_ptr<Metric>> Dynmon::getIngressMetrics() {
   auto ingressMetricConfigs =
       m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
 
+  std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
+  triggerReadIngress();
+
   // Extracting all metrics from the egress path
   for (auto &it : ingressMetricConfigs) {
     try {
       // Extracting the metric value from the corresponding eBPF map
-      std::string mapName = it->getMapName();
-      auto extractionOptions = it->getExtractionOptions();
-      if(extractionOptions->getSwapOnRead() && !ingressSwapState.hasSwapped()) {
-        SwapConfig::formatMapName(mapName);
-        logger()->debug("[Dynmon] INGRESS - Reading from Map: {} since code has swapped back", mapName);
-      }
-      auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::INGRESS,
-                                                extractionOptions);
-      metrics.push_back(std::make_shared<Metric>(
-          *this, it->getName(), value, Utils::genTimestampMicroSeconds()));
+      auto value = do_get_metric(it->getName(), it->getMapName(),
+                                 ProgramType::INGRESS, it->getExtractionOptions());
+      metrics.push_back(value);
     } catch (const std::exception &ex) {
       logger()->warn("{0}", ex.what());
       logger()->warn("Unable to read {0} map", it->getMapName());
@@ -271,14 +276,52 @@ std::string Dynmon::getOpenMetrics() {
 
   std::string eg_metrics, in_metrics;
   {
+    std::vector<std::string> metrics;
+    auto egressMetricConfigs =
+        m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
+
     std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
     triggerReadEgress();
-    eg_metrics = getEgressOpenMetrics();
+
+    // Extracting all metrics from the egress path
+    for (auto &it : egressMetricConfigs) {
+      try {
+        auto metadata = it->getOpenMetricsMetadata();
+        if (metadata == nullptr)
+          continue;
+
+        auto metric = do_get_open_metric(it, ProgramType::EGRESS);
+        metrics.push_back(metric);
+      } catch (const std::exception &ex) {
+        logger()->warn("{0}", ex.what());
+        logger()->warn("Unable to read {0} map", it->getMapName());
+      }
+    }
+    eg_metrics = Utils::join(metrics, "\n");
   }
   {
+    std::vector<std::string> metrics;
+    auto ingressMetricConfigs =
+        m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
+
     std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
     triggerReadIngress();
-    in_metrics = getIngressOpenMetrics();
+
+    // Extracting all metrics from the egress path
+    for (auto &it : ingressMetricConfigs) {
+      try {
+        auto metadata = it->getOpenMetricsMetadata();
+        if (metadata == nullptr)
+          continue;
+
+        auto metric = do_get_open_metric(it, ProgramType::INGRESS);
+        metrics.push_back(metric);
+      } catch (const std::exception &ex) {
+        logger()->warn("{0}", ex.what());
+        logger()->warn("Unable to read {0} map", it->getMapName());
+      }
+    }
+    in_metrics = Utils::join(metrics, "\n");
   }
 
   if (eg_metrics.empty())
@@ -288,11 +331,15 @@ std::string Dynmon::getOpenMetrics() {
   return eg_metrics + "\n" + in_metrics;
 }
 
+/*UNUSED: left here for future endpoints development*/
 std::string Dynmon::getEgressOpenMetrics() {
   logger()->debug("[Dynmon] getEgressOpenMetrics()");
   std::vector<std::string> metrics;
   auto egressMetricConfigs =
       m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
+
+  std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
+  triggerReadEgress();
 
   // Extracting all metrics from the egress path
   for (auto &it : egressMetricConfigs) {
@@ -301,17 +348,7 @@ std::string Dynmon::getEgressOpenMetrics() {
       if (metadata == nullptr)
         continue;
 
-      std::string mapName = it->getMapName();
-      auto extractionOptions = it->getExtractionOptions();
-      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
-        SwapConfig::formatMapName(mapName);
-        logger()->debug("[Dynmon] EGRESS - Reading from Map: {} since code has swapped back", mapName);
-      }
-      // Extracting the metric value from the corresponding eBPF map
-      auto value = MapExtractor::extractFromMap(*this, mapName, 0,
-                                                ProgramType::EGRESS,
-                                                extractionOptions);
-      auto metric = toOpenMetrics(it, value);
+      auto metric = do_get_open_metric(it, ProgramType::EGRESS);
       metrics.push_back(metric);
     } catch (const std::exception &ex) {
       logger()->warn("{0}", ex.what());
@@ -321,11 +358,15 @@ std::string Dynmon::getEgressOpenMetrics() {
   return Utils::join(metrics, "\n");
 }
 
+/*UNUSED: left here for future endpoints development*/
 std::string Dynmon::getIngressOpenMetrics() {
   logger()->debug("[Dynmon] getEgressMetrics()");
   std::vector<std::string> metrics;
   auto ingressMetricConfigs =
       m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
+
+  std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
+  triggerReadIngress();
 
   // Extracting all metrics from the egress path
   for (auto &it : ingressMetricConfigs) {
@@ -334,19 +375,8 @@ std::string Dynmon::getIngressOpenMetrics() {
       if (metadata == nullptr)
         continue;
 
-      std::string mapName = it->getMapName();
-      auto extractionOptions = it->getExtractionOptions();
-      if(extractionOptions->getSwapOnRead() && !egressSwapState.hasSwapped()) {
-        SwapConfig::formatMapName(mapName);
-        logger()->debug(
-            "[Dynmon] EGRESS - Reading from Map: {} since code has swapped back",
-            mapName);
-      }
       // Extracting the metric value from the corresponding eBPF map
-      auto value = MapExtractor::extractFromMap(*this, it->getMapName(), 0,
-                                                ProgramType::INGRESS,
-                                                extractionOptions);
-      auto metric = toOpenMetrics(it, value);
+      auto metric = do_get_open_metric(it, ProgramType::INGRESS);
       metrics.push_back(metric);
     } catch (const std::exception &ex) {
       logger()->warn("{0}", ex.what());
@@ -420,4 +450,40 @@ void Dynmon::triggerReadIngress() {
     logger()->debug("[Dynmon] Triggered read INGRESS! Loading the {} code", ingressSwapState.hasSwapped()? "original" : "swap");
     reload(ingressSwapState.getCodeToLoad(), 0, ProgramType::INGRESS);
   }
+}
+
+std::shared_ptr<Metric> Dynmon::do_get_metric(const std::string& name, std::string mapName,
+                                              ProgramType type,
+                                              const std::shared_ptr<ExtractionOptions>& extractionOptions) {
+  if(extractionOptions->getSwapOnRead() &&
+      ( (type == ProgramType::INGRESS && !ingressSwapState.hasSwapped() ) ||
+       (type == ProgramType::EGRESS && !egressSwapState.hasSwapped()) )) {
+      SwapConfig::formatMapName(mapName);
+      logger()->debug("[Dynmon] {} - Reading from Map: {} since code has swapped back",
+                      type == ProgramType::INGRESS ? "INGRESS" : "EGRESS",mapName);
+  }
+  auto value = MapExtractor::extractFromMap(*this, mapName,
+                                            0, type,
+                                            extractionOptions);
+  return std::make_shared<Metric>(*this, name, value,
+                                  Utils::genTimestampMicroSeconds());
+}
+
+std::string Dynmon::do_get_open_metric(const shared_ptr<MetricConfig>& config, ProgramType type) {
+
+  auto extractionOptions = config->getExtractionOptions();
+  auto mapName = config->getMapName();
+
+  if(extractionOptions->getSwapOnRead() &&
+     ( (type == ProgramType::INGRESS && !ingressSwapState.hasSwapped() ) ||
+       (type == ProgramType::EGRESS && !egressSwapState.hasSwapped()) )) {
+    SwapConfig::formatMapName(mapName);
+    logger()->debug("[Dynmon] {} - Reading from Map: {} since code has swapped back",
+                    type == ProgramType::INGRESS ? "INGRESS" : "EGRESS",mapName);
+  }
+
+  auto value = MapExtractor::extractFromMap(*this, mapName,
+                                            0, type,
+                                            extractionOptions);
+  return toOpenMetrics(config, value);
 }

@@ -299,9 +299,9 @@ namespace polycube {
         }
 
         /**
-         * @brief   Read extraction-options-on-read by ID
+         * @brief   Read swap-on-read by ID
          *
-         * Read operation of resource: extraction-options-on-read*
+         * Read operation of resource: swap-on-read*
          *
          * @param[in] name ID of name
          * @param[in] metricConfigsName ID of metric-configs_name
@@ -618,9 +618,9 @@ namespace polycube {
         }
 
         /**
-         * @brief   Read extraction-options-on-read by ID
+         * @brief   Read swap-on-read by ID
          *
-         * Read operation of resource: extraction-options-on-read*
+         * Read operation of resource: swap-on-read*
          *
          * @param[in] name ID of name
          * @param[in] metricConfigsName ID of metric-configs_name
@@ -872,12 +872,7 @@ namespace polycube {
         MetricJsonObject
         read_dynmon_metrics_egress_metrics_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_eg(dynmon->m_egressPathMutex);
-            dynmon->triggerReadEgress();
-            metric = dynmon->getEgressMetric(metricName);
-          }
+          auto metric = dynmon->getEgressMetric(metricName);
           return metric->toJsonObject();
         }
 
@@ -894,12 +889,7 @@ namespace polycube {
         std::vector<MetricJsonObject>
         read_dynmon_metrics_egress_metrics_list_by_id(const std::string &name) {
           auto dynmon = get_cube(name);
-          std::vector<std::shared_ptr<Metric>> metrics;
-          {
-            std::lock_guard<std::mutex> lock_eg(dynmon->m_egressPathMutex);
-            dynmon->triggerReadEgress();
-            metrics = dynmon->getEgressMetrics();
-          }
+          auto metrics = dynmon->getEgressMetrics();
           std::vector<MetricJsonObject> m;
           for (auto &i : metrics)
             m.push_back(i->toJsonObject());
@@ -920,12 +910,7 @@ namespace polycube {
         int64_t
         read_dynmon_metrics_egress_metrics_timestamp_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_eg(dynmon->m_egressPathMutex);
-            dynmon->triggerReadEgress();
-            metric = dynmon->getEgressMetric(metricName);
-          }
+          auto metric = dynmon->getEgressMetric(metricName);
           return metric->getTimestamp();
         }
 
@@ -943,12 +928,7 @@ namespace polycube {
         nlohmann::json
         read_dynmon_metrics_egress_metrics_value_by_id(const std::string &name, const std::string &egressName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_eg(dynmon->m_egressPathMutex);
-            dynmon->triggerReadEgress();
-            metric = dynmon->getEgressMetric(egressName);
-          }
+          auto metric = dynmon->getEgressMetric(egressName);
           return metric->getValue();
         }
 
@@ -966,12 +946,7 @@ namespace polycube {
         MetricJsonObject
         read_dynmon_metrics_ingress_metrics_by_id(const std::string &name, const std::string &metricName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_in(dynmon->m_ingressPathMutex);
-            dynmon->triggerReadIngress();
-            metric = dynmon->getIngressMetric(metricName);
-          }
+          auto metric = dynmon->getIngressMetric(metricName);
           return metric->toJsonObject();
         }
 
@@ -988,12 +963,7 @@ namespace polycube {
         std::vector<MetricJsonObject>
         read_dynmon_metrics_ingress_metrics_list_by_id(const std::string &name) {
           auto dynmon = get_cube(name);
-          std::vector<std::shared_ptr<Metric>> metrics;
-          {
-            std::lock_guard<std::mutex> lock_in(dynmon->m_ingressPathMutex);
-            dynmon->triggerReadIngress();
-            metrics = dynmon->getIngressMetrics();
-          }
+          auto metrics = dynmon->getIngressMetrics();
           std::vector<MetricJsonObject> m{};
           for (auto &i : metrics)
             m.push_back(i->toJsonObject());
@@ -1014,12 +984,7 @@ namespace polycube {
         int64_t
         read_dynmon_metrics_ingress_metrics_timestamp_by_id(const std::string &name, const std::string &ingressName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_in(dynmon->m_ingressPathMutex);
-            dynmon->triggerReadIngress();
-            metric = dynmon->getIngressMetric(ingressName);
-          }
+          auto metric = dynmon->getIngressMetric(ingressName);
           return metric->getTimestamp();
         }
 
@@ -1037,12 +1002,7 @@ namespace polycube {
         nlohmann::json
         read_dynmon_metrics_ingress_metrics_value_by_id(const std::string &name, const std::string &ingressName) {
           auto dynmon = get_cube(name);
-          std::shared_ptr<Metric> metric;
-          {
-            std::lock_guard<std::mutex> lock_in(dynmon->m_ingressPathMutex);
-            dynmon->triggerReadIngress();
-            metric = dynmon->getIngressMetric(ingressName);
-          }
+          auto metric = dynmon->getIngressMetric(ingressName);
           return metric->getValue();
         }
 
