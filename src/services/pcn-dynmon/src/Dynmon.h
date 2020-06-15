@@ -3,10 +3,10 @@
 #include "../base/DynmonBase.h"
 #include "Dynmon_dp.h"
 #include "extractor/MapExtractor.h"
-#include "extractor/options/SwapConfig.h"
 #include "models/DataplaneConfig.h"
 #include "models/Metric.h"
 #include "models/Metrics.h"
+#include "swap/SwapCompiler.h"
 
 using namespace polycube::service::model;
 using polycube::service::ProgramType;
@@ -99,16 +99,41 @@ class Dynmon : public DynmonBase {
   void triggerReadIngress();
 
  private:
+  /**
+   * Function to parse a metric into OpenMetric format
+   *
+   * @param conf  the metric configuration
+   * @param value the metric extracted value
+   * @return      the metric in OpenMetric format
+   */
   string toOpenMetrics(const std::shared_ptr<MetricConfig>& conf,
                        nlohmann::json value);
 
+  /**
+   * Private function to retrieve a metric
+   *
+   * @param name                the metric name
+   * @param mapName             the map-name specified in the metric
+   * @param type                the program type
+   * @param extractionOptions   the extraction options of that metric
+   * @return                    the metric extracted
+   */
   std::shared_ptr<Metric> do_get_metric(const std::string& name, std::string mapName, ProgramType type,
                                         const std::shared_ptr<ExtractionOptions>& extractionOptions);
 
+  /**
+   * Private function to retrieve a metric in OpenMetric format
+   *
+   * @param config  the entire metric configuration
+   * @param type    the program type
+   * @return        the metric extracted
+   */
   std::string do_get_open_metric(const shared_ptr<MetricConfig>& config, ProgramType type);
 
-  SwapConfig ingressSwapState;
-  SwapConfig egressSwapState;
+  /* The Swap state configuration for ingress path*/
+  SwapStateConfig ingressSwapState;
+  /* The Swap state configuration for egress path*/
+  SwapStateConfig egressSwapState;
   std::shared_ptr<DataplaneConfig> m_dpConfig;
   std::mutex m_ingressPathMutex;
   std::mutex m_egressPathMutex;
