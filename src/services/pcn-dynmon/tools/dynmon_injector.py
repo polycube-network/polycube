@@ -8,7 +8,7 @@ import json
 import os.path
 from os import path
 
-VERSION = '1.0'
+VERSION = '1.1'
 POLYCUBED_ADDR = 'localhost'
 POLYCUBED_PORT = 9000
 REQUESTS_TIMEOUT = 5 #seconds
@@ -38,8 +38,6 @@ def main():
 
     polycubed_endpoint = polycubed_endpoint.format(addr, port)
 
-    checkConnectionToDaemon()
-
     already_exists, cube = checkIfServiceExists(cube_name)
 
     if already_exists:
@@ -57,20 +55,6 @@ def main():
     else:
         createInstance(cube_name, dataplane)
         attach_to_interface(cube_name, interface_name)
-
-
-def checkConnectionToDaemon():
-    try:
-        requests.get(polycubed_endpoint, timeout=REQUESTS_TIMEOUT)
-    except requests.exceptions.ConnectionError:
-        print('Connection error: unable to connect to polycube daemon.')
-        exit(1)
-    except requests.exceptions.Timeout:
-        print('Timeout error: unable to connect to polycube daemon.')
-        exit(1)
-    except requests.exceptions.RequestException:
-        print('Error: unable to connect to polycube daemon.')
-        exit(1)
 
 
 def checkIfServiceExists(cube_name):
@@ -116,8 +100,8 @@ def createInstance(cube_name, dataplane):
     try:
         print(f'Creating new dynmon instance named {cube_name}')
         response = requests.post(f'{polycubed_endpoint}/dynmon/{cube_name}',
-                                 json.dumps({'dataplane-config': dataplane}),
-                                 timeout=REQUESTS_TIMEOUT)
+                                json.dumps({'dataplane-config': dataplane}),
+                                timeout=REQUESTS_TIMEOUT)
         response.raise_for_status()
     except requests.exceptions.HTTPError:
         print(f'Error: {response.content.decode("UTF-8")}')

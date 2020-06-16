@@ -4,7 +4,7 @@
 import time, argparse, requests, json, socket, os, errno
 from datetime import datetime
 
-VERSION = '1.0'
+VERSION = '1.1'
 POLYCUBED_ADDR = 'localhost'
 POLYCUBED_PORT = 9000
 REQUESTS_TIMEOUT = 5
@@ -25,7 +25,6 @@ def main():
 
     polycubed_endpoint = polycubed_endpoint.format(addr, port)
 
-    checkIfServiceExists(cube_name)
 
     res = getMetrics(cube_name) if p_type == 'all' else getMetrics(cube_name, p_type, m_name)
 
@@ -40,24 +39,6 @@ def main():
             json.dump(res, fp, indent=2)
     else:
         print(json.dumps(res, indent=2))
-
-
-def checkIfServiceExists(cube_name):
-    try:
-        response = requests.get(f'{polycubed_endpoint}/dynmon/{cube_name}', timeout=REQUESTS_TIMEOUT)
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        print('Error: the desired cube does not exist.')
-        exit(1)
-    except requests.exceptions.ConnectionError:
-        print('Connection error: unable to connect to polycube daemon.')
-        exit(1)
-    except requests.exceptions.Timeout:
-        print('Timeout error: unable to connect to polycube daemon.')
-        exit(1)
-    except requests.exceptions.RequestException:
-        print('Error: unable to connect to polycube daemon.')
-        exit(1)
 
 
 def getMetrics(cube_name, program_type = None, metric_name = None):
