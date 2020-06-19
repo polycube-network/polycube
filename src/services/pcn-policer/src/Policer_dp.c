@@ -25,10 +25,10 @@ enum {
 };
 
 struct bucket {
-  u64 tokens;       // 1 bit = 1000000 tokens
-  u64 refill_rate;  // tokens/us
+  u64 tokens;
+  u64 refill_rate;  // tokens/ms
   u64 capacity;
-  u64 last_update;  // timestamp in us
+  u64 last_refill;  // Timestamp of the last time the bucket was refilled in ms
 };
 
 struct contract {
@@ -61,24 +61,24 @@ static inline int limit_rate(struct CTXTYPE *ctx, struct contract *contract) {
     return RX_DROP;
   }
 
-  u64 curtime = *clock_p;  // In ms
+  u64 now = *clock_p;  // In ms
 
   bpf_spin_lock(&contract->lock);
 
   // Refill tokens
-  if (curtime > bucket->last_update){
+  if (now > bucket->last_refill){
     u64 new_tokens =
-        (curtime - bucket->last_update) * bucket->refill_rate;
+        (now - bucket->last_refill) * bucket->refill_rate;
 
     bucket->tokens += new_tokens;
     if (bucket->tokens > bucket->capacity) {
       bucket->tokens = bucket->capacity;
     }
-    bucket->last_update = curtime;
+    bucket->last_refill = now;
   }
 
   // Consume tokens
-  u64 needed_tokens = (data_end - data) * 8 * 1000;
+  u64 needed_tokens = (data_end - data) * 8;
   u8 retval;
   if (bucket->tokens >= needed_tokens) {
     bucket->tokens -= needed_tokens;

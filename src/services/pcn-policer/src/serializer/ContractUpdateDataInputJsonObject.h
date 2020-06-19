@@ -53,7 +53,7 @@ public:
   static ActionTypeEnum string_to_ActionTypeEnum(const std::string &str);
 
   /// <summary>
-  /// Maximum average traffic rate (in bps)
+  /// Maximum average traffic rate (in kbit/s)
   /// </summary>
   uint64_t getRateLimit() const;
   void setRateLimit(uint64_t value);
@@ -61,7 +61,7 @@ public:
   void unsetRateLimit();
 
   /// <summary>
-  /// Maximum size of a burst of packets (in bits)
+  /// Maximum size of a burst of packets (in kbits)
   /// </summary>
   uint64_t getBurstLimit() const;
   void setBurstLimit(uint64_t value);

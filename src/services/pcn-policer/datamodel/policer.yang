@@ -34,14 +34,14 @@ module policer {
 
     leaf rate-limit {
       type uint64;
-      description "Maximum average traffic rate (in bps)";
+      description "Maximum average traffic rate (in kbit/s)";
       polycube-base:cli-example "10000";
       polycube-base:init-only-config;
     }
     
     leaf burst-limit {
       type uint64;
-      description "Maximum size of a burst of packets (in bits)";
+      description "Maximum size of a burst of packets (in kbits)";
       polycube-base:cli-example "50000";
       polycube-base:init-only-config;
     }

@@ -51,12 +51,12 @@ class ContractBase {
   virtual ActionTypeEnum getAction() = 0;
 
   /// <summary>
-  /// Maximum average traffic rate (in bps)
+  /// Maximum average traffic rate (in kbit/s)
   /// </summary>
   virtual uint64_t getRateLimit() = 0;
 
   /// <summary>
-  /// Maximum size of a burst of packets (in bits)
+  /// Maximum size of a burst of packets (in kbits)
   /// </summary>
   virtual uint64_t getBurstLimit() = 0;
   virtual void updateData(ContractUpdateDataInputJsonObject input) = 0;

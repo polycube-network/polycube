@@ -23,10 +23,11 @@
 #define MAX_CONTRACTS 100000
 
 struct bucket {
-  uint64_t tokens;       // 1 bit = 1000000 tokens
-  uint64_t refill_rate;  // tokens/us
+  uint64_t tokens;
+  uint64_t refill_rate;  // tokens/ms
   uint64_t capacity;
-  uint64_t last_update;  // timestamp in us
+  uint64_t last_refill;  // Timestamp of the last time the bucket was refilled
+                         // in ms
 };
 
 struct contract {

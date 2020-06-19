@@ -39,12 +39,12 @@ class Contract : public ContractBase {
   ActionTypeEnum getAction() override;
 
   /// <summary>
-  /// Maximum average traffic rate (in bps)
+  /// Maximum average traffic rate (in kbit/s)
   /// </summary>
   uint64_t getRateLimit() override;
 
   /// <summary>
-  /// Maximum size of a burst of packets (in bits)
+  /// Maximum size of a burst of packets (in kbits)
   /// </summary>
   uint64_t getBurstLimit() override;
 

@@ -124,7 +124,7 @@ void Contract::updateDataplane() {
     .tokens = burst_limit_ * 1000,
     .refill_rate = rate_limit_,
     .capacity = burst_limit_ * 1000,
-    .last_update = 0
+    .last_refill = 0
   };
 
   struct contract contract = {
