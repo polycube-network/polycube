@@ -38,6 +38,7 @@ add_service(synflood pcn-synflood)
 add_service(packetcapture pcn-packetcapture)
 add_service(dynmon pcn-dynmon)
 add_service(gtphandler pcn-gtphandler)
+add_service(policer pcn-policer)
 
 # save string to create code that load the services
 SET_PROPERTY(GLOBAL PROPERTY LOAD_SERVICES_ ${LOAD_SERVICES})
