@@ -140,14 +140,14 @@ void Policer::delContractList() {
 }
 
 void Policer::updateClock() {
-  while (!quit_thread_) {
-    std::chrono::milliseconds ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch());
-    uint64_t count = ms.count();
-    auto clock_table = get_percpuarray_table<uint64_t>("clock");
-    clock_table.set(0, count);
+  uint64_t clock = 0;
+  auto begin = std::chrono::system_clock::now();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  while (!quit_thread_) {
+    auto clock_table = get_percpuarray_table<uint64_t>("clock");
+    clock_table.set(0, clock);
+
+    clock++;
+    std::this_thread::sleep_until(begin + std::chrono::milliseconds(clock));
   }
 }
