@@ -1,0 +1,39 @@
+module gtphandler {
+  yang-version 1.1;
+  namespace "http://polycube.network/gtphandler";
+  prefix "gtphandler";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-transparent-base { prefix "polycube-transparent-base"; }
+
+  import ietf-inet-types { prefix "inet"; }
+
+  organization "Polycube Open Source Project";
+  description "YANG data model for the Polycube GTP Handler service";
+
+  polycube-base:service-description "GTP Handler Service";
+  polycube-base:service-version "1.0";
+  polycube-base:service-name "gtphandler";
+  polycube-base:service-min-kernel-version "5.2.0";
+
+  uses "polycube-transparent-base:transparent-base-yang-module";
+
+  list user-equipment {
+    key "ip";
+    description "User Equipment connected with GTP tunnel";
+  
+    leaf ip {
+        type inet:ipv4-address;
+        mandatory true;
+        description "IP address of the User Equipment";
+        polycube-base:cli-example "123.14.23.3";
+    }
+    
+    leaf tunnel-endpoint {
+        type inet:ipv4-address;
+        mandatory true;
+        description "IP address of the Base Station that connects the User Equipment";
+        polycube-base:cli-example "110.0.0.1";
+    }
+  }
+}
