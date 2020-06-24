@@ -6,7 +6,7 @@
 #include "models/DataplaneConfig.h"
 #include "models/Metric.h"
 #include "models/Metrics.h"
-#include "swap/SwapCompiler.h"
+#include "swap/CodeRewriter.h"
 
 using namespace polycube::service::model;
 using polycube::service::ProgramType;

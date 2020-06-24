@@ -1,7 +1,8 @@
 #include "SwapStateConfig.h"
-#include "SwapCompiler.h"
 
 #include <utility>
+
+#include "CodeRewriter.h"
 
 SwapStateConfig::SwapStateConfig()  : compileType(CompileType::NONE), current_program_index(1) {}
 

@@ -55,6 +55,9 @@ class BaseCube {
   // Accessors for tables
   RawTable get_raw_table(const std::string &table_name, int index = 0,
                          ProgramType type = ProgramType::INGRESS);
+
+  RawQueueStackTable get_raw_queuestack_table(const std::string &table_name, int index = 0,
+                                              ProgramType type = ProgramType::INGRESS);
   template <class ValueType>
   ArrayTable<ValueType> get_array_table(
       const std::string &table_name, int index = 0,

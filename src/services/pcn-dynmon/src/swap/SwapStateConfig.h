@@ -7,11 +7,11 @@
 
 namespace polycube{
   namespace service {
-    namespace SwapCompiler {
+    namespace CodeRewriter {
       enum class CompileType;
 }}}
 
-using namespace polycube::service::SwapCompiler;
+using namespace polycube::service::CodeRewriter;
 
 /**
  * Container class responsible of holding all data concerning the program

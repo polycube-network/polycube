@@ -1,8 +1,9 @@
-#include "SwapCompiler.h"
+#include "CodeRewriter.h"
 
-#include <unordered_map>
-#include <regex>
 #include <polycube/services/cube_iface.h>
+
+#include <regex>
+#include <unordered_map>
 
 /*The suffix to be added to the original NON_SWAPPABLE map name when swapped
  * in the EGRESS program and CompileType=ENHANCED*/
@@ -272,7 +273,7 @@ bool do_base_compile(std::string original_code,
 
 
 /*For the doc read SwapCompiler.h*/
-void SwapCompiler::compile(std::string &original_code, ProgramType type,
+void CodeRewriter::compile(std::string &original_code, ProgramType type,
                                       const std::vector<MetricConfigJsonObject> &metricConfigs,
                                       SwapStateConfig &config,
                                       const std::shared_ptr<spdlog::logger>& logger){
@@ -288,13 +289,13 @@ void SwapCompiler::compile(std::string &original_code, ProgramType type,
   /*If is enabled, try enhanced compilation or basic compilation if it has failed.*/
   if(!is_enabled) {
     config = {};
-    logger->info("[Dynmon_SwapCompiler] No map marked as swappable, no compilation performed");
+    logger->info("[Dynmon_CodeRewriter] No map marked as swappable, no compilation performed");
   } else if(try_enhance_compilation(original_code, type, maps_to_swap, config)) {
-    logger->info("[Dynmon_SwapCompiler] Successfully compiled with ENHANCED tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully compiled with ENHANCED tuning");
   } else if(do_base_compile(original_code, maps_to_swap, config)) {
-    logger->info("[Dynmon_SwapCompiler] Successfully compiled with BASE tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully compiled with BASE tuning");
   } else {
     config = {};
-    logger->info("[Dynmon_SwapCompiler] Unable to perform compilation, no optimization performed");
+    logger->info("[Dynmon_CodeRewriter] Unable to perform compilation, no optimization performed");
   }
 }

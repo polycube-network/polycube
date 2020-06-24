@@ -30,7 +30,7 @@ add_library(pcn-dynmon SHARED
         models/Metric.cpp
         extractor/MapExtractor.cpp
         swap/SwapStateConfig.cpp
-        swap/SwapCompiler.cpp
+        swap/CodeRewriter.cpp
         Dynmon-lib.cpp)
 
 # load ebpf datapath code a variable

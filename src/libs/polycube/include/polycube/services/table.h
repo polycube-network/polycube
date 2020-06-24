@@ -20,34 +20,50 @@
 #include <string>
 #include <vector>
 
-#include <linux/version.h>
+#include <polycube/common.h>
 
-#include "polycube/common.h"
+#include "./../../../polycubed/src/utils/utils.h"
 
-namespace polycube {
-namespace service {
+#define QUEUE_STACK_KERNEL_RELEASE "5.0.0"
+
+namespace polycube::service {
 
 // class Cube;
+/** TRADITIONAL eBPF MAPS*/
 
 class RawTable {
   // friend class Cube;
 
  public:
-  RawTable();
+  RawTable() = default;
   ~RawTable();
 
   void get(const void *key, void *value);
   void set(const void *key, const void *value);
   void remove(const void *key);
 
+  /** These batch operations works if kernel >= 5.7.0. Moreover, not all map types
+   *  are supported. Check 5.7 release or more, if map files contains batch operations within
+   *  the map supported ones (https://github.com/torvalds/linux/tree/24085f70a6e1b0cb647ec92623284641d8270637/kernel/bpf).
+   *  In Dynmon we have tested:
+   *  -Arrays      => OK
+   *  -HASH        => OK
+   *  -QUEUE/STACK => KO
+   *  -PERCPU      => KO
+   *
+   *  in_batch = nullptr means from the beginning (otherwise start from).
+   *  out_batch = count means till the end (otherwise till here).
+   *  count is the max_entries of the table (or less, pay attention to errors in that case and errno)
+   *  */
+  int get_batch(void *keys, void *values, unsigned int *count, void *in_batch = nullptr, void *out_batch = nullptr);
+  int get_and_delete_batch(void *keys, void *values, unsigned int *count, void *in_batch = nullptr, void *out_batch = nullptr);
+  int update_batch(void *keys, void *values, unsigned int *count);
+
   int first(void *key);
   int next(const void *key, void *next);
 
-  int pop(void *value);
-  int push(const void *value);
-
   // protected:
-  RawTable(void *op);
+  explicit RawTable(void *op);
 
  private:
   class impl;
@@ -60,7 +76,7 @@ class ArrayTable : protected RawTable {
 
  public:
   ArrayTable() : RawTable(){};
-  ~ArrayTable(){};
+  ~ArrayTable()= default;
 
   ValueType get(const uint32_t &key) {
     ValueType t;
@@ -88,7 +104,7 @@ class ArrayTable : protected RawTable {
   }
 
   // private:
-  ArrayTable(void *op) : RawTable(op){};
+  explicit ArrayTable(void *op) : RawTable(op){};
 };
 
 template <class ValueType>
@@ -97,7 +113,7 @@ class PercpuArrayTable : protected RawTable {
 
  public:
   PercpuArrayTable() : RawTable(), ncpus_(get_possible_cpu_count()){};
-  ~PercpuArrayTable(){};
+  ~PercpuArrayTable()= default;
 
   std::vector<ValueType> get(const uint32_t &key) {
     std::vector<ValueType> t(ncpus_);
@@ -131,7 +147,7 @@ class PercpuArrayTable : protected RawTable {
   }
 
   // private:
-  PercpuArrayTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
+  explicit PercpuArrayTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
   unsigned int ncpus_;
 };
 
@@ -141,7 +157,7 @@ class HashTable : protected RawTable {
 
  public:
   HashTable() : RawTable(){};
-  ~HashTable(){};
+  ~HashTable()= default;
 
   ValueType get(const KeyType &key) {
     ValueType t;
@@ -179,7 +195,7 @@ class HashTable : protected RawTable {
     }
   }
   // private:
-  HashTable(void *op) : RawTable(op){};
+  explicit HashTable(void *op) : RawTable(op){};
 };
 
 template <class KeyType, class ValueType>
@@ -187,7 +203,7 @@ class PercpuHashTable : protected RawTable {
   // friend class Cube;
  public:
   PercpuHashTable() : RawTable(), ncpus_(get_possible_cpu_count()){};
-  ~PercpuHashTable(){};
+  ~PercpuHashTable()= default;
 
   std::vector<ValueType> get(const KeyType &key) {
     std::vector<ValueType> t(ncpus_);
@@ -232,29 +248,47 @@ class PercpuHashTable : protected RawTable {
   }
 
   // private:
-  PercpuHashTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
+  explicit PercpuHashTable(void *op) : RawTable(op), ncpus_(get_possible_cpu_count()){};
   unsigned int ncpus_;
 };
 
-template <class ValueType>
-class QueueStackTable : protected RawTable {
+/** QUEUE/STACK MAPS*/
+
+class RawQueueStackTable {
 
  public:
-  QueueStackTable() : RawTable(){};
-  ~QueueStackTable(){};
+  RawQueueStackTable() = default;
+  ~RawQueueStackTable();
+
+  int pop(void *value);
+  int push(const void *value);
+
+  explicit RawQueueStackTable(void *op);
+
+ private:
+  class impl;
+  std::shared_ptr<impl> pimpl_;
+};
+
+
+template <class ValueType>
+class QueueStackTable : protected RawQueueStackTable {
+
+ public:
+  QueueStackTable() : RawQueueStackTable(){};
+  ~QueueStackTable()= default;
 
   ValueType pop() {
     ValueType t;
-    RawTable::pop(&t);
+    RawQueueStackTable::pop(&t);
     return t;
   };
 
   void push(const ValueType &value) {
-    RawTable::push(&value);
+    RawQueueStackTable::push(&value);
   }
 
-  QueueStackTable(void *op) : RawTable(op){};
+  explicit QueueStackTable(void *op) : RawQueueStackTable(op){};
 };
 
-}  // namespace service
 }  // namespace polycube

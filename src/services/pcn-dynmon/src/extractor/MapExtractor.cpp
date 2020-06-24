@@ -110,11 +110,33 @@ json MapExtractor::extractFromArrayMap(const TableDesc &desc, RawTable table,
                                              std::shared_ptr<ExtractionOptions> &extractionOptions) {
 
   auto value_desc = json::parse(string{desc.leaf_desc});
+  json j_entries;
+
+  MapEntry batch(desc.max_entries * desc.key_size,
+                 desc.max_entries * desc.leaf_size);
+  unsigned int count = desc.max_entries;
+
+  //Trying to retrieve values using batch operations
+  if(table.get_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT) {
+    //Batch retrieval ok, checking if need to empty
+    if(count > 0 && extractionOptions->getEmptyOnRead()) {
+      MapEntry reset(0, desc.max_entries * desc.leaf_size);
+      table.update_batch(batch.getKey(), reset.getValue(), &count);
+    }
+    for(int i=0; i<count; i++) {
+      int offset = 0;
+      auto value = recExtract(value_desc, static_cast<char*>(batch.getValue()) + i*desc.leaf_size, offset);
+      j_entries.push_back(value);
+    }
+    return j_entries;
+  }
+
+  // Retrieving values using old method
   std::vector<std::shared_ptr<MapEntry>> entries;
   MapEntry reset_value(0, desc.key_size);
   void *last_key = nullptr;
 
-  // Retrieving map entries
+  //Getting all map values
   while (true) {
     MapEntry entry(desc.key_size, desc.leaf_size);
     if (table.next(last_key, entry.getKey()) > -1) {
@@ -123,11 +145,11 @@ json MapExtractor::extractFromArrayMap(const TableDesc &desc, RawTable table,
       entries.push_back(std::make_shared<MapEntry>(entry));
       if(extractionOptions->getEmptyOnRead())
         table.set(last_key, reset_value.getValue());
-    } else
+    }else
       break;
   }
 
-  json j_entries;
+  //Parsing retrieved values
   for(auto &entry: entries) {
     int offset = 0;
     auto j_entry = recExtract(value_desc, entry->getValue(), offset);
@@ -136,13 +158,13 @@ json MapExtractor::extractFromArrayMap(const TableDesc &desc, RawTable table,
   return j_entries;
 }
 
-json MapExtractor::extractFromQueueStackMap(const TableDesc &desc, RawTable table,
+json MapExtractor::extractFromQueueStackMap(const TableDesc &desc, RawQueueStackTable table,
                                         std::shared_ptr<ExtractionOptions> &extractionOptions) {
 
   auto value_desc = json::parse(string{desc.leaf_desc});
   std::vector<std::shared_ptr<MapEntry>> entries;
 
-  // Retrieving map entries
+  // Retrieving map entries iteratively, DOES NOT SUPPORT BATCH OPERATIONS
   while(true) {
     MapEntry entry(0, desc.leaf_size);
     if (table.pop(entry.getValue()) != 0)
@@ -164,10 +186,30 @@ json MapExtractor::extractFromHashMap(const TableDesc &desc, RawTable table,
   // Getting both key_desc and leaf_desc objects which represents the structure of the map entry
   auto value_desc = json::parse(string{desc.leaf_desc});
   auto key_desc = json::parse(string{desc.key_desc});
+  json j_entries;
+
+  MapEntry batch(desc.max_entries * desc.key_size,
+                 desc.max_entries * desc.leaf_size);
+  unsigned int count = desc.max_entries;
+
+  //Trying to retrieve values using batch operations
+  if((extractionOptions->getEmptyOnRead() && (table.get_and_delete_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT)) ||
+      (!extractionOptions->getEmptyOnRead() && (table.get_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT))) {
+    //Batch retrieval ok
+    for(int i=0; i<count; i++) {
+      int offset_key = 0, offset_value = 0;
+      json entry_obj;
+      entry_obj["key"] = recExtract(key_desc, static_cast<char*>(batch.getKey()) + i*desc.key_size, offset_key);
+      entry_obj["value"] = recExtract(value_desc, static_cast<char*>(batch.getValue()) + i*desc.leaf_size, offset_value);
+      j_entries.push_back(entry_obj);
+    }
+    return j_entries;
+  }
+
+  // Retrieving map entries with old method
   std::vector<std::shared_ptr<MapEntry>> entries;
   void *last_key = nullptr;
 
-  // Retrieving map entries
   while (true) {
     MapEntry entry(desc.key_size, desc.leaf_size);
     if (table.next(last_key, entry.getKey()) > -1) {
@@ -180,7 +222,6 @@ json MapExtractor::extractFromHashMap(const TableDesc &desc, RawTable table,
       break;
   }
 
-  json j_entries;
   for (auto &entry : entries) {
     int val_offset = 0, key_offset = 0;
     json entry_obj;
@@ -196,11 +237,16 @@ json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, RawTable table,
   // Getting the maximux cpu available
   size_t n_cpus = polycube::get_possible_cpu_count();
   size_t leaf_array_size = n_cpus * desc.leaf_size;
-  std::vector<std::shared_ptr<MapEntry>> entries;
-  void *last_key = nullptr;
-  MapEntry reset_value(0, leaf_array_size);
+  // Getting key and value description to parse correctly
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  auto key_desc = json::parse(string{desc.key_desc});
+  json j_entries;
 
-  // Retrieving map entries
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  MapEntry reset_value(0, leaf_array_size);
+  void *last_key = nullptr;
+
+  // Retrieving map entries with old method, DOES NOT SUPPORT BATCH OPERATION
   while (true) {
     MapEntry entry(desc.key_size, leaf_array_size);
     if (table.next(last_key, entry.getKey()) > -1) {
@@ -213,11 +259,6 @@ json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, RawTable table,
       break;
   }
 
-  // Getting key and value description to parse correctly
-  auto value_desc = json::parse(string{desc.leaf_desc});
-  auto key_desc = json::parse(string{desc.key_desc});
-
-  json j_entries;
   for(auto& entry : entries) {
     int key_offset = 0;
     json j_entry;
@@ -249,7 +290,7 @@ json MapExtractor::extractFromMap(BaseCube &cube_ref, const string& map_name, in
   else if(desc.type == BPF_MAP_TYPE_ARRAY)
     return extractFromArrayMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
   else if(desc.type == BPF_MAP_TYPE_QUEUE || desc.type == BPF_MAP_TYPE_STACK)
-    return extractFromQueueStackMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+    return extractFromQueueStackMap(desc, cube_ref.get_raw_queuestack_table(map_name, index, type), extractionOptions);
   else if(desc.type == BPF_MAP_TYPE_PERCPU_HASH || desc.type == BPF_MAP_TYPE_PERCPU_ARRAY || desc.type == BPF_MAP_TYPE_LRU_PERCPU_HASH)
     return extractFromPerCPUMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
   else

@@ -115,9 +115,9 @@ The JSON configuration will like like so (let's focus only on the Ingress path):
 
 The parameter ``empty-on-read`` simply teaches Dynmon to erase map content when read. Depending on the map type, the content can be whether completely deleted (like in an HASH map) or zero-ed (like in an ARRAY). This is up to the user, to fit its needs in some more complex scenario than a simple counter extraction.
 
-Concerning the ``swap-on-read`` parameter, please check the :ref:`sec-swap-compiler` section, where everything is detailed. To briefly sum it up, this parameter allows users to declare swappable maps, meaning that their read is performed ATOMICALLY with respect to the DataPlane (which normally would continue to insert/modify values in the map) thanks to these two steps:
+Concerning the ``swap-on-read`` parameter, please check the :ref:`sec-code-rewriter` section, where everything is detailed. To briefly sum it up, this parameter allows users to declare swappable maps, meaning that their read is performed ATOMICALLY with respect to the DataPlane (which normally would continue to insert/modify values in the map) thanks to these two steps:
 
-- when the code is injected, the Compiler checks for any maps declared with this parameter and optimizes the code, creating dummy parallel maps to be used later on;
+- when the code is injected, the CodeRewriter checks for any maps declared with this parameter and optimizes the code, creating dummy parallel maps to be used later on;
 
 - when the user requires a swappable map content, Dynmon alternatively modifies the current map pointer to point to the original/fake one.
 
@@ -218,12 +218,12 @@ Usage examples
     ./dynmon_extractor.py monitor_0 -t ingress -s
 
 
-Swap Compiler
+Code Rewriter
 -------------
 
-The Swap Compiler is an extremely advanced code optimizator to adapt user dynamically injected code according to the provided configuration. It basically performs some optimization in order to provide all the requested functionalities keeping high performance and reliability. Moreover, it relies on eBPF code patterns that identify a map and its declaration, so the user does not need to code any additional informations other than the configurations for each metric he wants to retrieve.
+The Code Rewriter is an extremely advanced code optimizator to adapt user dynamically injected code according to the provided configuration. It basically performs some optimization in order to provide all the requested functionalities keeping high performance and reliability. Moreover, it relies on eBPF code patterns that identify a map and its declaration, so the user does not need to code any additional informations other than the configurations for each metric he wants to retrieve.
 
-First of all, the Compiler could be accessible to anyone, meaning that other services could use it to compile dynamically injected code, but since Dynmon is the only Polycube's entry point for user code by now, you will se its usage limited to the Dynmon service. For future similar services, remember that this compiler is available.
+First of all, the Rewriter could be accessible to anyone, meaning that other services could use it to compile dynamically injected code, but since Dynmon is the only Polycube's entry point for user code by now, you will se its usage limited to the Dynmon service. For future similar services, remember that this rewriter is available.
 
 The code compilation is performed every time new code is injected, both for Ingress and Egress data path, but actually it will optimize the code only when there is at least one map declared as ``"swap-on-read"``. Thus, do not expect different behaviour when inserting input without that option.
 
@@ -236,7 +236,7 @@ There are two different type of compilation:
 Enhanced Compilation
 ^^^^^^^^^^^^^^^^^^^^
 
-The Enhanced compilation type is the best you can get from this compiler by now. It is extremely sophisticated and not easy at all to undestand, since we have tried to take into account as many scenarios as possible. This said, let's analyze it.
+The Enhanced compilation type is the best you can get from this rewriter by now. It is extremely sophisticated and not easy at all to undestand, since we have tried to take into account as many scenarios as possible. This said, let's analyze it.
 
 During the first phase of this compilation, all the maps declared with the ``"swap-on-read"`` feature enabled are parsed, checking if their declaration in the code matches one of the following rules:
 
@@ -245,18 +245,18 @@ During the first phase of this compilation, all the maps declared with the ``"sw
 - the map is declared as _PINNED
 - the map is declared as "extern"
 
-Since those maps are declared as swappable, if any of these rules is matched, then the compiler declares another dummy map named ``MAP_NAME_1`` of the same time, which will be used when the code is swapped. Although, in case the map was _PINNED, the user have to be sure that another pinned map named ``MAP_NAME_1`` is present and created a priori in the filesystem, since this compiler cannot create a _PINNED map for you. For all these other types, another parallel map is created smoothly.
+Since those maps are declared as swappable, if any of these rules is matched, then the rewriter declares another dummy map named ``MAP_NAME_1`` of the same time, which will be used when the code is swapped. Although, in case the map was _PINNED, the user have to be sure that another pinned map named ``MAP_NAME_1`` is present and created a priori in the filesystem, since this rewriter cannot create a _PINNED map for you. For all these other types, another parallel map is created smoothly.
 
 If a user created a map of such type, then he probably wants to use another previously declared map out or inside Polycube, or he wanted to share this map between Ingress and Egress programs.
 
 If the map did not match one of these rules, then it is left unchanged in the cloned code, meaning that there will be another program-local map with limited scope that will be read alternatively.
 
-The second phase consists is checking all those maps which are not declared as swappable. The compiler retrieve all those declarations and checks for them to see if it is able to modify it. In fact, during this phase, whenever it encounters a declaration which it is unable to modify, it stops and uses the BASE compilation as fallback, to let everything run as required, even though in an sub-optimal optimized way.
+The second phase consists is checking all those maps which are not declared as swappable. The rewriter retrieve all those declarations and checks for them to see if it is able to modify it. In fact, during this phase, whenever it encounters a declaration which it is unable to modify, it stops and uses the BASE compilation as fallback, to let everything run as required, even though in an sub-optimal optimized way.
 
-Since those map must not swap, the compiler tries to declare a map which is shared among the original and cloned program, in order to make the map visible from both of them. For all those maps, these rules are applied:
+Since those map must not swap, the rewriter tries to declare a map which is shared among the original and cloned program, in order to make the map visible from both of them. For all those maps, these rules are applied:
 
 - if the map is declared as _PINNED or "extern", then it will be left unchanged in the cloned program, since the user is using an extern map which should exists a priori
-- if the map is NOT declared using the standard (BPF_TABLE and BPF_QUEUESTACK) helpers, then the compilation stops and the BASE one is used, since the compiler is not able by now to change such declarations into specific one (eg. from BPF_ARRAY(...) to BPF_TABLE("array"...), too many possibilities and variadic parameters)
+- if the map is NOT declared using the standard (BPF_TABLE and BPF_QUEUESTACK) helpers, then the compilation stops and the BASE one is used, since the rewriter is not able by now to change such declarations into specific one (eg. from BPF_ARRAY(...) to BPF_TABLE("array"...), too many possibilities and variadic parameters)
 - if the map is declared as _SHARED or _PUBLIC, then the declaration is changed in the cloned code into "extern", meaning that the map is already declared in the original code
 - otherwise, the declaration in the original code is changed into BPF_TABLE_SHARED/BPF_QUEUESTACK_SHARED and in the cloned code the map will be declared as "extern". Moreover, the map name will be changed into ``MAP_NAME_INGRESS`` or ``MAP_NAME_EGRESS`` to avoid such much to collide with others declared in a different program type.
 

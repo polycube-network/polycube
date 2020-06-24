@@ -11,7 +11,7 @@ namespace polycube {
 namespace service {
 enum class ProgramType;
 
-namespace SwapCompiler {
+namespace CodeRewriter {
   /*
    * Enum class to define the Compilation Type:
    * - None     => there was no need to optimize/compile the injected code

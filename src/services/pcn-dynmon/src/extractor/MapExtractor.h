@@ -94,7 +94,7 @@ class MapExtractor {
    * @param[extractionOptions] the extraction options for this metric
    * @return the content of the map as a JSON array
    */
-  static json extractFromQueueStackMap(const TableDesc &desc, RawTable table,
+  static json extractFromQueueStackMap(const TableDesc &desc, RawQueueStackTable table,
                                   std::shared_ptr<ExtractionOptions> &extractionOptions);
 
   /**
