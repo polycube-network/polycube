@@ -23,11 +23,20 @@ module router {
         type inet:ipv4-prefix;
         description "IP address and prefix of the port";
         polycube-base:cli-example "10.0.0.1/24";
+        polycube-base:name-metric "router_ip_ports";
+        polycube-base:type-metric "G";
+        polycube-base:path-metric "$.ports[?(@.ip != '')]";
+        polycube-base:help-metric "Number of ports of the router with ip";
+        polycube-base:type-operation "FILTER";
       }
 
       list secondaryip {
         description "Additional IP addresses for the port";
         key "ip";
+        polycube-base:name-metric "router_secondaryip_ports";
+        polycube-base:type-metric "G";
+        polycube-base:path-metric '$.ports[0].secondaryip.length';
+        polycube-base:help-metric "Number of ports of the router with secondary ip";
         leaf ip {
           type inet:ipv4-prefix;
           description "Secondary IP address and prefix of the port";
@@ -39,6 +48,10 @@ module router {
         type yang:mac-address;
         description "MAC address of the port";
         polycube-base:cli-example "B3:23:45:F5:3A";
+        polycube-base:name-metric "router_ports"; // every ports has a MAC
+        polycube-base:type-metric "G";
+        polycube-base:path-metric '$.ports.length';
+        polycube-base:help-metric "Number of ports on the router";
       }
     }
   }
@@ -46,6 +59,10 @@ module router {
   list route {
     key "network nexthop";
     description "Entry associated with the routing table";
+    polycube-base:name-metric "router_route_routes";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric '$.route.length';
+    polycube-base:help-metric "Number of entries in routing table";
     leaf network {
       type inet:ipv4-prefix;
       mandatory true;
@@ -79,6 +96,10 @@ module router {
   list arp-table {
     key "address";
     description "Entry associated with the ARP table";
+    polycube-base:name-metric "router_arp_table_entries";
+    polycube-base:type-metric "G";
+    polycube-base:path-metric '$.arp-table.length';
+    polycube-base:help-metric "Number of entries in arp table";
     leaf address {
       type inet:ip-prefix;
       mandatory true;

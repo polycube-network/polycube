@@ -319,5 +319,31 @@ void ServiceController::netlink_notification(int ifindex,
   ports_to_ifaces.erase(ifname);
 }
 
+// For each service, the associated InfoMetric vector is returned
+std::vector<InfoMetric> ServiceController::get_infoMetrics() const {
+  if (service_md_.Metrics.empty()) {
+    std::vector<InfoMetric> emptyMap;
+    return emptyMap;
+  }
+  return service_md_.Metrics;
+}
+
+std::map <std::string,InfoMetric> ServiceController::get_mapInfoMetrics() const {
+  if(service_md_.Metrics.empty()) {
+    std::map<std::string,InfoMetric> emptyMap;
+    return emptyMap;
+  }
+  std::map<std::string,InfoMetric> retMap;
+  for(int i=0;i<service_md_.Metrics.size(); i++) {
+    retMap.emplace(service_md_.Metrics[i].nameMetric, service_md_.Metrics[i]);
+  }
+  return retMap;
+}
+
+std::vector<std::string> ServiceController::get_names_cubes() const {
+    return factory_.get_names_cubes();
+}
+
+
 }  // namespace polycubed
 }  // namespace polycube

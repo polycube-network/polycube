@@ -306,6 +306,9 @@ int main(int argc, char *argv[]) {
     // start to saving topology only after it has been loaded
     cubesdump->Enable();
   }
+  
+  // create metrics from data read in yang files
+  restserver->create_metrics();
 
   // pause the execution of current thread until ctrl+c
   pause();

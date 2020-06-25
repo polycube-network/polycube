@@ -30,6 +30,8 @@
 #include "config.h"
 #include "cubes_dump.h"
 #include "server/Resources/Endpoint/Hateoas.h"
+#include <jsoncons/json.hpp>
+#include <jsoncons_ext/jsonpath/json_query.hpp>
 
 namespace polycube {
 namespace polycubed {
@@ -303,6 +305,10 @@ void RestServer::setup_routes() {
   Hateoas::addRoute("topology", base);
 
   router_->addNotFoundHandler(bind(&RestServer::redirect, this));
+
+  // prometheus metrics
+  router_->get(base + std::string("/metrics"),
+               bind(&RestServer::get_metrics, this));
 }
 
 void RestServer::logRequest(const Pistache::Rest::Request &request) {
@@ -929,6 +935,174 @@ const std::string &RestServer::getHost() {
 
 const std::string &RestServer::getPort() {
     return port;
+}
+
+void RestServer::create_metrics() {
+  logger->info("loading metrics from yang files");
+std::cout << "sucaaaaaa" ;
+  try {
+    // uri and metricHandler are not necessary, I use pistache to registry metrics
+    registry = std::make_shared<prometheus::Registry>();
+    std::vector<std::string> name_services = core.get_servicectrls_names_vector();
+
+    // loop on all services (not cubes)
+    for (size_t i = 0; i < name_services.size(); i++) {
+      
+      // for every service I get the array of InfoMetric
+      auto metrics_service = core.get_service_controller(name_services[i]).get_infoMetrics();
+      for(auto metric: metrics_service)  {
+        if (metric.typeMetric == "C") {
+          map_metrics[name_services[i]].counters_family_.push_back(
+              prometheus::BuildCounter()
+                  .Name(metric.nameMetric)
+                  .Help(metric.helpMetric)
+                  .Register(*registry));
+
+          map_metrics[name_services[i]].map_counters_.emplace(metric.nameMetric,map_metrics[name_services[i]].counters_family_.size()-1);
+
+          // if at the beginning you want a metric without labels
+         // map_metrics[name_services[i]].counters_.push_back(map_metrics[name_services[i]].counters_family_.back().get().Add({}));
+
+        } else if (metric.typeMetric == "G") {
+          map_metrics[name_services[i]].gauges_family_.push_back(
+              prometheus::BuildGauge()
+                  .Name(metric.nameMetric)
+                  .Help(metric.helpMetric)
+                  .Register(*registry));
+
+          map_metrics[name_services[i]].map_gauges_.emplace(metric.nameMetric,map_metrics[name_services[i]].gauges_family_.size()-1);
+          
+          // if at the beginning you want a metric without labels
+         // map_metrics[name_services[i]].gauges_.push_back(map_metrics[name_services[i]].gauges_family_.back().get().Add({}));
+        }
+      }
+    }
+    // all metrics created are put into collectalbes_ thanks to registry
+    // collectables_ can collects al types of metrics (counter, gauge, histogram, summary)
+    collectables_.push_back(registry);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+  }
+}
+
+// expose OpenMetrics
+void RestServer::get_metrics(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+
+    // vector of MetricFamily
+    auto collected_metrics = std::vector<prometheus::MetricFamily>{};
+
+    size_t t; //index inside counter_ or gauges_
+   
+      //i.first is the name of the metric
+      // TODO i.second is the struct InfoMetric: we need pathMetric and typeMetric
+     //is the value returned by the jsoncons query
+     
+     auto servicesctrls_names = core.get_servicectrls_names_vector();
+
+
+    auto running_cubes = core.get_names_cubes();
+    
+    //if a cube is in running cubes but is not in all_cubes_and_metrics it means that I need to create his metrics
+    for(auto cube: running_cubes) {
+          if(all_cubes_and_metrics[cube].empty()) {
+            auto serviceName = core.get_cube_service(cube);
+            for(auto& gauge: map_metrics[serviceName].gauges_family_) {
+                gauge.get().Add({{"cubeName", cube}});
+            }
+            for(auto& counter: map_metrics[serviceName].counters_family_) {
+              counter.get().Add({{"cubeName", cube}});
+            }
+          }  
+    }
+
+    //if a cube is in all_cube_and_metrics and is not in running cubes: that cube it was deleted so I need to delete all his metrics i.e.
+    //all gauges and counters with label cubeName = that cube
+    for(auto cube: all_cubes_and_metrics) {
+          std::vector<std::string>::iterator it = std::find(running_cubes.begin(), running_cubes.end(), cube.first);
+          if(it == running_cubes.end()) {
+            auto serviceName = cube.second;
+            for(auto& gauge: map_metrics[serviceName].gauges_family_) {
+                auto& toDelete = gauge.get().Add({{"cubeName", cube.first}});
+                gauge.get().Remove(& toDelete);
+            }
+            for(auto& counter: map_metrics[serviceName].counters_family_) {
+              auto& toDelete = counter.get().Add({{"cubeName", cube.first}});
+              counter.get().Remove(& toDelete);
+            }
+         }
+    }
+
+    //at then end we need that all_cubes_and_metrics and running_cubes with equal values
+    all_cubes_and_metrics.clear();
+    for(auto cube: running_cubes)
+      all_cubes_and_metrics[cube] = core.get_cube_service(cube);
+  
+
+    for(auto serviceName: servicesctrls_names)  {
+        ListKeyValues keys{}; //keys used to create the entire json of a cube
+        //every service has a map with the name of the metric and the InfoMetric struct (we need the pathmetric, typemetric, type-operation and a value)
+        auto mapInfoMetricsService = core.get_service_controller(serviceName).get_mapInfoMetrics();
+          // for every service
+              for(auto cubeName: core.get_service_controller(serviceName).get_names_cubes()) {
+                      std::string cubeStr = core.get_service_controller(serviceName).get_management_interface()->get_service()->ReadValue(cubeName, keys).message;
+                      jsoncons::json cubeJson = jsoncons::json::parse(cubeStr);
+
+                      for(auto& i: mapInfoMetricsService) {
+                       //TODO
+                       if(i.second.pathMetric.compare("TODO")!=0) {
+                          jsoncons::json value = jsoncons::jsonpath::json_query(cubeJson,i.second.pathMetric);
+                  
+                        if(value.empty()==false) {
+                             if(i.second.typeOperation.compare("FILTER")==0) {
+                              i.second.value = value.size();  //the value returned is a list, but the value of the metric is the length of the returned value
+                           } else {
+                            i.second.value = value[0].as_double(); //the value of the metric is the value returned 
+                          } 
+                          if(i.second.typeMetric == "C") { // a counter can only go up
+                                t = map_metrics[serviceName].map_counters_[i.first];
+                                if(i.second.value > map_metrics[serviceName].counters_family_[t].get().Add({{"cubeName",cubeName}}).Value()) {
+                                   map_metrics[serviceName].counters_family_[t].get().Add({{"cubeName",cubeName}})
+                                   .Increment(i.second.value - map_metrics[serviceName].counters_family_[t].get()
+                                   .Add({{"cubeName",cubeName}}).Value());
+                                }
+                          } 
+                          else if(i.second.typeMetric == "G") { // a gauge can go up and down
+                              t = map_metrics[serviceName].map_gauges_[i.first];
+                                map_metrics[serviceName].gauges_family_[t].get().Add({{"cubeName",cubeName}}).Set(i.second.value);
+                          }
+                        }                      
+                   }
+               }
+         }
+     }
+
+    
+    // collectables_ is filled in create_metrics
+    for (auto &&wcollectable : collectables_) {
+      auto collectable = wcollectable.lock();
+      if (!collectable) {
+        continue;
+      }
+      // Returns a list of metrics and their samples.
+      // std::vector<prometheus::MetricFamily> &&metrics
+      auto &&metrics = collectable->Collect();
+      collected_metrics.insert(collected_metrics.end(),
+                               std::make_move_iterator(metrics.begin()),
+                               std::make_move_iterator(metrics.end()));
+    }
+    // auto metrics = collected_metrics;
+    auto serializer = std::unique_ptr<prometheus::Serializer>{
+        new prometheus::TextSerializer()};
+    std::string ret_metrics = serializer->Serialize(collected_metrics);
+
+    response.send(Pistache::Http::Code::Ok, ret_metrics);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
 }
 
 }  // namespace polycubed

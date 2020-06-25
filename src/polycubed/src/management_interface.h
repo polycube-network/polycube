@@ -19,6 +19,17 @@
 
 #include "server/Resources/Endpoint/Service.h"
 
+struct InfoMetric {
+  const std::string nameMetric; //the name of the metric the will be scraped
+  const std::string typeMetric; //G = gauge, C = counter
+  const std::string pathMetric; //tha json path to take the value from the json of a cube
+  const std::string helpMetric;
+  const std::string typeOperation;  
+  std::double_t value;
+};
+//about type-operation, maybe there is a better way: 
+// FILTER: after a filter query i need the length but I cannot do that so i use size() on the result (like the number of )
+
 struct ServiceMetadata {
   std::string description;
   std::string version;
@@ -26,6 +37,7 @@ struct ServiceMetadata {
   std::string swaggerCodegenGitRepoId;
   std::string dataModel;
   std::string requiredKernelVersion;
+  std::vector<InfoMetric> Metrics;
 };
 
 namespace polycube::polycubed {
