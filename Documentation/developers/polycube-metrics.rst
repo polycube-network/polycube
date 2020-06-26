@@ -20,6 +20,7 @@ Done
 - [X] Access the entire json of a service and use jsonpath to read the value of a metric
 - [X] Definition of metrics per cube thanks to the use of labels (example: cubeName=d1)
 - [] Add metrics to other services
+- [] Add tests
 
 
 

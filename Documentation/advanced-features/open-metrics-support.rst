@@ -53,4 +53,6 @@ It is also possible to use Grafana, just follow the `official documentation <htt
 
 
 
-These are some screeshots of example.
+This is an example screenshot:
+
+.. image:: ../images/metrics_example_grafana.png

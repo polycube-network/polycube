@@ -41,7 +41,6 @@ PACKAGES+=" libpcre3-dev" # needed for libyang
 PACKAGES+=" libpcap-dev" # needed for packetcapture filter
 
 
-
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary
   PACKAGES+=" iptables" # only for pcn-k8s
@@ -101,7 +100,3 @@ if [[ -z "${GOPATH}" ]]; then
   mkdir -p $HOME/go
   export GOPATH=$HOME/go
 fi
-
-
-
-
