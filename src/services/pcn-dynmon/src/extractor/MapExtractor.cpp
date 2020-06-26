@@ -1,7 +1,6 @@
 #include "MapExtractor.h"
 
 #include <functional>
-#include <iostream>
 #include <string>
 
 #include <linux/bpf.h>
@@ -36,20 +35,20 @@ using value_type = json::object_t::value_type;
  * the switch statement on strings.
  */
 namespace StringHash {
-  constexpr uint64_t _(uint64_t h, const char *s) {
-    return (*s == 0)
-               ? h
-               : _((h * 1099511628211ull) ^ static_cast<uint64_t>(*s), s + 1);
-  }
+constexpr uint64_t _(uint64_t h, const char *s) {
+  return (*s == 0)
+         ? h
+         : _((h * 1099511628211ull) ^ static_cast<uint64_t>(*s), s + 1);
+}
 
-  constexpr uint64_t hash(const char *s) {
-    return StringHash::_(14695981039346656037ull, s);
-  }
+constexpr uint64_t hash(const char *s) {
+  return StringHash::_(14695981039346656037ull, s);
+}
 
-  uint64_t hash(const std::string &s) {
-    return StringHash::_(14695981039346656037ull, s.data());
-  }
-}// namespace StringHash
+uint64_t hash(const std::string &s) {
+  return StringHash::_(14695981039346656037ull, s.data());
+}
+}  // namespace StringHash
 #pragma endregion
 
 using namespace StringHash;
@@ -71,11 +70,11 @@ typedef enum {
 
 /**
  * Recognizes the type of a node object contained in a TableDesc's leaf_desc tree
- * 
+ *
  * @param[object] the object to be recognized
- * 
+ *
  * @throw std::runtime_error if the object cannot be recognized
- * 
+ *
  * @returns a objectType
  */
 objectType identifyObject(json object) {
@@ -87,97 +86,216 @@ objectType identifyObject(json object) {
     if (object.size() == 3) {
       if (object[2].is_string()) {
         switch (hash(object[2])) {
-          case STRUCT:
-          case STRUCT_PACKED:
-            return Struct;
-          case UNION:
-            return Union;
-          case ENUM:
-            return Enum;
-          default:
-            throw runtime_error("[MapExtractor] Unknown type" + object[3].get<string>());
+        case STRUCT:
+        case STRUCT_PACKED:
+          return Struct;
+        case UNION:
+          return Union;
+        case ENUM:
+          return Enum;
+        default:
+          throw runtime_error("Unknown type" + object[3].get<string>());
         }
       } else if (object[2].is_array())
         return ArrayProperty;
       else if (object[2].is_number() && object[1].is_string())
         return Property;
-      throw runtime_error("[MapExtractor] Unknown element" + object[0].get<string>());
+      throw runtime_error("Unknown element" + object[0].get<string>());
     }
   }
-  throw std::runtime_error("[MapExtractor] Unable to identify the object");
+  throw runtime_error("Unable to identifyObject " + object.dump());
 }
 
-json MapExtractor::extractFromMap(BaseCube &cube_ref, string map_name, int index,
-                                  ProgramType type) {
-  // Getting the TableDesc object of the eBPF table
-  auto &desc = cube_ref.get_table_desc(map_name, index, type);
+json MapExtractor::extractFromArrayMap(const TableDesc &desc, RawTable table,
+                                             std::shared_ptr<ExtractionOptions> &extractionOptions) {
 
-  // Getting the leaf_desc object which represents the structure of the a map entry
   auto value_desc = json::parse(string{desc.leaf_desc});
-  cube_ref.logger()->debug("{0} leaf_desc:\n{1}", map_name, value_desc.dump(2));
-
-  // Getting the RawTable, but parse entries only if map type is supported
-  auto table = cube_ref.get_raw_table(map_name, index, type);
-
   json j_entries;
-  switch (desc.type) {
-    case BPF_MAP_TYPE_LRU_HASH:
-    case BPF_MAP_TYPE_HASH: {
-      // Case to handle simple hash types (key->value)
 
-      // Getting the map entries
-      auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
+  MapEntry batch(desc.max_entries * desc.key_size,
+                 desc.max_entries * desc.leaf_size);
+  unsigned int count = desc.max_entries;
 
-      json key_desc = json::parse(string{desc.key_desc});
-      cube_ref.logger()->debug("{0} key_desc:\n{1}", map_name, key_desc.dump(2));
-      for (auto &entry : entries) {
-        int val_offset = 0, key_offset = 0;
-        json entry_obj;
-        entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
-        entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
-        j_entries.push_back(entry_obj);
-      }
+  //Trying to retrieve values using batch operations
+  if(table.get_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT) {
+    //Batch retrieval ok, checking if need to empty
+    if(count > 0 && extractionOptions->getEmptyOnRead()) {
+      MapEntry reset(0, desc.max_entries * desc.leaf_size);
+      table.update_batch(batch.getKey(), reset.getValue(), &count);
+    }
+    for(int i=0; i<count; i++) {
+      int offset = 0;
+      auto value = recExtract(value_desc, static_cast<char*>(batch.getValue()) + i*desc.leaf_size, offset);
+      j_entries.push_back(value);
+    }
+    return j_entries;
+  }
+
+  // Retrieving values using old method
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  MapEntry reset_value(0, desc.key_size);
+  void *last_key = nullptr;
+
+  //Getting all map values
+  while (true) {
+    MapEntry entry(desc.key_size, desc.leaf_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
+      table.get(entry.getKey(), entry.getValue());
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.set(last_key, reset_value.getValue());
+    }else
       break;
-    }
-    case BPF_MAP_TYPE_ARRAY: {
-      // Case to handle simple array types (index->value)
+  }
 
-      // Getting the map entries
-      auto entries = getMapEntries(table, desc.key_size, desc.leaf_size);
-
-      for (auto &entry : entries) {
-        int offset = 0;
-        auto j_entry = recExtract(value_desc, entry->getValue(), offset);
-        j_entries.push_back(j_entry);
-      }
-      break;
-    }
-    default: {
-      throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
-    }
+  //Parsing retrieved values
+  for(auto &entry: entries) {
+    int offset = 0;
+    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+    j_entries.push_back(j_entry);
   }
   return j_entries;
 }
 
-std::vector<std::shared_ptr<MapEntry>> MapExtractor::getMapEntries(
-    RawTable table, size_t key_size, size_t value_size) {
-  std::vector<std::shared_ptr<MapEntry>> vec;
+json MapExtractor::extractFromQueueStackMap(const TableDesc &desc, RawQueueStackTable table,
+                                        std::shared_ptr<ExtractionOptions> &extractionOptions) {
+
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  std::vector<std::shared_ptr<MapEntry>> entries;
+
+  // Retrieving map entries iteratively, DOES NOT SUPPORT BATCH OPERATIONS
+  while(true) {
+    MapEntry entry(0, desc.leaf_size);
+    if (table.pop(entry.getValue()) != 0)
+      break;
+    entries.push_back(std::make_shared<MapEntry>(entry));
+  }
+
+  json j_entries;
+  for(auto &entry: entries) {
+    int offset = 0;
+    auto j_entry = recExtract(value_desc, entry->getValue(), offset);
+    j_entries.push_back(j_entry);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromHashMap(const TableDesc &desc, RawTable table,
+                                      std::shared_ptr<ExtractionOptions> &extractionOptions) {
+  // Getting both key_desc and leaf_desc objects which represents the structure of the map entry
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  auto key_desc = json::parse(string{desc.key_desc});
+  json j_entries;
+
+  MapEntry batch(desc.max_entries * desc.key_size,
+                 desc.max_entries * desc.leaf_size);
+  unsigned int count = desc.max_entries;
+
+  //Trying to retrieve values using batch operations
+  if((extractionOptions->getEmptyOnRead() && (table.get_and_delete_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT)) ||
+      (!extractionOptions->getEmptyOnRead() && (table.get_batch(batch.getKey(), batch.getValue(), &count) == 0 || errno == ENOENT))) {
+    //Batch retrieval ok
+    for(int i=0; i<count; i++) {
+      int offset_key = 0, offset_value = 0;
+      json entry_obj;
+      entry_obj["key"] = recExtract(key_desc, static_cast<char*>(batch.getKey()) + i*desc.key_size, offset_key);
+      entry_obj["value"] = recExtract(value_desc, static_cast<char*>(batch.getValue()) + i*desc.leaf_size, offset_value);
+      j_entries.push_back(entry_obj);
+    }
+    return j_entries;
+  }
+
+  // Retrieving map entries with old method
+  std::vector<std::shared_ptr<MapEntry>> entries;
   void *last_key = nullptr;
 
-  // Looping until the RawTable has a "next" entry
   while (true) {
-    // Creating a MapEntry object which internally allocates the memory to
-    // contain the map entry's key and value
-    MapEntry entry(key_size, value_size);
-    int fd = table.next(last_key, entry.getKey());
-    last_key = entry.getKey();
-    if (fd > -1) {
+    MapEntry entry(desc.key_size, desc.leaf_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
       table.get(entry.getKey(), entry.getValue());
-      vec.push_back(std::make_shared<MapEntry>(entry));
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.remove(last_key);
     } else
       break;
   }
-  return vec;
+
+  for (auto &entry : entries) {
+    int val_offset = 0, key_offset = 0;
+    json entry_obj;
+    entry_obj["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+    entry_obj["value"] = recExtract(value_desc, entry->getValue(), val_offset);
+    j_entries.push_back(entry_obj);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, RawTable table,
+                                        std::shared_ptr<ExtractionOptions> &extractionOptions) {
+  // Getting the maximux cpu available
+  size_t n_cpus = polycube::get_possible_cpu_count();
+  size_t leaf_array_size = n_cpus * desc.leaf_size;
+  // Getting key and value description to parse correctly
+  auto value_desc = json::parse(string{desc.leaf_desc});
+  auto key_desc = json::parse(string{desc.key_desc});
+  json j_entries;
+
+  std::vector<std::shared_ptr<MapEntry>> entries;
+  MapEntry reset_value(0, leaf_array_size);
+  void *last_key = nullptr;
+
+  // Retrieving map entries with old method, DOES NOT SUPPORT BATCH OPERATION
+  while (true) {
+    MapEntry entry(desc.key_size, leaf_array_size);
+    if (table.next(last_key, entry.getKey()) > -1) {
+      last_key = entry.getKey();
+      table.get(entry.getKey(), entry.getValue());
+      entries.push_back(std::make_shared<MapEntry>(entry));
+      if(extractionOptions->getEmptyOnRead())
+        table.set(last_key, reset_value.getValue());
+    } else
+      break;
+  }
+
+  for(auto& entry : entries) {
+    int key_offset = 0;
+    json j_entry;
+
+    // Parse the current key and set the id of that entry
+    j_entry["key"] = recExtract(key_desc, entry->getKey(), key_offset);
+
+    json j_values;
+    // The leaf_size is the size of a single leaf value, but potentially there is an
+    // array of values! So the entry->getValue() pointer must be manually shifted to parse
+    // all the per_cpu values
+    for(int i=0, offset=0; i<n_cpus; i++, offset=0){
+      auto val = recExtract(value_desc, static_cast<char*>(entry->getValue()) + (i * desc.leaf_size), offset);
+      j_values.emplace_back(val);
+    }
+    j_entry["value"] = j_values;
+    j_entries.push_back(j_entry);
+  }
+  return j_entries;
+}
+
+json MapExtractor::extractFromMap(BaseCube &cube_ref, const string& map_name, int index,
+                                  ProgramType type, std::shared_ptr<ExtractionOptions> extractionOptions) {
+  // Getting the TableDesc object of the eBPF table
+  auto &desc = cube_ref.get_table_desc(map_name, index, type);
+
+  if(desc.type == BPF_MAP_TYPE_HASH || desc.type == BPF_MAP_TYPE_LRU_HASH)
+    return extractFromHashMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+  else if(desc.type == BPF_MAP_TYPE_ARRAY)
+    return extractFromArrayMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+  else if(desc.type == BPF_MAP_TYPE_QUEUE || desc.type == BPF_MAP_TYPE_STACK)
+    return extractFromQueueStackMap(desc, cube_ref.get_raw_queuestack_table(map_name, index, type), extractionOptions);
+  else if(desc.type == BPF_MAP_TYPE_PERCPU_HASH || desc.type == BPF_MAP_TYPE_PERCPU_ARRAY || desc.type == BPF_MAP_TYPE_LRU_PERCPU_HASH)
+    return extractFromPerCPUMap(desc, cube_ref.get_raw_table(map_name, index, type), extractionOptions);
+  else
+    // The map type is not supported yet by Dynmon
+    throw runtime_error("Unhandled Map Type " + std::to_string(desc.type) + " extraction.");
 }
 
 json MapExtractor::recExtract(json object_description, void *data, int &offset) {
@@ -185,47 +303,46 @@ json MapExtractor::recExtract(json object_description, void *data, int &offset) 
   auto objectType = identifyObject(object_description);
 
   switch (objectType) {
-    case Property: {// the object describes a property of a C struct
-      auto propertyName = object_description[0].get<string>();
-      auto propertyType = object_description[1];
-      return propertyName, recExtract(propertyType, data, offset);
-    }
-    case ArrayProperty: {// the object describes a property of a C struct which is an array
-      auto propertyName = object_description[0].get<string>();
-      auto propertyType = object_description[1];
-      auto len = object_description[2][0].get<int>();
-      // array of primitive type
-      if (propertyType.is_string())// this string is the name of the primitive type
-        return valueFromPrimitiveType(propertyType, data, offset, len);
-      // array of complex type
-      else {
-        json array;
-        for (int i = 0; i < len; i++)
-          array.push_back(recExtract(propertyType, data, offset));
-        return value_type(propertyName, array);
-      }
-    }
-    case Value:// the object describes a primitive type
-      return valueFromPrimitiveType(object_description.get<string>(), data,
-                                    offset);
-    case Struct:// the object describes a C struct
-      return valueFromStruct(object_description, data, offset);
-
-    case Union:// the object describes a C union
-      return valueFromUnion(object_description, data, offset);
-
-    case Enum:// the object describes a C enum
-      return valueFromEnum(object_description, data, offset);
-    default:
-      throw std::runtime_error("[MapExtractor] Unable to identify the object");
+  case Property: { // the object describes a property of a C struct
+    auto propertyName = object_description[0].get<string>();
+    auto propertyType = object_description[1];
+    return propertyName, recExtract(propertyType, data, offset);
   }
+  case ArrayProperty: { // the object describes a property of a C struct which is an array
+    auto propertyName = object_description[0].get<string>();
+    auto propertyType = object_description[1];
+    auto len = object_description[2][0].get<int>();
+    // array of primitive type
+    if (propertyType.is_string()) // this string is the name of the primitive type
+      return valueFromPrimitiveType(propertyType, data, offset, len);
+      // array of complex type
+    else {
+      json array;
+      for (int i = 0; i < len; i++)
+        array.push_back(recExtract(propertyType, data, offset));
+      return value_type(propertyName, array);
+    }
+  }
+  case Value: // the object describes a primitive type
+    return valueFromPrimitiveType(object_description.get<string>(), data,
+                                  offset);
+  case Struct: // the object describes a C struct
+    return valueFromStruct(object_description, data, offset);
+
+  case Union: // the object describes a C union
+    return valueFromUnion(object_description, data, offset);
+
+  case Enum: // the object describes a C enum
+    return valueFromEnum(object_description, data, offset);
+  }
+  throw runtime_error("Unhandled object type " + std::to_string(objectType) + " - recExtract()");
 }
 
 json MapExtractor::valueFromStruct(json struct_description, void *data,
                                    int &offset) {
   json array;
   // Getting the name of the C struct
-  auto structName = struct_description[0].get<string>();
+  // auto structName = struct_description[0].get<string>();
   // Getting the set of properties of the C struct
   auto structProperties = struct_description[1];
 
@@ -234,7 +351,7 @@ json MapExtractor::valueFromStruct(json struct_description, void *data,
     // Getting the property's name
     auto propertyName = property[0].get<std::string>();
     // Getting the property type object
-    auto propertyType = property[1];
+    // auto propertyType = property[1];
     // If the property is an alignment padding -> skipp it increasing the offset
     if (propertyName.rfind(PADDING, 0) == 0) {
       auto paddingSize = property[2][0].get<int>();
@@ -252,7 +369,7 @@ json MapExtractor::valueFromUnion(json union_description, void *data,
   int oldOffset = offset;
   int maxOffset = 0;
   // Getting the name of the C union
-  auto unionName = union_description[0].get<string>();
+  // auto unionName = union_description[0].get<string>();
   // Getting the set of properties of the C union
   auto unionProperties = union_description[1];
 
@@ -261,7 +378,7 @@ json MapExtractor::valueFromUnion(json union_description, void *data,
     // Getting the property's name
     auto propertyName = property[0].get<std::string>();
     // Getting the property type object
-    auto propertyType = property[1];
+    // auto propertyType = property[1];
     // Adding the property to the returning set extracting its value recursively
     array.push_back(value_type(propertyName, recExtract(property, data, offset)));
     // Saving the offset in order to increase it to the maximum property size
@@ -277,231 +394,231 @@ json MapExtractor::valueFromUnion(json union_description, void *data,
 
 json MapExtractor::valueFromEnum(json enum_description, void *data,
                                  int &offset) {
-  int index = *(int *) ((char *) data + offset);
+  int index = *(int *)((char *)data + offset);
   offset += sizeof(int);
   return enum_description[1][index].get<string>();
 }
 
-json MapExtractor::valueFromPrimitiveType(const string type_name, void *data,
+json MapExtractor::valueFromPrimitiveType(const string& type_name, void *data,
                                           int &offset, int len) {
-  char *address = ((char *) data + offset);
+  char *address = ((char *)data + offset);
   // Casting the memory pointed by *address to the corresponding C type
   switch (hash(type_name)) {
-    case hash(INT): {
-      if (len == -1) {
-        int value = *(int *) address;
+  case hash(INT): {
+    if (len == -1) {
+      int value = *(int *)address;
+      offset += sizeof(int);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        int value = *(int *)address;
         offset += sizeof(int);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          int value = *(int *) address;
-          offset += sizeof(int);
-          address += sizeof(int);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(int);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(CHAR): {
-      if (len == -1) {
+  }
+  case hash(CHAR): {
+    if (len == -1) {
+      char value = *address;
+      offset += sizeof(char);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
         char value = *address;
         offset += sizeof(char);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          char value = *address;
-          offset += sizeof(char);
-          address += sizeof(char);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(char);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(SHORT): {
-      if (len == -1) {
-        short value = *(short *) address;
+  }
+  case hash(SHORT): {
+    if (len == -1) {
+      short value = *(short *)address;
+      offset += sizeof(short);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        short value = *(short *)address;
         offset += sizeof(short);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          short value = *(short *) address;
-          offset += sizeof(short);
-          address += sizeof(short);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(short);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(LONG): {
-      if (len == -1) {
-        long value = *(long *) address;
+  }
+  case hash(LONG): {
+    if (len == -1) {
+      long value = *(long *)address;
+      offset += sizeof(long);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        long value = *(long *)address;
         offset += sizeof(long);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          long value = *(long *) address;
-          offset += sizeof(long);
-          address += sizeof(long);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(long);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(FLOAT): {
-      if (len == -1) {
-        float value = *(float *) address;
+  }
+  case hash(FLOAT): {
+    if (len == -1) {
+      float value = *(float *)address;
+      offset += sizeof(float);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        float value = *(float *)address;
         offset += sizeof(float);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          float value = *(float *) address;
-          offset += sizeof(float);
-          address += sizeof(float);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(float);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(DOUBLE): {
-      if (len == -1) {
-        double value = *(double *) address;
+  }
+  case hash(DOUBLE): {
+    if (len == -1) {
+      double value = *(double *)address;
+      offset += sizeof(double);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        double value = *(double *)address;
         offset += sizeof(double);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          double value = *(double *) address;
-          offset += sizeof(double);
-          address += sizeof(double);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(double);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(LONG_LONG): {
-      if (len == -1) {
-        long long value = *(long long *) address;
+  }
+  case hash(LONG_LONG): {
+    if (len == -1) {
+      long long value = *(long long *)address;
+      offset += sizeof(long long);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        long long value = *(long long *)address;
         offset += sizeof(long long);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          long long value = *(long long *) address;
-          offset += sizeof(long long);
-          address += sizeof(long long);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(long long);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(LONG_DOUBLE): {
-      if (len == -1) {
-        long double value = *(long double *) address;
+  }
+  case hash(LONG_DOUBLE): {
+    if (len == -1) {
+      long double value = *(long double *)address;
+      offset += sizeof(long double);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        long double value = *(long double *)address;
         offset += sizeof(long double);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          long double value = *(long double *) address;
-          offset += sizeof(long double);
-          address += sizeof(long double);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(long double);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(SIGNED_CHAR): {
-      if (len == -1) {
-        signed char value = *address;
-        offset += sizeof(signed char);
-        return value;
-      } else {
-        signed char *value = (signed char *) address;
-        offset += sizeof(signed char) * len;
-        return (char *) value;
-      }
+  }
+  case hash(SIGNED_CHAR): {
+    if (len == -1) {
+      signed char value = *address;
+      offset += sizeof(signed char);
+      return value;
+    } else {
+      signed char *value = (signed char *)address;
+      offset += sizeof(signed char) * len;
+      return (char *)value;
     }
-    case hash(UNSIGNED_INT): {
-      if (len == -1) {
-        unsigned int value = *(unsigned int *) address;
+  }
+  case hash(UNSIGNED_INT): {
+    if (len == -1) {
+      unsigned int value = *(unsigned int *)address;
+      offset += sizeof(unsigned int);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        unsigned int value = *(unsigned int *)address;
         offset += sizeof(unsigned int);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          unsigned int value = *(unsigned int *) address;
-          offset += sizeof(unsigned int);
-          address += sizeof(unsigned int);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(unsigned int);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(UNSIGNED_CHAR): {
-      if (len == -1) {
-        unsigned char value = *address;
-        offset += sizeof(unsigned char);
-        return value;
-      } else {
-        unsigned char *value = (unsigned char *) address;
-        offset += sizeof(unsigned char) * len;
-        return (char *) value;
-      }
+  }
+  case hash(UNSIGNED_CHAR): {
+    if (len == -1) {
+      unsigned char value = *address;
+      offset += sizeof(unsigned char);
+      return value;
+    } else {
+      unsigned char *value = (unsigned char *)address;
+      offset += sizeof(unsigned char) * len;
+      return (char *)value;
     }
-    case hash(UNSIGNED_LONG): {
-      if (len == -1) {
-        unsigned long value = *(unsigned long *) address;
+  }
+  case hash(UNSIGNED_LONG): {
+    if (len == -1) {
+      unsigned long value = *(unsigned long *)address;
+      offset += sizeof(unsigned long);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        unsigned long value = *(unsigned long *)address;
         offset += sizeof(unsigned long);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          unsigned long value = *(unsigned long *) address;
-          offset += sizeof(unsigned long);
-          address += sizeof(unsigned long);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(unsigned long);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(UNSIGNED_SHORT): {
-      if (len == -1) {
-        unsigned short value = *(unsigned short *) address;
+  }
+  case hash(UNSIGNED_SHORT): {
+    if (len == -1) {
+      unsigned short value = *(unsigned short *)address;
+      offset += sizeof(unsigned short);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        unsigned short value = *(unsigned short *)address;
         offset += sizeof(unsigned short);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          unsigned short value = *(unsigned short *) address;
-          offset += sizeof(unsigned short);
-          address += sizeof(unsigned short);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(unsigned short);
+        vec.push_back(value);
       }
+      return vec;
     }
-    case hash(UNSIGNED_LONG_LONG): {
-      if (len == -1) {
-        unsigned long long value = *(unsigned long long *) address;
+  }
+  case hash(UNSIGNED_LONG_LONG): {
+    if (len == -1) {
+      unsigned long long value = *(unsigned long long *)address;
+      offset += sizeof(unsigned long long);
+      return value;
+    } else {
+      json vec = json::array();
+      for (int i = 0; i < len; i++) {
+        unsigned long long value = *(unsigned long long *)address;
         offset += sizeof(unsigned long long);
-        return value;
-      } else {
-        json vec = json::array();
-        for (int i = 0; i < len; i++) {
-          unsigned long long value = *(unsigned long long *) address;
-          offset += sizeof(unsigned long long);
-          address += sizeof(unsigned long long);
-          vec.push_back(value);
-        }
-        return vec;
+        address += sizeof(unsigned long long);
+        vec.push_back(value);
       }
+      return vec;
     }
-    default:
-      throw runtime_error("ERROR: " + type_name + " not a valid type!");
+  }
+  default:
+    throw runtime_error("ERROR: " + type_name + " not a valid type!");
   }
 }

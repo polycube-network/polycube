@@ -79,4 +79,4 @@ Now the configuration is completed. Every ``dynmon`` instance is working standal
 
 **Last consideration:**
 
-Pay attention to the order, especially when different services which can eventually decide to drop packets are working in pipeline, since the final result may not be as expected (if ``dynmon0` decided to drop a packet ``dynmon1`` would not receive it).
+Pay attention to the order, especially when different services which can eventually decide to drop packets are working in pipeline, since the final result may not be as expected (if ``dynmon0`` decided to drop a packet, ``dynmon1`` would not receive it).
