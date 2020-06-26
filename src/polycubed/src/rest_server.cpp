@@ -939,7 +939,6 @@ const std::string &RestServer::getPort() {
 
 void RestServer::create_metrics() {
   logger->info("loading metrics from yang files");
-std::cout << "sucaaaaaa" ;
   try {
     // uri and metricHandler are not necessary, I use pistache to registry metrics
     registry = std::make_shared<prometheus::Registry>();

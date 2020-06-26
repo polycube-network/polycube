@@ -193,7 +193,6 @@ std::vector<std::shared_ptr<BaseCubeIface>> CubeFactoryImpl::get_cubes() {
   return r;
 }
 
-//pino
 std::vector<std::string> CubeFactoryImpl::get_names_cubes() const {
    std::vector<std::string> ret;
    for(auto i: cubes_) {
