@@ -1,0 +1,18 @@
+{
+  "ingress-path": {
+    "name": "Feature extractor probe",
+    "code": "struct features {\r\n    uint64_t timestamp;\r\n    uint16_t length;\r\n} __attribute__((packed));\r\n\r\nBPF_QUEUE(SIMPLE_QUEUE, struct features, 1);\r\n\r\nstatic __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {\r\n  struct features newVal = {.timestamp=1010, .length=1010};\r\n\r\n  int *value = SIMPLE_QUEUE.push(&newVal, 0);\r\n\r\n  return RX_OK;\r\n}",
+    "metric-configs": [
+      {
+        "name": "SIMPLE_QUEUE",
+        "map-name": "SIMPLE_QUEUE",
+        "open-metrics-metadata": {
+          "help": "This is a simple queue map.",
+          "type": "counter",
+          "labels": []
+        }
+      }
+    ]
+  },
+  "egress-path": {}
+}
