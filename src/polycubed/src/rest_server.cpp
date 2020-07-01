@@ -951,28 +951,15 @@ void RestServer::create_metrics() {
       auto metrics_service = core.get_service_controller(name_services[i]).get_infoMetrics();
       for(auto metric: metrics_service)  {
         if (metric.typeMetric == "C") {
-          map_metrics[name_services[i]].counters_family_.push_back(
-              prometheus::BuildCounter()
+          map_metrics[name_services[i]].counters_map.emplace(metric.nameMetric,std::ref(prometheus::BuildCounter()
                   .Name(metric.nameMetric)
                   .Help(metric.helpMetric)
-                  .Register(*registry));
-
-          map_metrics[name_services[i]].map_counters_.emplace(metric.nameMetric,map_metrics[name_services[i]].counters_family_.size()-1);
-
-          // if at the beginning you want a metric without labels
-         // map_metrics[name_services[i]].counters_.push_back(map_metrics[name_services[i]].counters_family_.back().get().Add({}));
-
+                  .Register(*registry)));
         } else if (metric.typeMetric == "G") {
-          map_metrics[name_services[i]].gauges_family_.push_back(
-              prometheus::BuildGauge()
+          map_metrics[name_services[i]].gauges_map.emplace(metric.nameMetric, std::ref( prometheus::BuildGauge()
                   .Name(metric.nameMetric)
                   .Help(metric.helpMetric)
-                  .Register(*registry));
-
-          map_metrics[name_services[i]].map_gauges_.emplace(metric.nameMetric,map_metrics[name_services[i]].gauges_family_.size()-1);
-          
-          // if at the beginning you want a metric without labels
-         // map_metrics[name_services[i]].gauges_.push_back(map_metrics[name_services[i]].gauges_family_.back().get().Add({}));
+                  .Register(*registry)));
         }
       }
     }
@@ -983,6 +970,7 @@ void RestServer::create_metrics() {
     logger->error("{0}", e.what());
   }
 }
+
 
 // expose OpenMetrics
 void RestServer::get_metrics(const Pistache::Rest::Request &request,
@@ -1004,40 +992,38 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
 
     auto running_cubes = core.get_names_cubes();
     
-    //if a cube is in running cubes but is not in all_cubes_and_metrics it means that I need to create his metrics
+    // if a cube is in running cubes but is not in all_cubes_and_metrics it means that I need to create his metrics
     for(auto cube: running_cubes) {
-          if(all_cubes_and_metrics[cube].empty()) {
-            auto serviceName = core.get_cube_service(cube);
-            for(auto& gauge: map_metrics[serviceName].gauges_family_) {
-                gauge.get().Add({{"cubeName", cube}});
-            }
-            for(auto& counter: map_metrics[serviceName].counters_family_) {
-              counter.get().Add({{"cubeName", cube}});
-            }
-          }  
-    }
+           if(all_cubes_and_metrics[cube].empty()) {
+             auto serviceName = core.get_cube_service(cube);
+            for (auto& kv: map_metrics[serviceName].counters_map)
+                kv.second.get().Add({{"cubeName", cube}});
+            for (auto& kv: map_metrics[serviceName].gauges_map)
+                kv.second.get().Add({{"cubeName", cube}});
+           }  
+     }
 
-    //if a cube is in all_cube_and_metrics and is not in running cubes: that cube it was deleted so I need to delete all his metrics i.e.
-    //all gauges and counters with label cubeName = that cube
-    for(auto cube: all_cubes_and_metrics) {
-          std::vector<std::string>::iterator it = std::find(running_cubes.begin(), running_cubes.end(), cube.first);
-          if(it == running_cubes.end()) {
-            auto serviceName = cube.second;
-            for(auto& gauge: map_metrics[serviceName].gauges_family_) {
-                auto& toDelete = gauge.get().Add({{"cubeName", cube.first}});
-                gauge.get().Remove(& toDelete);
-            }
-            for(auto& counter: map_metrics[serviceName].counters_family_) {
-              auto& toDelete = counter.get().Add({{"cubeName", cube.first}});
-              counter.get().Remove(& toDelete);
-            }
-         }
-    }
+    // if a cube is in all_cube_and_metrics and is not in running cubes: that cube it was deleted so I need to delete all his metrics i.e.
+    // all gauges and counters with label cubeName = that cube
+     for(auto cube: all_cubes_and_metrics) {
+           std::vector<std::string>::iterator it = std::find(running_cubes.begin(), running_cubes.end(), cube.first);
+           if(it == running_cubes.end()) {
+             auto serviceName = cube.second;
+            for (auto& kv: map_metrics[serviceName].gauges_map) {
+               auto& toDelete = kv.second.get().Add({{"cubeName", cube.first}});
+               kv.second.get().Remove(& toDelete);
+             }
+            for (auto& kv: map_metrics[serviceName].counters_map) {
+               auto& toDelete = kv.second.get().Add({{"cubeName", cube.first}});
+               kv.second.get().Remove(& toDelete);
+             }
+          }
+     }
 
-    //at then end we need that all_cubes_and_metrics and running_cubes with equal values
-    all_cubes_and_metrics.clear();
-    for(auto cube: running_cubes)
-      all_cubes_and_metrics[cube] = core.get_cube_service(cube);
+    // at then end we need that all_cubes_and_metrics and running_cubes with equal values
+     all_cubes_and_metrics.clear();
+     for(auto cube: running_cubes)
+       all_cubes_and_metrics[cube] = core.get_cube_service(cube);
   
 
     for(auto serviceName: servicesctrls_names)  {
@@ -1061,16 +1047,14 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
                             i.second.value = value[0].as_double(); //the value of the metric is the value returned 
                           } 
                           if(i.second.typeMetric == "C") { // a counter can only go up
-                                t = map_metrics[serviceName].map_counters_[i.first];
-                                if(i.second.value > map_metrics[serviceName].counters_family_[t].get().Add({{"cubeName",cubeName}}).Value()) {
-                                   map_metrics[serviceName].counters_family_[t].get().Add({{"cubeName",cubeName}})
-                                   .Increment(i.second.value - map_metrics[serviceName].counters_family_[t].get()
+                                if(i.second.value > map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}}).Value()) {
+                                   map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}})
+                                   .Increment(i.second.value - map_metrics[serviceName].counters_map.at(i.first).get()
                                    .Add({{"cubeName",cubeName}}).Value());
                                 }
                           } 
                           else if(i.second.typeMetric == "G") { // a gauge can go up and down
-                              t = map_metrics[serviceName].map_gauges_[i.first];
-                                map_metrics[serviceName].gauges_family_[t].get().Add({{"cubeName",cubeName}}).Set(i.second.value);
+                                map_metrics[serviceName].gauges_map.at(i.first).get().Add({{"cubeName",cubeName}}).Set(i.second.value);
                           }
                         }                      
                    }
@@ -1103,6 +1087,7 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
     response.send(Pistache::Http::Code::Bad_Request, e.what());
   }
 }
+
 
 }  // namespace polycubed
 }  // namespace polycube

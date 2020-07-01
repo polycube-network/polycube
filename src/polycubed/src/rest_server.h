@@ -170,10 +170,8 @@ class RestServer {
   // itself Note: families combine values with the same name, but distinct label dimensions
   // TODO maybe there are best ways
   struct Metric {
-    std::vector<std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_family_;
-    std::vector<std::reference_wrapper<prometheus::Family<prometheus::Gauge>>> gauges_family_;
-    std::map<std::string,std::size_t> map_gauges_;
-    std::map<std::string,std::size_t> map_counters_;
+    std::map<std::string,std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_map;
+    std::map<std::string,std::reference_wrapper<prometheus::Family<prometheus::Gauge>>> gauges_map;
   };
   // the map will contain the name of the service (not the cube) as a key
   // and the metric information taken from the yang files as the value

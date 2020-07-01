@@ -35,8 +35,8 @@ module router {
         key "ip";
         polycube-base:name-metric "router_secondaryip_ports";
         polycube-base:type-metric "G";
-        polycube-base:path-metric '$.ports[0].secondaryip.length';
-        polycube-base:help-metric "Number of ports of the router with secondary ip";
+        polycube-base:path-metric 'sum($.ports[*].secondaryip.length)';
+        polycube-base:help-metric "Number of secondary ip addresses of the router";
         leaf ip {
           type inet:ipv4-prefix;
           description "Secondary IP address and prefix of the port";

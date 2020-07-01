@@ -2,7 +2,6 @@
 
 source "${BASH_SOURCE%/*}/helpers.bash"
 
-
 # the expected result
 result='# HELP ddos_stats_pkts_packets Total Dropped Packets
 # TYPE ddos_stats_pkts_packets counter
@@ -16,7 +15,7 @@ ddos_stats_pkts_packets{cubeName="d1"} 0.000000
 # HELP router_ip_ports Number of ports of the router with ip
 # TYPE router_ip_ports gauge
 router_ip_ports{cubeName="r1"} 2.000000
-# HELP router_secondaryip_ports Number of ports of the router with secondary ip
+# HELP router_secondaryip_ports Number of secondary ip addresses of the router
 # TYPE router_secondaryip_ports gauge
 router_secondaryip_ports{cubeName="r1"} 3.000000
 # HELP router_ports Number of ports on the router
