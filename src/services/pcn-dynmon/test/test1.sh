@@ -39,9 +39,8 @@ polycubectl dm show
 polycubectl attach dm veth1
 
 
-
 # injecting a dataplane configuration
-curl -H "Content-Type: application/json" "localhost:9000/polycube/v1/dynmon/dm/dataplane" --upload-file $DIR/test_dataplane.json
+curl -H "Content-Type: application/json" "localhost:9000/polycube/v1/dynmon/dm/dataplane-config" --upload-file $DIR/test_dataplane.json
 polycubectl dm show
 
 set +e
@@ -50,9 +49,9 @@ set -e
 
 polycubectl dm metrics show
 polycubectl dm open-metrics show
-polycubectl dm metrics packets_total show
+polycubectl dm metrics ingress-metrics packets_total show
 
-metric_value=$(polycubectl dm metrics packets_total value show | sed -n "s/^\[\([0-9]*\)\]$/\1/p")
+metric_value=$(polycubectl dm metrics ingress-metrics packets_total value show | sed -n "s/^\[\([0-9]*\)\]$/\1/p")
 
 if [ $metric_value -eq 0 ] || [ $metric_value -lt $ping_result ];
 then 

@@ -1,15 +1,18 @@
 {
-    "name": "Packets counter probe",
-    "code": "\r\n BPF_ARRAY(PKT_COUNTER, uint64_t, 1);\r\n static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {\r\n unsigned int key = 0;\r\n uint64_t *pkt_counter = PKT_COUNTER.lookup(&key);\r\n if (!pkt_counter){\r\n    /*counter map not found !? */\r\n    return RX_OK;\r\n }\r\n *pkt_counter+=1;\r\n pcn_log(ctx, LOG_TRACE, \"counter: %d\", *pkt_counter);\r\n return RX_OK;\r\n }",
-    "metrics": [
-        {
-            "name": "packets_total",
-            "map-name": "PKT_COUNTER",
-            "open-metrics-metadata": {
-                "help": "This metric represents the number of packets that has traveled trough this probe.",
-                "type": "counter",
-                "labels": []
+    "ingress-path": {
+        "name": "Packets counter probe",
+        "code": "\r\n BPF_ARRAY(PKT_COUNTER, uint64_t, 1);\r\n static __always_inline int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {\r\n unsigned int key = 0;\r\n uint64_t *pkt_counter = PKT_COUNTER.lookup(&key);\r\n if (!pkt_counter){\r\n    /*counter map not found !? */\r\n    return RX_OK;\r\n }\r\n *pkt_counter+=1;\r\n pcn_log(ctx, LOG_TRACE, \"counter: %d\", *pkt_counter);\r\n return RX_OK;\r\n }",
+        "metric-configs": [
+            {
+                "name": "packets_total",
+                "map-name": "PKT_COUNTER",
+                "open-metrics-metadata": {
+                    "help": "This metric represents the number of packets that has traveled trough this probe.",
+                    "type": "counter",
+                    "labels": []
+                }
             }
-        }
-    ]
+        ]
+    },
+    "egress-path": {}
 }

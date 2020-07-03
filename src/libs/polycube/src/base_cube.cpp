@@ -68,6 +68,13 @@ RawTable BaseCube::get_raw_table(const std::string &table_name, int index,
   return std::move(t);
 }
 
+RawQueueStackTable BaseCube::get_raw_queuestack_table(const std::string &table_name, int index,
+                                 ProgramType type) {
+  int fd = get_table_fd(table_name, index, type);
+  RawQueueStackTable t(&fd);
+  return std::move(t);
+}
+
 void BaseCube::datapath_log_msg(const LogMsg *msg) {
   spdlog::level::level_enum level_ =
       logLevelToSPDLog((polycube::LogLevel)msg->level);

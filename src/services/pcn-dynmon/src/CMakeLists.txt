@@ -19,14 +19,19 @@ add_library(pcn-dynmon SHARED
   ${SERIALIZER_SOURCES}
   ${API_SOURCES}
   ${BASE_SOURCES}
-  Dataplane.cpp
-  DataplaneMetrics.cpp
-  DataplaneMetricsOpenMetricsMetadata.cpp
-  DataplaneMetricsOpenMetricsMetadataLabels.cpp
-  Dynmon.cpp
-  Metrics.cpp
-  MapExtractor.cpp
-  Dynmon-lib.cpp)
+        models/DataplaneConfig.cpp
+        models/PathConfig.cpp
+        models/MetricConfig.cpp
+        models/ExtractionOptions.cpp
+        models/OpenMetricsMetadata.cpp
+        models/Label.cpp
+        Dynmon.cpp
+        models/Metrics.cpp
+        models/Metric.cpp
+        extractor/MapExtractor.cpp
+        swap/SwapStateConfig.cpp
+        swap/CodeRewriter.cpp
+        Dynmon-lib.cpp)
 
 # load ebpf datapath code a variable
 load_file_as_variable(pcn-dynmon

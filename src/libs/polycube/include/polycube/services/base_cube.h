@@ -55,6 +55,9 @@ class BaseCube {
   // Accessors for tables
   RawTable get_raw_table(const std::string &table_name, int index = 0,
                          ProgramType type = ProgramType::INGRESS);
+
+  RawQueueStackTable get_raw_queuestack_table(const std::string &table_name, int index = 0,
+                                              ProgramType type = ProgramType::INGRESS);
   template <class ValueType>
   ArrayTable<ValueType> get_array_table(
       const std::string &table_name, int index = 0,
@@ -69,6 +72,11 @@ class BaseCube {
       ProgramType type = ProgramType::INGRESS);
   template <class KeyType, class ValueType>
   PercpuHashTable<KeyType, ValueType> get_percpuhash_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
+
+  template <class ValueType>
+  QueueStackTable<ValueType> get_queuestack_table(
       const std::string &table_name, int index = 0,
       ProgramType type = ProgramType::INGRESS);
 
@@ -135,6 +143,14 @@ PercpuHashTable<KeyType, ValueType> BaseCube::get_percpuhash_table(
   int fd = get_table_fd(table_name, index, type);
   return PercpuHashTable<KeyType, ValueType>(&fd);
 }
+
+template <class ValueType>
+QueueStackTable<ValueType> BaseCube::get_queuestack_table(
+    const std::string &table_name, int index, ProgramType type) {
+  int fd = get_table_fd(table_name, index, type);
+  return QueueStackTable<ValueType>(&fd);
+}
+
 
 }  // namespace service
 }  // namespace polycube
