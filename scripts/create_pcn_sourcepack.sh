@@ -2,7 +2,8 @@
 
 # This script is used to create an archive with all the polycube sources, including submodules. 
 # Currently github can create automatically the source pack, but it fails to include 
-# all the files belonging to submodules, hence making this function unsuitable for this project.
+# all the files belonging to submodules, hence making this function unsuitable for this project:
+#    https://github.community/t/create-release-that-contains-submodule/1329
 # This script allows to download either a specific branch or a tagged version of Polycube, 
 # and create both a ZIP and a TAR containing all the sources.
 # Put this script where you want to clone Polycube.
@@ -10,7 +11,7 @@
 
 DIR=`pwd`
 
-echo "example of zip name format: polycube-0.9.0-rc"
+echo "Example of compressed archive name format: polycube-0.9.0-rc"
 
 git clone https://github.com/polycube-network/polycube.git
 cd polycube
@@ -18,47 +19,48 @@ git submodule update --init --recursive
 
 # give the possibility to create an archive of a certain branch or tag
 echo "----------------------------------------------------------------"
-echo -n "digit b for branch or t for tag: "
+echo "Select if you want to archive a branch or a tagged version."
+echo -n "Type 'b' for branch or 't' for tag: "
 read choice
 
 if [ $choice == 'b' ]
 then	
 	echo "----------------------------------------------------------------"
-	echo "current branches"
+	echo "Current branches:"
 	git branch -a
 	
-	echo -n "digit the branch or press enter for master: "
+	echo -n "Type the branch name or press enter for master: "
 	read branch
 
 	if [ -z "$branch" ] || [ $branch == 'master' ]
 	then 
-		echo -n "digit the version: "
+		echo -n "Type the version: "
 		read version
-		echo "compressing Polycube master with version equal to $version ..." 
+		echo "Compressing Polycube master with version equal to $version ..." 
 	else
 		if [ `git branch -a | egrep "^[[:space:]]+${branch}$"` ]
 		then
-		    echo -n "digit the version: "
+		    echo -n "Type the version: "
 		    read version
 		    git checkout $branch
-		    echo "compressing Polycube $branch with version equal to $version ..." 
+		    echo "Compressing Polycube $branch with version equal to $version ..." 
 		else
-			echo "branch $branch does not exist"
+			echo "Branch $branch does not exist"
 			exit 0
 		fi		
 	fi
 elif [ $choice == 't' ] 
 then
 	echo "----------------------------------------------------------------"
-	echo "current tags"
+	echo "Current tags:"
 	git tag
 
-	echo -n "digit the tag: "
+	echo -n "Type the tag: "
 	read tag
 	if [ `git tag | egrep "${tag}$"` ]
 	then
 		git checkout $tag
-		echo "compressing Polycube with version equal to $tag ..."
+		echo "Compressing Polycube with version equal to $tag ..."
 		tag=${tag/v}
 		tag=${tag/-rc}
 		version=$tag
@@ -83,9 +85,9 @@ zip -rq $ZIP polycube-"$version"-rc -x '*.git*'
 
 if test -f "$ZIP"
 then
-	echo "$ZIP created"
+	echo "$ZIP created successfully"
 else 
-	echo "error: $ZIP not created"
+	echo "Error: $ZIP not created"
 fi
 
 # create tar
@@ -95,7 +97,7 @@ tar --exclude .git -czf $TAR polycube-"$version"-rc
 
 if test -f "$TAR"
 then
-	echo "$TAR created"
+	echo "$TAR created successfully"
 else 
-	echo "error: $TAR not created"
+	echo "Error: $TAR not created"
 fi
