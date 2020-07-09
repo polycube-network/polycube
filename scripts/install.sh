@@ -78,10 +78,13 @@ if [ "$MODE" == "update" ] ; then
   # from the current branch (default: master)
   git pull
   git submodule update --init --recursive
+
+  # Print the last commit in the current branch, just to make sure
+  # we're compiling exactly what we expect
+  git log -1
 fi
 
 mkdir -p build && cd build
-git log -1
 
 # depending on the mode different services are enabled
 if [ "$MODE" == "pcn-iptables" ]; then
