@@ -96,35 +96,6 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build Base Image') {
-            when {
-                triggeredBy 'TimerTrigger'
-            }
-            agent {
-                label "docker"
-            }
-            steps {
-                script {
-                    docker.withRegistry("", 'polycube-repo') {
-                        sh """
-                            export DOCKER_BUILDKIT=1
-                            docker system prune --all --force
-                            docker build . -t "polycubebot/base_image:${image_tag}" -f Dockerfile_base_image
-                            docker tag polycubebot/base_image:${image_tag} polycubebot/base_image:latest
-                            docker push polycubebot/base_image:${image_tag}
-                            docker push polycubebot/base_image:latest
-                        """
-                    }
-                }
-            }
-            post {
-                failure {
-                    script {
-                        setGithubStatus("${commit_id}", "pending", github_token, "polycube-network/polycube", "Docker Image Build", "Docker Image Build")
-                    }
-                }
-            }
-        }
         stage('Parallel Docker Build') {
             parallel {
                 stage("Build Docker Mode: default") {

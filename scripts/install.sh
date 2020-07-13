@@ -63,8 +63,10 @@ set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+source scripts/pre-requirements.sh
+
 echo "Install Prometheus-cpp"
-cd src/libs/prometheus-cpp
+cd $DIR/../src/libs/prometheus-cpp
 set +e
 if [ -d _build ]; then
     $SUDO rm -rf _build
@@ -75,9 +77,6 @@ cmake .. -DBUILD_SHARED_LIBS=ON
 make -j $(getconf _NPROCESSORS_ONLN)
 $SUDO make install
 
-cd $DIR/..
-
-source scripts/pre-requirements.sh
 
 echo "Install polycube"
 cd $DIR/..

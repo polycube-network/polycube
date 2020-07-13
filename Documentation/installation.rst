@@ -58,8 +58,8 @@ The list of available kernels is available at https://kernel.ubuntu.com/~kernel-
 Automatic installation from sources
 -----------------------------------
 
-If you are running ``Ubuntu >= 18.04`` and you do not want to manually install Polycube and its dependencies, you can use the install script available under the ``scripts`` folder.
-This scripts has been tested on ``Ubuntu 18.04``, ``Ubuntu 19.04`` and ``Ubuntu 20.04``.
+If you are running ``Ubuntu >= 18.04`` and you do not want to manually install Polycube and its dependencies, you can use the install script available under the ``scripts`` folder as follows: ``./scripts/install.sh``. **DO NOT** run with sudo privileges, it will automatically ask you the password when needed, but the entire operations needs to be run by a default user.
+The scripts has been tested on ``Ubuntu 18.04``, ``Ubuntu 19.04`` and ``Ubuntu 20.04``.
 
 Please notice that this script does not update the kernel version.
 
