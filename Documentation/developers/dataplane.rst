@@ -56,11 +56,31 @@ The VLAN handling in TC and XDP eBPF programs is a little bit different, so poly
 - uint8_t **pcn_vlan_pop_tag** (struct CTXTYPE* pkt);
 - uint8_t **pcn_vlan_push_tag** (struct CTXTYPE* pkt, u16 eth_proto, u32 vlan_id);
 
+Packet Timestamping
+*******************
+
+So far we know that computing packet's timestamp in eBPF is quite tricky, due to the lack of usable kernel helpers.
+The only supported function is **bpf_ktime_get_ns()**, which returns the value of a kernel MONOTONIC clock, meaning that
+if the device has gone to sleep/suspend that clock is not updated. Moreover, in the **ctx** structure the field **ctx->tstamp**
+has not a standard behaviour: we tested that this value can be:
+
+- empty
+- Unix epoch timestamp
+- Unknown (maybe kernel timer) timestamp
+
+We have introduced an helper function to compute such timestamp referring to Unix Epoch: **pcn_get_packet_epoch(ctx)**.
+What basically happens is that to all eBPF program is injected a flag **_EPOCH_BASE** containing a precomputed value. This value
+represents the **Unix_Epoch - Kernel_timer** at time X. Calling the helper would increase this value by **bpf_ktime_get_ns()**
+nanoseconds, thanks to you obtain the Unix Epoch time of when you call such helper.
+
+In the following release, it will be possible to compute the exact timestamp even though the device sleeps/suspends due to
+the introduction of a new **bpf_ktime_get_ns()** function, which in addition will consider the inactivity time (CLOCK_BOOTTIME instead of CLOCK_MONOTONIC).
 
 Known limitations
 *****************
 - Since you cannot send a packet on multiple ports, multicast, broadcast or any similar functionality has to be implemented in the control path.
 - The support for multiple eBPF programs is not yet documented.
+- Timestamp will not be exact if the device running Polycube sleeps/suspends during its execution.
 
 
 Debugging the data plane
