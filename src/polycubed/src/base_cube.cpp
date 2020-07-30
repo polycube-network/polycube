@@ -21,12 +21,32 @@
 namespace polycube {
 namespace polycubed {
 
+/** Function to compute a base Unix Epoch timestamp to be used as reference by
+ * all the timestamp computed using pcn_get_packet_epoch(ctx).
+ *
+ * Supposing the packet arrives at time X and we precomputed Unix Epoch and
+ * kernel timer at time Y:
+ *
+ * Epoch_at_X = Epoch_at_Y + (Kernel_at_X - Kernel_at_Y)
+ *
+ * where Kernel_at_X is given by the function bpf_ktime_get_ns()
+ * */
+uint64_t genBaseTime() {
+  // getting system clock (to retrieve Unix Epoch)
+  auto epoch = std::chrono::system_clock::now();
+  // getting the same time as bpf_ktime_get_ns()
+  auto up = std::chrono::steady_clock::now();
+  // return value to be summed to packet's bpf_ktime_get_ns()
+  return epoch.time_since_epoch().count() - up.time_since_epoch().count();
+}
+
 std::vector<std::string> BaseCube::cflags_ = {
     std::string("-D_POLYCUBE_MAX_NODES=") +
         std::to_string(PatchPanel::_POLYCUBE_MAX_NODES),
     std::string("-D_POLYCUBE_MAX_BPF_PROGRAMS=") +
         std::to_string(_POLYCUBE_MAX_BPF_PROGRAMS),
     std::string("-D_POLYCUBE_MAX_PORTS=") + std::to_string(_POLYCUBE_MAX_PORTS),
+    std::string("-D_EPOCH_BASE=") + std::to_string(genBaseTime()),
 };
 
 BaseCube::BaseCube(const std::string &name, const std::string &service_name,
@@ -496,6 +516,15 @@ int pcn_vlan_pop_tag(struct CTXTYPE *pkt);
 static __always_inline
 int pcn_vlan_push_tag(struct CTXTYPE *pkt, u16 eth_proto, u32 vlan_id);
 
+/* helper to get packet timestamp related to Unix Epoch */
+static __always_inline
+uint64_t pcn_get_packet_tstamp(struct CTXTYPE *ctx) {
+  /* Too much variadic, do not know a priori what timestamp is
+  if(ctx->tstamp != 0) {
+    return bpf_ntohl(ctx->tstamp);
+  }*/
+  return _EPOCH_BASE + bpf_ktime_get_ns();
+}
 )";
 
 }  // namespace polycubed
