@@ -24,7 +24,7 @@ module router {
         description "IP address and prefix of the port";
         polycube-base:cli-example "10.0.0.1/24";
         polycube-base:name-metric "router_ip_ports";
-        polycube-base:type-metric "G";
+        polycube-base:type-metric "GAUGE";
         polycube-base:path-metric "$.ports[?(@.ip != '')]";
         polycube-base:help-metric "Number of ports of the router with ip";
         polycube-base:type-operation "FILTER";
@@ -34,7 +34,7 @@ module router {
         description "Additional IP addresses for the port";
         key "ip";
         polycube-base:name-metric "router_secondaryip_ports";
-        polycube-base:type-metric "G";
+        polycube-base:type-metric "GAUGE";
         polycube-base:path-metric 'sum($.ports[*].secondaryip.length)';
         polycube-base:help-metric "Number of secondary ip addresses of the router";
         leaf ip {
@@ -49,7 +49,7 @@ module router {
         description "MAC address of the port";
         polycube-base:cli-example "B3:23:45:F5:3A";
         polycube-base:name-metric "router_ports"; // every ports has a MAC
-        polycube-base:type-metric "G";
+        polycube-base:type-metric "GAUGE";
         polycube-base:path-metric '$.ports.length';
         polycube-base:help-metric "Number of ports on the router";
       }
@@ -60,7 +60,7 @@ module router {
     key "network nexthop";
     description "Entry associated with the routing table";
     polycube-base:name-metric "router_route_routes";
-    polycube-base:type-metric "G";
+    polycube-base:type-metric "GAUGE";
     polycube-base:path-metric '$.route.length';
     polycube-base:help-metric "Number of entries in routing table";
     leaf network {
@@ -97,7 +97,7 @@ module router {
     key "address";
     description "Entry associated with the ARP table";
     polycube-base:name-metric "router_arp_table_entries";
-    polycube-base:type-metric "G";
+    polycube-base:type-metric "GAUGE";
     polycube-base:path-metric '$.arp-table.length';
     polycube-base:help-metric "Number of entries in arp table";
     leaf address {

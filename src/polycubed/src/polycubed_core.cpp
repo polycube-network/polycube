@@ -645,7 +645,7 @@ std::vector<std::string> PolycubedCore::get_servicectrls_names_vector() {
   return vector;
 }
 
-// returns all the names of all cubes
+// returns all the names of all running cubes (of all services)
 std::vector<std::string> PolycubedCore::get_names_cubes() {
   logger->debug("PolycubedCore: get cubes");
 

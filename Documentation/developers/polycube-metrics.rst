@@ -20,7 +20,7 @@ Done
 - [X] Access the entire json of a service and use jsonpath to read the value of a metric
 - [X] Definition of metrics per cube thanks to the use of labels (example: cubeName=d1)
 - [] Add metrics to other services
-- [] Add tests
+- [X] Add tests
 
 
 
@@ -58,7 +58,7 @@ To add a metric to a service you must add the extensions defined in polycube-bas
 
 - polycube-base:name-metric: you must respect OpenMetrics rules
 
-- polycube-base:type-metric: gauge, counter
+- polycube-base:type-metric: GAUGE, COUNTER
 
 - polycube-base:help-metric: a summary to help those who read the metrics
 

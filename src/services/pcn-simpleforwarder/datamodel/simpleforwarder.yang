@@ -20,7 +20,7 @@ module simpleforwarder {
     key "inport";
     description "Entry of the Actions table";
     polycube-base:name-metric "simpleforwarder_actions_entries";
-    polycube-base:type-metric "G";
+    polycube-base:type-metric "GAUGE";
     polycube-base:path-metric '$.actions.length';
     polycube-base:help-metric "Number of entries of the Actions table";
     leaf inport {

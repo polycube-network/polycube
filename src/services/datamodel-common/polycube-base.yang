@@ -59,7 +59,7 @@ module polycube-base {
   
     extension type-metric {
         argument "value";
-        description "Type of a metric";
+        description "Type of a metric, GAUGE, COUNTER";
     }
 
     extension path-metric {

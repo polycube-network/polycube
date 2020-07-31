@@ -306,7 +306,7 @@ void RestServer::setup_routes() {
 
   router_->addNotFoundHandler(bind(&RestServer::redirect, this));
 
-  // prometheus metrics
+  // add new endpoint to retrieve Prometheus-compatible metrics
   router_->get(base + std::string("/metrics"),
                bind(&RestServer::get_metrics, this));
 }
@@ -937,6 +937,12 @@ const std::string &RestServer::getPort() {
     return port;
 }
 
+/* 
+This function is called when Polycube is started. 
+It reads the yang of the various services and thanks to the added extensions, 
+it creates the appropriate data structures which will then be filled in the get_metrics 
+every time a request is made to the endpoint /metrics
+*/
 void RestServer::create_metrics() {
   logger->info("loading metrics from yang files");
   try {
@@ -950,12 +956,12 @@ void RestServer::create_metrics() {
       // for every service I get the array of InfoMetric
       auto metrics_service = core.get_service_controller(name_services[i]).get_infoMetrics();
       for(auto metric: metrics_service)  {
-        if (metric.typeMetric == "C") {
+        if (metric.typeMetric == COUNTER) {
           map_metrics[name_services[i]].counters_map.emplace(metric.nameMetric,std::ref(prometheus::BuildCounter()
                   .Name(metric.nameMetric)
                   .Help(metric.helpMetric)
                   .Register(*registry)));
-        } else if (metric.typeMetric == "G") {
+        } else if (metric.typeMetric == GAUGE) {
           map_metrics[name_services[i]].gauges_map.emplace(metric.nameMetric, std::ref( prometheus::BuildGauge()
                   .Name(metric.nameMetric)
                   .Help(metric.helpMetric)
@@ -972,7 +978,27 @@ void RestServer::create_metrics() {
 }
 
 
-// expose OpenMetrics
+/*
+In summary, every time you go to the endpoint /metrics, this function gets the json of each running
+ cube and thanks to the path-metric extension and using jsoncons(jsonpath) it recovers the value 
+ of that metric.
+The metric can be a Gauge (value that can go up and down) or Counter (value that can only go up).
+Furthermore, due to the fact that JSONPath does not allow in one query to apply an operator
+(for example length) after using a filter, the case labeled for now with "FILTER" must be considered 
+thanks to the extension type-operation.
+
+For more information, I wrote comments inside the function.
+
+What you get are metrics that respect the OpenMetrics format. Example:
+
+# TYPE ddos_blacklist_src_addresses gauge
+ddos_blacklist_src_addresses{cubeName="d1"} 4.000000
+ddos_blacklist_src_addresses{cubeName="d2"} 2.000000
+# HELP ddos_blacklist_dst_addresses Number of addresses in blacklist-dst
+# TYPE ddos_blacklist_dst_addresses gauge
+ddos_blacklist_dst_addresses{cubeName="d1"} 0.000000
+ddos_blacklist_dst_addresses{cubeName="d2"} 2.000000
+*/
 void RestServer::get_metrics(const Pistache::Rest::Request &request,
                              Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -1036,7 +1062,12 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
                       jsoncons::json cubeJson = jsoncons::json::parse(cubeStr);
 
                       for(auto& i: mapInfoMetricsService) {
-                       //TODO
+                       /* 
+                       I have considered the case where someone defines metrics in the yang of a service 
+                       but for some reason does not define the value of the path-metric. 
+                       Just write TODO and Polycube even having the data structures for that metric, 
+                       it will not try to retrieve the value.
+                       */
                        if(i.second.pathMetric.compare("TODO")!=0) {
                           jsoncons::json value = jsoncons::jsonpath::json_query(cubeJson,i.second.pathMetric);
                   
@@ -1046,14 +1077,14 @@ void RestServer::get_metrics(const Pistache::Rest::Request &request,
                            } else {
                             i.second.value = value[0].as_double(); //the value of the metric is the value returned 
                           } 
-                          if(i.second.typeMetric == "C") { // a counter can only go up
+                          if(i.second.typeMetric == COUNTER) { // a counter can only go up
                                 if(i.second.value > map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}}).Value()) {
                                    map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}})
                                    .Increment(i.second.value - map_metrics[serviceName].counters_map.at(i.first).get()
                                    .Add({{"cubeName",cubeName}}).Value());
                                 }
                           } 
-                          else if(i.second.typeMetric == "G") { // a gauge can go up and down
+                          else if(i.second.typeMetric == GAUGE) { // a gauge can go up and down
                                 map_metrics[serviceName].gauges_map.at(i.first).get().Add({{"cubeName",cubeName}}).Set(i.second.value);
                           }
                         }                      

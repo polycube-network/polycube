@@ -212,6 +212,11 @@ void Yang::ParseList(
   // maps the original key name with the one fixed (in case of duplicate
   // names in the YANG tree
   auto key_name_fixed = std::unordered_map<std::string, std::string>();
+  /*
+  Check that in the element of the yang that is being parsed (in this case a list), 
+  there are the extensions used to define the metrics. 
+  If name_metric is empty then it means that they are not present and I skip the if directly.
+  */
   const auto &name_metric = FetchExtensionByIndex(
       list->ext,
       GetExtensionIndex(list->ext, list->ext_size, "name-metric", 11));
@@ -307,33 +312,6 @@ void Yang::ParseList(
   }
   parent->AddChild(std::move(resource));
 }
-
-/* TODO
-void Yang::ParseAugment(
-            const lys_node_augment *augment, std::queue<std::string> parsed_names,
-            const std::shared_ptr<Resources::Body::ParentResource> &parent,
-            const bool generate_endpoint, ServiceMetadata *md) const {
-        const auto &name_metric = FetchExtensionByIndex(
-                augment->ext,
-                GetExtensionIndex(augment->ext, augment->ext_size, "name-metric", 11));
-        if(!name_metric.empty()) {
-            const auto &type_metric = FetchExtensionByIndex(
-                    augment->ext,
-                    GetExtensionIndex(augment->ext, augment->ext_size, "type-metric", 11));
-            const auto &path_metric = FetchExtensionByIndex(
-                    augment->ext,
-                    GetExtensionIndex(augment->ext, augment->ext_size, "path-metric", 11));
-            const auto &help_metric = FetchExtensionByIndex(
-                    augment->ext,
-                    GetExtensionIndex(augment->ext, augment->ext_size, "help-metric", 11));
-            const auto &type_operation = FetchExtensionByIndex(
-                    augment->ext,
-                    GetExtensionIndex(augment->ext, augment->ext_size, "type-operation", 11));
-            md->Metrics.push_back({name_metric, type_metric, path_metric, help_metric,type_operation});
-
-        }
-    }
-*/
 
 void Yang::ParseLeaf(
     const lys_node_leaf *leaf, std::queue<std::string> parsed_names,

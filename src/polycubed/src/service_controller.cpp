@@ -340,6 +340,7 @@ std::map <std::string,InfoMetric> ServiceController::get_mapInfoMetrics() const 
   return retMap;
 }
 
+//return all names of running cubes of a certain service
 std::vector<std::string> ServiceController::get_names_cubes() const {
     return factory_.get_names_cubes();
 }

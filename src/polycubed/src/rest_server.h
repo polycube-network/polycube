@@ -19,6 +19,10 @@
 // TODO: to be removed once pistache is fixed
 #define PISTACHE_USE_SSL
 
+//used in create_metrics and get_metrics
+#define COUNTER "COUNTER"
+#define GAUGE "GAUGE"
+
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 
