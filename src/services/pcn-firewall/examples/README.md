@@ -4,6 +4,7 @@ The example folder contains a set of simple scripts to understand how the firewa
 ## Prerequisites
 All scripts assume that polycubed has been already launched, and that there is a standard cube running with two ports belonging to two namespaces already created and configured. Moreover, a firewall instance should be running and attached to one of the standard cube's port.
 To set up all the needed components, please execute the script [setup_env.sh](./setup_env.sh).
+Moreover, these examples contain a set of rules to allow some traffic, while denying the rest of it. To make this happen, since the default policy is FORWARD, the setup script automatically patches the default rule to DROP.
 
 ## Examples:
 - [Ping](./allow_ping.sh): Connects the firewall to one of the standard cube's port, and allows only the ICMP echo requests/responses. In order to test that the configuration succeeded, you can launch the script [test_ping.sh](./test_ping.sh).
@@ -14,7 +15,7 @@ To set up all the needed components, please execute the script [setup_env.sh](./
 - [Transactions](./use_transactions.sh): This example is like the Ping one, as the rule set is the same, but it shows how to use transactions instead of the interactive mode. This mode is strongly suggested when more than one rule has to be inserted, like in the example. **For each chain**, after the rules have been inserted, the command `polycubectl firewall fw chain INGRESS apply-rules` (*for the ingress chain*) is issued to apply the rule set, requiring a single interaction with the datapath.
 - [Host Mode](./host_mode.sh): This example shows how to use the firewall in the host mode, intercepting the traffic **from the outside to the host**. At the moment it is not possible to intercept traffic in the other direction. This example considers the physical interface connected to the internet.
 
-Please note that some example does not volountarly delete used resources like firewall or network namespace, since a user can play with multiple rules (e.g. allow IP and TCP). Thus, the behaviour of some tests may change depending on the allowed scripts run.
+Please note that some example does not voluntarily delete used resources like firewall or network namespace, since a user can play with multiple rules (e.g. allow IP and TCP). Thus, the behaviour of some tests may change depending on the allowed scripts run.
 
 To cleanup the entire environment or only the firewall's rules, refer to the following sections.
 

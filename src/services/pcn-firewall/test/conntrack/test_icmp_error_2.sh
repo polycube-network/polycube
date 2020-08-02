@@ -14,18 +14,15 @@ create_veth 2
 
 polycubectl firewall add fw loglevel=DEBUG
 polycubectl attach fw veth1
-polycubectl firewall fw set interactive=false
 
 # Allowing connections to be started only from NS2 to NS1
 polycubectl firewall fw chain INGRESS append l4proto=UDP action=FORWARD
 polycubectl firewall fw chain INGRESS append l4proto=ICMP conntrack=RELATED action=FORWARD
 polycubectl firewall fw chain INGRESS append l4proto=ICMP action=DROP
-polycubectl firewall fw chain INGRESS apply-rules
 
 polycubectl firewall fw chain EGRESS append l4proto=UDP action=FORWARD
 polycubectl firewall fw chain EGRESS append l4proto=ICMP conntrack=RELATED action=FORWARD
 polycubectl firewall fw chain EGRESS append l4proto=ICMP action=DROP
-polycubectl firewall fw chain EGRESS apply-rules
 
 set +x
 echo "ICMP Error Conntrack Test [Transaction mode]"

@@ -21,8 +21,6 @@ FirewallJsonObject::FirewallJsonObject() {
   m_nameIsSet = false;
   m_conntrackIsSet = false;
   m_acceptEstablishedIsSet = false;
-  m_interactive = true;
-  m_interactiveIsSet = true;
   m_sessionTableIsSet = false;
   m_chainIsSet = false;
 }
@@ -32,7 +30,6 @@ FirewallJsonObject::FirewallJsonObject(const nlohmann::json &val) :
   m_nameIsSet = false;
   m_conntrackIsSet = false;
   m_acceptEstablishedIsSet = false;
-  m_interactiveIsSet = false;
   m_sessionTableIsSet = false;
   m_chainIsSet = false;
 
@@ -47,10 +44,6 @@ FirewallJsonObject::FirewallJsonObject(const nlohmann::json &val) :
 
   if (val.count("accept-established")) {
     setAcceptEstablished(string_to_FirewallAcceptEstablishedEnum(val.at("accept-established").get<std::string>()));
-  }
-
-  if (val.count("interactive")) {
-    setInteractive(val.at("interactive").get<bool>());
   }
 
   if (val.count("session-table")) {
@@ -88,10 +81,6 @@ nlohmann::json FirewallJsonObject::toJson() const {
 
   if (m_acceptEstablishedIsSet) {
     val["accept-established"] = FirewallAcceptEstablishedEnum_to_string(m_acceptEstablished);
-  }
-
-  if (m_interactiveIsSet) {
-    val["interactive"] = m_interactive;
   }
 
   {
@@ -203,22 +192,6 @@ FirewallAcceptEstablishedEnum FirewallJsonObject::string_to_FirewallAcceptEstabl
   if (JsonObjectBase::iequals("off", str))
     return FirewallAcceptEstablishedEnum::OFF;
   throw std::runtime_error("Firewall acceptEstablished is invalid");
-}
-bool FirewallJsonObject::getInteractive() const {
-  return m_interactive;
-}
-
-void FirewallJsonObject::setInteractive(bool value) {
-  m_interactive = value;
-  m_interactiveIsSet = true;
-}
-
-bool FirewallJsonObject::interactiveIsSet() const {
-  return m_interactiveIsSet;
-}
-
-void FirewallJsonObject::unsetInteractive() {
-  m_interactiveIsSet = false;
 }
 
 const std::vector<SessionTableJsonObject>& FirewallJsonObject::getSessionTable() const{
