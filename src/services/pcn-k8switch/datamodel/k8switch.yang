@@ -55,6 +55,11 @@ module k8switch {
   list service {
     key "vip vport proto";
     description "Services (i.e., virtual ip:protocol:port) exported to the client";
+    polycube-base:name-metric "k8switch_service_client_exported_services";
+    polycube-base:type-metric "GAUGE";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of services exported to the client";
+
     leaf name {
       type string;
       description "Service name related to the backend server of the pool is connected to";
@@ -85,6 +90,11 @@ module k8switch {
     list backend {
       key "ip port";
       description "Pool of backend servers that actually serve requests";
+      polycube-base:name-metric "k8switch_backend_servers";
+      polycube-base:type-metric "GAUGE";
+      polycube-base:path-metric 'TODO';
+      polycube-base:help-metric "Number of backend servers that actually serve requests";
+
       leaf name {
         type string;
         description "name";
@@ -114,6 +124,10 @@ module k8switch {
   list fwd-table {
     key "address";
     description "Entry associated with the forwarding table";
+    polycube-base:name-metric "k8switch_fwd_table_entries";
+    polycube-base:type-metric "GAUGE";
+    polycube-base:path-metric 'TODO';
+    polycube-base:help-metric "Number of entries associated with the forwarding table";
     leaf address {
       type inet:ip-prefix;
       mandatory true;

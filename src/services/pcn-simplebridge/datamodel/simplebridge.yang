@@ -30,6 +30,10 @@ module simplebridge {
     list entry {
       key "address";
       description "Entry associated with the filtering database";
+      polycube-base:name-metric "simplebridge_entry_fdb_number_entries";
+      polycube-base:type-metric "GAUGE";
+      polycube-base:path-metric '$.fdb.entry.length';
+      polycube-base:help-metric "Number of entries associated with the filtering database";
       leaf address {
         type yang:mac-address;
         mandatory true;

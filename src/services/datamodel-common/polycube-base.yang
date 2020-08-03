@@ -52,6 +52,30 @@ module polycube-base {
     description "TODO";
   }
 
+    extension name-metric {
+        argument "value";
+        description "Name of a metric";
+    }
+  
+    extension type-metric {
+        argument "value";
+        description "Type of a metric, GAUGE, COUNTER";
+    }
+
+    extension path-metric {
+        argument "value";
+        description "Json path of a metric";
+    }
+
+    extension help-metric {
+        argument "value";
+        description "Help section of a metric";
+    }
+    extension type-operation {
+        argument "value";
+        description "Type of operation after json query";
+    }
+
   grouping base-yang-module {
     leaf uuid {
       type polycube-uuid;

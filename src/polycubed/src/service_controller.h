@@ -55,6 +55,10 @@ class ServiceController {
   json to_json() const;
   json to_json_datamodel() const;
 
+  std::vector<std::string> get_names_cubes() const;
+  std::map <std::string,InfoMetric > get_mapInfoMetrics() const;
+  std::vector<InfoMetric> get_infoMetrics() const;
+
   std::string get_name() const;
   std::string get_description() const;
   std::string get_version() const;

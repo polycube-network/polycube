@@ -636,5 +636,36 @@ CubesDump *PolycubedCore::get_cubes_dump() {
   return cubes_dump_;
 }
 
+// new function: in create_metrics you need the array of names
+std::vector<std::string> PolycubedCore::get_servicectrls_names_vector() {
+  std::vector<std::string> vector;
+  for (auto &it : servicectrls_map_) {
+    vector.push_back(it.first);
+  }
+  return vector;
+}
+
+// returns all the names of all running cubes (of all services)
+std::vector<std::string> PolycubedCore::get_names_cubes() {
+  logger->debug("PolycubedCore: get cubes");
+
+  std::vector<std::string> names_cubes;
+  auto cubes = ServiceController::get_all_cubes();
+  for (auto &it : cubes) {
+    names_cubes.push_back(it->get_name());
+  }
+  return names_cubes;
+}
+
+std::string PolycubedCore::get_cube_service(const std::string &name) {
+  logger->debug("PolycubedCore: get cube {0}", name);
+  auto serviceName = ServiceController::get_cube_service(name);
+  if (serviceName.empty()) {
+    logger->warn("no cube present with name {0}", name);
+    throw std::runtime_error("Cube does not exist");
+  }
+  return serviceName;
+}
+
 }  // namespace polycubed
 }  // namespace polycube
