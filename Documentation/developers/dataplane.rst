@@ -56,10 +56,10 @@ The VLAN handling in TC and XDP eBPF programs is a little bit different, so poly
 - uint8_t **pcn_vlan_pop_tag** (struct CTXTYPE* pkt);
 - uint8_t **pcn_vlan_push_tag** (struct CTXTYPE* pkt, u16 eth_proto, u32 vlan_id);
 
-Packet Timestamping
+Timestamping
 *******************
 
-So far we know that computing packet's timestamp in eBPF is quite tricky, due to the lack of usable kernel helpers.
+So far we know that computing timestamp in eBPF is quite tricky, due to the lack of usable kernel helpers.
 The only supported function is **bpf_ktime_get_ns()**, which returns the value of a kernel MONOTONIC clock, meaning that
 if the device has gone to sleep/suspend that clock is not updated. Moreover, in the **ctx** structure the field **ctx->tstamp**
 has not a standard behaviour: we tested that this value can be:
@@ -68,7 +68,7 @@ has not a standard behaviour: we tested that this value can be:
 - Unix epoch timestamp
 - Unknown (maybe kernel timer) timestamp
 
-We have introduced an helper function to compute such timestamp referring to Unix Epoch: **pcn_get_packet_epoch(ctx)**.
+We have introduced an helper function to compute such timestamp referring to Unix Epoch: **pcn_get_time_epoch()**.
 What basically happens is that to all eBPF program is injected a flag **_EPOCH_BASE** containing a precomputed value. This value
 represents the **Unix_Epoch - Kernel_timer** at time X. Calling the helper would increase this value by **bpf_ktime_get_ns()**
 nanoseconds, thanks to you obtain the Unix Epoch time of when you call such helper.
