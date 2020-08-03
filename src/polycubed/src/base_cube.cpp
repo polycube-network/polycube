@@ -516,13 +516,9 @@ int pcn_vlan_pop_tag(struct CTXTYPE *pkt);
 static __always_inline
 int pcn_vlan_push_tag(struct CTXTYPE *pkt, u16 eth_proto, u32 vlan_id);
 
-/* helper to get packet timestamp related to Unix Epoch */
+/* helper to get time related to Unix Epoch */
 static __always_inline
-uint64_t pcn_get_packet_tstamp(struct CTXTYPE *ctx) {
-  /* Too much variadic, do not know a priori what timestamp is
-  if(ctx->tstamp != 0) {
-    return bpf_ntohl(ctx->tstamp);
-  }*/
+uint64_t pcn_get_time_epoch() {
   return _EPOCH_BASE + bpf_ktime_get_ns();
 }
 )";
