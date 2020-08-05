@@ -8,5 +8,6 @@ swagger-codegen*
 cmake-build-debug/*
 Vagrantfile
 libyang
+src/libs/prometheus-cpp/_build/
 
 cmake-build-debug/
