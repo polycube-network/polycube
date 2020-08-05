@@ -109,14 +109,6 @@ void Firewall::packet_in(polycube::service::Direction direction,
   }
 }
 
-bool Firewall::getInteractive() {
-  return interactive_;
-}
-
-void Firewall::setInteractive(const bool &value) {
-  interactive_ = value;
-}
-
 FirewallAcceptEstablishedEnum Firewall::getAcceptEstablished() {
   if (this->conntrackMode == ConntrackModes::AUTOMATIC) {
     return FirewallAcceptEstablishedEnum::ON;

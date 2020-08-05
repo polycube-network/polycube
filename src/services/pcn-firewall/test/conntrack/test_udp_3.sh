@@ -1,8 +1,12 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+BATCH_FILE="/tmp/batch.json"
+batch='{"rules":['
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
+  rm -f $BATCH_FILE
   delete_veth 2
 }
 trap fwcleanup EXIT
@@ -14,17 +18,17 @@ create_veth 2
 
 polycubectl firewall add fw loglevel=DEBUG
 polycubectl attach fw veth1
-polycubectl firewall fw set interactive=false
 
 polycubectl firewall fw set accept-established=ON
 
 # Allowing connections to be started only from NS2 to NS1
+set +x
 polycubectl firewall fw chain INGRESS append l4proto=ICMP action=FORWARD
-polycubectl firewall fw chain INGRESS apply-rules
+polycubectl firewall fw chain INGRESS set default=DROP
 
 polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=NEW action=FORWARD
 polycubectl firewall fw chain EGRESS append l4proto=ICMP action=FORWARD
-polycubectl firewall fw chain EGRESS apply-rules
+polycubectl firewall fw chain EGRESS set default=DROP
 
 echo "UDP Conntrack Test [Automatic forward][Transaction mode]"
 

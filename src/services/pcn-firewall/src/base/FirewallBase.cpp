@@ -28,9 +28,6 @@ void FirewallBase::update(const FirewallJsonObject &conf) {
   if (conf.acceptEstablishedIsSet()) {
     setAcceptEstablished(conf.getAcceptEstablished());
   }
-  if (conf.interactiveIsSet()) {
-    setInteractive(conf.getInteractive());
-  }
   if (conf.sessionTableIsSet()) {
     for (auto &i : conf.getSessionTable()) {
       auto src = i.getSrc();
@@ -58,7 +55,6 @@ FirewallJsonObject FirewallBase::toJsonObject() {
   conf.setName(getName());
   conf.setConntrack(getConntrack());
   conf.setAcceptEstablished(getAcceptEstablished());
-  conf.setInteractive(getInteractive());
   for(auto &i : getSessionTableList()) {
     conf.addSessionTable(i->toJsonObject());
   }

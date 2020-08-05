@@ -22,10 +22,10 @@
 #include <mutex>
 #include "../Firewall.h"
 
+#include "ChainBatchInputJsonObject.h"
 #include "ChainJsonObject.h"
 #include "ChainAppendInputJsonObject.h"
 #include "ChainAppendOutputJsonObject.h"
-#include "ChainApplyRulesOutputJsonObject.h"
 #include "ChainDeleteInputJsonObject.h"
 #include "ChainInsertInputJsonObject.h"
 #include "ChainInsertOutputJsonObject.h"
@@ -45,7 +45,7 @@ using namespace polycube::service::model;
 namespace FirewallApiImpl {
   void create_firewall_by_id(const std::string &name, const FirewallJsonObject &value);
   ChainAppendOutputJsonObject create_firewall_chain_append_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainAppendInputJsonObject &value);
-  ChainApplyRulesOutputJsonObject create_firewall_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName);
+  void create_firewall_chain_batch_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainBatchInputJsonObject &value);
   void create_firewall_chain_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainJsonObject &value);
   void create_firewall_chain_delete_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainDeleteInputJsonObject &value);
   ChainInsertOutputJsonObject create_firewall_chain_insert_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainInsertInputJsonObject &value);
@@ -88,7 +88,6 @@ namespace FirewallApiImpl {
   std::string read_firewall_chain_stats_src_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   std::string read_firewall_chain_stats_tcpflags_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id);
   FirewallConntrackEnum read_firewall_conntrack_by_id(const std::string &name);
-  bool read_firewall_interactive_by_id(const std::string &name);
   std::vector<FirewallJsonObject> read_firewall_list_by_id();
   SessionTableJsonObject read_firewall_session_table_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
   uint32_t read_firewall_session_table_eta_by_id(const std::string &name, const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport);
@@ -107,7 +106,6 @@ namespace FirewallApiImpl {
   void update_firewall_chain_rule_by_id(const std::string &name, const ChainNameEnum &chainName, const uint32_t &id, const ChainRuleJsonObject &value);
   void update_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameEnum &chainName, const std::vector<ChainRuleJsonObject> &value);
   void update_firewall_conntrack_by_id(const std::string &name, const FirewallConntrackEnum &value);
-  void update_firewall_interactive_by_id(const std::string &name, const bool &value);
   void update_firewall_list_by_id(const std::vector<FirewallJsonObject> &value);
 
   /* help related */

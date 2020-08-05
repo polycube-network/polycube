@@ -106,22 +106,23 @@ create_firewall_chain_append_by_id(const std::string &name, const ChainNameEnum 
 }
 
 /**
-* @brief   Create apply-rules by ID
+* @brief   Create batch by ID
 *
-* Create operation of resource: apply-rules*
+* Create operation of resource: batch*
 *
 * @param[in] name ID of name
 * @param[in] chainName ID of chain_name
+* @param[in] value batchbody object
 *
 * Responses:
-* ChainApplyRulesOutputJsonObject
+*
 */
-ChainApplyRulesOutputJsonObject
-create_firewall_chain_apply_rules_by_id(const std::string &name, const ChainNameEnum &chainName) {
+void
+create_firewall_chain_batch_by_id(const std::string &name, const ChainNameEnum &chainName, const ChainBatchInputJsonObject &value) {
   auto firewall = get_cube(name);
   auto chain = firewall->getChain(chainName);
-  return chain->applyRules();
 
+  return chain->batch(value);
 }
 
 /**
@@ -943,25 +944,6 @@ read_firewall_conntrack_by_id(const std::string &name) {
 
 }
 
-
-/**
-* @brief   Read interactive by ID
-*
-* Read operation of resource: interactive*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* bool
-*/
-bool
-read_firewall_interactive_by_id(const std::string &name) {
-  auto firewall = get_cube(name);
-  return firewall->getInteractive();
-
-}
-
-
 /**
 * @brief   Read session-table by ID
 *
@@ -1271,25 +1253,6 @@ update_firewall_conntrack_by_id(const std::string &name, const FirewallConntrack
   auto firewall = get_cube(name);
 
   return firewall->setConntrack(value);
-}
-
-
-/**
-* @brief   Update interactive by ID
-*
-* Update operation of resource: interactive*
-*
-* @param[in] name ID of name
-* @param[in] value Interactive mode applies new rules immediately; if &#39;false&#39;, the command &#39;apply-rules&#39; has to be used to apply all the rules at once. Default is TRUE.
-*
-* Responses:
-*
-*/
-void
-update_firewall_interactive_by_id(const std::string &name, const bool &value) {
-  auto firewall = get_cube(name);
-
-  return firewall->setInteractive(value);
 }
 
 /**

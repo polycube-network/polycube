@@ -50,12 +50,6 @@ class FirewallBase : public virtual polycube::service::TransparentCube {
   virtual void setAcceptEstablished(const FirewallAcceptEstablishedEnum &value) = 0;
 
   /// <summary>
-  /// Interactive mode applies new rules immediately; if &#39;false&#39;, the command &#39;apply-rules&#39; has to be used to apply all the rules at once. Default is TRUE.
-  /// </summary>
-  virtual bool getInteractive() = 0;
-  virtual void setInteractive(const bool &value) = 0;
-
-  /// <summary>
   ///
   /// </summary>
   virtual std::shared_ptr<SessionTable> getSessionTable(const std::string &src, const std::string &dst, const std::string &l4proto, const uint16_t &sport, const uint16_t &dport) = 0;

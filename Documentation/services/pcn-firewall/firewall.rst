@@ -43,17 +43,40 @@ Rule insertion
 
 Rule insertion is guaranteed to be *atomic*: during the computation of the new datapath, the old rule set is used until the new rule set is ready, and only at that moment the new policies will be applied.
 
-Rule insertion is an expensive operation. For this reason, there are two modes that can be used based on the needs:
+Rule insertion is an expensive operation. For this reason, we have thought about different endpoints to optimize expensive operations:
 
-  - ``Interactive mode:`` this is the default mode. It makes the commands to modify policies synchronous, so that they return only when the modification is reflected in the datapath. This is the slowest mode, as it requires to recompute the datapath for each command, but it has the advantage that a command returns only when the operation is completed.
-  - ``Transaction mode:`` in this mode commands on the policies are chained and asynchronously applied to the datapath altogether when the user asks it. The performance gain is sensible when commands have to be issued together (e.g. a set of rules), as it requires only one interaction with the datapath at the end. To switch in the transaction mode, it is necessary to issue the command ``polycubectl firewall fwname set interactive=false``. In this way, rules can be inserted normally, but to apply them the command ``polycubectl firewall fwname chain INGRESS apply-rules`` has to be issued. Notice: this command is specific for the chain, and updates the specified chain only.
+  - ``/insert``, ``/delete``, ``/append`` and ``PUT`` on ``rule/<id>`` (update): these endpoints are used to perform a single operation on a rule. As soon as the rule-set is updated, it is compiled and all the modifications are immediately inserted in the datapath.
+  - ``/batch``: as suggested by the name, this endpoint is used to perform multiple operation on a single HTTP request. Instead of compiling the new rule-set as soon as a single operation is fulfilled, it waits for all the actions described in the request to be executed. Finally, a single compilation is performed and the datapath is updated once.
 
+Concerning the batch endpoint, it accepts a JSON list of rules like:
+
+.. code-block:: bash
+
+    {
+      "rules": [
+        {"operation": "insert", "id": 0, "l4proto":"TCP", "src":"192.168.1.1/32", "dst":"192.168.1.10/24", "action":"drop"},
+        {"operation": "append", "l4proto": "ICMP", "src":"192.168.1.100/32", "dst":"192.168.1.100/24", "action":"drop"},
+        {"operation": "update", "id": 0, "l4proto":"TCP", "src":"192.168.1.2/32", "dst":"192.168.1.20/24", "action":"forward"},
+        {"operation": "delete", "id": 0},
+        {"operation": "delete", "l4proto":"ICMP", "src":"192.168.1.100/32", "dst":"192.168.1.100/24", "action":"drop"}
+      ]
+    }
+
+
+As you can see, every element of the ``rules`` array MUST contain an operation (insert, append, update, delete) plus a rule/id which is the actual target.
+All the listed operation are performed sequentially, meaning that the user must sent the operation already ordered as he wants. Pay attention when sending some DELETE with other INSERT, you have to take in mind that during such operations IDs may vary (increase or decrease).
+
+This features is also available from the ``polycubectl`` command line. It is strongly suggested to create a JSON file containing the batch of rules and then type:
+
+``polycubectl firewall <fwname> chain <chainname> batch rules= < filename.json``
+
+Using the redirection diamond you are able to insert the file content in the body of the HTTP POST request generated from the command.
 
 Default action
 ^^^^^^^^^^^^^^
 
-The default action if no rule is matched is drop. This can be changed for each chain independently by issuing the command
-``polycubectl firewall fwname chain INGRESS set default=FORWARD`` or ``polycubectl firewall fwname chain EGRESS set default=FORWARD``.
+The default action if no rule is matched is forward. This can be changed for each chain independently by issuing the command
+``polycubectl firewall fwname chain INGRESS set default=DROP`` or ``polycubectl firewall fwname chain EGRESS set default=DROP``.
 
 Statistics
 ^^^^^^^^^^
@@ -65,6 +88,7 @@ Examples
 
 The `examples source folder <https://github.com/polycube-network/polycube/tree/master/src/services/pcn-firewall/examples/>`_ contains some simple scripts to show how to configure the service.
 
+Also under the test directory, there are plenty of scripts that test the firewall using both single and batch rule insertion/deletion.
 
 
 Implementation details

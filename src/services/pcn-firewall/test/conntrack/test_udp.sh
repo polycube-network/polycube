@@ -20,10 +20,12 @@ polycubectl firewall fw set accept-established=OFF
 # Allowing connections to be started only from NS2 to NS1
 polycubectl firewall fw chain INGRESS append l4proto=UDP conntrack=ESTABLISHED action=FORWARD
 polycubectl firewall fw chain INGRESS append l4proto=ICMP action=FORWARD
+polycubectl firewall fw chain INGRESS set default=DROP
 
 polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=NEW action=FORWARD
 polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=ESTABLISHED action=FORWARD
 polycubectl firewall fw chain EGRESS append l4proto=ICMP action=FORWARD
+polycubectl firewall fw chain EGRESS set default=DROP
 
 echo "UDP Conntrack Test [No automatic forward][Interactive mode]"
 
