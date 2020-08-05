@@ -44,7 +44,7 @@ class Chain : public ChainBase {
   void update(const ChainJsonObject &conf) override;
 
   /// <summary>
-  /// Default action if no rule matches in the ingress chain. Default is DROP.
+  /// Default action if no rule matches in the ingress chain. Default is FORWARD.
   /// </summary>
   ActionEnum getDefault() override;
   void setDefault(const ActionEnum &value) override;
@@ -81,16 +81,26 @@ class Chain : public ChainBase {
   ChainAppendOutputJsonObject append(ChainAppendInputJsonObject input) override;
   ChainInsertOutputJsonObject insert(ChainInsertInputJsonObject input) override;
   void deletes(ChainDeleteInputJsonObject input) override;
+  /**
+   * Method to accept a list of operations to be performed. Useful for multiple insertion/deletion or
+   * even mixed operation (10 insert and 2 delete).
+   *
+   * Supported: "insert", "append", "update", "delete"
+   *
+   * @param input the list of rules to apply
+   */
+  void batch(ChainBatchInputJsonObject input) override;
   ChainResetCountersOutputJsonObject resetCounters() override;
-  ChainApplyRulesOutputJsonObject applyRules() override;
 
   uint32_t getNrRules();
 
  private:
-  ActionEnum defaultAction = ActionEnum::DROP;
+  ActionEnum defaultAction = ActionEnum::FORWARD;
   ChainNameEnum name;
   std::vector<std::shared_ptr<ChainRule>> rules_;
   std::vector<std::shared_ptr<ChainStats>> counters_;
+  // to avoid updateChain() every operation during batch or rule set insert/delete
+  bool is_single_op_on_chain = true;
 
   // This keeps track of the chain currently used, primary or secondary.
   uint8_t chainNumber = 0;

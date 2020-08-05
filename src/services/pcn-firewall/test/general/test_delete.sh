@@ -17,6 +17,8 @@ create_veth 2
 
 polycubectl firewall add fw loglevel=DEBUG
 polycubectl attach fw veth1
+polycubectl firewall fw chain INGRESS set default=DROP
+polycubectl firewall fw chain EGRESS set default=DROP
 
 #matched rules
 polycubectl firewall fw chain INGRESS append src=10.0.0.1 dst=10.0.0.2 l4proto=ICMP action=FORWARD

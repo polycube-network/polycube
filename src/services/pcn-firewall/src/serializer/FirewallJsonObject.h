@@ -74,14 +74,6 @@ public:
   static FirewallAcceptEstablishedEnum string_to_FirewallAcceptEstablishedEnum(const std::string &str);
 
   /// <summary>
-  /// Interactive mode applies new rules immediately; if &#39;false&#39;, the command &#39;apply-rules&#39; has to be used to apply all the rules at once. Default is TRUE.
-  /// </summary>
-  bool getInteractive() const;
-  void setInteractive(bool value);
-  bool interactiveIsSet() const;
-  void unsetInteractive();
-
-  /// <summary>
   ///
   /// </summary>
   const std::vector<SessionTableJsonObject>& getSessionTable() const;
@@ -104,8 +96,6 @@ private:
   bool m_conntrackIsSet;
   FirewallAcceptEstablishedEnum m_acceptEstablished;
   bool m_acceptEstablishedIsSet;
-  bool m_interactive;
-  bool m_interactiveIsSet;
   std::vector<SessionTableJsonObject> m_sessionTable;
   bool m_sessionTableIsSet;
   std::vector<ChainJsonObject> m_chain;

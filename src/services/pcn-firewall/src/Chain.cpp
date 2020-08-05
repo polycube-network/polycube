@@ -71,7 +71,7 @@ void Chain::setDefault(const ActionEnum &value) {
       parent_.egress_programs[ModulesConstants::DEFAULTACTION]->reload();
     }
 
-  } catch (std::runtime_error re) {
+  } catch (std::runtime_error &re) {
     logger()->error(
         "[{0}] Can't reload the code for default action. Error: {1} ",
         parent_.getName(), re.what());
@@ -87,49 +87,22 @@ ChainNameEnum Chain::getName() {
 }
 
 ChainAppendOutputJsonObject Chain::append(ChainAppendInputJsonObject input) {
-  ChainRuleJsonObject conf;
-  if (input.conntrackIsSet()) {
-    conf.setConntrack(input.getConntrack());
+  if (!input.actionIsSet()) {
+    throw std::runtime_error("action not specified for the rule");
   }
-  if (input.srcIsSet()) {
-    conf.setSrc(input.getSrc());
-  }
-  if (input.dstIsSet()) {
-    conf.setDst(input.getDst());
-  }
-  if (input.sportIsSet()) {
-    conf.setSport(input.getSport());
-  }
-  if (input.dportIsSet()) {
-    conf.setDport(input.getDport());
-  }
-  if (input.tcpflagsIsSet()) {
-    conf.setTcpflags(input.getTcpflags());
-  }
-  if (input.l4protoIsSet()) {
-    conf.setL4proto(input.getL4proto());
-  }
-  if (input.descriptionIsSet()) {
-    conf.setDescription(input.getDescription());
-  }
-  if (input.actionIsSet()) {
-    conf.setAction(input.getAction());
-  } else {
-    conf.setAction(ActionEnum::DROP);
-  }
+
+  ChainRuleJsonObject conf(input.toJson());
 
   uint32_t id = rules_.size();
   conf.setId(id);
   addRule(id, conf);
 
+  if(is_single_op_on_chain) {
+    updateChain();
+  }
+
   ChainAppendOutputJsonObject result;
   result.setId(id);
-
-//  TODO improve
-//  if (parent_.interactive_) {
-//    ChainRule::applyAcceptEstablishedOptimization(*this);
-//    parent_.attachInterfaces();
-//  }
 
   return result;
 }
@@ -171,7 +144,7 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
       }
     }
 
-    for (auto cr : rules_) {
+    for (const auto& cr : rules_) {
       actionProgram->flushCounters(cr->getId());
       if (*horus_runtime_enabled_){
         horusProgram->flushCounters(cr->getId());
@@ -190,17 +163,6 @@ ChainResetCountersOutputJsonObject Chain::resetCounters() {
     result.setResult(false);
   }
 
-  return result;
-}
-
-ChainApplyRulesOutputJsonObject Chain::applyRules() {
-  ChainApplyRulesOutputJsonObject result;
-  try {
-    updateChain();
-    result.setResult(true);
-  } catch (...) {
-    result.setResult(false);
-  }
   return result;
 }
 
@@ -311,7 +273,7 @@ void Chain::updateChain() {
           throw std::runtime_error("No ingress/egress chain");
         }
 
-        Firewall::Horus * horusptr =
+        auto * horusptr =
                 new Firewall::Horus(horus_index_new, parent_, name, horus);
         prog->at(horus_index_new) = horusptr;
 
@@ -332,7 +294,7 @@ void Chain::updateChain() {
       }
     }
   }
-  if (*horus_runtime_enabled_ == false) {
+  if (!*horus_runtime_enabled_) {
     auto parserIngress = dynamic_cast<Firewall::Parser *>(programs->at(ModulesConstants::PARSER));
     parserIngress->reload();
 
@@ -380,7 +342,7 @@ void Chain::updateChain() {
                 "[{0}] Conntrack is not active, please remember to activate it.",
                 parent_.getName());
       }
-      Firewall::ConntrackMatch *conntrack =
+      auto *conntrack =
               new Firewall::ConntrackMatch(index, name, this->parent_);
       newProgramsChain[ModulesConstants::CONNTRACKMATCH] = conntrack;
       // Now the program is loaded, populate it.
@@ -399,7 +361,7 @@ void Chain::updateChain() {
     if (!ipsrc_map.empty() && (ipsrc_break ^ second)) {
       // At least one rule requires a matching on ipsource, so inject
       // the module on the first available position
-      Firewall::IpLookup *iplookup =
+      auto *iplookup =
               new Firewall::IpLookup(index, name, SOURCE_TYPE, this->parent_);
       newProgramsChain[ModulesConstants::IPSOURCE] = iplookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -417,7 +379,7 @@ void Chain::updateChain() {
     if (!ipdst_map.empty() && ipdst_break ^ second) {
       // At least one rule requires a matching on ipdestination, so inject
       // the module on the first available position
-      Firewall::IpLookup *iplookup =
+      auto *iplookup =
               new Firewall::IpLookup(index, name, DESTINATION_TYPE, this->parent_);
       newProgramsChain[ModulesConstants::IPDESTINATION] = iplookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -436,7 +398,7 @@ void Chain::updateChain() {
       // At least one rule requires a matching on
       // source port__map, so inject the module
       // on the first available position
-      Firewall::L4ProtocolLookup *protocollookup =
+      auto *protocollookup =
               new Firewall::L4ProtocolLookup(index, name, this->parent_);
       newProgramsChain[ModulesConstants::L4PROTO] = protocollookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -454,7 +416,7 @@ void Chain::updateChain() {
     if (!portsrc_map.empty() && portsrc_break ^ second) {
       // At least one rule requires a matching on  source port__map,
       // so inject the  module  on the first available position
-      Firewall::L4PortLookup *portlookup =
+      auto *portlookup =
               new Firewall::L4PortLookup(index, name, SOURCE_TYPE, this->parent_, portsrc_map);
       newProgramsChain[ModulesConstants::PORTSOURCE] = portlookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -472,7 +434,7 @@ void Chain::updateChain() {
     if (!portdst_map.empty() && portdst_break ^ second) {
       // At least one rule requires a matching on source port__map,
       // so inject the module  on the first available position
-      Firewall::L4PortLookup *portlookup =
+      auto *portlookup =
               new Firewall::L4PortLookup(index, name, DESTINATION_TYPE, this->parent_, portdst_map);
       newProgramsChain[ModulesConstants::PORTDESTINATION] = portlookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -490,7 +452,7 @@ void Chain::updateChain() {
     if (!flags_map.empty() && flags_break ^ second) {
       // At least one rule requires a matching on flags_map,
       // so inject the  module in the first available position
-      Firewall::TcpFlagsLookup *tcpflagslookup =
+      auto *tcpflagslookup =
               new Firewall::TcpFlagsLookup(index, name, this->parent_);
       newProgramsChain[ModulesConstants::TCPFLAGS] = tcpflagslookup;
       // If this is the first module, adjust parsing to forward to it.
@@ -506,7 +468,7 @@ void Chain::updateChain() {
   }
 
   // Adding bitscan
-  Firewall::BitScan *bitscan =
+  auto *bitscan =
       new Firewall::BitScan(index, name, this->parent_);
   newProgramsChain[ModulesConstants::BITSCAN] = bitscan;
   // If this is the first module, adjust parsing to forward to it.
@@ -516,7 +478,7 @@ void Chain::updateChain() {
   ++index;
 
   // Adding action taker
-  Firewall::ActionLookup *actionlookup =
+  auto *actionlookup =
       new Firewall::ActionLookup(index, name, this->parent_);
   newProgramsChain[ModulesConstants::ACTION] = actionlookup;
   // If this is the first module, adjust parsing to forward to it.
@@ -564,7 +526,7 @@ void Chain::updateChain() {
 
 std::shared_ptr<ChainStats> Chain::getStats(const uint32_t &id) {
   if (rules_.size() < id || !rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
+    throw std::runtime_error("There is no rule " + std::to_string(id));
   }
 
   auto &counters = counters_;
@@ -595,7 +557,7 @@ std::shared_ptr<ChainStats> Chain::getStats(const uint32_t &id) {
 std::vector<std::shared_ptr<ChainStats>> Chain::getStatsList() {
   std::vector<std::shared_ptr<ChainStats>> vect;
 
-  for (std::shared_ptr<ChainRule> cr : rules_) {
+  for (const auto& cr : rules_) {
     if (cr) {
       vect.push_back(getStats(cr->getId()));
     }
@@ -628,7 +590,7 @@ void Chain::delStatsList() {
 
 std::shared_ptr<ChainRule> Chain::getRule(const uint32_t &id) {
   if (rules_.size() <= id || !rules_[id]) {
-    throw std::runtime_error("There is no rule " + id);
+    throw std::runtime_error("There is no rule " + std::to_string(id));
   }
   return rules_[id];
 }
@@ -653,6 +615,10 @@ void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
     throw std::runtime_error("rule id not allowed");
   }
 
+  if (!conf.actionIsSet()) {
+    throw std::runtime_error("action not specified for the rule");
+  }
+
   auto newRule = std::make_shared<ChainRule>(*this, conf);
 
   // Forcing counters update
@@ -672,19 +638,20 @@ void Chain::addRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
 
   rules_[id] = newRule;
 
-  if (parent_.interactive_) {
+  if(is_single_op_on_chain) {
     updateChain();
   }
 }
 
 void Chain::addRuleList(const std::vector<ChainRuleJsonObject> &conf) {
+  is_single_op_on_chain = false;
   for (auto &i : conf) {
     uint32_t id_ = i.getId();
-    addRule(id_, i);
+    if(i.actionIsSet()) addRule(id_, i);
   }
+  is_single_op_on_chain = true;
 }
 
-// TODO check
 void Chain::replaceRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
   uint32_t id_ = conf.getId();
   addRule(id_, conf);
@@ -692,17 +659,16 @@ void Chain::replaceRule(const uint32_t &id, const ChainRuleJsonObject &conf) {
 
 void Chain::delRule(const uint32_t &id) {
   if ((id >= rules_.size()) || (!rules_[id])) {
-    throw std::runtime_error("There is no rule " + id);
+    throw std::runtime_error("There is no rule " + std::to_string(id));
   }
 
   // Forcing counters update
   getStatsList();
 
-  for (uint32_t i = id; i < rules_.size() - 1; ++i) {
+  for (auto i = id; i < rules_.size() - 1; ++i) {
     rules_[i] = rules_[i + 1];
     rules_[i]->id = i;
   }
-
   rules_.resize(rules_.size() - 1);
 
   for (uint32_t i = id; i < counters_.size() - 1; ++i) {
@@ -711,62 +677,32 @@ void Chain::delRule(const uint32_t &id) {
   }
   counters_.resize(counters_.size() - 1);
 
-  if (parent_.interactive_) {
-    applyRules();
+  if(is_single_op_on_chain) {
+    updateChain();
   }
 }
 
 void Chain::delRuleList() {
   rules_.clear();
   counters_.clear();
-  if (parent_.interactive_) {
-    applyRules();
-  }
+  updateChain();
 }
 
 ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
-  ChainRuleJsonObject conf;
 
-  if (input.conntrackIsSet()) {
-    conf.setConntrack(input.getConntrack());
-  }
-  if (input.srcIsSet()) {
-    conf.setSrc(input.getSrc());
-  }
-  if (input.dstIsSet()) {
-    conf.setDst(input.getDst());
-  }
-  if (input.sportIsSet()) {
-    conf.setSport(input.getSport());
-  }
-  if (input.dportIsSet()) {
-    conf.setDport(input.getDport());
-  }
-  if (input.tcpflagsIsSet()) {
-    conf.setTcpflags(input.getTcpflags());
-  }
-  if (input.l4protoIsSet()) {
-    conf.setL4proto(input.getL4proto());
-  }
-  if (input.actionIsSet()) {
-    conf.setAction(input.getAction());
-  } else {
-    conf.setAction(ActionEnum::DROP);
-  }
-
-  uint32_t id = 0;
-  if (input.idIsSet()) {
-    id = input.getId();
-  }
+  uint32_t id = input.idIsSet() ? input.getId() : 0;
 
   if (id > rules_.size()) {
     throw std::runtime_error("id not allowed");
   }
 
-  auto newRule = std::make_shared<ChainRule>(*this, conf);
+  if (!input.actionIsSet()) {
+    throw std::runtime_error("action not specified for the rule");
+  }
 
-  ChainStatsJsonObject confStats;
-  auto newStats = std::make_shared<ChainStats>(*this, confStats);
+  auto newRule = std::make_shared<ChainRule>(*this, input.toJson());
+
+  auto newStats = std::make_shared<ChainStats>(*this, ChainStatsJsonObject());
 
   getStatsList();
 
@@ -787,27 +723,11 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   // for rules before id
   // nothing
 
-  // for rules starting from id to rules size-1
-  // move ahead i -> i+i
-  // btw, better to start from the end of the array
+  // better to start from the end of the array
   // for rules starting from size-1 to id
   // move ahead i -> i+i
 
-  int i = 0;
-  int id_int = (int)id;
-
-  // ids are 0,1,2
-  // size=3
-  // id = 1 (insert)
-
-  // new size = 4
-
-  // from 1 to 2
-  // move 2->3
-  // move 1->2,
-  // replace 1
-
-  for (i = rules_.size() - 2; i >= id_int; i--) {
+  for (auto i = rules_.size() - 2; i < rules_.size() && i >= id; i--) {
     rules_[i + 1] = rules_[i];
     counters_[i + 1] = counters_[i];
     if (rules_[i + 1] != nullptr) {
@@ -826,7 +746,7 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
   counters_[id]->counter.setBytes(0);
   counters_[id]->counter.setId(id);
 
-  if (parent_.interactive_) {
+  if(is_single_op_on_chain) {
     updateChain();
   }
 
@@ -838,38 +758,9 @@ ChainInsertOutputJsonObject Chain::insert(ChainInsertInputJsonObject input) {
 }
 
 void Chain::deletes(ChainDeleteInputJsonObject input) {
-  ChainRuleJsonObject conf;
-
-  if (input.conntrackIsSet()) {
-    conf.setConntrack(input.getConntrack());
-  }
-  if (input.srcIsSet()) {
-    conf.setSrc(input.getSrc());
-  }
-  if (input.dstIsSet()) {
-    conf.setDst(input.getDst());
-  }
-  if (input.sportIsSet()) {
-    conf.setSport(input.getSport());
-  }
-  if (input.dportIsSet()) {
-    conf.setDport(input.getDport());
-  }
-  if (input.tcpflagsIsSet()) {
-    conf.setTcpflags(input.getTcpflags());
-  }
-  if (input.l4protoIsSet()) {
-    conf.setL4proto(input.getL4proto());
-  }
-  if (input.actionIsSet()) {
-    conf.setAction(input.getAction());
-  } else {
-    conf.setAction(ActionEnum::DROP);
-  }
-
   for (int i = 0; i < rules_.size(); i++) {
     if (rules_[i] != nullptr) {
-      ChainRule c(*this, conf);
+      ChainRule c(*this, input.toJson());
       if (rules_[i]->equal(c)) {
         delRule(i);
         return;
@@ -877,4 +768,53 @@ void Chain::deletes(ChainDeleteInputJsonObject input) {
     }
   }
   throw std::runtime_error("no matching rule to delete");
+}
+
+void Chain::batch(ChainBatchInputJsonObject input) {
+  if(!input.rulesIsSet())
+    throw std::runtime_error("Chain::ChainBatchOutput: no operation posted");
+
+  // Forcing counters update
+  getStatsList();
+
+  std::vector<uint32_t> failed_ops;
+  is_single_op_on_chain = false;
+  // parsing operations.
+  uint32_t i = 1;
+  for (auto &val : input.getRules()) {
+    auto op = val.getOperation();
+    try {
+      if(op == OperationEnum::DELETE) {
+        // if ID set, delete by ID, else match the rule
+        if (val.idIsSet()) delRule(val.getId());
+        else deletes(val.toJson());
+      } else if (op == OperationEnum::INSERT && val.idIsSet()) {
+        // need the ID to be set, else error NO position
+        insert(val.toJson());
+      } else if (op == OperationEnum::APPEND) {
+        append(val.toJson());
+      } else if (op == OperationEnum::UPDATE && val.idIsSet()) {
+        // need the ID to update specific rule
+        addRule(val.getId(), val.toJson());
+      } else failed_ops.emplace_back(i);
+    } catch (std::exception &e) {
+      failed_ops.emplace_back(i);
+    }
+    i++;
+  }
+  is_single_op_on_chain = true;
+
+  // finally apply rules
+  updateChain();
+
+  // if some operation has failed, notify user.
+  // NB: all the others have been correctly executed!
+  if(!failed_ops.empty()) {
+    auto req = input.getRules().size();
+    std::string msg = "Chain::ChainBatchOutput: you required " + std::to_string(req) + " operations, but the following nth{1-" + std::to_string(req) + "} ones in the list failed: [";
+    for (auto &val : failed_ops) msg += std::to_string(val) + ", ";
+    msg.resize(msg.size()-2);
+    msg += "]";
+    throw std::runtime_error(msg);
+  }
 }

@@ -70,9 +70,10 @@ Response create_firewall_chain_append_by_id_handler(
   }
 }
 
-Response create_firewall_chain_apply_rules_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
+Response create_firewall_chain_batch_by_id_handler(
+    const char *name, const Key *keys,
+    size_t num_keys ,
+    const char *value) {
   // Getting the path params
   std::string unique_name { name };
   std::string unique_chainName;
@@ -86,11 +87,12 @@ Response create_firewall_chain_apply_rules_by_id_handler(
 
 
   try {
+    auto request_body = nlohmann::json::parse(std::string { value });
+    // Getting the body param
+    ChainBatchInputJsonObject unique_value { request_body };
 
-    auto x = create_firewall_chain_apply_rules_by_id(unique_name, unique_chainName_);
-    nlohmann::json response_body;
-    response_body = x.toJson();
-    return { kCreated, ::strdup(response_body.dump().c_str()) };
+    create_firewall_chain_batch_by_id(unique_name, unique_chainName_, unique_value);
+    return { kCreated, nullptr };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };
   }
@@ -1335,24 +1337,6 @@ Response read_firewall_conntrack_by_id_handler(
   }
 }
 
-
-Response read_firewall_interactive_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-
-    auto x = read_firewall_interactive_by_id(unique_name);
-    nlohmann::json response_body;
-    response_body = x;
-    return { kOk, ::strdup(response_body.dump().c_str()) };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
 Response read_firewall_list_by_id_handler(
   const char *name, const Key *keys,
   size_t num_keys ) {
@@ -1901,24 +1885,6 @@ Response update_firewall_conntrack_by_id_handler(
     auto request_body = nlohmann::json::parse(std::string { value });
     FirewallConntrackEnum unique_value_ = FirewallJsonObject::string_to_FirewallConntrackEnum(request_body);
     update_firewall_conntrack_by_id(unique_name, unique_value_);
-    return { kOk, nullptr };
-  } catch(const std::exception &e) {
-    return { kGenericError, ::strdup(e.what()) };
-  }
-}
-
-Response update_firewall_interactive_by_id_handler(
-  const char *name, const Key *keys,
-  size_t num_keys ,
-  const char *value) {
-  // Getting the path params
-  std::string unique_name { name };
-
-  try {
-    auto request_body = nlohmann::json::parse(std::string { value });
-    // The conversion is done automatically by the json library
-    bool unique_value = request_body;
-    update_firewall_interactive_by_id(unique_name, unique_value);
     return { kOk, nullptr };
   } catch(const std::exception &e) {
     return { kGenericError, ::strdup(e.what()) };

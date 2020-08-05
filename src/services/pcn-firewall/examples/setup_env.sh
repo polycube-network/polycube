@@ -43,6 +43,9 @@ polycubectl firewall add fw
 
 polycubectl attach fw br:port1
 
+polycubectl firewall fw chain INGRESS set default=DROP
+polycubectl firewall fw chain EGRESS set default=DROP
+
 # EGRESS_CHAIN and INGRESS_CHAIN are now considered independently
 
 # br:port1 <---- EGRESS ----< br:port2
