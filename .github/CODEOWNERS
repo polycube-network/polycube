@@ -6,3 +6,10 @@
 # @polycube-network/pcn-maintainers will be requested for
 # review when someone opens a pull request.
 *       @polycube-network/pcn-maintainers
+
+# PR review based on matches
+/src/             @FedeParola
+/Documentation/   @FedeParola
+/cmake/           @FedeParola
+/scripts/         @FedeParola
+/tests/           @FedeParola
