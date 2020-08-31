@@ -16,5 +16,6 @@ jobs:
     - name: Build the Docker image as Default mode 
       run: |
         pwd
+        cd ..
         ls -ltr
-        docker build . --file Dockerfile --tag default-github-action-test:$(date +%s)
+        docker build . --file ./polycube/Dockerfile --tag default-github-action-test:$(date +%s)
