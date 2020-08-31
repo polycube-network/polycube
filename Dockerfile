@@ -9,7 +9,8 @@ FROM ubuntu:18.04 AS builder
 
 ARG DEFAULT_MODE=default
 ENV MODE=$DEFAULT_MODE
-RUN --mount=target=/polycube cp -r /polycube /tmp/polycube && cd /tmp/polycube && \
+COPY /polycube/ /tmp/polycube 
+RUN pwd && ls -ltr && cd /tmp/polycube && \
 mkdir -p /usr/local/share/polycube /usr/local/include/polycube /opt/cni/bin /cni && touch /cni-conf /pcn_k8s /opt/cni/bin/polycube && \
 SUDO="" USER="root" WORKDIR="/tmp/dev" ./scripts/install.sh $MODE && \
 # install pcn-k8s only components
