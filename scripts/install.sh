@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # This script compiles and installs polycube and its dependencies
 
