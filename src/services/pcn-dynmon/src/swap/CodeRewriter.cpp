@@ -289,13 +289,13 @@ void CodeRewriter::compile(std::string &original_code, ProgramType type,
   /*If is enabled, try enhanced compilation or basic compilation if it has failed.*/
   if(!is_enabled) {
     config = {};
-    logger->info("[Dynmon_CodeRewriter] No map marked as swappable, no compilation performed");
+    logger->info("[Dynmon_CodeRewriter] No map marked as swappable, no rewrites performed");
   } else if(try_enhance_compilation(original_code, type, maps_to_swap, config)) {
-    logger->info("[Dynmon_CodeRewriter] Successfully compiled with ENHANCED tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully rewritten with ENHANCED tuning");
   } else if(do_base_compile(original_code, maps_to_swap, config)) {
-    logger->info("[Dynmon_CodeRewriter] Successfully compiled with BASE tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully rewritten with BASE tuning");
   } else {
     config = {};
-    logger->info("[Dynmon_CodeRewriter] Unable to perform compilation, no optimization performed");
+    logger->info("[Dynmon_CodeRewriter] Error while trying to rewrite the code, no rewrites performed");
   }
 }
