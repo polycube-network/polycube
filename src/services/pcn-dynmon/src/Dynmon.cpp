@@ -244,7 +244,7 @@ std::shared_ptr<Metrics> Dynmon::getMetrics() {
 }
 
 std::shared_ptr<Metric> Dynmon::getEgressMetric(const std::string &name) {
-  logger()->debug("[Dynmon] getEgressMetrics()");
+  logger()->debug("[Dynmon] getEgressMetric()");
   auto egressPathConfig = m_dpConfig->getEgressPathConfig();
   auto metricConfig = egressPathConfig->getMetricConfig(name);
 
@@ -307,7 +307,7 @@ std::shared_ptr<Metric> Dynmon::getIngressMetric(const std::string &name) {
 }
 
 std::vector<std::shared_ptr<Metric>> Dynmon::getIngressMetrics() {
-  logger()->debug("[Dynmon] getEgressMetrics()");
+  logger()->debug("[Dynmon] getIngressMetrics()");
   std::vector<std::shared_ptr<Metric>> metrics;
   auto ingressMetricConfigs =
       m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
@@ -420,7 +420,7 @@ std::string Dynmon::getEgressOpenMetrics() {
 
 /*UNUSED: left here for future endpoints development*/
 std::string Dynmon::getIngressOpenMetrics() {
-  logger()->debug("[Dynmon] getEgressMetrics()");
+  logger()->debug("[Dynmon] getIngressOpenMetrics()");
   std::vector<std::string> metrics;
   auto ingressMetricConfigs =
       m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
@@ -565,6 +565,7 @@ std::string Dynmon::do_get_open_metric(const shared_ptr<MetricConfig>& config, P
 
   auto extractionOptions = config->getExtractionOptions();
   auto mapName = config->getMapName();
+  
   int index = type == ProgramType::INGRESS ? ingressSwapState.getProgramIndexAndMapNameToRead(mapName) :
       egressSwapState.getProgramIndexAndMapNameToRead(mapName);
 
