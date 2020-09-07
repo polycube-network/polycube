@@ -18,4 +18,6 @@ jobs:
         pwd
         cd ..
         ls -ltr
+        export DOCKER_BUILDKIT=1
+        docker config ls
         docker build . --file ./polycube/Dockerfile --tag default-github-action-test:$(date +%s)
