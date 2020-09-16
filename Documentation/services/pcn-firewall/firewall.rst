@@ -35,7 +35,9 @@ How to use
 Ingress ad egress chains
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service supports independent ingress and egress policy chains, with two different policy sets.
+The service supports independent _ingress_ (packets that are try to reach your TCP/IP stack) and _egress_ (pac policy chains, with two different policy sets:
+  - **ingress**: packets that come from the external world and that are try to reach the _inside_ of your network;
+  - **egress**: packets that come from your inside network and that are trying to reach the external world.
 
 
 Rule insertion
@@ -43,7 +45,13 @@ Rule insertion
 
 Rule insertion is guaranteed to be *atomic*: during the computation of the new datapath, the old rule set is used until the new rule set is ready, and only at that moment the new policies will be applied.
 
-Rule insertion is an expensive operation. For this reason, we have thought about different endpoints to optimize expensive operations:
+Rules can be:
+  - **inserted**: the ``insert`` action adds your rule at the _beginning_ of the ruleset (i.e., it becomes the new rule ``0``; existing rules are pushed down).
+  - **appended**: the ``append`` action adds your rule at the _end_ of the ruleset (i.e., it becomes the last rule of the ruleset, before the _default_ rule).
+  - **update**: the ``update`` action updates a specific rule.
+  - **deleted**: the ``delete`` action deletes a specific rule.
+
+Rule insertion is an expensive operation. For this reason, if you are using the REST interface, you can exploit different endpoints to optimize this expensive operation:
 
   - ``/insert``, ``/delete``, ``/append`` and ``PUT`` on ``rule/<id>`` (update): these endpoints are used to perform a single operation on a rule. As soon as the rule-set is updated, it is compiled and all the modifications are immediately inserted in the datapath.
   - ``/batch``: as suggested by the name, this endpoint is used to perform multiple operation on a single HTTP request. Instead of compiling the new rule-set as soon as a single operation is fulfilled, it waits for all the actions described in the request to be executed. Finally, a single compilation is performed and the datapath is updated once.
@@ -75,7 +83,7 @@ Using the redirection diamond you are able to insert the file content in the bod
 Default action
 ^^^^^^^^^^^^^^
 
-The default action if no rule is matched is forward. This can be changed for each chain independently by issuing the command
+The default action if no rule is matched is **FORWARD**. This can be changed for each chain independently by issuing the command
 ``polycubectl firewall fwname chain INGRESS set default=DROP`` or ``polycubectl firewall fwname chain EGRESS set default=DROP``.
 
 Statistics
@@ -83,8 +91,59 @@ Statistics
 
 The service tracks the number of packets and the total bytes that have matched each rule. It is possible to show them by issuing the command ``polycubectl firewall fw chain INGRESS stats show``, follow the help for further details. To flush all the statistics (i.e. both packets and bytes count for every rule) about a chain, issue the following command ``polycubectl firewall fw chain INGRESS reset-counters``.
 
+
 Examples
 --------
+
+First simple examples: enabling SSH connection to your host
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Here there is a simple (but complete) example, which allows a given machine:
+  - to connect to the Internet and browse HTTPS sites (and nothing else)
+  - to accept SSH connections from the Internet (and nothing else)
+  - to resolve DNS names (UDP port 53 is enabled in both directions)
+  
+We assume that the  machine has a network card named ``enp0s3``.
+
+..
+
+  # Create firewall
+  polycubectl add firewall fw1
+  
+  # Attach firewall to the network card (enp0s3)
+  polycubectl attach fw1 enp0s3
+  
+  # Set default action to DROP for both INGRESS and EGRESS chains
+  polycubectl fw1 chain INGRESS set default=DROP
+  polycubectl fw1 chain EGRESS set default=DROP
+  
+  # Enable incoming connections on port 22 (to ssh to my server from the external world)
+  polycubectl fw1 chain INGRESS append l4proto=TCP dport=22 action=FORWARD
+  
+  # Enable outgoing connections on port 443 (to connect to HTTPS servers from my machine)
+  polycubectl fw1 chain EGRESS append l4proto=TCP dport=443 action=FORWARD
+  
+  # Enable port 53 in both directions (to enable name resolution)
+  polycubectl fw1 chain INGRESS append l4proto=UDP sport=53 action=FORWARD
+  polycubectl fw1 chain EGRESS append l4proto=UDP dport=53 action=FORWARD
+  
+  # Enable established connections to go through, independently from the port they're using
+  # Instead of the above two commands, we can use a single default command, i.e. 
+  #    polycubectl fw1 set accept-established=ON
+  polycubectl fw1 chain INGRESS append l4proto=TCP conntrack=ESTABLISHED action=FORWARD
+  polycubectl fw1 chain EGRESS append l4proto=TCP conntrack=ESTABLISHED action=FORWARD
+  
+  # Show statistics for the INGRESS chain of the firewall
+  polycubectl fw1 chain INGRESS show
+    
+  # Show general statistics for the firewall (e.g., the current ongoing sessions)
+  polycubectl fw1 show
+  
+  # Remove the firewall
+  polycubectl del fw1
+
+
+More examples
+^^^^^^^^^^^^^
 
 The `examples source folder <https://github.com/polycube-network/polycube/tree/master/src/services/pcn-firewall/examples/>`_ contains some simple scripts to show how to configure the service.
 
