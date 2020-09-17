@@ -82,15 +82,16 @@ In this case, remove llvm 6.0 before starting the installation script:
     # Download the source pack from Polycube repository 
     #  (i.e., https://github.com/polycube-network/polycube/releases)
     # Look at the most recent version and update the following lines accordingly
-    wget https://github.com/polycube-network/polycube/archive/v0.9.0-rc.zip
+    wget https://github.com/polycube-network/polycube/archive/v0.9.0.zip
 
     # Unpack the source files (e.g., this refers to version 0.9)
-    unzip v0.9.0-rc.zip
+    unzip v0.9.0.zip
 
     # Move into the newly created folder:
-    cd polycube-0.9.0-rc
+    cd polycube-0.9.0
 
-    # Launch the automatic install script (use -h to see the different installation modes)
+    # Launch the automatic install script *from the Polycube root folder*
+    #   (use -h to see different installation modes)
     ./scripts/install.sh
 
 
@@ -98,15 +99,16 @@ In this case, remove llvm 6.0 before starting the installation script:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-    # install git
+    # Install git
     sudo apt-get install git
 
-    # clone the Polycube repository
+    # Clone the Polycube repository including all the submodules
     git clone https://github.com/polycube-network/polycube
     cd polycube
     git submodule update --init --recursive
 
-    # launch the automatic install script (use -h to see the different installation modes)
+    # Launch the automatic install script *from the Polycube root folder*
+    #   (use -h to see different installation modes)
     ./scripts/install.sh
 
 
