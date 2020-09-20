@@ -35,8 +35,8 @@ How to use
 Ingress ad egress chains
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service supports independent _ingress_ (packets that are try to reach your TCP/IP stack) and _egress_ (pac policy chains, with two different policy sets:
-  - **ingress**: packets that come from the external world and that are try to reach the _inside_ of your network;
+The service supports independent _ingress_ and _egress_ policy chains, with two different policy sets:
+  - **ingress**: packets that come from the external world and that are try to reach the _inside_ of your network (e.g., in case the firewall is attached to a network device, this refers to packets that are trying to reach your TCP/IP stack);
   - **egress**: packets that come from your inside network and that are trying to reach the external world.
 
 
