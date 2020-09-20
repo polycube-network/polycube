@@ -71,8 +71,9 @@ Concerning the batch endpoint, it accepts a JSON list of rules like:
     }
 
 
-As you can see, every element of the ``rules`` array MUST contain an operation (insert, append, update, delete) plus a rule/id which is the actual target.
-All the listed operation are performed sequentially, meaning that the user must sent the operation already ordered as he wants. Pay attention when sending some DELETE with other INSERT, you have to take in mind that during such operations IDs may vary (increase or decrease).
+Each element of the ``rules`` array MUST contain an operation (_insert_, _append_, _update_, _delete_) plus a rule/id that represents the actual target of the above operation.
+All the listed operation are performed sequentially, hence the user must sent the operations with the appropriate order.
+Pay attention when sending some DELETE with other INSERT; you have to take in mind that during such operations IDs may vary (increase or decrease).
 
 This features is also available from the ``polycubectl`` command line. It is strongly suggested to create a JSON file containing the batch of rules and then type:
 
@@ -86,10 +87,30 @@ Default action
 The default action if no rule is matched is **FORWARD**. This can be changed for each chain independently by issuing the command
 ``polycubectl firewall fwname chain INGRESS set default=DROP`` or ``polycubectl firewall fwname chain EGRESS set default=DROP``.
 
-Statistics
-^^^^^^^^^^
+Statistics and firewall status
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service tracks the number of packets and the total bytes that have matched each rule. It is possible to show them by issuing the command ``polycubectl firewall fw chain INGRESS stats show``, follow the help for further details. To flush all the statistics (i.e. both packets and bytes count for every rule) about a chain, issue the following command ``polycubectl firewall fw chain INGRESS reset-counters``.
+The service tracks the number of packets and the total bytes that have matched each rule.
+Statistics can be seen by issuing the command ``polycubectl firewall fw chain INGRESS stats show`` (where ``fw`` is the name of your firewall instance); follow the help for further details.
+To flush all the statistics (i.e. both packets and bytes count for every rule) about a chain, issue the following command ``polycubectl firewall fw chain INGRESS reset-counters``.
+
+Additional statistics and status information can be shown with the command ``polycubectl firewall fw show`` (where ``fw`` is the name of your firewall instance); for instance, in case the connection tracking is enabled, this shows also all the TCP/UDP sessions that are currently active in the firewall.
+
+Connection tracking and stateful operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This firewall supports stateful operations, e.g., it allows a to set a FORWARD rule for a given traffic in a given direction (e.g., allow incoming connection on port 22, to enable reaching your local SSH server), and automatically accept also the packets that are generated in the opposite direction and that relate to the above rule.
+
+The connection tracking is enabled by default; its status can be inspected with command ``polycubectl firewall fw show``, which shows also the status of all the TCP/UDP sessions that are currently active in the firewall.
+This behavior can be changed with the command ``polycubectl fw1 set accept-established=OFF``.
+
+Connection tracking can still be used, even if the global command apparently set it to OFF, by selectively enabling this feature on a given subset of traffic.
+For instance, the above command:
+
+..
+
+  polycubectl fw1 chain EGRESS append l4proto=TCP sport=22 conntrack=ESTABLISHED action=FORWARD
+
+will accept all TCP packets that come from source port 22 (i.e., a local SSH server) and whose connection status is ESTABLISHED. This means that a packet had to be received by your host on port 22, your local server has accepted the connection, hence the packets generated in the opposite direction (i.e., EGRESS) are forwarded.
 
 
 Examples
