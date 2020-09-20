@@ -1,7 +1,7 @@
-Packet capture service (``packetcapture``)
-==========================================
+Packet capture service 
+======================
 
-Packetcapture is a transparent service that allows to capture packets flowing through the interface it is attached to, apply filters and obtain capture in ``pcap`` format. In particular, the service supports either saving captured packets in the local filesystem (e.g., useful in case of massive load) or it can deliver packets to a remote client that stores them in the remote filesystem.
+The Packet Capture (``packetcapture``) is a transparent service that allows to capture packets flowing through the interface it is attached to, apply filters and obtain capture in ``pcap`` format. In particular, the service supports either saving captured packets in the local filesystem (e.g., useful in case of massive load) or it can deliver packets to a remote client that stores them in the remote filesystem.
 
 An example of a client that uses the REST api of the ``packetcapture`` service is available in the `packet capture client  <https://github.com/polycube-network/polycube/tree/master/src/services/pcn-packetcapture/client>`_ folder.
 
