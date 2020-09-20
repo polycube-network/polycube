@@ -1,7 +1,7 @@
-Dynamic network monitor (``dynmon``)
-====================================
+Dynamic network monitor 
+=======================
 
-Dynmon is a transparent service that allows the dynamic injection of eBPF code in the linux kernel, enabling the monitoring of the network traffic and the collection and exportation of custom metrics.
+Dynmon (``dynmon``) is a transparent service that allows the dynamic injection of eBPF code in the linux kernel, enabling the monitoring of the network traffic and the collection and exportation of custom metrics.
 
 This service exploits the capabilities of Polycube to replace the eBPF code running in the dataplane and the use of eBPF maps to share data between the control plane and the data plane.
 
