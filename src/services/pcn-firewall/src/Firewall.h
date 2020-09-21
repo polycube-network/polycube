@@ -320,7 +320,7 @@ class Firewall : public FirewallBase {
    *==========================*/
 
  public:
-  uint8_t conntrackMode = ConntrackModes::MANUAL;
+  uint8_t conntrackMode = ConntrackModes::AUTOMATIC;
 
  private:
   // Keeps the mapping between an index and the eBPF program, represented as a

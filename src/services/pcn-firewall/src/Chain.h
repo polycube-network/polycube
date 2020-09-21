@@ -44,7 +44,7 @@ class Chain : public ChainBase {
   void update(const ChainJsonObject &conf) override;
 
   /// <summary>
-  /// Default action if no rule matches in the ingress chain. Default is FORWARD.
+  /// Default action if no rule matches in the ingress chain. Default is ACCEPT.
   /// </summary>
   ActionEnum getDefault() override;
   void setDefault(const ActionEnum &value) override;
@@ -95,7 +95,7 @@ class Chain : public ChainBase {
   uint32_t getNrRules();
 
  private:
-  ActionEnum defaultAction = ActionEnum::FORWARD;
+  ActionEnum defaultAction = ActionEnum::ACCEPT;
   ChainNameEnum name;
   std::vector<std::shared_ptr<ChainRule>> rules_;
   std::vector<std::shared_ptr<ChainStats>> counters_;
