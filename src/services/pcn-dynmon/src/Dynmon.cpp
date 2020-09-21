@@ -197,6 +197,8 @@ std::shared_ptr<Metrics> Dynmon::getMetrics() {
 
   {
     std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
+    std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
+    triggerReadEgress();
     triggerReadIngress();
     auto ingressMetricConfigs =
         m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
@@ -212,10 +214,7 @@ std::shared_ptr<Metrics> Dynmon::getMetrics() {
         logger()->warn("Unable to read {0} map", it->getMapName());
       }
     }
-  }
-  {
-    std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
-    triggerReadEgress();
+
     auto egressMetricConfigs =
         m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
 
@@ -338,9 +337,14 @@ std::string Dynmon::getOpenMetrics() {
     std::vector<std::string> metrics;
     auto ingressMetricConfigs =
         m_dpConfig->getIngressPathConfig()->getMetricConfigsList();
+    auto egressMetricConfigs =
+        m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
 
     std::lock_guard<std::mutex> lock_in(m_ingressPathMutex);
+    std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
     triggerReadIngress();
+    triggerReadEgress();
+
 
     // Extracting all metrics from the egress path
     for (auto &it : ingressMetricConfigs) {
@@ -357,14 +361,8 @@ std::string Dynmon::getOpenMetrics() {
       }
     }
     in_metrics = Utils::join(metrics, "\n");
-  }
-  {
-    std::vector<std::string> metrics;
-    auto egressMetricConfigs =
-        m_dpConfig->getEgressPathConfig()->getMetricConfigsList();
 
-    std::lock_guard<std::mutex> lock_eg(m_egressPathMutex);
-    triggerReadEgress();
+    metrics.clear();
 
     // Extracting all metrics from the egress path
     for (auto &it : egressMetricConfigs) {
