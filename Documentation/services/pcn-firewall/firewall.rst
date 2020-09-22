@@ -35,8 +35,9 @@ How to use
 Ingress ad egress chains
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The service supports independent _ingress_ and _egress_ policy chains, with two different policy sets:
-  - **ingress**: packets that come from the external world and that are try to reach the _inside_ of your network (e.g., in case the firewall is attached to a network device, this refers to packets that are trying to reach your TCP/IP stack);
+The service supports independent *ingress* and *egress* policy chains, with two different policy sets:
+
+  - **ingress**: packets that come from the external world and that are try to reach the `inside` of your network (e.g., in case the firewall is attached to a network device, this refers to packets that are trying to reach your TCP/IP stack);
   - **egress**: packets that come from your inside network and that are trying to reach the external world.
 
 
@@ -46,8 +47,9 @@ Rule insertion
 Rule insertion is guaranteed to be *atomic*: during the computation of the new datapath, the old rule set is used until the new rule set is ready, and only at that moment the new policies will be applied.
 
 Rules can be:
-  - **inserted**: the ``insert`` action adds your rule at the _beginning_ of the ruleset (i.e., it becomes the new rule ``0``; existing rules are pushed down).
-  - **appended**: the ``append`` action adds your rule at the _end_ of the ruleset (i.e., it becomes the last rule of the ruleset, before the _default_ rule).
+
+  - **inserted**: the ``insert`` action adds your rule at the *beginning* of the ruleset (i.e., it becomes the new rule ``0``; existing rules are pushed down).
+  - **appended**: the ``append`` action adds your rule at the *end* of the ruleset (i.e., it becomes the last rule of the ruleset, before the *default* rule).
   - **update**: the ``update`` action updates a specific rule.
   - **deleted**: the ``delete`` action deletes a specific rule.
 
@@ -71,7 +73,7 @@ Concerning the batch endpoint, it accepts a JSON list of rules like:
     }
 
 
-Each element of the ``rules`` array MUST contain an operation (_insert_, _append_, _update_, _delete_) plus a rule/id that represents the actual target of the above operation.
+Each element of the ``rules`` array MUST contain an operation (*insert*, *append*, *update*, *delete*) plus a rule/id that represents the actual target of the above operation.
 All the listed operation are performed sequentially, hence the user must sent the operations with the appropriate order.
 Pay attention when sending some DELETE with other INSERT; you have to take in mind that during such operations IDs may vary (increase or decrease).
 
@@ -106,7 +108,7 @@ This behavior can be changed with the command ``polycubectl fw1 set accept-estab
 Connection tracking can still be used, even if the global command apparently set it to OFF, by selectively enabling this feature on a given subset of traffic.
 For instance, the above command:
 
-..
+::
 
   polycubectl fw1 chain EGRESS append l4proto=TCP sport=22 conntrack=ESTABLISHED action=FORWARD
 
@@ -125,7 +127,7 @@ Here there is a simple (but complete) example, which allows a given machine:
   
 We assume that the  machine has a network card named ``enp0s3``.
 
-..
+::
 
   # Create firewall
   polycubectl add firewall fw1
