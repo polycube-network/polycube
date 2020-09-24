@@ -4,6 +4,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/include/uapi)
 
 option(INSTALL_CLI "installs the polycube CLI" ON)
 option(ENABLE_PCN_IPTABLES "enables the pcn-iptables" OFF)
+option(ENABLE_LLVM_SHARED "Enable linking LLVM as a shared library" ON)
 
 add_subdirectory(components)
 add_subdirectory(libs)
