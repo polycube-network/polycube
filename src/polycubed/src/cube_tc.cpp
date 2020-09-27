@@ -164,8 +164,8 @@ void CubeTC::send_packet_ns_span_mode(void *cb_cookie, void *data, int data_size
 
   } catch(const std::exception &e) {
     // TODO: ignore the problem, what else can we do?
-    
-    // This function (i.e., send_packet_ns_span_mode() ) is static, so we cannot use 
+
+    // This function (i.e., send_packet_ns_span_mode() ) is static, so we cannot use
     // standard logging primitive (i.e., logger->warn() ) here.
     spdlog::get("polycubed")->warn("Error processing packet in span mode - event: {}", e.what());
   }
@@ -231,7 +231,7 @@ struct controller_table_t {
   u32 data[0];
 };
 __attribute__((section("maps/extern")))
-struct controller_table_t controller_tc;
+//struct controller_table_t controller_tc;
 
 #if defined(SHADOW) && defined(SPAN)
 static __always_inline
@@ -264,7 +264,7 @@ void call_ingress_program_with_metadata(struct CTXTYPE *skb,
   // by the current one
   skb->mark = md->traffic_class;
 
-  call_ingress_program(skb, index);
+  //call_ingress_program(skb, index);
 }
 
 static __always_inline
@@ -274,7 +274,7 @@ void call_egress_program_with_metadata(struct CTXTYPE *skb,
   // by the current one
   skb->mark = md->traffic_class;
 
-  call_egress_program(skb, index);
+  //call_egress_program(skb, index);
 }
 )";
 

@@ -465,7 +465,7 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *skb,
 
 static __always_inline
 void call_ingress_program(struct CTXTYPE *skb, int index) {
-  ingress_programs.call(skb, index);
+  //ingress_programs.call(skb, index);
 }
 
 static __always_inline
@@ -475,9 +475,9 @@ void call_ingress_program_with_metadata(struct CTXTYPE *skb,
 static __always_inline
 void call_egress_program(struct CTXTYPE *skb, int index) {
 #ifdef POLYCUBE_XDP
-  egress_programs_xdp.call(skb, index);
+  //egress_programs_xdp.call(skb, index);
 #else
-  egress_programs.call(skb, index);
+  //egress_programs.call(skb, index);
 #endif
 }
 

@@ -84,27 +84,27 @@ void Transparenthelloworld::attach() {
 
 TransparenthelloworldIngressActionEnum
 Transparenthelloworld::getIngressAction() {
-  auto t = get_array_table<uint8_t>("action_map", 0, ProgramType::INGRESS);
-  uint8_t value = t.get(0x0);
+  auto t = get_array_table<uint32_t>("action_map", 0, ProgramType::INGRESS);
+  uint32_t value = t.get(0x0);
   return static_cast<TransparenthelloworldIngressActionEnum>(value);
 }
 
 void Transparenthelloworld::setIngressAction(
     const TransparenthelloworldIngressActionEnum &value) {
-  uint8_t action = static_cast<uint8_t>(value);
-  auto t = get_array_table<uint8_t>("action_map", 0, ProgramType::INGRESS);
+  uint32_t action = static_cast<uint32_t>(value);
+  auto t = get_array_table<uint32_t>("action_map", 0, ProgramType::INGRESS);
   t.set(0x0, action);
 }
 
 TransparenthelloworldEgressActionEnum Transparenthelloworld::getEgressAction() {
-  auto t = get_array_table<uint8_t>("action_map", 0, ProgramType::EGRESS);
-  uint8_t value = t.get(0x0);
+  auto t = get_array_table<uint32_t>("action_map", 0, ProgramType::EGRESS);
+  uint32_t value = t.get(0x0);
   return static_cast<TransparenthelloworldEgressActionEnum>(value);
 }
 
 void Transparenthelloworld::setEgressAction(
     const TransparenthelloworldEgressActionEnum &value) {
-  uint8_t action = static_cast<uint8_t>(value);
-  auto t = get_array_table<uint8_t>("action_map", 0, ProgramType::EGRESS);
+  uint32_t action = static_cast<uint32_t>(value);
+  auto t = get_array_table<uint32_t>("action_map", 0, ProgramType::EGRESS);
   t.set(0x0, action);
 }

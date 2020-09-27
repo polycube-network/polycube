@@ -100,7 +100,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   struct pkt_metadata md = {};
   md.packet_len = skb->len;
   md.traffic_class = skb->mark;
-  
+
   int rc = handle_rx(skb, &md);
 
   // Save the traffic class for the next program in case it was changed
@@ -116,7 +116,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
 #elif NEXT == 0xffff
       return TC_ACT_OK;
 #else
-      nodes.call(skb, NEXT);
+      //nodes.call(skb, NEXT);
       return TC_ACT_SHOT;
 #endif
   }
@@ -141,7 +141,8 @@ int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
   md->packet_len = skb->len;
   md->reason = reason;
 
-  return controller_tc.perf_submit_skb(skb, skb->len, md, sizeof(*md));
+  return TC_ACT_SHOT;
+  //return controller_tc.perf_submit_skb(skb, skb->len, md, sizeof(*md));
 }
 )";
 
