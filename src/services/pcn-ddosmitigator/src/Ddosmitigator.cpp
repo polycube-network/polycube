@@ -176,30 +176,32 @@ Ddosmitigator::getBlacklistSrcList() {
 
 void Ddosmitigator::addBlacklistSrc(const std::string &ip,
                                     const BlacklistSrcJsonObject &conf) {
-  logger()->debug("BlacklistSrc create");
+  if (blacklistsrc_.count(ip) == 0) {
+    logger()->debug("BlacklistSrc create");
 
-  try {
-    logger()->debug("blacklist size {0} ", blacklistsrc_.size());
-    // TODO check if src ip rules are already present
-    // and reinject datapath with srcblacklist ps
+    try {
+      logger()->debug("blacklist size {0} ", blacklistsrc_.size());
+      // TODO check if src ip rules are already present
+      // and reinject datapath with srcblacklist ps
 
-    if (blacklistsrc_.size() >= 0) {
-      setSrcMatch(true);
-      reloadCode();
+      if (blacklistsrc_.size() >= 0) {
+        setSrcMatch(true);
+        reloadCode();
+      }
+
+      auto srcblacklist =
+          get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
+      srcblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
+    } catch (...) {
+      throw std::runtime_error("unable to add element to map");
     }
 
-    auto srcblacklist =
-        get_percpuhash_table<uint32_t, uint64_t>("srcblacklist");
-    srcblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
-  } catch (...) {
-    throw std::runtime_error("unable to add element to map");
+    BlacklistSrcJsonObject configuration;
+    configuration.setIp(ip);
+
+    blacklistsrc_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
+                          std::forward_as_tuple(*this, configuration));
   }
-
-  BlacklistSrcJsonObject configuration;
-  configuration.setIp(ip);
-
-  blacklistsrc_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
-                        std::forward_as_tuple(*this, configuration));
 }
 
 void Ddosmitigator::addBlacklistSrcList(
@@ -264,29 +266,31 @@ Ddosmitigator::getBlacklistDstList() {
 
 void Ddosmitigator::addBlacklistDst(const std::string &ip,
                                     const BlacklistDstJsonObject &conf) {
-  logger()->debug("BlacklistDst create");
+  if (blacklistdst_.count(ip) == 0) {
+    logger()->debug("BlacklistDst create");
 
-  try {
-    // TODO check if dst ip rules are already present
-    // and reinject datapath with dstblacklist ps
+    try {
+      // TODO check if dst ip rules are already present
+      // and reinject datapath with dstblacklist ps
 
-    if (blacklistdst_.size() >= 0) {
-      setDstMatch(true);
-      reloadCode();
+      if (blacklistdst_.size() >= 0) {
+        setDstMatch(true);
+        reloadCode();
+      }
+
+      auto dstblacklist =
+          get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
+      dstblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
+    } catch (...) {
+      throw std::runtime_error("unable to add element to map");
     }
 
-    auto dstblacklist =
-        get_percpuhash_table<uint32_t, uint64_t>("dstblacklist");
-    dstblacklist.set(utils::ip_string_to_nbo_uint(ip), 0);
-  } catch (...) {
-    throw std::runtime_error("unable to add element to map");
+    BlacklistDstJsonObject configuration;
+    configuration.setIp(ip);
+
+    blacklistdst_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
+                          std::forward_as_tuple(*this, configuration));
   }
-
-  BlacklistDstJsonObject configuration;
-  configuration.setIp(ip);
-
-  blacklistdst_.emplace(std::piecewise_construct, std::forward_as_tuple(ip),
-                        std::forward_as_tuple(*this, configuration));
 }
 
 void Ddosmitigator::addBlacklistDstList(
