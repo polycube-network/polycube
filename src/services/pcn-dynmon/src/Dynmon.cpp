@@ -62,12 +62,12 @@ void Dynmon::setEgressPathConfig(const PathConfigJsonObject &config) {
       reload(config.getCode(), 0, ProgramType::EGRESS);
       break;
     }
-    case CodeRewriter::CompileType::BASE: {
+    case CodeRewriter::CompileType::PROGRAM_RELOAD: {
       /*Retrieve current code to load, if original or swap*/
       reload(egressSwapState.getCodeToLoad(), 0, ProgramType::EGRESS);
       break;
     }
-    case CodeRewriter::CompileType::ENHANCED: {
+    case CodeRewriter::CompileType::PROGRAM_INDEX_SWAP: {
       /*Load PIVOTING code at index 0, tuned original at index 1 and tuned swap at index 2*/
       logger()->debug("[Dynmon] Swap enabled for EGRESS program");
       reload(egressSwapState.getMasterCode(), 0, ProgramType::EGRESS);
@@ -114,12 +114,12 @@ void Dynmon::setIngressPathConfig(const PathConfigJsonObject &config) {
       reload(config.getCode(), 0, ProgramType::INGRESS);
       break;
     }
-    case CodeRewriter::CompileType::BASE: {
+    case CodeRewriter::CompileType::PROGRAM_RELOAD: {
       /*Retrieve current code to load, if original or swap*/
       reload(ingressSwapState.getCodeToLoad(), 0, ProgramType::INGRESS);
       break;
     }
-    case CodeRewriter::CompileType::ENHANCED: {
+    case CodeRewriter::CompileType::PROGRAM_INDEX_SWAP: {
       /*Load PIVOTING code at index 0, tuned original at index 1 and tuned swap at index 2*/
       logger()->debug("[Dynmon] Swap enabled for INGRESS program");
       reload(ingressSwapState.getMasterCode(), 0, ProgramType::INGRESS);
@@ -161,8 +161,8 @@ void Dynmon::resetEgressPathConfig() {
   m_dpConfig->replaceEgressPathConfig(conf);
   reload(DEFAULT_PATH_CODE, 0, ProgramType::EGRESS);
 
-  /*Check if there were other programs loaded (enhanced compilation)*/
-  if(egressSwapState.getCompileType() == CodeRewriter::CompileType::ENHANCED) {
+  /*Check if there were other programs loaded (PROGRAM_INDEX_SWAP compilation)*/
+  if(egressSwapState.getCompileType() == CodeRewriter::CompileType::PROGRAM_INDEX_SWAP) {
     del_program(2, ProgramType::EGRESS);
     del_program(1, ProgramType::EGRESS);
   }
@@ -181,8 +181,8 @@ void Dynmon::resetIngressPathConfig() {
   m_dpConfig->replaceIngressPathConfig(conf);
   reload(DEFAULT_PATH_CODE, 0, ProgramType::INGRESS);
 
-  /*Check if there were other programs loaded (enhanced compilation)*/
-  if(ingressSwapState.getCompileType() == CodeRewriter::CompileType::ENHANCED) {
+  /*Check if there were other programs loaded (PROGRAM_INDEX_SWAP compilation)*/
+  if(ingressSwapState.getCompileType() == CodeRewriter::CompileType::PROGRAM_INDEX_SWAP) {
     del_program(2, ProgramType::INGRESS);
     del_program(1, ProgramType::INGRESS);
   }
@@ -500,14 +500,14 @@ void Dynmon::triggerReadEgress() {
   switch(egressSwapState.getCompileType()) {
   case CodeRewriter::CompileType::NONE:
     break;
-  case CodeRewriter::CompileType::BASE: {
+  case CodeRewriter::CompileType::PROGRAM_RELOAD: {
     /* Triggering read egress and retrieve index and code to load*/
     auto index = egressSwapState.triggerRead();
     logger()->debug("[Dynmon] Triggered read EGRESS! Swapping code with {} ", index == 1? "original" : "swap");
     reload(egressSwapState.getCodeToLoad(), 0, ProgramType::EGRESS);
     break;
   }
-  case CodeRewriter::CompileType::ENHANCED: {
+  case CodeRewriter::CompileType::PROGRAM_INDEX_SWAP: {
     /* Triggering read egress and changing the PIVOTING map index to call the right program*/
     auto index = egressSwapState.triggerRead();
     logger()->debug("[Dynmon] Triggered read EGRESS! Changing map index to {}", index);
@@ -525,14 +525,14 @@ void Dynmon::triggerReadIngress() {
   switch(ingressSwapState.getCompileType()) {
   case CodeRewriter::CompileType::NONE:
     break;
-  case CodeRewriter::CompileType::BASE: {
+  case CodeRewriter::CompileType::PROGRAM_RELOAD: {
     /* Triggering read ingress and retrieve index and code to load*/
     auto index = ingressSwapState.triggerRead();
     logger()->debug("[Dynmon] Triggered read INGRESS! Swapping code with {} ", index == 1? "original" : "swap");
     reload(ingressSwapState.getCodeToLoad(), 0, ProgramType::INGRESS);
     break;
   }
-  case CodeRewriter::CompileType::ENHANCED: {
+  case CodeRewriter::CompileType::PROGRAM_INDEX_SWAP: {
     /* Triggering read ingress and changing the PIVOTING map index to call the right program*/
     auto index = ingressSwapState.triggerRead();
     logger()->debug("[Dynmon] Triggered read INGRESS! Changing map index to {} ", index);

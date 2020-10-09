@@ -19,7 +19,7 @@ int SwapStateConfig::getProgramIndexAndMapNameToRead(std::string &mapName) {
   switch (compileType) {
   case CompileType::NONE:
     break;
-  case CompileType::ENHANCED: {
+  case CompileType::PROGRAM_INDEX_SWAP: {
     /*Check if map has tuned name or, in case the "original" program is loaded, it has
      * a globally tuned name among INGRESS-EGRESS */
     auto tuned = enhanced_names.find(mapName);
@@ -29,7 +29,7 @@ int SwapStateConfig::getProgramIndexAndMapNameToRead(std::string &mapName) {
     index = (current_program_index % 2) + 1;
     break;
   }
-  case CompileType::BASE: {
+  case CompileType::PROGRAM_RELOAD: {
     /* Check if the map has a tuned name */
     auto tuned = enhanced_names.find(mapName);
     if(current_program_index == 1 && tuned != enhanced_names.end())
