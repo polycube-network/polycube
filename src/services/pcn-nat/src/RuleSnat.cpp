@@ -28,7 +28,6 @@ RuleSnat::RuleSnat(Rule &parent, const RuleSnatJsonObject &conf)
 
 RuleSnat::~RuleSnat() {
   delEntryList();
-  logger()->info("Removed all SNAT rules");
 }
 
 void RuleSnat::update(const RuleSnatJsonObject &conf) {
@@ -145,4 +144,6 @@ void RuleSnat::delEntryList() {
   }
 
   rules_.clear();
+
+  logger()->info("Removed all SNAT rules");
 }
