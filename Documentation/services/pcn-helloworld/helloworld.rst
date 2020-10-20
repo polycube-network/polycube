@@ -3,7 +3,7 @@ Helloworld
 
 **Note**: documentation of the current release is focused on the final user and not in developers. This service is intended to be used only by developers, so this documentation could be incomplete and have some inacuracies.
 
-This service demonstrates how to create a minimal cube, which includes both the dataplane `fast path` and the control/management `slow path` parts
+This service demonstrates how to create a minimal cube, which includes the dataplane `fast path`, the `slow path`, running in user-space, and the control/management portions (e.g., to configure the service).
 
 Helloworld is a simple service that receives the traffic on a network interface and can either:
 
@@ -19,7 +19,7 @@ How to use
 ::
 
     # create network namespaces
-    # TODO.
+    # DO IT YOURSELF
 
     # create the instance
     polycubectl helloworld add hw0
