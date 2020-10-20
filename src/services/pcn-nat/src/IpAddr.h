@@ -43,7 +43,7 @@ struct IpAddr {
       throw std::runtime_error("Netmask can't be bigger than 32");
 
     ip_ = ipnetmask.substr(0, found);
-    ip = utils::ip_string_to_nbo_uint(ip_);
+    ip = utils::ip_string_to_nbo_uint(ip_) & ntohl(0xffffffff << (32 - netmask_));
     netmask = netmask_;
   }
   bool operator<(const IpAddr &that) const {
