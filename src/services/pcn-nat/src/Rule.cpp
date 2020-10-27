@@ -27,12 +27,7 @@ Rule::Rule(Nat &parent, const RuleJsonObject &conf) : parent_(parent) {
   update(conf);
 }
 
-Rule::~Rule() {
-  delSnat();
-  delDnat();
-  delPortForwarding();
-  delMasquerade();
-}
+Rule::~Rule() {}
 
 void Rule::update(const RuleJsonObject &conf) {
   // This method updates all the object/parameter in Rule object specified in
@@ -87,7 +82,7 @@ void Rule::replaceSnat(const RuleSnatJsonObject &conf) {
 }
 
 void Rule::delSnat() {
-  snat_ = nullptr;
+  snat_->delEntryList();
 }
 
 std::shared_ptr<RuleMasquerade> Rule::getMasquerade() {
@@ -122,7 +117,7 @@ void Rule::replaceDnat(const RuleDnatJsonObject &conf) {
 }
 
 void Rule::delDnat() {
-  dnat_ = nullptr;
+  dnat_->delEntryList();
 }
 
 std::shared_ptr<RulePortForwarding> Rule::getPortForwarding() {
@@ -139,5 +134,5 @@ void Rule::replacePortForwarding(const RulePortForwardingJsonObject &conf) {
 }
 
 void Rule::delPortForwarding() {
-  portforwarding_ = nullptr;
+  portforwarding_->delEntryList();
 }

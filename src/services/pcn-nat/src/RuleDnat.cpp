@@ -30,7 +30,6 @@ RuleDnat::RuleDnat(Rule &parent, const RuleDnatJsonObject &conf)
 
 RuleDnat::~RuleDnat() {
   delEntryList();
-  logger()->info("Removed all DNAT rules");
 }
 
 void RuleDnat::update(const RuleDnatJsonObject &conf) {
@@ -151,4 +150,6 @@ void RuleDnat::delEntryList() {
   }
 
   rules_.clear();
+
+  logger()->info("Removed all DNAT rules");
 }

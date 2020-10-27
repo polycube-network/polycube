@@ -172,7 +172,7 @@ To delete a single rule (an SNAT rule in the example):
 
 ::
 
-    polycubectl nat1 rule snat del RULE_ID
+    polycubectl nat1 rule snat entry del RULE_ID
 
 Deleting a rule does not affect ongoing natting sessions: to prevent a deleted rule from being applied, `flush the natting table <Natting-table>`_.
 

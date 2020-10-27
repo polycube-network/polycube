@@ -31,7 +31,6 @@ RulePortForwarding::RulePortForwarding(Rule &parent,
 
 RulePortForwarding::~RulePortForwarding() {
   delEntryList();
-  logger()->info("Removed all PortForwarding rules");
 }
 
 void RulePortForwarding::update(const RulePortForwardingJsonObject &conf) {
@@ -157,4 +156,6 @@ void RulePortForwarding::delEntryList() {
   }
 
   rules_.clear();
+
+  logger()->info("Removed all PortForwarding rules");
 }
