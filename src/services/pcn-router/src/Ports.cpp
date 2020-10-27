@@ -255,16 +255,20 @@ void Ports::addSecondaryip(const std::string &ip, const PortsSecondaryipJsonObje
   /*
   * First create the port in the control plane
   */
-  logger()->info(
-      "Adding secondary address [port: {0} - ip: {1}]", getName(), ip);
+ if (!this->getIp().empty()) {
+    logger()->info(
+        "Adding secondary address [port: {0} - ip: {1}]", getName(), ip);
 
-  auto ret = secondary_ips_.emplace(PortsSecondaryip(*this, conf));
+    auto ret = secondary_ips_.emplace(PortsSecondaryip(*this, conf));
 
-  /*
-  * Then update the port in the data path (this also adds the proper routes in
-  * the routing table)
-  */
-  updatePortInDataPath();
+    /*
+    * Then update the port in the data path (this also adds the proper routes in
+    * the routing table)
+    */
+    updatePortInDataPath();
+  } else
+    throw std::runtime_error(
+        "You can not add a secondary ip address to a port with no ip address");
 }
 
 // Basic default implementation, place your extension here (if needed)
