@@ -6,11 +6,11 @@
 #include <unordered_map>
 
 /*The suffix to be added to the original NON_SWAPPABLE map name when swapped
- * in the EGRESS program and CompileType=ENHANCED*/
+ * in the EGRESS program and CompileType=PROGRAM_INDEX_SWAP*/
 const char ENHANCED_SWAP_MAP_NAME_FORMAT_EGRESS[]  = "_egress";
 
 /*The suffix to be added to the original NON_SWAPPABLE map name when swapped
- * in the INGRESS program and CompileType=ENHANCED*/
+ * in the INGRESS program and CompileType=PROGRAM_INDEX_SWAP*/
 const char ENHANCED_SWAP_MAP_NAME_FORMAT_INGRESS[] = "_ingress";
 
 /*The suffix to be added to the original SWAPPABLE map name when swapped and CompileType=BASE*/
@@ -31,7 +31,7 @@ const char dynmon_swap_master[] = R"(
     )";
 
 /**
- * Internal method called during enhanced compilation to adjust NON-SWAPPABLE maps
+ * Internal method called during PROGRAM_INDEX_SWAP compilation to adjust NON-SWAPPABLE maps
  *
  * Checks for all non-swappable maps and declare them SHARED/extern. This way they
  * can be shared among the two programs (original/swapped).
@@ -222,13 +222,13 @@ bool try_enhance_compilation(std::string original_code, ProgramType type,
       dynmon_swap_master, std::regex("PROGRAMTYPE"),
       type == ProgramType::INGRESS ? "ingress" : "egress");
 
-  config = SwapStateConfig(original_code, swapped_code, CompileType::ENHANCED,
+  config = SwapStateConfig(original_code, swapped_code, CompileType::PROGRAM_INDEX_SWAP,
                            master_code, modified_names, modified_global_names);
   return true;
 }
 
 /**
- *  Internal functions to perform the base compilation.
+ *  Internal functions to perform the PROGRAM_RELOAD compilation.
  *
  * @param original_code the original code to compile
  * @param maps_to_swap  the list of map which need to be swapped
@@ -267,7 +267,7 @@ bool do_base_compile(std::string original_code,
       return false;
     }
   }
-  config = SwapStateConfig(original_code, swapped_code, CompileType::BASE, "", modified_names);
+  config = SwapStateConfig(original_code, swapped_code, CompileType::PROGRAM_RELOAD, "", modified_names);
   return true;
 }
 
@@ -286,14 +286,14 @@ void CodeRewriter::compile(std::string &original_code, ProgramType type,
       is_enabled = true;
     }
   }
-  /*If is enabled, try enhanced compilation or basic compilation if it has failed.*/
+  /*If is enabled, try PROGRAM_INDEX_SWAP compilation or PROGRAM_RELOAD compilation if it has failed.*/
   if(!is_enabled) {
     config = {};
     logger->info("[Dynmon_CodeRewriter] No map marked as swappable, no rewrites performed");
   } else if(try_enhance_compilation(original_code, type, maps_to_swap, config)) {
-    logger->info("[Dynmon_CodeRewriter] Successfully rewritten with ENHANCED tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully rewritten using PROGRAM_INDEX_SWAP technique.");
   } else if(do_base_compile(original_code, maps_to_swap, config)) {
-    logger->info("[Dynmon_CodeRewriter] Successfully rewritten with BASE tuning");
+    logger->info("[Dynmon_CodeRewriter] Successfully rewritten using PROGRAM_RELOAD technique.");
   } else {
     config = {};
     logger->info("[Dynmon_CodeRewriter] Error while trying to rewrite the code, no rewrites performed");
