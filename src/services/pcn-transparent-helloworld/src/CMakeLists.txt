@@ -10,6 +10,8 @@ include_directories(default-src)
 
 # Needed to load files as variables
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src/)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src/remote_libbpf/src)
 
 add_library(pcn-transparenthelloworld SHARED
   ${SERIALIZER_SOURCES}

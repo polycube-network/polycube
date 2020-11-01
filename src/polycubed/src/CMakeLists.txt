@@ -20,6 +20,8 @@ include_directories(${CMAKE_SOURCE_DIR}/src/libs/viface/)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/prometheus-cpp/core/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/jsoncons/include)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src/)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src/remote_libbpf/src)
 
 GET_PROPERTY(LOAD_SERVICES GLOBAL PROPERTY LOAD_SERVICES_)
 
