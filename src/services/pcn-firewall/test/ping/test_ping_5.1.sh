@@ -6,6 +6,13 @@ source "${BASH_SOURCE%/*}/../helpers.bash"
 BATCH_FILE="/tmp/batch.json"
 batch='{"rules":['
 
+function fwsetup {
+  polycubectl firewall add fw loglevel=DEBUG
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -20,8 +27,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw
-polycubectl attach fw veth1
+fwsetup
+
 set +x
 batch='{"rules":['
 
@@ -33,7 +40,7 @@ do
 done
 
 #matched rules
-batch=${batch}"{'operation': 'insert', 'id': 3500, 'action': 'FORWARD'},"
+batch=${batch}"{'operation': 'insert', 'id': 3500, 'action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 3501 4000`;
@@ -56,7 +63,7 @@ do
 done
 
 #matched rules
-batch=${batch}"{'operation': 'insert', 'id':3501, 'action': 'FORWARD'},"
+batch=${batch}"{'operation': 'insert', 'id':3501, 'action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 3502 4000`;

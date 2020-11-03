@@ -1,5 +1,12 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+function fwsetup {
+  polycubectl firewall add fw loglevel=DEBUG
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -11,16 +18,15 @@ set -e
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=DEBUG
-polycubectl attach fw veth1
+fwsetup
 
 echo "Conntrack Test - Enable and Disable"
 
 echo "Disabling conntrack"
 polycubectl firewall fw set conntrack=OFF
 
-polycubectl firewall fw chain INGRESS append l4proto=ICMP action=FORWARD
-polycubectl firewall fw chain EGRESS append l4proto=ICMP action=FORWARD
+polycubectl firewall fw chain INGRESS append l4proto=ICMP action=ACCEPT
+polycubectl firewall fw chain EGRESS append l4proto=ICMP action=ACCEPT
 
 echo "(1) Performing PING without conntrack"
 sudo  ping -c 2 -i 0.5 10.0.0.1
@@ -36,7 +42,7 @@ echo "Enabling automatic mode"
 polycubectl firewall fw set accept-established=ON
 
 polycubectl firewall fw chain INGRESS rule add 0 l4proto=ICMP conntrack=NEW action=DROP
-polycubectl firewall fw chain EGRESS rule add 0 l4proto=ICMP conntrack=NEW action=FORWARD
+polycubectl firewall fw chain EGRESS rule add 0 l4proto=ICMP conntrack=NEW action=ACCEPT
 
 set +e
 echo "(2) Sending NOT allowed NEW ICMP packet"
@@ -58,10 +64,10 @@ echo "Enabling manual mode"
 polycubectl firewall fw set accept-established=OFF
 
 polycubectl firewall fw chain INGRESS rule add 0 conntrack=NEW action=DROP
-polycubectl firewall fw chain INGRESS rule add 1 conntrack=ESTABLISHED action=FORWARD
+polycubectl firewall fw chain INGRESS rule add 1 conntrack=ESTABLISHED action=ACCEPT
 
-polycubectl firewall fw chain EGRESS rule add 0 conntrack=NEW action=FORWARD
-polycubectl firewall fw chain EGRESS rule add 1 conntrack=ESTABLISHED action=FORWARD
+polycubectl firewall fw chain EGRESS rule add 0 conntrack=NEW action=ACCEPT
+polycubectl firewall fw chain EGRESS rule add 1 conntrack=ESTABLISHED action=ACCEPT
 
 set +e
 echo "(4) Sending NOT allowed NEW ICMP packet"

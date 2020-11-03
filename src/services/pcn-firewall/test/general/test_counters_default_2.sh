@@ -2,6 +2,13 @@
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+function fwsetup {
+  polycubectl firewall add fw loglevel=DEBUG
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -14,10 +21,8 @@ set -e
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=TRACE
-polycubectl attach fw veth1
-polycubectl firewall fw chain INGRESS set default=FORWARD
-polycubectl firewall fw chain EGRESS set default=FORWARD
+fwsetup
+
 set +e
 
 #ping

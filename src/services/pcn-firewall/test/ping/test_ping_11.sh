@@ -5,6 +5,13 @@ source "${BASH_SOURCE%/*}/../helpers.bash"
 BATCH_FILE="/tmp/batch.json"
 batch='{"rules":['
 
+function fwsetup {
+  polycubectl firewall add fw loglevel=DEBUG
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -19,8 +26,7 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=OFF
-polycubectl attach fw veth1
+fwsetup
 set +x
 
 #INGRESS CHAIN
@@ -31,7 +37,7 @@ do
 done
 
 #matched rules
-batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'ICMP', 'action': 'FORWARD'}]}"
+batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'ICMP', 'action': 'ACCEPT'}]}"
 
 echo "$batch" > $BATCH_FILE
 set -x
@@ -47,7 +53,7 @@ do
 done
 
 #matched rules
-batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.2/32', 'dst': '10.0.0.1/32', 'l4proto': 'ICMP', 'action': 'FORWARD'}]}"
+batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.2/32', 'dst': '10.0.0.1/32', 'l4proto': 'ICMP', 'action': 'ACCEPT'}]}"
 
 echo "$batch" > $BATCH_FILE
 set -x
