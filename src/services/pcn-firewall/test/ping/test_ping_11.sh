@@ -2,7 +2,6 @@
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
-BATCH_FILE="/tmp/batch.json"
 batch='{"rules":['
 
 function fwsetup {
@@ -15,7 +14,6 @@ function fwsetup {
 function fwcleanup {
   set +e
   polycubectl firewall del fw
-  rm -f $BATCH_FILE
   delete_veth 2
 }
 trap fwcleanup EXIT
@@ -39,9 +37,8 @@ done
 #matched rules
 batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'ICMP', 'action': 'ACCEPT'}]}"
 
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain INGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain INGRESS batch rules=<<<$batch
 set +x
 batch='{"rules":['
 
@@ -55,9 +52,8 @@ done
 #matched rules
 batch=${batch}"{'operation': 'insert', 'id': 2, 'src': '10.0.0.2/32', 'dst': '10.0.0.1/32', 'l4proto': 'ICMP', 'action': 'ACCEPT'}]}"
 
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain INGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain INGRESS batch rules=<<<$batch
 
 #ping
 sudo ip netns exec ns1 ping 10.0.0.2 -c 2 -i 0.5

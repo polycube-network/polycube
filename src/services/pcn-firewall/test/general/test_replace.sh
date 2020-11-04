@@ -7,6 +7,7 @@ function fwsetup {
   polycubectl attach fw veth1
   polycubectl firewall fw chain INGRESS set default=DROP
   polycubectl firewall fw chain EGRESS set default=DROP
+  polycubectl firewall fw set conntrack=OFF
 }
 
 function fwcleanup {

@@ -7,6 +7,7 @@ function fwsetup {
   polycubectl attach fw veth1
   polycubectl firewall fw chain INGRESS set default=DROP
   polycubectl firewall fw chain EGRESS set default=DROP
+  polycubectl firewall fw set conntrack=OFF
 }
 
 function fwcleanup {
@@ -95,6 +96,3 @@ polycubectl firewall fw chain EGRESS del rule 0
 polycubectl fw chain EGRESS show
 
 test_fail sudo ip netns exec ns1 ping 10.0.0.2 -c 2 -i 0.5 -w 1
-
-
-

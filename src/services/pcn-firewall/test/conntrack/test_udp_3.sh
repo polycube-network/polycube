@@ -1,8 +1,5 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
-BATCH_FILE="/tmp/batch.json"
-batch='{"rules":['
-
 function fwsetup {
   polycubectl firewall add fw loglevel=DEBUG
   polycubectl attach fw veth1
@@ -13,7 +10,6 @@ function fwsetup {
 function fwcleanup {
   set +e
   polycubectl firewall del fw
-  rm -f $BATCH_FILE
   delete_veth 2
 }
 trap fwcleanup EXIT

@@ -2,7 +2,6 @@
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
-BATCH_FILE="/tmp/batch.json"
 batch='{"rules":['
 
 function fwsetup {
@@ -15,7 +14,6 @@ function fwsetup {
 function fwcleanup {
   set +e
   polycubectl firewall del fw
-  rm -f $BATCH_FILE
   delete_veth 2
 }
 trap fwcleanup EXIT
@@ -48,9 +46,8 @@ do
 done
 
 batch=${batch}"]}"
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain INGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain INGRESS batch rules=<<<$batch
 set +x
 batch='{"rules":['
 
@@ -72,9 +69,8 @@ do
 done
 
 batch=${batch}"]}"
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain EGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain EGRESS batch rules=<<<$batch
 
 
 #ping
