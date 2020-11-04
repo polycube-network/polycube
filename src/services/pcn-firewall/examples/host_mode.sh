@@ -24,15 +24,17 @@ set -e
 set -x
 
 polycubectl firewall add fw1
+polycubectl firewall fw1 chain INGRESS set default=DROP
+polycubectl firewall fw1 chain EGRESS set default=DROP
 
 # Attaching the firewall to the physical interface
 polycubectl attach fw1 $1
 
-polycubectl firewall fw1 chain INGRESS rule add 0 l4proto=UDP action=FORWARD
-polycubectl firewall fw1 chain INGRESS rule add 1 l4proto=ICMP action=FORWARD
+polycubectl firewall fw1 chain INGRESS rule add 0 l4proto=UDP action=ACCEPT
+polycubectl firewall fw1 chain INGRESS rule add 1 l4proto=ICMP action=ACCEPT
 
-polycubectl firewall fw1 chain EGRESS rule add 0 l4proto=UDP action=FORWARD
-polycubectl firewall fw1 chain EGRESS rule add 1 l4proto=ICMP action=FORWARD
+polycubectl firewall fw1 chain EGRESS rule add 0 l4proto=UDP action=ACCEPT
+polycubectl firewall fw1 chain EGRESS rule add 1 l4proto=ICMP action=ACCEPT
 
 echo "Press any key to test applied rules"
 read
