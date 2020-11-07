@@ -19,7 +19,8 @@
 namespace polycube {
 namespace polycubed {
 
-PeerIface::PeerIface(std::mutex &mutex) : mutex_(mutex) {}
+PeerIface::PeerIface(std::mutex &mutex, const std::string &node)
+    : mutex_(mutex), remote_node_name(node) {}
 
 PeerIface::~PeerIface() {
   for (int i = 0; i < cubes_.size(); i++) {
@@ -180,6 +181,19 @@ PeerIface::CubePositionComparison PeerIface::compare_position(
   }
 
   return CubePositionComparison::UNKOWN;
+}
+
+std::string PeerIface::escape_remote_node_name() {
+	std::string str = remote_node_name;
+    if (str.empty()) {
+        return "";
+    }
+
+    while (str.find(".") != std::string::npos) {
+        str.replace(str.find("."), 1, "_");
+    }
+    str.replace(0, 0, "_");
+	return str;
 }
 
 }  // namespace polycubed

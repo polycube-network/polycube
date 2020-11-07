@@ -38,14 +38,14 @@ class ExtIfaceTC : public ExtIface {
   friend class ExtIfaceXDP;
 
  public:
-  ExtIfaceTC(const std::string &iface);
+  ExtIfaceTC(const std::string &iface, const std::string &node="");
   virtual ~ExtIfaceTC();
 
  protected:
   int load_ingress();
 
-  virtual std::string get_ingress_code() const;
-  virtual std::string get_egress_code() const;
+  virtual std::string get_ingress_code();
+  virtual std::string get_egress_code();
   virtual bpf_prog_type get_program_type() const;
 
   static const std::string RX_CODE;

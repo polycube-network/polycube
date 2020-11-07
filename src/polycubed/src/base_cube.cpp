@@ -64,10 +64,18 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
       id_(id_generator_.acquire()) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
+  std::string node_instance_code;
+  node_name = "192_168_122_122";
   // create master program that contains some maps definitions
   master_program_ =
       std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
-  master_program_->init(BASECUBE_MASTER_CODE + master_code, cflags_);
+  if (enable_remote_libbpf) {
+      if (!PatchPanel::get_remote_node_instance(node_name)) {
+          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes_)" + node_name + R"(, _POLYCUBE_MAX_NODES);)";
+          PatchPanel::set_remote_node_instance(node_name);
+      }
+  }
+  master_program_->init(BASECUBE_MASTER_CODE + node_instance_code + master_code, cflags_);
 
   // get references to those maps
   auto ingress_ = master_program_->get_prog_table("ingress_programs");

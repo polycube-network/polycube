@@ -30,6 +30,7 @@
 
 #include "../exceptions.h"
 #include "polycube/services/utils.h"
+#include "rbpf.h"
 
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270
@@ -261,6 +262,14 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
   struct nl_sock *sock;
 
   uint32_t prio, protocol;
+
+  if (enable_remote_libbpf && (fd & 0x10000000)) {
+      gen_req_para_t para = {
+        .server = "192.168.122.122",
+      };
+      auto ret = remote_attach_to_tc(&para, iface.c_str(), fd, static_cast<int>(mode));
+      return;
+  }
 
   sock = nl_socket_alloc();
   if ((err = nl_connect(sock, NETLINK_ROUTE)) < 0) {

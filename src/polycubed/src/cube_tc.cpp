@@ -68,7 +68,7 @@ std::string CubeTC::get_redirect_code() {
       // It is a net interface
       ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
     } else {
-      ss << "nodes.call(skb, " << (val.first & 0xffff) << ");\n";
+      ss << "NODES_.call(skb, " << (val.first & 0xffff) << ");\n";
     }
 
     ss << "break;\n";
@@ -96,6 +96,11 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
     cflags.push_back("-DSHADOW");
     if (span)
       cflags.push_back("-DSPAN");
+  }
+  if (enable_remote_libbpf) {
+      cflags.push_back("-DNODES_=nodes_" + get_nodename());
+  } else {
+      cflags.push_back("-DNODES_=nodes");
   }
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
@@ -398,7 +403,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
       } else if (*next == 0xffff) {
         return TC_ACT_OK;
       } else {
-        nodes.call(skb, *next);
+        NODES_.call(skb, *next);
       }
 
 #else  // INGRESS

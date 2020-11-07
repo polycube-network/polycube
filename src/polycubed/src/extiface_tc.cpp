@@ -26,7 +26,7 @@
 namespace polycube {
 namespace polycubed {
 
-ExtIfaceTC::ExtIfaceTC(const std::string &iface) : ExtIface(iface) {}
+ExtIfaceTC::ExtIfaceTC(const std::string &iface, const std::string &node) : ExtIface(iface, node) {}
 
 ExtIfaceTC::~ExtIfaceTC() {
   if (ingress_program_) {
@@ -78,12 +78,22 @@ int ExtIfaceTC::load_ingress() {
   return fd;
 }
 
-std::string ExtIfaceTC::get_ingress_code() const {
-  return RX_CODE;
+std::string ExtIfaceTC::get_ingress_code() {
+    std::string rx_code = RX_CODE;
+    while (rx_code.find("NODES_") != std::string::npos) {
+        rx_code.replace(rx_code.find("NODES_"), 6, "nodes" + escape_remote_node_name());
+    }
+
+    return rx_code;
 }
 
-std::string ExtIfaceTC::get_egress_code() const {
-  return RX_CODE;
+std::string ExtIfaceTC::get_egress_code() {
+    std::string rx_code = RX_CODE;
+    while (rx_code.find("NODES_") != std::string::npos) {
+        rx_code.replace(rx_code.find("NODES_"), 6, "nodes" + escape_remote_node_name());
+    }
+
+    return rx_code;
 }
 
 bpf_prog_type ExtIfaceTC::get_program_type() const {
@@ -93,11 +103,11 @@ bpf_prog_type ExtIfaceTC::get_program_type() const {
 const std::string ExtIfaceTC::RX_CODE = R"(
 #include <uapi/linux/pkt_cls.h>
 
-BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
+BPF_TABLE("extern", int, int, NODES_, _POLYCUBE_MAX_NODES);
 
 int handler(struct __sk_buff *skb) {
   skb->cb[0] = NEXT_PORT << 16;
-  nodes.call(skb, NEXT_PROGRAM);
+  NODES_.call(skb, NEXT_PROGRAM);
 
   return TC_ACT_SHOT;
 }

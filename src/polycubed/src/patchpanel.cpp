@@ -26,6 +26,7 @@ BPF_TABLE_PUBLIC("prog", int, int, _MAP_NAME, _POLYCUBE_MAX_NODES);
 )";
 
 std::set<uint16_t> PatchPanel::node_ids_ = std::set<uint16_t>();
+std::set<std::string> PatchPanel::remote_node_instance_ = std::set<std::string>();
 
 std::array<bool, PatchPanel::_POLYCUBE_MAX_NODES>
     PatchPanel::nodes_present_tc_ = {false};

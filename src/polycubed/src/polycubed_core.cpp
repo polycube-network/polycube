@@ -365,14 +365,26 @@ void PolycubedCore::attach(const std::string &cube_name,
   }
 
   std::smatch match;
-  std::regex rule("(\\S+):(\\S+)");
+  // port_name now supports node_name, port_name2 is original port_name
+  // port_name = node_name + port_name2
+  std::string node_name, port_name2;
+  std::regex rule("//(.*)/(.*)");
+  if (std::regex_match(port_name, match, rule)) {
+     node_name = match[1];
+     port_name2 = match[2];
+  } else {
+     node_name = "";
+     port_name2 = port_name;
+  }
+
+  rule = "(\\S+):(\\S+)";
   std::shared_ptr<CubeIface> cube2;
   std::shared_ptr<PortIface> port;
 
-  if (std::regex_match(port_name, match, rule)) {
+  if (std::regex_match(port_name2, match, rule)) {
     auto cube2_ = ServiceController::get_cube(match[1]);
     if (cube2_ == nullptr) {
-      throw std::runtime_error("Port " + port_name + " does not exist");
+      throw std::runtime_error("Port " + port_name2 + " does not exist");
     }
     cube2 = std::dynamic_pointer_cast<CubeIface>(cube2_);
     if (!cube2) {
@@ -384,14 +396,14 @@ void PolycubedCore::attach(const std::string &cube_name,
     switch (port->get_type()) {
     case PortType::TC:
       if (cube->get_type() != CubeType::TC) {
-        throw std::runtime_error(cube_name + " and " + port_name +
+        throw std::runtime_error(cube_name + " and " + port_name2 +
                                  " have incompatible types");
       }
       break;
     case PortType::XDP:
       if (cube->get_type() != CubeType::XDP_SKB &&
           cube->get_type() != CubeType::XDP_DRV) {
-        throw std::runtime_error(cube_name + " and " + port_name +
+        throw std::runtime_error(cube_name + " and " + port_name2 +
                                  " have incompatible types");
       }
       break;
@@ -403,7 +415,7 @@ void PolycubedCore::attach(const std::string &cube_name,
     if (ServiceController::ports_to_ifaces.count(port_name) == 0) {
       switch (cube->get_type()) {
       case CubeType::TC:
-        iface.reset(new ExtIfaceTC(port_name));
+        iface.reset(new ExtIfaceTC(port_name2, node_name));
         break;
       case CubeType::XDP_DRV:
         iface.reset(new ExtIfaceXDP(port_name, 1U << 2));

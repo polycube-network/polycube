@@ -34,7 +34,7 @@ namespace polycubed {
 
 class ExtIface : public PeerIface {
  public:
-  ExtIface(const std::string &iface);
+  ExtIface(const std::string &iface, const std::string &node="");
   virtual ~ExtIface();
 
   // It is not possible to copy nor assign an ext_iface.
@@ -84,8 +84,8 @@ class ExtIface : public PeerIface {
   virtual int load_ingress() = 0;
   int load_egress();
 
-  virtual std::string get_ingress_code() const = 0;
-  virtual std::string get_egress_code() const = 0;
+  virtual std::string get_ingress_code() = 0;
+  virtual std::string get_egress_code() = 0;
   virtual bpf_prog_type get_program_type() const = 0;
 
   virtual void update_indexes() override;

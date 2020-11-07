@@ -84,6 +84,7 @@ class BaseCube : virtual public BaseCubeIface {
   virtual nlohmann::json to_json() const;
 
   void set_log_level_cb(const polycube::service::set_log_level_cb &cb);
+  std::string get_nodename() { return node_name; }
 
  protected:
   static const int _POLYCUBE_MAX_BPF_PROGRAMS = 64;
@@ -161,6 +162,7 @@ class BaseCube : virtual public BaseCubeIface {
   static IDGenerator id_generator_;
 
   polycube::service::set_log_level_cb log_level_cb_;
+  std::string node_name;
 };
 
 }  // namespace polycubed

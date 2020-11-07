@@ -55,8 +55,8 @@ class ExtIfaceXDP : public ExtIface {
   void update_indexes() override;
 
  private:
-  virtual std::string get_ingress_code() const;
-  virtual std::string get_egress_code() const;
+  virtual std::string get_ingress_code();
+  virtual std::string get_egress_code();
   virtual bpf_prog_type get_program_type() const;
 
   static const std::string XDP_PROG_CODE;

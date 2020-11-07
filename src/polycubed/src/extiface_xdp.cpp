@@ -86,7 +86,7 @@ void ExtIfaceXDP::update_indexes() {
 
   // Link cubes of ingress chain
   // peer/stack <- cubes[N-1] <- ... <- cubes[0] <- iface
-  
+
   next = peer_ ? peer_->get_index() : 0xffff;
   for (int i = cubes_.size()-1; i >= 0; i--) {
     if (cubes_[i]->get_index(ProgramType::INGRESS)) {
@@ -127,7 +127,7 @@ void ExtIfaceXDP::update_indexes() {
     if (first) {
       peer_port->set_parent_egress_next(0xffff);
       first = false;
-    
+
     } else {
       peer_port->set_parent_egress_next(next);
     }
@@ -139,7 +139,7 @@ void ExtIfaceXDP::update_indexes() {
     // There aren't egress cubes
     // The TC egress program must pass the packet
     set_next(0xffff, ProgramType::EGRESS);
-  
+
   } else {
     set_next(next, ProgramType::EGRESS);
   }
@@ -151,11 +151,11 @@ void ExtIfaceXDP::update_indexes() {
   index_ = next;
 }
 
-std::string ExtIfaceXDP::get_ingress_code() const {
+std::string ExtIfaceXDP::get_ingress_code() {
   return XDP_PROG_CODE;
 }
 
-std::string ExtIfaceXDP::get_egress_code() const {
+std::string ExtIfaceXDP::get_egress_code() {
   return ExtIfaceTC::RX_CODE;
 }
 

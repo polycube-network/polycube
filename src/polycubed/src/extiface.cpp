@@ -34,8 +34,8 @@ const std::string PARAMETER_PEER = "PEER";
 
 std::map<std::string, ExtIface*> ExtIface::used_ifaces;
 
-ExtIface::ExtIface(const std::string &iface)
-    : PeerIface(iface_mutex_),
+ExtIface::ExtIface(const std::string &iface, const std::string &node)
+    : PeerIface(iface_mutex_, node),
       iface_(iface),
       peer_(nullptr),
       index_(0xffff),
@@ -141,7 +141,7 @@ void ExtIface::set_next_index(uint16_t index) {
       return;
     }
   }
-  
+
   // If there is no cube, set next index of the rx program of the interface
   set_next(index, ProgramType::INGRESS);
 }
@@ -156,7 +156,7 @@ void ExtIface::set_next(uint16_t next, ProgramType type) {
     ingress_next_ = next;
     ingress_port_ = port_id;
     load_ingress();
-    
+
 
   } else if (type == ProgramType::EGRESS) {
     if (next == egress_next_ && port_id == egress_port_) {
@@ -202,7 +202,7 @@ void ExtIface::update_indexes() {
 
   // Link cubes of ingress chain
   // peer/stack <- cubes[N-1] <- ... <- cubes[0] <- iface
-  
+
   next = peer_ ? peer_->get_index() : 0xffff;
   for (int i = cubes_.size()-1; i >= 0; i--) {
     if (cubes_[i]->get_index(ProgramType::INGRESS)) {

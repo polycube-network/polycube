@@ -40,7 +40,8 @@ class PatchPanel {
   void update(uint16_t index, int fd);
 
   static const int _POLYCUBE_MAX_NODES = 1024;
-
+  static int get_remote_node_instance(std::string &node_name) { return remote_node_instance_.count(node_name); }
+  static void set_remote_node_instance(std::string &node_name) { remote_node_instance_.insert(node_name); }
  private:
   PatchPanel(const std::string &map_name,
              std::array<bool, _POLYCUBE_MAX_NODES> &nodes_present);
@@ -53,6 +54,7 @@ class PatchPanel {
   static const std::string PATCHPANEL_CODE;
 
   std::shared_ptr<spdlog::logger> logger;
+  static std::set<std::string> remote_node_instance_;
 };
 
 }  // namespace polycubed
