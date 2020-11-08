@@ -6,7 +6,7 @@ source "${BASH_SOURCE%/*}/../helpers.bash"
 batch='{"rules":['
 
 function fwsetup {
-  polycubectl firewall add fw loglevel=DEBUG
+  polycubectl firewall add fw
   polycubectl attach fw veth1
   polycubectl firewall fw chain INGRESS set default=DROP
   polycubectl firewall fw chain EGRESS set default=DROP
