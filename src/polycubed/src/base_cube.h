@@ -149,6 +149,7 @@ class BaseCube : virtual public BaseCubeIface {
 
   std::unique_ptr<ebpf::BPFProgTable> ingress_programs_table_;
   std::unique_ptr<ebpf::BPFProgTable> egress_programs_table_;
+  std::unique_ptr<ebpf::BPFProgTable> remote_nodes_prog_table_;
 
   std::shared_ptr<spdlog::logger> logger;
   LogLevel level_;

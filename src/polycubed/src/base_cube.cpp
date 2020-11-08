@@ -65,13 +65,13 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   std::string node_instance_code;
-  node_name = "192_168_122_122";
+  node_name = "_192_168_122_122";
   // create master program that contains some maps definitions
   master_program_ =
       std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
   if (enable_remote_libbpf) {
       if (!PatchPanel::get_remote_node_instance(node_name)) {
-          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes_)" + node_name + R"(, _POLYCUBE_MAX_NODES);)";
+          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + node_name + R"(, _POLYCUBE_MAX_NODES);)";
           PatchPanel::set_remote_node_instance(node_name);
       }
   }
@@ -85,6 +85,12 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   auto egress_ = master_program_->get_prog_table("egress_programs");
   egress_programs_table_ =
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(egress_));
+
+  if (enable_remote_libbpf) {
+    auto t = master_program_->get_prog_table("nodes_192_168_122_122");
+    remote_nodes_prog_table_ =
+      std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(t));
+  }
 }
 
 void BaseCube::init(const std::vector<std::string> &ingress_code,
@@ -102,8 +108,14 @@ void BaseCube::uninit() {
   if (ingress_index_)
     patch_panel_.remove(ingress_index_);
 
+  if (ingress_index_ & 0x10000000)
+      remote_nodes_prog_table_->remove_value(ingress_index_);
+
   if (egress_index_)
     patch_panel_.remove(egress_index_);
+
+  if (egress_index_ & 0x10000000)
+      remote_nodes_prog_table_->remove_value(egress_index_);
 
   for (int i = 0; i < ingress_programs_.size(); i++) {
     if (ingress_programs_[i]) {
@@ -235,6 +247,9 @@ void BaseCube::do_reload(
 
   if (index == 0) {
     patch_panel_.update(first_program_index, fd);
+    if (fd & 0x10000000) {
+        remote_nodes_prog_table_->update_value(first_program_index, fd);
+    }
   }
 
   unload(*programs.at(index), type);
@@ -312,6 +327,9 @@ int BaseCube::do_add_program(
     } else {
       // register in patch panel
       *first_program_index = patch_panel_.add(fd);
+    }
+    if (fd & 0x10000000) {
+        remote_nodes_prog_table_->update_value(*first_program_index, fd);
     }
   }
 
