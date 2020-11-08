@@ -1,0 +1,88 @@
+# This is a basic workflow to help in CI
+name: Build & Test Workflow
+
+# Controls when the action will run. Triggers the workflow on schedule events
+on:
+  push:
+    branches: [master]
+  schedule:
+    # Runs every 15 minutes past every hour on Mon, Tue, Wed, Thu and Fri
+    - cron: '*/15 * * * 1-5'
+
+# This workflow is made by two jobs that run sequentially
+jobs:
+  # The first job deal with building the application
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Build strategies
+    strategy:
+      matrix:
+        # For docker default mode
+        mode: ['default', 'pcn-k8s', 'pcn-iptables']
+    env:
+      DOCKER_IMAGE_TAG: latest
+      DOCKER_IMAGE_NAME: polycube
+      DOCKER_CONTAINER: polycubed
+      REPO_GIT_BRANCH: main
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository (default master)
+      - name: Checkout branch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set-up environment
+        run: echo ENV 
+          | REPO_GIT_BRANCH=${{ env.REPO_GIT_BRANCH }}, 
+          | DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_TAG }}, 
+          | DOCKER_IMAGE_NAME=${{ env.DOCKER_IMAGE_NAME }}, 
+          | DOCKER_CONTAINER=${{ env.DOCKER_CONTAINER }}, 
+          | MODE=${{ matrix.mode }}
+        
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+              ${{ runner.os }}-buildx-
+              
+      - name: Docker login to Github registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+      
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+            context: ./ 
+            file: ./Dockerfile
+            builder: ${{ steps.buildx.outputs.name }}
+            build-args: |
+              DEFAULT_MODE=${{ matrix.mode }}
+            push: true
+            tags: ghcr.io/${{ github.repository_owner }}/polycubebot/${{ env.DOCKER_IMAGE_NAME }}-${{ matrix.mode }}:${{ env.DOCKER_IMAGE_TAG }}
+            cache-from: type=local,src=/tmp/.buildx-cache
+            cache-to: type=local,dest=/tmp/.buildx-cache
+      
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+  test:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Run Launch Clean Instance Tests
+        run: echo Launch Clean Instance Tests
+      - name: Run Launch Same Instance Tests
+        run: echo Launch Same Instance Tests
+      - name: Run Launch Iptables Tests
+        run: echo Launch Iptables Tests
