@@ -17,6 +17,7 @@
 #include "base_cube.h"
 
 #include "polycube/common.h"
+#include <regex>
 
 namespace polycube {
 namespace polycubed {
@@ -65,14 +66,27 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
   std::string node_instance_code;
-  node_name = "_192_168_122_122";
+  std::smatch match;
+  std::string node_name2;
+  std::regex rule("(.*)::(.*)");
+
+  if (std::regex_match(name, match, rule)) {
+     remote_node_name = match[1];
+  } else {
+     remote_node_name = "";
+  }
+
+  node_name2 = escape_remote_node_name();
   // create master program that contains some maps definitions
   master_program_ =
       std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
+  if (!remote_node_name.empty()) {
+      enable_remote_libbpf = 1;
+  }
   if (enable_remote_libbpf) {
-      if (!PatchPanel::get_remote_node_instance(node_name)) {
-          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + node_name + R"(, _POLYCUBE_MAX_NODES);)";
-          PatchPanel::set_remote_node_instance(node_name);
+      if (!PatchPanel::get_remote_node_instance(node_name2)) {
+          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + node_name2 + R"(, _POLYCUBE_MAX_NODES);)";
+          PatchPanel::set_remote_node_instance(node_name2);
       }
   }
   master_program_->init(BASECUBE_MASTER_CODE + node_instance_code + master_code, cflags_);
@@ -87,7 +101,8 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(egress_));
 
   if (enable_remote_libbpf) {
-    auto t = master_program_->get_prog_table("nodes_192_168_122_122");
+    std::string name = "nodes" + node_name2;
+    auto t = master_program_->get_prog_table(name);
     remote_nodes_prog_table_ =
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(t));
   }
@@ -418,6 +433,19 @@ nlohmann::json BaseCube::to_json() const {
   j["loglevel"] = logLevelString(level_);
 
   return j;
+}
+
+std::string BaseCube::escape_remote_node_name() {
+	std::string str = remote_node_name;
+    if (str.empty()) {
+        return "";
+    }
+
+    while (str.find(".") != std::string::npos) {
+        str.replace(str.find("."), 1, "_");
+    }
+    str.replace(0, 0, "_");
+	return str;
 }
 
 IDGenerator BaseCube::id_generator_(PatchPanel::_POLYCUBE_MAX_NODES - 2);

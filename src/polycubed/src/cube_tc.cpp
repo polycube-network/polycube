@@ -98,7 +98,7 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
       cflags.push_back("-DSPAN");
   }
   if (enable_remote_libbpf) {
-      cflags.push_back("-DNODES_=nodes_" + get_nodename());
+      cflags.push_back("-DNODES_=nodes_" + get_remote_node_name());
   } else {
       cflags.push_back("-DNODES_=nodes");
   }
