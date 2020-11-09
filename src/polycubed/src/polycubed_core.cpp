@@ -368,7 +368,7 @@ void PolycubedCore::attach(const std::string &cube_name,
   // port_name now supports node_name, port_name2 is original port_name
   // port_name = node_name + port_name2
   std::string node_name, port_name2;
-  std::regex rule("//(.*)/(.*)");
+  std::regex rule("(.*)::(.*)");
   if (std::regex_match(port_name, match, rule)) {
      node_name = match[1];
      port_name2 = match[2];
