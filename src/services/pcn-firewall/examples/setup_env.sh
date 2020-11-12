@@ -40,9 +40,7 @@ echo "Configuring Firewall"
 polycubectl fw del 
 
 polycubectl firewall add fw
-
 polycubectl attach fw br:port1
-
 polycubectl firewall fw chain INGRESS set default=DROP
 polycubectl firewall fw chain EGRESS set default=DROP
 

@@ -200,7 +200,7 @@ void ChainRule::flags_from_masks_to_string(std::string &flags,
 int ChainRule::ActionEnum_to_int(const ActionEnum &action) {
   if (action == ActionEnum::DROP)
     return DROP_ACTION;
-  else if (action == ActionEnum::FORWARD)
+  else if (action == ActionEnum::ACCEPT)
     return FORWARD_ACTION;
   else
     throw std::runtime_error("Action not supported.");

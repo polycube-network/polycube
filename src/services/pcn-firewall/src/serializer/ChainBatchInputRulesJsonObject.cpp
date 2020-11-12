@@ -370,8 +370,8 @@ std::string ChainBatchInputRulesJsonObject::ActionEnum_to_string(const ActionEnu
     return std::string("drop");
   case ActionEnum::LOG:
     return std::string("log");
-  case ActionEnum::FORWARD:
-    return std::string("forward");
+  case ActionEnum::ACCEPT:
+    return std::string("accept");
   default:
     throw std::runtime_error("Bad ChainBatchInputRules action");
   }
@@ -382,8 +382,8 @@ ActionEnum ChainBatchInputRulesJsonObject::string_to_ActionEnum(const std::strin
     return ActionEnum::DROP;
   if (JsonObjectBase::iequals("log", str))
     return ActionEnum::LOG;
-  if (JsonObjectBase::iequals("forward", str))
-    return ActionEnum::FORWARD;
+  if (JsonObjectBase::iequals("accept", str))
+    return ActionEnum::ACCEPT;
   throw std::runtime_error("ChainBatchInputRules action is invalid");
 }
 std::string ChainBatchInputRulesJsonObject::getDescription() const {

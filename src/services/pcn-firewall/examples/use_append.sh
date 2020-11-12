@@ -25,9 +25,9 @@ polycubectl firewall fw chain INGRESS append src=10.0.0.2 dst=10.0.0.1 l4proto=T
 
 polycubectl firewall fw chain EGRESS append src=10.0.0.1 dst=10.0.0.2 l4proto=TCP action=DROP
 
-polycubectl fw chain EGRESS append l4proto=ICMP src=10.0.0.2/32 dst=10.0.0.1 action=FORWARD
+polycubectl fw chain EGRESS append l4proto=ICMP src=10.0.0.2/32 dst=10.0.0.1 action=ACCEPT
 
-polycubectl fw chain INGRESS append l4proto=ICMP src=10.0.0.1/32 dst=10.0.0.2 action=FORWARD
+polycubectl fw chain INGRESS append l4proto=ICMP src=10.0.0.1/32 dst=10.0.0.2 action=ACCEPT
 
 echo "Press any key to test applied rules"
 read

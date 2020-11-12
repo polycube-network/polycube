@@ -4,7 +4,7 @@ Firewall
 This service implements a transparent firewall. It can be attached to a port or a netdev, and it may drop or forward each packet that matches one of the defined rules, based on the source and destination IPv4 addresses, level 4 protocol and ports, and TCP flags.
 Policy rules can include one or more of the above fields; if a given field is missing, its content does not influence the matching.
 
-**Non-IP packets are always forwarded, without any check**.
+**Non-IP packets are always accepted and forwarded, without any check**.
 
 
 Features
@@ -22,10 +22,10 @@ Supported features:
 
   - Possible actions:
 
-    - Forward packet from the interface from which it was received to the other
+    - Accept packet from the interface from which it was received and forward it to the other
     - Drop packet
 
-  - Non-IP packets are always forwarded
+  - Non-IP packets are always accepted
   - Up to 5k rules for each chain (INGRESS/EGRESS)
 
 
@@ -66,7 +66,7 @@ Concerning the batch endpoint, it accepts a JSON list of rules like:
       "rules": [
         {"operation": "insert", "id": 0, "l4proto":"TCP", "src":"192.168.1.1/32", "dst":"192.168.1.10/24", "action":"drop"},
         {"operation": "append", "l4proto": "ICMP", "src":"192.168.1.100/32", "dst":"192.168.1.100/24", "action":"drop"},
-        {"operation": "update", "id": 0, "l4proto":"TCP", "src":"192.168.1.2/32", "dst":"192.168.1.20/24", "action":"forward"},
+        {"operation": "update", "id": 0, "l4proto":"TCP", "src":"192.168.1.2/32", "dst":"192.168.1.20/24", "action":"accept"},
         {"operation": "delete", "id": 0},
         {"operation": "delete", "l4proto":"ICMP", "src":"192.168.1.100/32", "dst":"192.168.1.100/24", "action":"drop"}
       ]
@@ -86,7 +86,7 @@ Using the redirection diamond you are able to insert the file content in the bod
 Default action
 ^^^^^^^^^^^^^^
 
-The default action if no rule is matched is **FORWARD**. This can be changed for each chain independently by issuing the command
+The default action if no rule is matched is **ACCEPT**. This can be changed for each chain independently by issuing the command
 ``polycubectl firewall fwname chain INGRESS set default=DROP`` or ``polycubectl firewall fwname chain EGRESS set default=DROP``.
 
 Statistics and firewall status
@@ -100,7 +100,7 @@ Additional statistics and status information can be shown with the command ``pol
 
 Connection tracking and stateful operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This firewall supports stateful operations, e.g., it allows a to set a FORWARD rule for a given traffic in a given direction (e.g., allow incoming connection on port 22, to enable reaching your local SSH server), and automatically accept also the packets that are generated in the opposite direction and that relate to the above rule.
+This firewall supports stateful operations, e.g., it allows a to set a ACCEPT rule for a given traffic in a given direction (e.g., allow incoming connection on port 22, to enable reaching your local SSH server), and automatically accept also the packets that are generated in the opposite direction and that relate to the above rule.
 
 The connection tracking is enabled by default; its status can be inspected with command ``polycubectl firewall fw show``, which shows also the status of all the TCP/UDP sessions that are currently active in the firewall.
 This behavior can be changed with the command ``polycubectl fw1 set accept-established=OFF``.
@@ -110,9 +110,9 @@ For instance, the above command:
 
 ::
 
-  polycubectl fw1 chain EGRESS append l4proto=TCP sport=22 conntrack=ESTABLISHED action=FORWARD
+  polycubectl fw1 chain EGRESS append l4proto=TCP sport=22 conntrack=ESTABLISHED action=ACCEPT
 
-will accept all TCP packets that come from source port 22 (i.e., a local SSH server) and whose connection status is ESTABLISHED. This means that a packet had to be received by your host on port 22, your local server has accepted the connection, hence the packets generated in the opposite direction (i.e., EGRESS) are forwarded.
+will accept all TCP packets that come from source port 22 (i.e., a local SSH server) and whose connection status is ESTABLISHED. This means that a packet had to be received by your host on port 22, your local server has accepted the connection, hence the packets generated in the opposite direction (i.e., EGRESS) are accepted.
 
 
 Examples
@@ -140,20 +140,20 @@ We assume that the  machine has a network card named ``enp0s3``.
   polycubectl fw1 chain EGRESS set default=DROP
   
   # Enable incoming connections on port 22 (to ssh to my server from the external world)
-  polycubectl fw1 chain INGRESS append l4proto=TCP dport=22 action=FORWARD
+  polycubectl fw1 chain INGRESS append l4proto=TCP dport=22 action=ACCEPT
   
   # Enable outgoing connections on port 443 (to connect to HTTPS servers from my machine)
-  polycubectl fw1 chain EGRESS append l4proto=TCP dport=443 action=FORWARD
+  polycubectl fw1 chain EGRESS append l4proto=TCP dport=443 action=ACCEPT
   
   # Enable port 53 in both directions (to enable name resolution)
-  polycubectl fw1 chain INGRESS append l4proto=UDP sport=53 action=FORWARD
-  polycubectl fw1 chain EGRESS append l4proto=UDP dport=53 action=FORWARD
+  polycubectl fw1 chain INGRESS append l4proto=UDP sport=53 action=ACCEPT
+  polycubectl fw1 chain EGRESS append l4proto=UDP dport=53 action=ACCEPT
   
   # Enable established connections to go through, independently from the port they're using
   # Instead of the above two commands, we can use a single default command, i.e. 
   #    polycubectl fw1 set accept-established=ON
-  polycubectl fw1 chain INGRESS append l4proto=TCP conntrack=ESTABLISHED action=FORWARD
-  polycubectl fw1 chain EGRESS append l4proto=TCP conntrack=ESTABLISHED action=FORWARD
+  polycubectl fw1 chain INGRESS append l4proto=TCP conntrack=ESTABLISHED action=ACCEPT
+  polycubectl fw1 chain EGRESS append l4proto=TCP conntrack=ESTABLISHED action=ACCEPT
   
   # Show statistics for the INGRESS chain of the firewall
   polycubectl fw1 chain INGRESS show

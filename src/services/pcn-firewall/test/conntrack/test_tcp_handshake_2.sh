@@ -1,5 +1,12 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+function fwsetup {
+  polycubectl firewall add fw
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -10,20 +17,19 @@ function fwcleanup {
 trap fwcleanup EXIT
 set -e
 
-echo "TCP Initial handshake Conntrack Test [Automatic forward][Interactive mode]"
+echo "TCP Initial handshake Conntrack Test [Automatic ACCEPT][Interactive mode]"
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=TRACE
-polycubectl attach fw veth1
+fwsetup
 
 polycubectl firewall fw set accept-established=ON
 
 # Allowing connections to be started only from NS2 to NS1
-polycubectl firewall fw chain INGRESS append l4proto=ICMP action=FORWARD > /dev/null
+polycubectl firewall fw chain INGRESS append l4proto=ICMP action=ACCEPT > /dev/null
 
-polycubectl firewall fw chain EGRESS append l4proto=TCP conntrack=NEW action=FORWARD > /dev/null
-polycubectl firewall fw chain EGRESS append l4proto=ICMP action=FORWARD > /dev/null
+polycubectl firewall fw chain EGRESS append l4proto=TCP conntrack=NEW action=ACCEPT > /dev/null
+polycubectl firewall fw chain EGRESS append l4proto=ICMP action=ACCEPT > /dev/null
 
 #listen and connect
 set -e

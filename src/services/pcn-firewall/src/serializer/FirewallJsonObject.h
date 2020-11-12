@@ -64,7 +64,7 @@ public:
   static FirewallConntrackEnum string_to_FirewallConntrackEnum(const std::string &str);
 
   /// <summary>
-  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.
+  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.
   /// </summary>
   FirewallAcceptEstablishedEnum getAcceptEstablished() const;
   void setAcceptEstablished(FirewallAcceptEstablishedEnum value);

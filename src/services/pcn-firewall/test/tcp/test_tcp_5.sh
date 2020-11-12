@@ -2,15 +2,21 @@
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
-BATCH_FILE="/tmp/batch.json"
 batch='{"rules":['
+
+function fwsetup {
+  polycubectl firewall add fw
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+  polycubectl firewall fw set accept-established=OFF
+}
 
 function fwcleanup {
   set +e
   polycubectl firewall del fw
   #Make sure netcat is not pending.
   sudo pkill -SIGTERM netcat
-  rm -f $BATCH_FILE
   delete_veth 2
 }
 trap fwcleanup EXIT
@@ -21,8 +27,8 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=OFF
-polycubectl attach fw veth1
+fwsetup
+
 set +x
 batch='{"rules":['
 
@@ -36,7 +42,7 @@ done
 
 #matched rules
 #DON'T CARE
-batch=${batch}"{'operation': 'insert', 'id': 101, 'action': 'FORWARD'},"
+batch=${batch}"{'operation': 'insert', 'id': 101, 'action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 102 200`;
@@ -45,9 +51,8 @@ do
 done
 
 batch=${batch}"]}"
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain INGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain INGRESS batch rules=<<<$batch
 set +x
 batch='{"rules":['
 
@@ -60,7 +65,7 @@ done
 
 #matched rules
 #DON'T CARE
-batch=${batch}"{'operation': 'append', 'id': 63, 'action': 'FORWARD'},"
+batch=${batch}"{'operation': 'append', 'id': 63, 'action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 64 128`;
@@ -69,9 +74,8 @@ do
 done
 
 batch=${batch}"]}"
-echo "$batch" > $BATCH_FILE
 set -x
-polycubectl firewall fw chain EGRESS batch rules=<$BATCH_FILE
+polycubectl firewall fw chain EGRESS batch rules=<<<$batch
 
 #listen and connect
 set +x

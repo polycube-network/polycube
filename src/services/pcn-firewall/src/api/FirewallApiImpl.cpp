@@ -1112,7 +1112,7 @@ replace_firewall_chain_rule_list_by_id(const std::string &name, const ChainNameE
 * Update operation of resource: accept-established*
 *
 * @param[in] name ID of name
-* @param[in] value If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.
+* @param[in] value If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.
 *
 * Responses:
 *
