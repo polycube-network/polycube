@@ -61,6 +61,7 @@ jobs:
         run: |
           docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest
           docker ps
+          docker logs -f ${{ env.container }}
       - name: Run Tests
         run: |
           cd tests/
