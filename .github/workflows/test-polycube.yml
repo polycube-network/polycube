@@ -60,23 +60,18 @@ jobs:
       - name: Run Docker
         run: |
           docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest
-          docker ps
           docker logs -f ${{ env.container }}
+          docker ps
       - name: Run Tests
         run: |
           cd tests/
           ./run-tests.sh || true
           echo "LC_ALL=C" >> $GITHUB_ENV
-      - name: Active VirtualEnv
-        run: |
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
-      - name: Install requirements
-        run: python3 -m pip install -r ./tests/converter/requirements.txt
-      - name: Set Test Results Env
-        run: echo "TEST_RESULTS=$(ls -1 test_results_*)" >> $GITHUB_ENV
-      - name: Run Junit
-        run: python3 ./tests/converter/to_junit.py ${{ matrix.test-mode }}
+          python3 -m pip install -r ./converter/requirements.txt
+          echo "TEST_RESULTS=$(ls -1 test_results_*)" >> $GITHUB_ENV
+          python3 ./converter/to_junit.py ${{ matrix.test-mode }}
       - name: Clean
         run: ./CI/clean_slave.sh
   
@@ -132,15 +127,10 @@ jobs:
           cd tests/
           ./run-tests-iptables.sh || true
           echo "LC_ALL=C" >> $GITHUB_ENV
-      - name: Active VirtualEnv
-        run: |
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
-      - name: Install requirements
-        run: python3 -m pip install -r ./tests/converter/requirements.txt
-      - name: Set Test Results Env
-        run: echo "TEST_RESULTS=$(ls -1 test_results_*)" >> $GITHUB_ENV
-      - name: Run Junit
-        run: python3 ./tests/converter/to_junit.py Iptables
+          python3 -m pip install -r ./converter/requirements.txt
+          echo "TEST_RESULTS=$(ls -1 test_results_*)" >> $GITHUB_ENV
+          python3 ./converter/to_junit.py Iptables
       - name: Clean
-        run: ./CI/clean_slave.sh      
+        run: ./CI/clean_slave.sh
