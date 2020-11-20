@@ -4,11 +4,19 @@ name: Build & Push Workflow
 # Controls when the action will run. Triggers the workflow on schedule events
 on:
   push:
-    branches: [master]
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
   #schedule:
     # Runs every 15 minutes past every hour on Mon, Tue, Wed, Thu and Fri
     #- cron: '*/15 * * * 1-5'
-
+env:
+  DOCKER_IMAGE_NAME: polycube
+  DOCKER_CONTAINER: polycubed
 # This workflow is made by two jobs that run sequentially
 jobs:
   # The first job deal with building the application
@@ -20,11 +28,6 @@ jobs:
       matrix:
         # For docker default mode
         mode: ['default', 'pcn-k8s', 'pcn-iptables']
-    env:
-      DOCKER_IMAGE_TAG: latest
-      DOCKER_IMAGE_NAME: polycube
-      DOCKER_CONTAINER: polycubed
-      REPO_GIT_BRANCH: main
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository (default master)
@@ -33,14 +36,24 @@ jobs:
           submodules: true
           persist-credentials: false
 
-      - name: Set-up environment
-        run: echo ENV 
-          | REPO_GIT_BRANCH=${{ env.REPO_GIT_BRANCH }}, 
-          | DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_TAG }}, 
-          | DOCKER_IMAGE_NAME=${{ env.DOCKER_IMAGE_NAME }}, 
-          | DOCKER_CONTAINER=${{ env.DOCKER_CONTAINER }}, 
-          | MODE=${{ matrix.mode }}
-
+      - name: Configure step outputs
+        id: configure
+        run: |
+          # The ref of the commit to checkout (do not use the merge commit if pull request)
+          [[ "${{ github.event_name }}" == "pull_request" ]] && \
+            echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}" || \
+            echo "::set-output name=ref::${{ github.sha }}"
+          # The suffix to append to the repository name if not triggered by a push to master
+          [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]] && \
+            echo "::set-output name=repo-suffix::" || \
+            echo "::set-output name=repo-suffix::-dev"
+          # Do not push the resulting images to DockerHub if triggered by a pull request
+          [[ "${{ github.event_name }}" == "pull_request" ]] && \
+            echo "::set-output name=repo-push::false" || \
+            echo "::set-output name=repo-push::true"
+          
+          echo "::set-output name=repo-name::${{ github.repository_owner }}/polycubebot/${{ env.DOCKER_IMAGE_NAME }}-${{ matrix.mode }}"
+          
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
@@ -69,8 +82,10 @@ jobs:
             builder: ${{ steps.buildx.outputs.name }}
             build-args: |
               DEFAULT_MODE=${{ matrix.mode }}
-            push: true
-            tags: ghcr.io/${{ github.repository_owner }}/polycubebot/${{ env.DOCKER_IMAGE_NAME }}-${{ matrix.mode }}:${{ env.DOCKER_IMAGE_TAG }}
+            push: ${{ steps.configure.outputs.repo-push }}
+            tags: |
+              ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:latest
+              ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:${{ steps.configure.outputs.ref }}
             cache-from: type=local,src=/tmp/.buildx-cache
             cache-to: type=local,dest=/tmp/.buildx-cache
 
