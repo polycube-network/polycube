@@ -54,12 +54,12 @@ jobs:
           echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest" >> $GITHUB_ENV 
       - name: Extract from Docker image
         run: | 
-          docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest /bin/sleep infinity
+          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest /bin/sleep infinity
           ./CI/extract_from_docker_image.sh ${{ env.container }}
           docker stop ${{ env.container }}
       - name: Run Docker
         run: |
-          docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest
+          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest
           docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
@@ -115,12 +115,12 @@ jobs:
           echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest" >> $GITHUB_ENV 
       - name: Extract from Docker image
         run: | 
-          docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest /bin/sleep infinity
+          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest /bin/sleep infinity
           ./CI/extract_from_docker_image.sh ${{ env.container }}
           docker stop ${{ env.container }}
       - name: Run Docker
         run: |
-          docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest
+          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest
           docker ps
       - name: Run Tests
         run: |
