@@ -84,7 +84,6 @@ jobs:
             push: ${{ steps.configure.outputs.repo-push }}
             tags: |
               ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:latest
-              #ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:${{ steps.configure.outputs.ref }}
             cache-from: type=local,src=/tmp/.buildx-cache
             cache-to: type=local,dest=/tmp/.buildx-cache
 
