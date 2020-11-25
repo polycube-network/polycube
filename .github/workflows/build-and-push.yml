@@ -16,7 +16,6 @@ on:
     #- cron: '*/15 * * * 1-5'
 env:
   DOCKER_IMAGE_NAME: polycube
-  DOCKER_CONTAINER: polycubed
 # This workflow is made by two jobs that run sequentially
 jobs:
   # The first job deal with building the application
@@ -85,7 +84,7 @@ jobs:
             push: ${{ steps.configure.outputs.repo-push }}
             tags: |
               ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:latest
-              ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:${{ steps.configure.outputs.ref }}
+              #ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:${{ steps.configure.outputs.ref }}
             cache-from: type=local,src=/tmp/.buildx-cache
             cache-to: type=local,dest=/tmp/.buildx-cache
 
