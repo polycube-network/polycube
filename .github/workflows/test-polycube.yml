@@ -47,7 +47,7 @@ jobs:
           $KILL_COMMAND
       - name: Run Docker
         run: |
-          $polycubed && docker logs -f ${{ env.container }}
+          $polycubed /bin/bash -c '${{ env.container }} -d && /bin/bash' && docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
         run: |
@@ -95,7 +95,7 @@ jobs:
           $KILL_COMMAND
       - name: Run Docker
         run: |
-          $polycubed && docker logs -f ${{ env.container }}
+          $polycubed /bin/bash -c '${{ env.container }} -d && /bin/bash' && docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
         run: |
