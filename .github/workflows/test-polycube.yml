@@ -42,12 +42,12 @@ jobs:
           echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest" >> $GITHUB_ENV 
       - name: Extract from Docker image
         run: | 
-          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest /bin/sleep infinity
+          $polycubed /bin/sleep infinity
           ./CI/extract_from_docker_image.sh ${{ env.container }}
-          docker stop ${{ env.container }}
+          $KILL_COMMAND
       - name: Run Docker
         run: |
-          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest && sudo docker logs -f ${{ env.container }}
+          $polycubed && docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
         run: |
@@ -90,12 +90,12 @@ jobs:
           echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest" >> $GITHUB_ENV 
       - name: Extract from Docker image
         run: | 
-          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest /bin/sleep infinity
+          $polycubed /bin/sleep infinity
           ./CI/extract_from_docker_image.sh ${{ env.container }}
-          docker stop ${{ env.container }}
+          $KILL_COMMAND
       - name: Run Docker
         run: |
-          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest && sudo docker logs -f ${{ env.container }}
+          $polycubed && docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
         run: |
