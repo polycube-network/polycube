@@ -47,7 +47,7 @@ jobs:
           docker stop ${{ env.container }}
       - name: Run Docker
         run: |
-          sudo docker run -d --name ${{ env.container }} --rm --privileged --pid=host --cap-add ALL --network host -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest
+          sudo docker run -it --rm --privileged --network host -v /lib/modules:/lib/modules:ro -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro ghcr.io/klaalk/polycubebot/polycube-default:latest /bin/bash -c 'polycubed -d && /bin/bash'
           docker logs -f ${{ env.container }}
           docker ps
       - name: Run Tests
