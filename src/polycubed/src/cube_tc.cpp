@@ -97,11 +97,12 @@ void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
     if (span)
       cflags.push_back("-DSPAN");
   }
-  if (enable_remote_libbpf) {
-      cflags.push_back("-DNODES_=nodes_" + get_remote_node_name());
-  } else {
+
+#ifdef REMOTE_LIBBPF_SUPPORT
+      cflags.push_back("-DNODES_=nodes" + e_node_name());
+#else
       cflags.push_back("-DNODES_=nodes");
-  }
+#endif
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
   auto init_res = bpf.init(all_code, cflags);

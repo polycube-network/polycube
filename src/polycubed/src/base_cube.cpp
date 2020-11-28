@@ -41,6 +41,19 @@ uint64_t genBaseTime() {
   return epoch.time_since_epoch().count() - up.time_since_epoch().count();
 }
 
+std::string escape_name(std::string name) {
+	std::string str = name;
+    if (str.empty()) {
+        return "";
+    }
+
+    while (str.find(".") != std::string::npos) {
+        str.replace(str.find("."), 1, "_");
+    }
+    str.replace(0, 0, "_");
+	return str;
+}
+
 std::vector<std::string> BaseCube::cflags_ = {
     std::string("-D_POLYCUBE_MAX_NODES=") +
         std::to_string(PatchPanel::_POLYCUBE_MAX_NODES),
@@ -65,31 +78,33 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
       id_(id_generator_.acquire()) {
   std::lock_guard<std::mutex> guard(bcc_mutex);
 
+#ifdef REMOTE_LIBBPF_SUPPORT
   std::string node_instance_code;
   std::smatch match;
-  std::string node_name2;
   std::regex rule("(.*)::(.*)");
 
   if (std::regex_match(name, match, rule)) {
-     remote_node_name = match[1];
+     node_name_ = match[1];
   } else {
-     remote_node_name = "";
+     node_name_ = "";
   }
 
-  node_name2 = escape_remote_node_name();
+  e_node_name_ = escape_name(node_name_);
+  if (!node_name_.empty() && !PatchPanel::get_remote_node_instance(e_node_name_)) {
+      node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
+      PatchPanel::set_remote_node_instance(e_node_name_);
+  }
+#endif
+
   // create master program that contains some maps definitions
   master_program_ =
-      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name));
-  if (!remote_node_name.empty()) {
-      enable_remote_libbpf = 1;
-  }
-  if (enable_remote_libbpf) {
-      if (!PatchPanel::get_remote_node_instance(node_name2)) {
-          node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + node_name2 + R"(, _POLYCUBE_MAX_NODES);)";
-          PatchPanel::set_remote_node_instance(node_name2);
-      }
-  }
+      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name, true, nullptr, node_name_));
+
+#ifdef REMOTE_LIBBPF_SUPPORT
   master_program_->init(BASECUBE_MASTER_CODE + node_instance_code + master_code, cflags_);
+#else
+  master_program_->init(BASECUBE_MASTER_CODE + master_code, cflags_);
+#endif
 
   // get references to those maps
   auto ingress_ = master_program_->get_prog_table("ingress_programs");
@@ -100,12 +115,14 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   egress_programs_table_ =
       std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(egress_));
 
-  if (enable_remote_libbpf) {
-    std::string name = "nodes" + node_name2;
-    auto t = master_program_->get_prog_table(name);
-    remote_nodes_prog_table_ =
-      std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(t));
-  }
+#ifdef REMOTE_LIBBPF_SUPPORT
+    if (!node_name_.empty()) {
+        std::string name2 = "nodes" + e_node_name_;
+        auto t = master_program_->get_prog_table(name2);
+        remote_nodes_prog_table_ =
+          std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(t));
+    }
+#endif
 }
 
 void BaseCube::init(const std::vector<std::string> &ingress_code,
@@ -252,7 +269,7 @@ void BaseCube::do_reload(
   // create new ebpf program, telling to steal the maps of this program
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
-      new ebpf::BPF(0, nullptr, false, name_, false, programs.at(index).get()));
+      new ebpf::BPF(0, nullptr, false, name_, false, programs.at(index).get(), node_name_));
 
   bcc_guard.unlock();
   compile(*new_bpf_program, code, index, type);
@@ -327,7 +344,7 @@ int BaseCube::do_add_program(
   std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
   // load and add this program to the list
   programs[index] =
-      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name_));
+      std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name_, true, nullptr, node_name_));
 
   bcc_guard.unlock();
   compile(*programs.at(index), code, index, type);
@@ -433,19 +450,6 @@ nlohmann::json BaseCube::to_json() const {
   j["loglevel"] = logLevelString(level_);
 
   return j;
-}
-
-std::string BaseCube::escape_remote_node_name() {
-	std::string str = remote_node_name;
-    if (str.empty()) {
-        return "";
-    }
-
-    while (str.find(".") != std::string::npos) {
-        str.replace(str.find("."), 1, "_");
-    }
-    str.replace(0, 0, "_");
-	return str;
 }
 
 IDGenerator BaseCube::id_generator_(PatchPanel::_POLYCUBE_MAX_NODES - 2);
