@@ -20,7 +20,7 @@ namespace polycube {
 namespace polycubed {
 
 PeerIface::PeerIface(std::mutex &mutex, const std::string &node)
-    : mutex_(mutex), remote_node_name(node) {}
+    : mutex_(mutex), node_name_(node) {}
 
 PeerIface::~PeerIface() {
   for (int i = 0; i < cubes_.size(); i++) {
@@ -184,7 +184,7 @@ PeerIface::CubePositionComparison PeerIface::compare_position(
 }
 
 std::string PeerIface::escape_remote_node_name() {
-	std::string str = remote_node_name;
+	std::string str = node_name_;
     if (str.empty()) {
         return "";
     }

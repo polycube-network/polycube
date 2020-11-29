@@ -54,7 +54,10 @@ class PeerIface {
   std::vector<std::string> get_cubes_names() const;
   std::vector<uint16_t> get_cubes_ingress_index() const;
   std::vector<uint16_t> get_cubes_egress_index() const;
+#ifdef REMOTE_LIBBPF_SUPPORT
   std::string escape_remote_node_name();
+  std::string node_name() {return node_name_; }
+#endif
 
  protected:
   enum class CubePositionComparison {
@@ -73,7 +76,9 @@ class PeerIface {
 
  private:
   std::mutex &mutex_;
-  std::string remote_node_name;
+#ifdef REMOTE_LIBBPF_SUPPORT
+  std::string node_name_;
+#endif
 };
 
 }  // namespace polycubed

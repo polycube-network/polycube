@@ -56,7 +56,12 @@ int ExtIfaceTC::load_ingress() {
                   std::to_string(ingress_next_));
   flags.push_back(std::string("-DNEXT_PORT=") + std::to_string(ingress_port_));
 
+#ifdef REMOTE_LIBBPF_SUPPORT
+  std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>(0, nullptr,
+          false, "", true, nullptr, node_name());
+#else
   std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>();
+#endif
 
   res = program->init(get_ingress_code(), flags);
   if (res.code() != 0) {

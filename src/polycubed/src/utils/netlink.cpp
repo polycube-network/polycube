@@ -263,7 +263,7 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
 
   uint32_t prio, protocol;
 
-  if (enable_remote_libbpf && (fd & 0x10000000)) {
+  if (fd & 0x10000000) {
       gen_req_para_t para = {
         .server = "192.168.122.122",
       };

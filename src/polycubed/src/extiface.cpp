@@ -93,7 +93,12 @@ int ExtIface::load_egress() {
                   std::to_string(egress_next_));
   flags.push_back(std::string("-DNEXT_PORT=") + std::to_string(egress_port_));
 
+#ifdef REMOTE_LIBBPF_SUPPORT
+  std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>(0, nullptr,
+          false, "", true, nullptr, node_name());
+#else
   std::unique_ptr<ebpf::BPF> program = std::make_unique<ebpf::BPF>();
+#endif
 
   res = program->init(get_egress_code(), flags);
   if (res.code() != 0) {
