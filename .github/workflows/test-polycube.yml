@@ -11,7 +11,7 @@ env:
 
 jobs:
   test-default:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     #needs: [build]
     # Build strategies
     strategy:
@@ -63,7 +63,7 @@ jobs:
         run: ./CI/clean_slave.sh
   
   test-iptables:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     #needs: [build]
     steps:
       - uses: actions/checkout@v2
