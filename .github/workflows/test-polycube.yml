@@ -47,9 +47,7 @@ jobs:
           $KILL_COMMAND
       - name: Run Docker
         run: |
-          docker run --rm -i --name ${{ env.container }} --privileged --network host \
-          -v /lib/modules:/lib/modules:ro -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-          ghcr.io/klaalk/polycubebot/polycube-default:latest /bin/bash -c 'polycubed'
+          $polycubed /bin/bash -c 'polycubed'
           docker ps
       - name: Run Tests
         run: |
@@ -97,7 +95,7 @@ jobs:
           $KILL_COMMAND
       - name: Run Docker
         run: |
-          $polycubed
+          $polycubed /bin/bash -c 'polycubed'
           docker ps
       - name: Run Tests
         run: |
