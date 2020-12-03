@@ -41,12 +41,12 @@ jobs:
 
       - name: Set OS Env
         run: |
-          export KILL_COMMAND="docker stop ${{ env.container }}"
-          export polycubed="docker run -d --name ${{ env.container }} --rm --privileged \
+          echo "KILL_COMMAND=docker stop ${{ env.container }}" >>  $GITHUB_ENV
+          echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged \
           --pid=host --cap-add ALL --network host \
           -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
           -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-          ghcr.io/klaalk/polycubebot/polycube-default:latest"
+          ghcr.io/klaalk/polycubebot/polycube-default:latest" >> $GITHUB_ENV
 
       - name: Extract from Docker image
         run: | 
@@ -100,12 +100,12 @@ jobs:
       
       - name: Set OS Env
         run: |
-          export KILL_COMMAND="docker stop ${{ env.container }}"
-          export polycubed="docker run -d --name ${{ env.container }} --rm --privileged \
+          echo "KILL_COMMAND=docker stop ${{ env.container }}" >>  $GITHUB_ENV
+          echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged \
           --pid=host --cap-add ALL --network host \
           -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
           -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-          ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest"
+          ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest" >> $GITHUB_ENV 
         
       - name: Extract from Docker image
         run: | 
