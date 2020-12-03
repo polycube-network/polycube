@@ -62,7 +62,7 @@ jobs:
       - name: Run Tests
         run: |
           cd tests/
-          ./run-tests.sh false || true
+          sudo ./run-tests.sh false || true
           echo "LC_ALL=C" >> $GITHUB_ENV
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
@@ -121,7 +121,7 @@ jobs:
       - name: Run Tests
         run: |
           cd tests/
-          ./run-tests-iptables.sh false || true
+          sudo ./run-tests-iptables.sh false || true
           echo "LC_ALL=C" >> $GITHUB_ENV
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
