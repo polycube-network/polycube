@@ -62,7 +62,7 @@ jobs:
       - name: Run Tests
         run: |
           cd tests/
-          sudo ./run-short-tests.sh || true
+          sudo ./run-tests.sh || true
           export LC_ALL=C
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
@@ -121,7 +121,7 @@ jobs:
       - name: Run Tests
         run: |
           cd tests/
-          sudo ./run-short-tests-iptables.sh false || true
+          sudo ./run-tests-iptables.sh false || true
           export LC_ALL=C
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
