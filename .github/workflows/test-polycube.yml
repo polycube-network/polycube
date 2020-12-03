@@ -67,8 +67,7 @@ jobs:
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
           python3 -m pip install -r ./converter/requirements.txt
-          ls -l
-          echo "TEST_RESULTS=$(ls -1 test_results_*)" >> $GITHUB_ENV
+          export TEST_RESULTS=`ls -1 test_results_*`
           python3 ./converter/to_junit.py ${{ matrix.test-mode }}
         
       - name: Clean
