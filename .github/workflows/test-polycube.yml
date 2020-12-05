@@ -10,7 +10,8 @@ env:
   container: polycubed
 
 jobs:
-  test-default:
+  test:
+    name: Test Polycube
     runs-on: ubuntu-latest
     #needs: [build]
     # Build strategies
@@ -85,6 +86,32 @@ jobs:
           python3 -m pip install -r ./converter/requirements.txt
           export TEST_RESULTS=`ls -1 test_results_*`
           python3 ./converter/to_junit.py ${{ matrix.test-mode }}
-        
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unit Test Results (Mode ${{ matrix.mode }})
+          path: ./tests/output.xml
+          
       - name: Clean
         run: ./CI/clean_slave.sh
+
+  publish-test-results:
+      name: "Publish Unit Tests Results"
+      needs: [test]
+      runs-on: ubuntu-latest
+      # the build-and-test job might be skipped, we don't need to run this job then
+      if: success() || failure()
+
+      steps:
+        - name: Download Artifacts
+          uses: actions/download-artifact@v2
+          with:
+            path: artifacts
+
+        - name: Publish Unit Test Results
+          uses: EnricoMi/publish-unit-test-result-action@v1.6
+          with:
+            check_name: Unit Test Results
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            files: output.xml
