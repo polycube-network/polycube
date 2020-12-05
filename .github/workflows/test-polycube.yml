@@ -114,4 +114,4 @@ jobs:
           with:
             check_name: Unit Test Results
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            files: output.xml
+            files: ./**/output.xml
