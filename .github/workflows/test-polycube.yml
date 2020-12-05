@@ -16,7 +16,23 @@ jobs:
     # Build strategies
     strategy:
       matrix:
-        test-mode: ['CleanInstance', 'SameInstance']
+        mode: ['default-clean', 'default-same', 'iptables']
+        include:
+          - mode: 'default-clean'
+            image-name: default
+            test-script: run-short-tests.sh
+            test-param: true
+            test-mode: CleanInstance
+          - mode: 'default-same'
+            image-name: default
+            test-script: run-short-tests.sh
+            test-param: false
+            test-mode: SameInstance
+          - mode: 'iptables'
+            image-name: pcn-iptables
+            test-script: run-short-tests-iptables.sh
+            test-param: true
+            test-mode: Iptables
     steps:
       - uses: actions/checkout@v2
         with:
@@ -46,7 +62,7 @@ jobs:
           --pid=host --cap-add ALL --network host \
           -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
           -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-          ghcr.io/klaalk/polycubebot/polycube-default:latest" >> $GITHUB_ENV
+          ghcr.io/klaalk/polycubebot/polycube-${{ matrix.image-name }}:latest" >> $GITHUB_ENV
 
       - name: Extract from Docker image
         run: | 
@@ -62,7 +78,7 @@ jobs:
       - name: Run Tests
         run: |
           cd tests/
-          sudo ./run-tests.sh || true
+          sudo ./${{ matrix.test-script }} ${{ matrix.test-param }} || true
           export LC_ALL=C
           python3 -m virtualenv venv -p python3
           . venv/bin/activate
@@ -70,64 +86,5 @@ jobs:
           export TEST_RESULTS=`ls -1 test_results_*`
           python3 ./converter/to_junit.py ${{ matrix.test-mode }}
         
-      - name: Clean
-        run: ./CI/clean_slave.sh
-  
-  test-iptables:
-    runs-on: ubuntu-latest
-    #needs: [build]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          persist-credentials: false
-      
-      - name: Setup Python
-        uses: actions/setup-python@v1
-
-      - name: Setup VirtualEnv
-        run: python3 -m pip install --user virtualenv
-
-      - name: Docker login to Github registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.CR_PAT }}
-      
-      - name: Prepare tests
-        run: sudo mkdir -p /var/log/polycube
-      
-      - name: Set OS Env
-        run: |
-          echo "KILL_COMMAND=docker stop ${{ env.container }}" >>  $GITHUB_ENV
-          echo "polycubed=docker run -d --name ${{ env.container }} --rm --privileged \
-          --pid=host --cap-add ALL --network host \
-          -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
-          -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-          ghcr.io/klaalk/polycubebot/polycube-pcn-iptables:latest" >> $GITHUB_ENV 
-        
-      - name: Extract from Docker image
-        run: | 
-          $polycubed /bin/sleep infinity
-          ./CI/extract_from_docker_image.sh ${{ env.container }}
-          $KILL_COMMAND
-      
-      - name: Run Docker
-        run: |
-          $polycubed
-          docker ps
-      
-      - name: Run Tests
-        run: |
-          cd tests/
-          sudo ./run-tests-iptables.sh false || true
-          export LC_ALL=C
-          python3 -m virtualenv venv -p python3
-          . venv/bin/activate
-          python3 -m pip install -r ./converter/requirements.txt
-          export TEST_RESULTS=`ls -1 test_results_*`
-          python3 ./converter/to_junit.py Iptables
-      
       - name: Clean
         run: ./CI/clean_slave.sh
