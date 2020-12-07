@@ -78,7 +78,7 @@ jobs:
           from: ${{ steps.last-release.outputs.release }}
           to: ${{ steps.configure.outputs.version }}
         env:
-          GITHUB_AUTH: ${{ secrets.CI_TOKEN }}
+          GITHUB_AUTH: ${{ secrets.CR_PAT }}
 
       - name: Save the CHANGELOG as a file
         run: |
@@ -92,4 +92,4 @@ jobs:
           release_name: Release ${{ steps.configure.outputs.version }}
           body_path: ./CHANGELOG.md
         env:
-          GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CR_PAT }}
