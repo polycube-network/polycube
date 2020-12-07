@@ -5,7 +5,7 @@ name: Build & Push Workflow
 on:
   push:
     branches:
-      - master
+      - dev/**
   pull_request:
     types:
       - opened
@@ -15,44 +15,65 @@ on:
     # Runs every 15 minutes past every hour on Mon, Tue, Wed, Thu and Fri
     #- cron: '*/15 * * * 1-5'
 env:
-  DOCKER_IMAGE_NAME: polycube
+  app-name: polycube
+  app-container: polycubed
+
 # This workflow is made by two jobs that run sequentially
 jobs:
-  # The first job deal with building the application
-  build:
-    # The type of runner that the job will run on
+  configure:
+    name: Preliminary configuration
     runs-on: ubuntu-latest
-    # Build strategies
-    strategy:
-      matrix:
-        # For docker default mode
-        mode: ['default', 'pcn-k8s', 'pcn-iptables']
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository (default master)
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          persist-credentials: false
+    outputs:
+      ref: ${{ steps.configure.outputs.ref }}
+      repo-name: ${{ steps.configure.outputs.repo-suffix }}
+      repo-suffix: ${{ steps.configure.outputs.repo-suffix }}
+      repo-push: ${{ steps.configure.outputs.repo-push }}
 
-      - name: Configure step outputs
+    steps:
+      - name: Configure
         id: configure
         run: |
           # The ref of the commit to checkout (do not use the merge commit if pull request)
           [[ "${{ github.event_name }}" == "pull_request" ]] && \
             echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}" || \
             echo "::set-output name=ref::${{ github.sha }}"
+          
           # The suffix to append to the repository name if not triggered by a push to master
           [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]] && \
             echo "::set-output name=repo-suffix::" || \
             echo "::set-output name=repo-suffix::-dev"
+          
           # Do not push the resulting images to DockerHub if triggered by a pull request
           [[ "${{ github.event_name }}" == "pull_request" ]] && \
             echo "::set-output name=repo-push::false" || \
             echo "::set-output name=repo-push::true"
           
-          echo "::set-output name=repo-name::${{ github.repository_owner }}/polycubebot/${{ env.DOCKER_IMAGE_NAME }}-${{ matrix.mode }}"
-          
+          echo "::set-output name=repo-name::${{ github.repository_owner }}/polycubebot/${{ env.app-name }}"
+
+
+  # The first job deal with building the application
+  build:
+    name: Build & Push Polycube
+    needs: [configure]
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    # Build strategies
+    strategy:
+      matrix:
+        # For docker default mode
+        mode: ['default', 'pcn-k8s', 'pcn-iptables']
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      
+      # Checks-out your repository (default master)
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
@@ -81,12 +102,124 @@ jobs:
             builder: ${{ steps.buildx.outputs.name }}
             build-args: |
               DEFAULT_MODE=${{ matrix.mode }}
-            push: ${{ steps.configure.outputs.repo-push }}
+            push: ${{ needs.configure.outputs.repo-push }}
             tags: |
-              ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:latest
-              ghcr.io/${{ steps.configure.outputs.repo-name }}${{ steps.configure.outputs.repo-suffix }}:${{ steps.configure.outputs.ref }}
+              ghcr.io/${{ needs.configure.outputs.repo-name }}-${{ matrix.mode }}${{ needs.configure.outputs.repo-suffix }}:latest
+              ghcr.io/${{ needs.configure.outputs.repo-name }}-${{ matrix.mode }}${{ needs.configure.outputs.repo-suffix }}:${{ needs.configure.outputs.ref }}
             cache-from: type=local,src=/tmp/.buildx-cache
             cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+  test:
+    name: Test Polycube
+    runs-on: ubuntu-latest
+    needs: [build]
+    # Build strategies
+    strategy:
+      matrix:
+        test: ['default-clean', 'default-same', 'iptables']
+        include:
+          - test: 'default-clean'
+            mode: default
+            test-script: run-tests.sh
+            test-param: true
+            test-mode: CleanInstance
+          - test: 'default-same'
+            mode: default
+            test-script: run-tests.sh
+            test-param: false
+            test-mode: SameInstance
+          - test: 'iptables'
+            mode: pcn-iptables
+            test-script: run-tests-iptables.sh
+            test-param: true
+            test-mode: Iptables
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+      
+      - name: Setup Python
+        uses: actions/setup-python@v1
+
+      - name: Setup VirtualEnv
+        run: python3 -m pip install --user virtualenv
+
+      - name: Docker login to Github registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Prepare tests
+        run: sudo mkdir -p /var/log/polycube
+
+      - name: Set OS Env
+        run: |
+          echo "KILL_COMMAND=docker stop ${{ env.app-container }}" >>  $GITHUB_ENV
+          echo "polycubed=docker run -d --name ${{ env.app-container }} --rm --privileged \
+          --pid=host --cap-add ALL --network host \
+          -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
+          -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
+          ghcr.io/${{ needs.configure.outputs.repo-name }}-${{ matrix.mode }}${{ needs.configure.outputs.repo-suffix }}:latest" >> $GITHUB_ENV
+
+      - name: Extract from Docker image
+        run: | 
+          $polycubed /bin/sleep infinity
+          ./CI/extract_from_docker_image.sh ${{ env.app-container }}
+          $KILL_COMMAND
+        
+      - name: Run Docker
+        run: |
+          $polycubed
+          docker ps
+        
+      - name: Run Tests
+        run: |
+          cd tests/
+          sudo ./${{ matrix.test-script }} ${{ matrix.test-param }} || true
+          export LC_ALL=C
+          python3 -m virtualenv venv -p python3
+          . venv/bin/activate
+          python3 -m pip install -r ./converter/requirements.txt
+          export TEST_RESULTS=`ls -1 test_results_*`
+          python3 ./converter/to_junit.py ${{ matrix.test-mode }}
+
+      - name: Check Test Results
+        uses: mikepenz/action-junit-report@v1
+        with:
+          report_paths: '**/tests/output.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test Results (${{ matrix.test }})
+          path: ./tests/output.xml
+          
+      - name: Clean
+        run: ./CI/clean_slave.sh
+
+  publish-test-results:
+      name: Publish Results
+      needs: [test]
+      runs-on: ubuntu-latest
+      # the build-and-test job might be skipped, we don't need to run this job then
+      if: success() || failure()
+
+      steps:
+        - name: Download Artifacts
+          uses: actions/download-artifact@v2
+          with:
+            path: artifacts
+
+        - name: Publish Test Results
+          uses: EnricoMi/publish-unit-test-result-action@v1.6
+          with:
+            check_name: Unit Test Results
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            files: '**/output.xml'
