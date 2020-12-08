@@ -114,7 +114,7 @@ jobs:
   test:
     name: Test Polycube
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build, configure]
     # Build strategies
     strategy:
       matrix:
