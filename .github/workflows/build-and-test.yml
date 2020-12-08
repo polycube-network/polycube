@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.configure.outputs.ref }}
-      repo-name: ${{ steps.configure.outputs.repo-suffix }}
+      repo-name: ${{ steps.configure.outputs.repo-name }}
       repo-suffix: ${{ steps.configure.outputs.repo-suffix }}
       repo-push: ${{ steps.configure.outputs.repo-push }}
 
