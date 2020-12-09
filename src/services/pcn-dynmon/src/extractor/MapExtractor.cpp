@@ -254,9 +254,8 @@ json MapExtractor::extractFromPerCPUMap(const TableDesc &desc, RawTable table,
       table.get(entry.getKey(), entry.getValue());
       entries.push_back(std::make_shared<MapEntry>(entry));
       if(extractionOptions->getEmptyOnRead()) {
-        if(desc.type == BPF_MAP_TYPE_PERCPU_ARRAY) {
-          table.set(last_key, reset_value.getValue());
-        } else {
+        table.set(last_key, reset_value.getValue());
+        if(desc.type != BPF_MAP_TYPE_PERCPU_ARRAY) {
           table.remove(last_key);
         }
       }
