@@ -86,7 +86,7 @@ void CubeXDP::reload(const std::string &code, int index, ProgramType type) {
         std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
         std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
             new ebpf::BPF(0, nullptr, false, name_, false,
-                          egress_programs_tc_.at(index).get()));
+                          egress_programs_.at(index).get()));
 
         bcc_guard.unlock();
         compileTC(*new_bpf_program, code);
