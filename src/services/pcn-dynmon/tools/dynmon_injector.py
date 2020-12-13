@@ -8,10 +8,13 @@ import json
 import os.path
 from os import path
 
-VERSION = '1.1'
+VERSION = '1.2'
+
 POLYCUBED_ADDR = 'localhost'
 POLYCUBED_PORT = 9000
-REQUESTS_TIMEOUT = 5 #seconds
+REQUESTS_TIMEOUT = 20 #seconds
+MODE = 'TC'
+DIRECTION = 'both'
 
 polycubed_endpoint = 'http://{}:{}/polycube/v1'
 
@@ -26,6 +29,9 @@ def main():
     cube_name = args['cube_name']
     interface_name = args['peer_interface']
     path_to_dataplane = args['path_to_configuration']
+    debug = args['debug']
+    mode = args['mode']
+    direction = args['type']
 
     dataplane = None
 
@@ -35,7 +41,12 @@ def main():
     else:
         with open(path_to_dataplane) as json_file:
             dataplane = json.load(json_file)
-
+    
+    if direction == 'ingress':
+        dataplane['egress-path'] = {}
+    if direction == 'egress':
+        dataplane['ingress-path'] = {}
+    
     polycubed_endpoint = polycubed_endpoint.format(addr, port)
 
     already_exists, cube = checkIfServiceExists(cube_name)
@@ -53,7 +64,7 @@ def main():
         injectNewDataplane(cube_name, dataplane)
 
     else:
-        createInstance(cube_name, dataplane)
+        createInstance(cube_name, dataplane, debug, mode)
         attach_to_interface(cube_name, interface_name)
 
 
@@ -96,11 +107,13 @@ def injectNewDataplane(cube_name, dataplane):
         exit(1)
 
 
-def createInstance(cube_name, dataplane):
+def createInstance(cube_name, dataplane, debug, mode):
     try:
         print(f'Creating new dynmon instance named {cube_name}')
         response = requests.post(f'{polycubed_endpoint}/dynmon/{cube_name}',
-                                json.dumps({'dataplane-config': dataplane}),
+                                json.dumps({'dataplane-config': dataplane,
+                                    'type': mode,
+                                    'loglevel': 'debug' if debug is True else 'OFF'}),
                                 timeout=REQUESTS_TIMEOUT)
         response.raise_for_status()
     except requests.exceptions.HTTPError:
@@ -142,7 +155,7 @@ def attach_to_interface(cube_name, interface):
     try:
         print(f'Attaching {cube_name} to {interface}')
         response = requests.post(f'{polycubed_endpoint}/attach',
-                                 json.dumps({'cube': cube_name, 'port': interface}),
+                                 json.dumps({'cube': cube_name, 'port': interface, 'position': 'last'}),
                                  timeout=REQUESTS_TIMEOUT)
         response.raise_for_status()
     except requests.exceptions.HTTPError:
@@ -159,6 +172,10 @@ def attach_to_interface(cube_name, interface):
         exit(1)
 
 
+def showVersion():
+    return '%(prog)s - Version ' + VERSION
+
+
 def parseArguments():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('cube_name', help='indicates the name of the cube', type=str)
@@ -169,12 +186,11 @@ def parseArguments():
                         type=str)
     parser.add_argument('-a', '--address', help='set the polycube daemon ip address', type=str, default=POLYCUBED_ADDR)
     parser.add_argument('-p', '--port', help='set the polycube daemon port', type=int, default=POLYCUBED_PORT)
+    parser.add_argument('-t', '--type', help='set the packets\' directions to inject the program (ingress, egress, both)', type=str, default=DIRECTION)
+    parser.add_argument('-m', '--mode', help='set the probe mode (TC / XDP_SKB / XDP_DRV)', type=str, default=MODE)
+    parser.add_argument('-d', '--debug', help='set the probe log level debug', action='store_true')
     parser.add_argument('-v', '--version', action='version', version=showVersion())
     return parser.parse_args().__dict__
-
-
-def showVersion():
-    return '%(prog)s - Version ' + VERSION
 
 
 if __name__ == '__main__':
