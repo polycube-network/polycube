@@ -1,0 +1,12 @@
+{
+    "changelog": {
+      "repo": "polycube-network/polycube",
+      "labels": {
+        "breaking": ":boom: Breaking Change",
+        "feature": ":rocket: New Feature",
+        "bug": ":bug: Bug Fix",
+        "cleanup": ":broom: Code Refactoring",
+        "docs": ":memo: Documentation"
+      }
+    }
+}
