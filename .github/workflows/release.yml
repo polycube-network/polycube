@@ -1,0 +1,112 @@
+name: Release a new Polycube version
+on:
+  push:
+    tags:
+      - 'v*'
+env:
+  DOCKER_IMAGE_NAME: polycube
+ 
+jobs:
+  build:
+    #if: github.event.base_ref == 'refs/heads/master'
+    name: Build Polycube
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.configure.outputs.version }}
+
+    strategy:
+      matrix:
+        mode: ['default', 'pcn-k8s', 'pcn-iptables']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # The changelog generation requires the entire history
+          fetch-depth: 0
+          submodules: true
+          persist-credentials: false
+
+      - name: Get the repo name
+        id: configure
+        run: |
+          echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
+          echo "::set-output name=repo-name::${{ github.repository_owner }}/polycubebot/${{ env.DOCKER_IMAGE_NAME }}-${{ matrix.mode }}"
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+              ${{ runner.os }}-buildx-
+
+      - name: Docker login to Github registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+          
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+            context: ./ 
+            file: ./Dockerfile
+            builder: ${{ steps.buildx.outputs.name }}
+            build-args: |
+              DEFAULT_MODE=${{ matrix.mode }}
+            push: true
+            tags: |
+              ghcr.io/${{ steps.configure.outputs.repo-name }}:latest
+              ghcr.io/${{ steps.configure.outputs.repo-name }}:stable
+              ghcr.io/${{ steps.configure.outputs.repo-name }}:${{ steps.configure.outputs.version }}
+            cache-from: type=local,src=/tmp/.buildx-cache
+            cache-to: type=local,dest=/tmp/.buildx-cache
+
+  release:
+    #if: github.event.base_ref == 'refs/heads/master'
+    name: Release Polycube
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # The changelog generation requires the entire history
+          fetch-depth: 0
+          submodules: true
+          persist-credentials: false
+
+      - name: Get the latest Polycube release
+        uses: pozetroninc/github-action-get-latest-release@v0.5.0
+        id: last-release
+        with:
+          repository: ${{ github.repository }}  
+
+      - name: Generate the CHANGELOG
+        uses: RiskLedger/generate-changelog@v1.2
+        id: changelog
+        with:
+          from: ${{ steps.last-release.outputs.release }}
+          to: ${{ needs.build.outputs.version }}
+        env:
+          GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save the CHANGELOG as a file
+        run: |
+          echo "${{ steps.changelog.outputs.changelog }}" > ./CHANGELOG.md 
+          sed -i "1s/.*/## Changes since tag ${{ steps.last-release.outputs.release }}/" ./CHANGELOG.md
+
+      - name: Create the release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          release_name: Release ${{ needs.build.outputs.version }}
+          body_path: ./CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
