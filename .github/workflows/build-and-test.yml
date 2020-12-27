@@ -3,16 +3,12 @@ name: Build & Test Workflow
 
 # Controls when the action will run. Triggers the workflow on schedule events
 on:
-  push:
-    branches:
-      - dev/**
-      - klc/**
-
   pull_request:
     types:
       - opened
       - reopened
       - synchronize
+
 env:
   app-name: polycube
   app-container: polycubed
@@ -26,34 +22,28 @@ jobs:
       ref: ${{ steps.configure.outputs.ref }}
       repo-name: ${{ steps.configure.outputs.repo-name }}
       repo-suffix: ${{ steps.configure.outputs.repo-suffix }}
-      repo-push: ${{ steps.configure.outputs.repo-push }}
 
     steps:
       - name: Configure
         id: configure
         run: |
           # The ref of the commit to checkout (do not use the merge commit if pull request)
-          [[ "${{ github.event_name }}" == "pull_request" ]] && \
-            echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}" || \
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}"
+          else
             echo "::set-output name=ref::${{ github.sha }}"
+          fi
           
           # The suffix to append to the repository name if not triggered by a push to master
           [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]] && \
             echo "::set-output name=repo-suffix::" || \
             echo "::set-output name=repo-suffix::-dev"
           
-          # Do not push the resulting images to DockerHub if triggered by a pull request
-          [[ "${{ github.event_name }}" == "pull_request" ]] && \
-            echo "::set-output name=repo-push::false" || \
-            echo "::set-output name=repo-push::true"
-          
           echo "::set-output name=repo-name::${{ github.repository_owner }}/polycubebot/${{ env.app-name }}"
 
   # This job deal with building the application
   build:
     name: Build & Push Polycube
-    # Temporary skip build
-    if: false
     needs: [configure]
 
     # The type of runner that the job will run on
@@ -72,6 +62,7 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
+          ref: ${{ needs.configure.outputs.ref }}
 
       - name: Set up Docker Buildx
         id: buildx
@@ -101,7 +92,7 @@ jobs:
             builder: ${{ steps.buildx.outputs.name }}
             build-args: |
               DEFAULT_MODE=${{ matrix.mode }}
-            push: ${{ needs.configure.outputs.repo-push }}
+            push: true
             tags: |
               ghcr.io/${{ needs.configure.outputs.repo-name }}-${{ matrix.mode }}${{ needs.configure.outputs.repo-suffix }}:latest
               ghcr.io/${{ needs.configure.outputs.repo-name }}-${{ matrix.mode }}${{ needs.configure.outputs.repo-suffix }}:${{ needs.configure.outputs.ref }}
@@ -115,11 +106,10 @@ jobs:
   test:
     name: Test Polycube
     runs-on: ubuntu-latest
-    #needs: [build, configure]
-    # Temporary skip build
-    needs: [configure]
+    needs: [build, configure]
     # Test strategies
     strategy:
+      fail-fast: false
       matrix:
         test: ['default-clean', 'default-same', 'iptables']
         include:
@@ -143,6 +133,7 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
+          ref: ${{ needs.configure.outputs.ref }}
       
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -152,6 +143,13 @@ jobs:
 
       - name: Setup JUnitParser
         run: python3 -m pip install --user junitparser
+
+      # Install additional tools that are required in the testing phase
+      # - nmap: some tests use 'nping', which is included in this package
+      - name: Setup additional testing tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install nmap
 
       - name: Docker login to GitHub registry
         uses: docker/login-action@v1
@@ -197,13 +195,16 @@ jobs:
           path: ./tests/output.xml
 
       - name: Publish Test Report
+        if: always()
         uses: mikepenz/action-junit-report@v1
         with:
           report_paths: ./tests/output.xml
           github_token: ${{ secrets.GITHUB_TOKEN }}
           check_name: Test Results (${{ matrix.test }})
+          commit: ${{ needs.configure.outputs.ref }}
 
       - name: Check job status
+        if: always()
         run: python3 ./tests/check_tests.py ./tests/output.xml
 
       - name: Clean
