@@ -51,6 +51,8 @@ struct nl_ipreq {
   struct ifaddrmsg ifaddrmsg;
 };
 
+extern char *g_cube_inst_node_name;
+
 namespace polycube {
 namespace polycubed {
 
@@ -265,7 +267,7 @@ void Netlink::attach_to_tc(const std::string &iface, int fd, ATTACH_MODE mode) {
 
   if (fd & 0x10000000) {
       gen_req_para_t para = {
-        .server = "192.168.122.122",
+        .server = g_cube_inst_node_name,
       };
       auto ret = remote_attach_to_tc(&para, iface.c_str(), fd, static_cast<int>(mode));
       return;

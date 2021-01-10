@@ -19,6 +19,9 @@
 #include "polycube/common.h"
 #include <regex>
 
+char cube_inst_node_name[64];
+char *g_cube_inst_node_name = &cube_inst_node_name[0];
+
 namespace polycube {
 namespace polycubed {
 
@@ -90,9 +93,15 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
   }
 
   e_node_name_ = escape_name(node_name_);
-  if (!node_name_.empty() && !PatchPanel::get_remote_node_instance(e_node_name_)) {
-      node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
-      PatchPanel::set_remote_node_instance(e_node_name_);
+  if (!node_name_.empty()) {
+      if (!PatchPanel::get_remote_node_instance(e_node_name_)) {
+        node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
+        PatchPanel::set_remote_node_instance(e_node_name_);
+      } else {
+        node_instance_code = R"(BPF_TABLE_SHARED("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
+      }
+      strncpy(cube_inst_node_name, node_name_.c_str(), 63);
+      cube_inst_node_name[63] = 0;
   }
 #endif
 
