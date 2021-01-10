@@ -98,7 +98,7 @@ BaseCube::BaseCube(const std::string &name, const std::string &service_name,
         node_instance_code = R"(BPF_TABLE_PUBLIC("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
         PatchPanel::set_remote_node_instance(e_node_name_);
       } else {
-        node_instance_code = R"(BPF_TABLE_SHARED("prog", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
+        node_instance_code = R"(BPF_TABLE("extern", int, int, nodes)" + e_node_name_ + R"(, _POLYCUBE_MAX_NODES);)";
       }
       strncpy(cube_inst_node_name, node_name_.c_str(), 63);
       cube_inst_node_name[63] = 0;
