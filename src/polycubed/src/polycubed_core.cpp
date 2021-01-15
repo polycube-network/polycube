@@ -31,6 +31,9 @@
 using namespace Pistache::Http;
 using namespace configuration;
 
+extern char cube_inst_node_name[64];
+extern char *g_cube_inst_node_name;
+
 namespace polycube {
 namespace polycubed {
 
@@ -376,6 +379,21 @@ void PolycubedCore::attach(const std::string &cube_name,
      node_name = "";
      port_name2 = port_name;
   }
+
+  // extracts the node name in cube and compare with node_name
+  // if matches set the g_cube_inst_node_name
+  std::string cube_node_name;
+  if (std::regex_match(cube_name, match, rule)) {
+     cube_node_name = match[1];
+  } else {
+     cube_node_name = "";
+  }
+  if (node_name.compare(cube_node_name) != 0) {
+     throw std::runtime_error("Node name not match");
+  }
+  strncpy(cube_inst_node_name, node_name.c_str(), 63);
+  cube_inst_node_name[63] = 0;
+
 
   rule = "(\\S+):(\\S+)";
   std::shared_ptr<CubeIface> cube2;

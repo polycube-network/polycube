@@ -44,14 +44,32 @@ ExtIface::ExtIface(const std::string &iface, const std::string &node)
       egress_next_(0xffff),
       egress_port_(0),
       logger(spdlog::get("polycubed")) {
-  if (used_ifaces.count(iface) != 0) {
-    throw std::runtime_error("Iface already in use");
+  if (!node.empty()) {
+     if (used_ifaces.count(node+"::"+iface) != 0) {
+        throw std::runtime_error("Iface already in use");
+    }
+
+    used_ifaces.insert({node+"::"+iface, this});
+
+    // Save the ifindex
+    gen_req_para_t para = {
+        .server = g_cube_inst_node_name,
+    };
+    ifindex_iface = remote_if_nametoindex(&para, iface.c_str());
+
+  } else {
+    if (used_ifaces.count(iface) != 0) {
+        throw std::runtime_error("Iface already in use");
+    }
+
+    used_ifaces.insert({iface, this});
+
+    // Save the ifindex
+    ifindex_iface = if_nametoindex(iface.c_str());
   }
-
-  used_ifaces.insert({iface, this});
-
-  // Save the ifindex
-  ifindex_iface = if_nametoindex(iface.c_str());
+  if (ifindex_iface == 0) {
+      throw std::runtime_error("Iface not exist");
+  }
 }
 
 ExtIface::~ExtIface() {
