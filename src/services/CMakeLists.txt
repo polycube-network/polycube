@@ -1,5 +1,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/polycube/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/libs/spdlog)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src/remote_libbpf/src)
+include_directories(${CMAKE_SOURCE_DIR}/src/libs/bcc/src/cc/libbpf/src)
 
 set(POLYCUBE_STANDALONE_SERVICE false)
 set(POLYCUBE_LIBRARIES polycube uuid tins)
