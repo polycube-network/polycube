@@ -1,0 +1,341 @@
+# This is a basic workflow to help in CI
+name: Polycube CI
+
+# Controls when the action will run. Triggers the workflow on schedule events
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+env:
+  app-name: polycube
+  app-container: polycubed
+  dev-user: polycubebot
+  # TODO: change with 'polycubenetwork' once obtained the access token
+  official-user: polycubebot
+
+jobs:
+  # This job deal with retrieving variables for workflow configuration
+  configure:
+    name: Preliminary configuration
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.configure.outputs.ref }}
+      state: ${{ steps.configure.outputs.state }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: If tag pushed get the version
+        id: version
+        run: echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
+        if: |
+          github.event_name == 'push' &&
+          github.event.base_ref == 'refs/heads/master' &&
+          startsWith(github.ref, 'refs/tags/v')
+
+      - name: Configure ref and state
+        id: configure
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}"
+            echo "::set-output name=state::dev"
+
+          elif [[ "${{ steps.version.outputs.version }}" != "" ]]; then
+            echo "::set-output name=ref::${{ steps.version.outputs.version }}"
+            echo "::set-output name=state::release"
+          
+          else
+            echo "::set-output name=ref::${{ github.sha }}"
+            echo "::set-output name=state::master"
+          fi
+                  
+  notify:
+    name: Slack notification
+    runs-on: ubuntu-latest
+    needs: [configure]
+    steps:
+      - name: Notify on slack that CI started
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,commit,repo,ref
+          custom_payload: |
+            {
+              "attachments":[
+                  {
+                    "title":`${process.env.AS_WORKFLOW}`,
+                    "text": "All polycube builds started",
+                    "fields":[{
+                          "title":"Check suite",
+                          "value":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                        },
+                        {
+                          "title":"Git reference",
+                          "value":`${process.env.AS_REPO}@${process.env.AS_REF}`,
+                        },
+                        {
+                          "title":"Commit",
+                          "value":`${process.env.AS_COMMIT}`,
+                        }]
+                  }]
+              }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always() # Pick up events even if the job fails or is canceled.
+
+  # This job deal with building the application
+  build:
+    name: Build & Push Polycube
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    needs: [configure]
+    # Build strategies
+    strategy:
+      matrix:
+        mode: ['default', 'pcn-k8s', 'pcn-iptables']
+        include:
+          - mode: 'default'
+            name: 'polycube'
+          - mode: 'pcn-k8s'
+            name: 'k8s-pod-network'
+          - mode: 'pcn-iptables'
+            name: 'polycube-pcn-iptables'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository (default master)
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+          ref: ${{ needs.configure.outputs.ref }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+              ${{ runner.os }}-buildx-
+
+      - name: Repo setup
+        id: setup
+        run: |
+          if [[ "${{ needs.configure.outputs.state }}" == "dev" ]]; then
+            echo "::set-output name=repo-name::${{ env.dev-user }}/${{ env.app-name }}-${{ matrix.mode }}"
+            echo "::set-output name=repo-user::${{ env.dev-user }}"
+            echo "::set-output name=repo-psw::${{ secrets.DOCKER_DEV_TOKEN }}"
+          else
+            echo "::set-output name=repo-name::${{ env.official-user }}/${{ matrix.name }}"
+            echo "::set-output name=repo-user::${{ env.official-user }}"
+            # TODO change with the access token of 'polycubenetwork'
+            echo "::set-output name=repo-psw::${{ secrets.DOCKER_DEV_TOKEN }}"
+          fi
+
+      - name: Docker login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ steps.setup.outputs.repo-user }}
+          password: ${{ steps.setup.outputs.repo-psw }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+            context: ./ 
+            file: ./Dockerfile
+            builder: ${{ steps.buildx.outputs.name }}
+            build-args: |
+              DEFAULT_MODE=${{ matrix.mode }}
+            push: true
+            tags: |
+              ${{ steps.setup.outputs.repo-name }}:latest
+              ${{ steps.setup.outputs.repo-name }}:${{ needs.configure.outputs.ref }}
+            cache-from: type=local,src=/tmp/.buildx-cache
+            cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+      
+      - name: Notify on slack the build outcome
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow
+          custom_payload: |
+            {
+              "attachments":[
+                  {
+                    "title":`${process.env.AS_WORKFLOW}`,
+                    "text": "Build of polycube with *${{ matrix.mode }}* mode, finished",
+                    "color": '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                    "fields":[{
+                          "title":"Check suite",
+                          "value":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                        }
+                      ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always() # Pick up events even if the job fails or is canceled.
+  
+  
+  # This job deal with tests
+  test:
+    name: Test Polycube
+    runs-on: ubuntu-latest
+    needs: [build, configure]
+    if: needs.configure.outputs.state == 'dev'
+    outputs:
+      result-clean: ${{ steps.clean.outputs.default-clean }}
+      result-same: ${{ steps.clean.outputs.default-same }}
+    # Test strategies
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ['default-clean', 'default-same']
+        include:
+          - test: 'default-clean'
+            mode: default
+            test-script: run-tests.sh
+            relaunch-polycubed: true
+            test-mode: CleanInstance
+          - test: 'default-same'
+            mode: default
+            test-script: run-tests.sh
+            relaunch-polycubed: false
+            test-mode: SameInstance
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+          ref: ${{ needs.configure.outputs.ref }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v1
+
+      - name: Setup VirtualEnv
+        run: python3 -m pip install --user virtualenv
+
+      - name: Setup JUnitParser
+        run: python3 -m pip install --user junitparser
+
+      - name: Setup XMLToDict
+        run: python3 -m pip install --user xmltodict
+
+      # Install additional tools that are required in the testing phase
+      # - nmap: some tests use 'nping', which is included in this package
+      - name: Setup additional testing tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install nmap
+
+      - name: Docker login with bot credentials
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.dev-user }}
+          password: ${{ secrets.DOCKER_DEV_TOKEN }}
+
+      - name: Prepare tests log directory
+        run: sudo mkdir -p /var/log/polycube
+
+      - name: Set OS env
+        run: |
+          echo "KILL_COMMAND=docker stop ${{ env.app-container }}" >>  $GITHUB_ENV
+          echo "polycubed=docker run -d --name ${{ env.app-container }} --rm --privileged \
+          --pid=host --cap-add ALL --network host \
+          -v /proc:/host/proc -v /lib/modules:/lib/modules:ro -v /var/run/netns/:/var/run/netns:rw \
+          -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
+          ${{ env.dev-user }}/${{ env.app-name }}-${{ matrix.mode }}:${{ needs.configure.outputs.ref }}" >> $GITHUB_ENV
+
+      - name: Extract from Docker image
+        run: | 
+          $polycubed /bin/sleep infinity
+          ./CI/extract_from_docker_image.sh ${{ env.app-container }}
+          $KILL_COMMAND
+
+      - name: Run tests
+        run: |
+          cd tests/
+          sudo ./${{ matrix.test-script }} ${{ matrix.relaunch-polycubed }} || true
+          export LC_ALL=C
+          python3 -m virtualenv venv -p python3
+          . venv/bin/activate
+          python3 -m pip install -r ./converter/requirements.txt
+          export TEST_RESULTS=`ls -1 test_results_*`
+          python3 ./converter/to_junit.py ${{ matrix.test-mode }}
+
+      - name: Upload tests result
+        if: always()
+        uses: actions/upload-artifact@v2.2.0
+        with:
+          name: test_results_${{ matrix.test }}
+          path: ./tests/output.xml
+
+      - name: Check job status
+        id: check
+        if: always()
+        run: python3 ./tests/check_tests.py ./tests/output.xml
+
+      - name: Save tests result in output and clean
+        id: clean
+        if: always()
+        run: |
+          echo "::set-output name=${{ matrix.test }}::${{ steps.check.outcome }}"
+          ./CI/clean_slave.sh
+
+  release:
+    name: Release Polycube
+    runs-on: ubuntu-latest
+    needs: [build, configure]
+    if: needs.configure.outputs.state == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # The changelog generation requires the entire history
+          fetch-depth: 0
+          submodules: true
+          persist-credentials: false
+
+      - name: Get the latest Polycube release
+        uses: pozetroninc/github-action-get-latest-release@v0.5.0
+        id: last-release
+        with:
+          repository: ${{ github.repository }}  
+
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v0.4.4
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save the CHANGELOG as a file
+        run: |
+          echo "${{ steps.changelog.outputs.changelog }}" > ./output.md 
+          sed '/pull request/!d' output.md > output_pr.md
+          sed 's/\[\]/\[view commit\]/' output_pr.md > CHANGELOG.md
+          sed -i "1s/.*/## Merged PR since tag ${{ steps.last-release.outputs.release }}/" ./CHANGELOG.md
+
+      - name: Create the release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          release_name: Release ${{ needs.build.outputs.version }}
+          body_path: ./CHANGELOG.md
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

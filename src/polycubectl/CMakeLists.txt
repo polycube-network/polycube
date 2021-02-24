@@ -1,7 +1,16 @@
 configure_file(version.go.in ${CMAKE_CURRENT_SOURCE_DIR}//version.go)
 install(CODE
-"execute_process( COMMAND /bin/sh -c \"GOPATH=$ENV{GOPATH} USER=$ENV{USER} ${CMAKE_SOURCE_DIR}/src/polycubectl/install.sh\"
-WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/polycubectl/ )")
+"execute_process (
+COMMAND /bin/sh -c \"GOPATH=$ENV{GOPATH} USER=$ENV{USER} ${CMAKE_SOURCE_DIR}/src/polycubectl/install.sh\" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/polycubectl/ 
+ERROR_VARIABLE _err 
+RESULT_VARIABLE _res )
+
+if (NOT \${_res} EQUAL \"0\")                                                                                                                                              
+    message( SEND_ERROR \"err: \${_err}, res: \${_res}\")                                                                                                                    
+    message( INFO \" Proceeding with any remaining steps, but 'make install' will fail\")                                                                                    
+endif ()
+
+")
 
 
 # this is the right approach but it is not working on ubuntu, for some reason
