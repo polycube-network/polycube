@@ -43,6 +43,10 @@ mkdir -p $GOPATH/src/github.com/polycube-network/polycube/src/
 ln -f -s $pwdir $GOPATH/src/github.com/polycube-network/polycube/src/ > /dev/null 2>&1
 
 cd $GOPATH/src/github.com/polycube-network/polycube/src/polycubectl
+
+# fix after go version upgrade to 1.16: https://blog.golang.org/go116-module-changes
+go env -w GO111MODULE=auto
+
 # get all go dependencies
 go get ./...
 
