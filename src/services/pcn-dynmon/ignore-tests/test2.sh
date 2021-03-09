@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# ISSUE: [09/03/2021] Test ignored due to its random outcome. Check for possible race condition
+
 # include helper.bash file: used to provide some common function across testing scripts
 source "${BASH_SOURCE%/*}/helpers.bash"
 
