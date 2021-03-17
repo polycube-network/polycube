@@ -19,33 +19,18 @@ trap error_message ERR
 
 [[ -z "${USER}" ]] && USER='root'
 
-if [[ -z "${GOPATH}" ]]; then
-  echo
-  echo "GOPATH env var is not set. Please set it by typing:"
-  echo "export GOPATH=\$HOME/go"
-  echo "#and type again:"
-  echo "cmake .."
-
-  error_message
-fi
-
-# Print commands and their arguments as they are executed
 set -x
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
 echo "installing polycubectl ..."
+if ! command -v go &> /dev/null
+then
+    echo "go command not found"
+    echo "hint: go may not be available for root user"
+    exit 1
+fi
 
-pwdir=$(pwd)
-mkdir -p $GOPATH/src/github.com/polycube-network/polycube/src/
-
-# create soft link inside go directory
-ln -f -s $pwdir $GOPATH/src/github.com/polycube-network/polycube/src/ > /dev/null 2>&1
-
-cd $GOPATH/src/github.com/polycube-network/polycube/src/polycubectl
-# fix after go version upgrade to 1.16:
-# https://blog.golang.org/go116-module-changes
-go env -w GO111MODULE=auto
 # get all go dependencies
 go get ./...
 

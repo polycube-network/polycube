@@ -13,11 +13,7 @@ os_limit_major="20"
 os_limit_minor="04"
 read -r os_major os_minor<<<$(grep -Po 'VERSION_ID="\K.*?(?=")' /etc/os-release | sed 's/\./ /g')
 
-# Checking whether the major release is lower or the minor
-if  (( os_major < os_limit_major || ( os_major == os_limit_major && os_minor < os_limit_minor ) ))
-then
-  $SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
-fi
+
 
 $SUDO apt update
 PACKAGES=""
@@ -28,7 +24,6 @@ PACKAGES+=" libllvm-9-ocaml-dev libllvm9 llvm-9 llvm-9-dev llvm-9-doc llvm-9-exa
 PACKAGES+=" libllvm9 llvm-9-dev libclang-9-dev" # bpf tools compilation tool chain
 PACKAGES+=" libnl-route-3-dev libnl-genl-3-dev" # netlink library
 PACKAGES+=" uuid-dev"
-PACKAGES+=" golang-go" # needed for polycubectl and pcn-k8s
 PACKAGES+=" pkg-config"
 # Removed because of the comment at line L76 (GPG key expired); we had to install this manually
 #PACKAGES+=" libyang-dev"
@@ -40,6 +35,17 @@ PACKAGES+=" jq bash-completion" # needed for polycubectl bash autocompletion
 PACKAGES+=" libpcre3-dev" # needed for libyang
 PACKAGES+=" libpcap-dev" # needed for packetcapture filter
 
+  
+
+if ! command -v go &> /dev/null
+then
+   # Checking whether the major release is lower or the minor
+  if  (( os_major < os_limit_major || ( os_major == os_limit_major && os_minor < os_limit_minor ) ))
+  then
+    PACKAGES+=" golang-go" # needed for polycubectl and pcn-k8s
+    $SUDO add-apt-repository ppa:longsleep/golang-backports -y || true
+  fi
+fi
 
 if [ "$MODE" == "pcn-k8s" ]; then
   PACKAGES+=" curl" # needed for pcn-k8s to download a binary
