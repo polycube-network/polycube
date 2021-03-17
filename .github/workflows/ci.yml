@@ -89,7 +89,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: always() # Pick up events even if the job fails or is canceled.
 
-  # This job deal with building the application
+  # This job deals with building the application
   build:
     name: Build & Push Polycube
     # The type of runner that the job will run on
@@ -177,7 +177,7 @@ jobs:
         run: |
           echo "::set-output name=${{ matrix.mode }}::${{ job.status }}"
   
-  # This job deal with tests
+  # This job deals with tests
   test:
     name: Test Polycube
     runs-on: ubuntu-latest
