@@ -57,7 +57,7 @@ spec:
       #serviceAccountName: polycube
       containers:
       - name: polycubed
-        image: polycubenetwork/k8s-pod-network:latest
+        image: polycubenets/polycube-k8s:latest
         imagePullPolicy: Always
         command: ["polycubed",
           "--loglevel=DEBUG",
@@ -107,7 +107,7 @@ spec:
             containerPort: 9000
         terminationMessagePolicy: FallbackToLogsOnError
       - name: polycube-k8s
-        image: polycubenetwork/k8s-pod-network:latest
+        image: polycubenets/polycube-k8s:latest
         imagePullPolicy: Always
         command: ["/pcn_k8s"]
         lifecycle:
