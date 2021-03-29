@@ -23,13 +23,13 @@ You can use Polycube by pulling the proper Docker image, either the **most recen
 
   ::
 
-      docker pull polycubenetwork/polycube:v0.9.0-rc
+      docker pull polycubenets/polycube:v0.9.0-rc
 
 - **Most recent snapshot** (from GitHub)
 
   ::
 
-     docker pull polycubenetwork/polycube:latest
+     docker pull polycubenets/polycube:latest
 
 
 Run the Polycube Docker and launch ``polycubed`` (the polycube daemon) inside it, as follows:
@@ -40,7 +40,7 @@ Run the Polycube Docker and launch ``polycubed`` (the polycube daemon) inside it
 
       docker run  -it --rm --privileged --network host \
       -v /lib/modules:/lib/modules:ro -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-      polycubenetwork/polycube:v0.9.0-rc /bin/bash -c 'polycubed -d && /bin/bash'
+      polycubenets/polycube:v0.9.0-rc /bin/bash -c 'polycubed -d && /bin/bash'
 
 
 - **Most recent snapshot** (from GitHub)
@@ -48,7 +48,7 @@ Run the Polycube Docker and launch ``polycubed`` (the polycube daemon) inside it
 
       docker run  -it --rm --privileged --network host \
       -v /lib/modules:/lib/modules:ro -v /usr/src:/usr/src:ro -v /etc/localtime:/etc/localtime:ro \
-      polycubenetwork/polycube:latest /bin/bash -c 'polycubed -d && /bin/bash'
+      polycubenets/polycube:latest /bin/bash -c 'polycubed -d && /bin/bash'
 
 The Docker container is launched in the host networking stack (``--network host``) and in privileged mode (``--privileged``), which are required to use ``eBPF`` features.
 The above command starts ``polycubed`` (with standard flags) and opens a shell, which can be used to launch ``polycubectl``. Refer to :doc:`polycubectl CLI <polycubectl/polycubectl>` for more information about the CLI interface.

@@ -8,11 +8,16 @@ on:
       - master
     tags:
       - "v*"
+    paths-ignore:
+      - 'Documentation/**'
+
   pull_request:
     types:
       - opened
       - reopened
       - synchronize
+    paths-ignore:
+      - 'Documentation/**'
 
 env:
   app-container: polycubed
