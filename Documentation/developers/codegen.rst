@@ -12,7 +12,8 @@ Hence, this leaves to the programmer only the responsibility to implement the in
 The easiest way to generate a stub is to use the ``polycubenets/polycube-codegen`` docker image.
 This contains ``pyang``, ``swagger-codegen`` and a script to invoke them.
 
-In order to run the image, it is needed to mount a volume into ``/polycube-base-datamodels`` where the base datamodels are located on the host (by default ``/usr/local/include/polycube/datamodel-common/``), it is also needed to mount a volume to share the input yang model and the output folder.
+In order to run the image, you need to mount a volume into ``/polycube-base-datamodels`` where the base datamodels are located on the host (by default ``/usr/local/include/polycube/datamodel-common/``).
+Furthermore, you need also to mount a volume to share the input yang model and the output folder.
 
 ::
 
@@ -73,6 +74,5 @@ If the file name is preceded by the `!` character or it is not present, the file
 For default the `.swagger-codegen-ignore` avoids the re-generation of all the files that the developer has to modify (``src/{object-name}.h``, ``src/{object-name}.cpp``  and ``src/{service-name}_dp.c`` files).
 
 **Important**: do not remove the line ``.swagger-codegen-ignore`` present in the ``.swagger-codegen-ignore`` file because otherwise this file will be overwritten and this causes the loss of previous modifications to the file.
-
 
 
