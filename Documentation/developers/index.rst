@@ -16,7 +16,7 @@ This guide represents an initial starting point for developers that want to impl
    profiler
    hints
    hateoas
-
+   polycube-ci
 
 
 How to create a new service / update an existing one

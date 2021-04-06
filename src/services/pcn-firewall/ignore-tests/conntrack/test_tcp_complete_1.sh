@@ -1,3 +1,5 @@
+# ISSUE: [09/03/2021] Test ignored due to its random outcome. Check for possible race condition
+
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
 function fwcleanup {

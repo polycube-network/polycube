@@ -2,9 +2,6 @@
 
 source "${BASH_SOURCE%/*}/helpers_tests.bash"
 
-# use a clean instance of polycubed to run each test
-RELAUNCH_POLYCUBED=true
-
 SERVICES_LOAD_TIMEOUT=10
 
 # launch polycubed in DEBUG mode
@@ -30,10 +27,18 @@ services[transparenthelloworld]=pcn-transparent-helloworld
 
 trap cleanup EXIT
 
-# $1 setup RELAUNCH_POLYCUBED
+# When this script is launched with a parameter such as 
+#  'relaunch_polycubed=true' or 'relaunch_polycubed=false'
+# we take the value given on the command line. Otherwise,
+# we set it to true.
+#
+# RELAUNCH_POLYCUBED=true: use a clean instance of polycubed to run each test
+# RELAUNCH_POLYCUBED=false: use always the same instance of polycubed for the entire test suite.
 if [ $# -ne 0 ]
   then
     RELAUNCH_POLYCUBED=$1
+  else
+    RELAUNCH_POLYCUBED=true
 fi
 
 export PATH=$PATH:$GOPATH/bin
