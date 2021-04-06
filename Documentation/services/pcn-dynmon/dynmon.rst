@@ -20,7 +20,7 @@ Limitations
 -----------
 - The OpenMetrics format does not support complex data structures, hence the maps are exported only if their value type is a simple type (structs and unions are not supported)
 - The OpenMetrics Histogram and Summary metrics are not yet supported
-- Data extraction is possible only in the following maps (as listed in [MapExtractor.cpp#L293](https://github.com/polycube-network/polycube/blob/master/src/services/pcn-dynmon/src/extractor/MapExtractor.cpp#L293)):
+- Data extraction is possible only in the following maps (as listed in [MapExtractor.cpp#L287](https://github.com/polycube-network/polycube/blob/master/src/services/pcn-dynmon/src/extractor/MapExtractor.cpp#L287)):
   - BPF_MAP_TYPE_HASH, BPF_MAP_TYPE_PERCPU_HASH
   - BPF_MAP_TYPE_LRU_HASH, BPF_MAP_TYPE_LRU_PERCPU_HASH,
   - BPF_MAP_TYPE_ARRAY, BPF_MAP_TYPE_PERCPU_ARRAY
