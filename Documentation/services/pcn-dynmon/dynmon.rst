@@ -20,10 +20,17 @@ Limitations
 -----------
 - The OpenMetrics format does not support complex data structures, hence the maps are exported only if their value type is a simple type (structs and unions are not supported)
 - The OpenMetrics Histogram and Summary metrics are not yet supported
+- Data extraction is possible only in the following maps (as listed in [MapExtractor.cpp#L287](https://github.com/polycube-network/polycube/blob/master/src/services/pcn-dynmon/src/extractor/MapExtractor.cpp#L287)):
+  - BPF_MAP_TYPE_HASH, BPF_MAP_TYPE_PERCPU_HASH
+  - BPF_MAP_TYPE_LRU_HASH, BPF_MAP_TYPE_LRU_PERCPU_HASH,
+  - BPF_MAP_TYPE_ARRAY, BPF_MAP_TYPE_PERCPU_ARRAY
+  - BPF_MAP_TYPE_QUEUE, BPF_MAP_TYPE_STACK
+
+Furthermore, optimized data extraction (the so called *batch operations*), are supported only by BPF_MAP_TYPE_HASH, BPF_MAP_TYPE_LRU_HASH, BPF_MAP_TYPE_ARRAY.
+
 
 How to use
 ----------
-
 
 Creating the service
 ^^^^^^^^^^^^^^^^^^^^
@@ -43,7 +50,7 @@ Configuration examples can be found in the *examples* directory.
 
 
 Attaching to a interface
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
     # Attach the service to a network interface
@@ -234,7 +241,7 @@ There are two different type of compilation:
 - PROGRAM_RELOAD
   
 PROGRAM_INDEX_SWAP rewrite
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The PROGRAM_INDEX_SWAP rewrite type is the best you can get from this rewriter by now. It is extremely sophisticated and not easy at all to understand, since we have tried to take into account as many scenarios as possible. This said, let's analyze it.
 
@@ -267,8 +274,8 @@ The PIVOTING code simply calls the original/cloned program main function accordi
 Thanks to this technique, every time a user requires metrics there's only almost 4ms overhead due to changing the index from ControlPlane, which compared to the 400ms using the PROGRAM_RELOAD compilation, is an extremely advantage we are proud of having developed.
 
 
-PROGRAM_RELOAD Compilation
-^^^^^^^^^^^^^^^^^
+PROGRAM_RELOAD compilation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This compilation type is quite simple to understand. It is used as a fallback compilation, since it achieves the map swap function, but in a more time expensive way. In fact, when this option is used, it is generated a new code starting from the original injected one, and then the following steps are followed:
 
