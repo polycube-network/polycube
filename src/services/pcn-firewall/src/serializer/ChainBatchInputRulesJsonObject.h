@@ -39,7 +39,7 @@ enum class ConntrackstatusEnum {
 #ifndef ACTIONENUM
 #define ACTIONENUM
 enum class ActionEnum {
-  DROP, LOG, FORWARD
+  DROP, LOG, ACCEPT
 };
 #endif
 

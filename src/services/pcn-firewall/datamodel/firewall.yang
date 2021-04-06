@@ -20,9 +20,9 @@ module firewall {
     type enumeration {
       enum DROP;
       enum LOG;
-      enum FORWARD;
+      enum ACCEPT;
     }
-    default FORWARD;
+    default ACCEPT;
   }
 
   typedef conntrackstatus {
@@ -92,8 +92,8 @@ module firewall {
     leaf action {
       type action;
       polycube-base:init-only-config;
-      description "Action if the rule matches. Default is DROP.";
-      polycube-base:cli-example "DROP, FORWARD, LOG";
+      description "Action if the rule matches. Default is ACCEPT.";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
 
     leaf description {
@@ -117,7 +117,7 @@ module firewall {
       enum ON;
       enum OFF;
     }
-    description "If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.";
+    description "If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.";
   }
 
   list session-table {
@@ -182,8 +182,8 @@ module firewall {
 
     leaf default {
       type action;
-      description "Default action if no rule matches in the ingress chain. Default is DROP.";
-      polycube-base:cli-example "DROP, FORWARD, LOG";
+      description "Default action if no rule matches in the ingress chain. Default is ACCEPT.";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
 
     list stats {

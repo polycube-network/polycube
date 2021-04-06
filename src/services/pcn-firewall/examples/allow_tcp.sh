@@ -10,8 +10,8 @@ set -x
 
 # allow TCP traffic from/to 10.0.0.0/24
 
-polycubectl firewall fw chain EGRESS insert l4proto=TCP src=10.0.0.0/24 dst=10.0.0.0/24 action=FORWARD
+polycubectl firewall fw chain EGRESS insert l4proto=TCP src=10.0.0.0/24 dst=10.0.0.0/24 action=ACCEPT
 
-polycubectl firewall fw chain INGRESS insert l4proto=TCP src=10.0.0.0/24 dst=10.0.0.0/24 action=FORWARD
+polycubectl firewall fw chain INGRESS insert l4proto=TCP src=10.0.0.0/24 dst=10.0.0.0/24 action=ACCEPT
 
 echo "Wait for the rules to be updated and launch test_tcp.sh"

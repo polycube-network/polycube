@@ -44,7 +44,7 @@ class FirewallBase : public virtual polycube::service::TransparentCube {
   virtual void setConntrack(const FirewallConntrackEnum &value) = 0;
 
   /// <summary>
-  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.
+  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.
   /// </summary>
   virtual FirewallAcceptEstablishedEnum getAcceptEstablished() = 0;
   virtual void setAcceptEstablished(const FirewallAcceptEstablishedEnum &value) = 0;

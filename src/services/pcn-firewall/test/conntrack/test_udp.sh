@@ -1,5 +1,12 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+function fwsetup {
+  polycubectl firewall add fw
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -12,22 +19,21 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=DEBUG
-polycubectl attach fw veth1
+fwsetup
 
 polycubectl firewall fw set accept-established=OFF
 
 # Allowing connections to be started only from NS2 to NS1
-polycubectl firewall fw chain INGRESS append l4proto=UDP conntrack=ESTABLISHED action=FORWARD
-polycubectl firewall fw chain INGRESS append l4proto=ICMP action=FORWARD
+polycubectl firewall fw chain INGRESS append l4proto=UDP conntrack=ESTABLISHED action=ACCEPT
+polycubectl firewall fw chain INGRESS append l4proto=ICMP action=ACCEPT
 polycubectl firewall fw chain INGRESS set default=DROP
 
-polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=NEW action=FORWARD
-polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=ESTABLISHED action=FORWARD
-polycubectl firewall fw chain EGRESS append l4proto=ICMP action=FORWARD
+polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=NEW action=ACCEPT
+polycubectl firewall fw chain EGRESS append l4proto=UDP conntrack=ESTABLISHED action=ACCEPT
+polycubectl firewall fw chain EGRESS append l4proto=ICMP action=ACCEPT
 polycubectl firewall fw chain EGRESS set default=DROP
 
-echo "UDP Conntrack Test [No automatic forward][Interactive mode]"
+echo "UDP Conntrack Test [No automatic ACCEPT][Interactive mode]"
 
 echo "(1) Sending NOT allowed NEW UDP packet"
 npingOutput="$(sudo ip netns exec ns1 nping --udp -c 1 -p 50000 -g 50000 10.0.0.2)"

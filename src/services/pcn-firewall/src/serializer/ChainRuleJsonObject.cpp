@@ -317,8 +317,8 @@ std::string ChainRuleJsonObject::ActionEnum_to_string(const ActionEnum &value){
       return std::string("drop");
     case ActionEnum::LOG:
       return std::string("log");
-    case ActionEnum::FORWARD:
-      return std::string("forward");
+    case ActionEnum::ACCEPT:
+      return std::string("accept");
     default:
       throw std::runtime_error("Bad ChainRule action");
   }
@@ -329,8 +329,8 @@ ActionEnum ChainRuleJsonObject::string_to_ActionEnum(const std::string &str){
     return ActionEnum::DROP;
   if (JsonObjectBase::iequals("log", str))
     return ActionEnum::LOG;
-  if (JsonObjectBase::iequals("forward", str))
-    return ActionEnum::FORWARD;
+  if (JsonObjectBase::iequals("accept", str))
+    return ActionEnum::ACCEPT;
   throw std::runtime_error("ChainRule action is invalid");
 }
 std::string ChainRuleJsonObject::getDescription() const {
