@@ -11,7 +11,7 @@ on:
     paths-ignore:
       - 'Documentation/**'
 
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.configure.outputs.ref }}
+      repo: ${{ steps.configure.outputs.repo }}
       state: ${{ steps.configure.outputs.state }}
       version: ${{ steps.version.outputs.version }}
       build-matrix: ${{ steps.setup-build-matrix.outputs.build-matrix }}
@@ -45,16 +46,21 @@ jobs:
       - name: Configure ref and state
         id: configure
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # If the event is a pull request the repo to checkout is the PR repo, otherwise
+          # we checkout the current repo
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
             echo "::set-output name=ref::${{ github.event.pull_request.head.sha }}"
+            echo "::set-output name=repo::${{ github.event.pull_request.head.repo.full_name }}"
             echo "::set-output name=state::dev"
 
           elif [[ "${{ steps.version.outputs.version }}" != "" ]]; then
             echo "::set-output name=ref::${{ steps.version.outputs.version }}"
+            echo "::set-output name=repo::${{ github.repository }}"
             echo "::set-output name=state::release"
           
           else
             echo "::set-output name=ref::${{ github.sha }}"
+            echo "::set-output name=repo::${{ github.repository }}"
             echo "::set-output name=state::master"
           fi
 
@@ -132,6 +138,7 @@ jobs:
           submodules: true
           persist-credentials: false
           ref: ${{ needs.configure.outputs.ref }}
+          repository: "${{ needs.configure.outputs.repo }}"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -217,6 +224,7 @@ jobs:
           submodules: true
           persist-credentials: false
           ref: ${{ needs.configure.outputs.ref }}
+          repository: "${{ needs.configure.outputs.repo }}"
       
       - name: Setup Python
         uses: actions/setup-python@v1
