@@ -5,7 +5,7 @@ A ``Cube`` is a logical entity, composed by a ``data plane`` (which can include 
 
 In addition, a Cube may include also a ``slow path`` in case some additional data plane-related code is required to overcome some limitations of the eBPF data plane.
 This is the case of flooding packets in an 802.1 bridge, when the MAC destination address does not exist (yet) in the filtering database.
-In fact, this action (which requires a packet to be sent on all active ports except the one on which it was received) involves a loop, which may not be easy to achieve in the data plane given the limitations of the eBPF technology.
+In fact, this action (which requires a packet to be sent on all active ports except the one on which it was received) involves redirecting a packet on multiple interfaces, an operation that is not supported by the eBPF technology.
 
 Types of Cubes
 --------------
