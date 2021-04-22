@@ -41,8 +41,8 @@ A transparent cube:
   - it allows to have a stack of transparent services on top of a port, very similar to a stack of functions.
 
 A transparent cube can define two processing handlers, *ingress* and *egress*, which operate on two possible traffic directions:
-  - *ingress*: it handles the traffic that goes *toward* the port it is attached to (e.g., in case of an `eth0` netdev, the traffic that comes from the TCP/IP stack and it is expected to *leave* the host from that port);
-  - *egress*: it handles the traffic that comes from the cube/netdev it is attached to (e.g., in case of an `eth0` netdev, the traffic that comes from the external world and that is expected to go toward the TCP/IP stack of the host).
+  - *ingress*: it handles the traffic that goes *toward* the port it is attached to (e.g., in case of an `eth0` netdev, the traffic that comes from the external world and that is expected to go toward the TCP/IP stack of the host);
+  - *egress*: it handles the traffic that comes from the cube/netdev it is attached to (e.g., in case of an `eth0` netdev, the traffic that comes from the TCP/IP stack and it is expected to *leave* the host from that port).
 
 ::
 
