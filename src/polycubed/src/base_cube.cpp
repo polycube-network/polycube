@@ -149,9 +149,9 @@ int BaseCube::get_table_fd(const std::string &table_name, int index,
   // TODO: Improve bcc api to do it
   switch (type) {
   case ProgramType::INGRESS:
-    return ingress_programs_[index]->get_table(table_name).fd();
+    return ingress_programs_[index]->get_table(table_name).get_fd();
   case ProgramType::EGRESS:
-    return egress_programs_[index]->get_table(table_name).fd();
+    return egress_programs_[index]->get_table(table_name).get_fd();
   }
 }
 
@@ -409,7 +409,6 @@ BPF_TABLE_SHARED("prog", int, int, egress_programs_xdp,
 )";
 
 const std::string BaseCube::BASECUBE_WRAPPER = R"(
-#define KBUILD_MODNAME "MOD_NAME"
 #include <bcc/helpers.h>
 #include <bcc/proto.h>
 #include <uapi/linux/pkt_cls.h>
