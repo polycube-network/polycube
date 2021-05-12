@@ -4,6 +4,9 @@ Cubes Architecture
 A ``Cube`` is a logical entity, composed by a ``data plane`` (which can include one or more eBPF programs) and a ``control/management plane``.
 
 In addition, a Cube may include also a ``slow path`` in case some additional data plane-related code is required to overcome some limitations of the eBPF data plane.
+This is the case of flooding packets in an 802.1 bridge, when the MAC destination address does not exist (yet) in the filtering database.
+In fact, this action (which requires a packet to be sent on all active ports except the one on which it was received) involves redirecting a packet on multiple interfaces, an operation that is not supported by the eBPF technology.
+In addition, this operation may require a loop in the dataplane, i.e., cycling on the list of interfaces and send them the packet, which is hard to do due to the eBPF limitations.
 
 Types of Cubes
 --------------
@@ -14,7 +17,7 @@ Standard cubes have forwarding capabilities, such router and bridge.
 
 A standard cube:
   - defines a :ref:`ports <cube-ports>` concept, ports are *connected* to other ports or netdevs;
-  - makes a forwarding decision, i.e, sending the packet to another port;
+  - makes a **forwarding** decision, i.e, sending the packet to another port;
   - it follows middle-box model, is a network function with multiple ports;
 
 ::
@@ -33,10 +36,14 @@ A standard cube:
 A transparent cube is a cube without any forwarding capability, such as a network monitor, NAT and a firewall.
 
 A transparent cube:
-  - does not define any port, but has to be *attached* to an existing port such as the one of a normal service (e.g., port1 on router2) or a network interface in the host (e.g., veth0);
-  - cannot be *connected* to other services, but *attached*.
-  - it *inherits* all the parameters associated to ports (e.g., MAC/IPv4 addresses, link speed, etc.) from the actual port it is attached to (e.g., port 1 on router2, or veth0);
-  - it allows to have a stack of transparent services on top of a port, very similar to a stack of functions.
+  - does not define any port, hence it cannot be *connected* to other services, but *attached* to an existing port;
+  - it can be *attached* to an existing port such as the one of a normal service (e.g., port1 on router2) or a network device (netdev) in the host (e.g., `veth0` or `eth0`);
+  - it *inherits* all the parameters associated to the port it is attached to (e.g., MAC/IPv4 addresses, link speed, etc.);
+  - it allows to have a *stack* of transparent services on top of a port, very similar to a stack of functions.
+
+A transparent cube can define two processing handlers, *ingress* and *egress*, which operate on two possible traffic directions:
+  - *ingress*: it handles the traffic that goes *toward* the port it is attached to. In case of a netdev (e.g., `eth0`), this selects the traffic that comes from the external world and goes toward the TCP/IP stack of the host. In case of a cube port, it is the traffic that is *entering* in the network function.
+  - *egress*: it handles the traffic that comes from the cube/netdev it is attached to. In case of a netdev (e.g., `eth0`), it selects the traffic that comes from the TCP/IP stack and *leaves* the host from that port. In case of a cube port, it is the traffic that is *leaving* the network function.
 
 ::
 
@@ -55,19 +62,19 @@ Following is example topology composed by standard and transparent cubes.
 
 ::
 
-     veth1                                                                 veth3
-       |                                                                    |
-       |                                                                    |
-       |                                                                    |
-  +---------+                      +---------+           +---------+   +---------+
-  |         |   +-----------+------+         |   +-------+         |   |         |
-  | bridge1 |---| firewall0 | nat0 | router1 |---| ddos0 | router2 |---| bridge2 |---veth5
-  |         |   +-----------+------+         |   +-------+         |   |         |
-  +---------+                      +---------+           +---------+   +---------+
-      |                                                                     |
-      |                                                                     |
-      |                                                                     |
-    veth2                                                                 veth4
+     veth1                                                                   veth3
+       |                                                                       |
+       |                                                                       |
+       |                                                                       |
+  +---------+                       +---------+            +---------+    +---------+
+  |         |    +-----------+------+         |    +-------+         |    |         |
+  | bridge1 |----| firewall0 | nat0 | router1 |----| ddos0 | router2 |----| bridge2 |---veth5
+  |         |    +-----------+------+         |    +-------+         |    |         |
+  +---------+                       +---------+            +---------+    +---------+
+      |                                                                        |
+      |                                                                        |
+      |                                                                        |
+    veth2                                                                    veth4
 
 ``polycubectl ?`` shows available cubes installed on your system.
 
@@ -142,9 +149,9 @@ Ports are logical entities and need to be connected to (physical/virtual) networ
 
 
                  +----------+                                     +---------+
-     port1 ------|    r1    |------- port2----------port2---------|   br1   |
-    (netdev)     |  (cube)  |     (cube port)     (cube port)     |  (cube) |
-    peer=veth1   +----------+   peer=br1:port2   peer=r1:port1    +---------+
+     port1 ------|    r1    |------ port2-----><-------port2------|   br1   |
+    (netdev)     |  (cube)  |    (cube port)        (cube port)   |  (cube) |
+    peer=veth1   +----------+  peer=br1:port2      peer=r1:port2  +---------+
                        |
                        |
                      port3
