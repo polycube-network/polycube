@@ -237,6 +237,10 @@ std::shared_ptr<PortsSecondaryip> Ports::getSecondaryip(const std::string &ip) {
     if (p.getIp() == ip)
       return std::make_shared<PortsSecondaryip>(p);
   }
+  // It can happen in 3 cases: the port has no IP, 
+  // the port has secondaryip but not the one sought, the port has 0 secondaryip
+  throw std::runtime_error(
+        "Address does not exist or it is not a secondary address or the port has no ip address");
 }
 
 std::vector<std::shared_ptr<PortsSecondaryip>> Ports::getSecondaryipList() {
