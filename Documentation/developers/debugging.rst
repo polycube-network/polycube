@@ -53,8 +53,8 @@ More information is available in the :ref:`debugging the polycubed daemon <polyc
 
 .. _logging-data-plane:
 
-Logging in the data plane
-*************************
+Logging the eBPF data plane
+***************************
 
 The common eBPF primitive ``bpf_trace_printk()``, which is widely used in other eBPF frameworks, should not be used in Polycube.
 Polycube offers a new ``pcn_log()`` primitive, which integrates both data and control plane logging in the same location.
@@ -103,8 +103,9 @@ Usage example:
 
 .. _logging-control-plane:
 
-Logging in the control plane
-****************************
+
+Logging the control plane
+*************************
 
 Custom ``printf()`` or similar primitives, which make the code difficult to debug, should not be used in the Polycube control plane.
 In fact, the ``pcn_log()`` primitive presented below can be used also in the control plane, as Polycube includes a powerful logging system implemented within a dedicated class.
@@ -118,16 +119,18 @@ Usage example:
   
 
 
-Debug mode using IDE
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Debugging using Integrated Development Environment (IDE)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 VS Code 
 ***************
 
+When compiling a project, by default the compiler creates all the produced files in the ``../build`` directory. 
 
-1. Usually to build Polycube, a similar thing is done but a "build" directory is used and nothing is set as DCMAKE_BUILD_TYPE. 
-As explained in the answer to the question `here <https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake>`_, you need to execute the following commands (first set the appropriate breakpoints):
+1. Polycube uses cmake to create the compilation environment (Makefiles, etc), which, by default is configured to create the executables in ``Release`` mode.
+To debug your code, you must compile Polycube in ``Debug`` mode, with the following commands (follow also `here <https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake>`_):
+
 
   :: 
 
@@ -205,7 +208,7 @@ There are two equivalent ways to debug Polycube with CLion:
 3. At this point there are two possibilities:
 
    a. Use the CLion debugger: at the top right select Debug 'polycube'; or
-   b. Run Polycube in a terminal like that `sudo polycubed --loglevel = DEBUG` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
+   b. Run Polycube in a terminal like that ``sudo polycubed --loglevel = DEBUG`` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
 
-4. At this point, from another terminal, just use polycubectl to interact with Polycube
+4. At this point, from another terminal, just use ``polycubectl`` to interact with Polycube
 
