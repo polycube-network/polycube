@@ -116,3 +116,96 @@ Usage example:
   logger()->info("Connected port {0}", port_name);
   logger()->debug("Packet size: {0}", packet.size());
   
+
+
+Debug mode using IDE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+VS Code 
+***************
+
+
+1. Usually to build Polycube, a similar thing is done but a "build" directory is used and nothing is set as DCMAKE_BUILD_TYPE. 
+As explained in the answer to the question `here <https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake>`_, you need to execute the following commands (first set the appropriate breakpoints):
+
+  :: 
+
+    mkdir Debug
+    cd Debug
+    cmake -DCMAKE_BUILD_TYPE=Debug ..
+    make -j
+
+And then to install Polycube, execute:
+
+  ::
+
+    sudo make install
+
+2. Create a ``launch.json`` file, following the VS Code instructions:
+
+   1. Run
+   2. Start Debugging (or Add Configuration)
+   3. Select the C ++ template (GDB/LLDB)
+   4. Default configuration
+   5. As "program" put ``/usr/local/bin/polycubed`` or if the installation script has been modified in any way, enter the path that comes out as a result of the  ``which polycubed`` command
+   6. As "args" put ``["--loglevel=DEBUG"]`` to enable Polycube debug mode logs that provide diagnostic information useful to people more than just developers
+   7. Later, also following this `link <https://stackoverflow.com/questions/40033311/how-to-debug-programs-with-sudo-in-vscode>`_, create a file called "gdb" in  "home/{username}" (for example) and enter ``pkexec /usr/bin/gdb "$@"`` to make sure that you are prompted to enter the password at startup. This is because Polycube requires root permissions to run. Finally just edit the ``launch.json`` file with these 3 lines:
+
+  ::
+
+      "externalConsole": false,
+      "miDebuggerPath": "/home/<username>/gdb",
+      "MIMode": "gdb",
+
+
+
+The final ``launch.json`` file should be something like the follow:
+::
+
+    {
+        // Use IntelliSense to learn about possible attributes.
+        // Hover to view descriptions of existing attributes.
+        // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "(gdb) Launch",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "/usr/local/bin/polycubed",
+                "args": ["--loglevel=DEBUG"],
+                "stopAtEntry": false,
+                "cwd": "${fileDirname}",
+                "environment": [],
+                "externalConsole": false,
+                "miDebuggerPath": "/home/pino/gdb",
+                "MIMode": "gdb",
+                "setupCommands": [
+                    {
+                        "description": "Abilita la riformattazione per gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            }
+        ]
+    }
+
+
+
+CLion
+^^^^^^
+
+
+There are two equivalent ways to debug Polycube with CLion:
+
+1. Run CLion with sudo (Polycube needs root permissions)
+2. Set breakpoints and build/install Polycube (as explained above)
+3. At this point there are two possibilities:
+
+   a. Use the CLion debugger: at the top right select Debug 'polycube'; or
+   b. Run Polycube in a terminal like that `sudo polycubed --loglevel = DEBUG` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
+
+4. At this point, from another terminal, just use polycubectl to interact with Polycube
+
