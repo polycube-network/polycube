@@ -126,11 +126,8 @@ Debugging using Integrated Development Environment (IDE)
 VS Code 
 ***************
 
-When compiling a project, by default the compiler creates all the produced files in the ``../build`` directory. 
-
-1. Polycube uses cmake to create the compilation environment (Makefiles, etc), which, by default is configured to create the executables in ``Release`` mode.
+Polycube uses ``cmake`` to create the compilation environment (Makefiles, etc), which, by default is configured to create the executables in ``Release`` mode.
 To debug your code, you must compile Polycube in ``Debug`` mode, with the following commands (follow also `here <https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake>`_):
-
 
   :: 
 
@@ -139,20 +136,20 @@ To debug your code, you must compile Polycube in ``Debug`` mode, with the follow
     cmake -DCMAKE_BUILD_TYPE=Debug ..
     make -j
 
-And then to install Polycube, execute:
+Once all the Polycube executables have been created with _debug_ information, you must install them in the default folders with the following command:
 
   ::
 
     sudo make install
 
-2. Create a ``launch.json`` file, following the VS Code instructions:
+Now, let's create a ``launch.json`` file, following the VS Code instructions:
 
    1. Run
    2. Start Debugging (or Add Configuration)
    3. Select the C ++ template (GDB/LLDB)
    4. Default configuration
-   5. As "program" put ``/usr/local/bin/polycubed`` or if the installation script has been modified in any way, enter the path that comes out as a result of the  ``which polycubed`` command
-   6. As "args" put ``["--loglevel=DEBUG"]`` to enable Polycube debug mode logs that provide diagnostic information useful to people more than just developers
+   5. As "program", add ``/usr/local/bin/polycubed``, which represents the default location. Alternatively, if you modified the installation script, enter the path that comes out as a result of the  ``which polycubed`` command
+   6. As "args", add ``["--loglevel=DEBUG"]`` to enable Polycube debug mode logging, which provides diagnostic information useful to people more than just developers. Note that the Polycube _debug_ logging (which simply means _the highlest level of verbosity_) is independent from the build type, hence it has to be enabled explicitly.
    7. Later, also following this `link <https://stackoverflow.com/questions/40033311/how-to-debug-programs-with-sudo-in-vscode>`_, create a file called "gdb" in  "home/{username}" (for example) and enter ``pkexec /usr/bin/gdb "$@"`` to make sure that you are prompted to enter the password at startup. This is because Polycube requires root permissions to run. Finally just edit the ``launch.json`` file with these 3 lines:
 
   ::
@@ -162,8 +159,7 @@ And then to install Polycube, execute:
       "MIMode": "gdb",
 
 
-
-The final ``launch.json`` file should be something like the follow:
+The final ``launch.json`` file should be something like the following:
 ::
 
     {
@@ -200,15 +196,14 @@ The final ``launch.json`` file should be something like the follow:
 CLion
 ^^^^^^
 
-
-There are two equivalent ways to debug Polycube with CLion:
+If you use CLion, you can debug Polycube with the following steps:
 
 1. Run CLion with sudo (Polycube needs root permissions)
 2. Set breakpoints and build/install Polycube (as explained above)
-3. At this point there are two possibilities:
+3. At this point there are two equivalent ways to debug Polycube with CLion:
 
-   a. Use the CLion debugger: at the top right select Debug 'polycube'; or
-   b. Run Polycube in a terminal like that ``sudo polycubed --loglevel = DEBUG`` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
+   a. Use the CLion debugger: at the top right select Debug 'polycube';
+   b. (or) Run Polycube in a terminal like that ``sudo polycubed --loglevel = DEBUG`` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
 
 4. At this point, from another terminal, just use ``polycubectl`` to interact with Polycube
 
