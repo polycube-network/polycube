@@ -11,3 +11,4 @@ libyang
 src/libs/prometheus-cpp/_build/
 
 cmake-build-debug/
+Debug/*
