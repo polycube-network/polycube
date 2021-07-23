@@ -1,27 +1,23 @@
 Rest API
 =====================================
 
-The Polycube rest API is implemented in the [rest_server.cpp](https://github.com/polycube-network/polycube/blob/master/src/polycubed/src/rest_server.cpp), 
-in this file the main endpoints supported by Polycube are defined. Each service then has specific endpoints which can be reached through a ``redirect`` method.
+The Polycube REST API is implemented in [rest_server.cpp](https://github.com/polycube-network/polycube/blob/master/src/polycubed/src/rest_server.cpp), which defines the main endpoints. This file handles Polycube-wide actions (detailed below), while additional specific endpoints are implemented in each service and are reached through a ``redirect`` method.
 
-The rest API has as its base endpoint the path ``/polycube/v1/`` and can be divided into 8 main parts:
+The REST API starts with the ``/polycube/v1/`` path and can be divided into 8 main parts:
 
 * ``servicectrls``: takes care of everything related to services;
 * ``cubes``: deals with everything related to cubes (i.e. an instance of a service);
 * ``netdevs``: deals with everything related to network devices (network interfaces);
 * ``version``: returns the version of polycubectl;
-* ``connect and disconnect``: deals with the connection and disconnection of the ports of two cubes;
-* ``attach & detach``: takes care of attaching and detaching a transparent cube (for example the NAT), with a standard cube (for example the Router);
+* ``connect`` / ``disconnect``: deals with the connection and disconnection of the ports of two cubes;
+* ``attach`` / ``detach``: takes care of attaching and detaching a transparent cube (for example the NAT), with a standard cube (for example the Router);
 * ``topology``: returns the topology of the running cubes;
 * ``metrics``: takes care of returning the metrics in OpenMetrics format of all running cubes.
 
-
-
-
-For all the URLs/endpoints that have not been set in the rest server, the ``redirect`` method is called. 
-It first of all takes care of understanding if there is a match for the requested route and if it exists, then it calls the correct endpoint. 
-This method comes into play when polycubectl is used to interact with running cubes, for example ``polycubectl router1 ports ?`` refers to the endpoint 
-``/polycube/v1/router1/ports`` which is not among the standard ones but is implemented by the ``Router`` service.
+For all the URLs/endpoints that are not handled directly in the REST server, the ``redirect`` method is called which brings to the actual service that implements the requested method.
+This method comes into play when ``polycubectl`` is used to interact with running cubes, for example ``polycubectl router1 ports ?`` refers to the endpoint 
+``/polycube/v1/router1/ports`` which is not among the standard ones but is implemented by the ``router`` service.
+In this respect, the main REST server checks if the requested route exists (e.g., the specific service, such as ``router``, exists), then it calls the correct endpoint. 
 
 
 +----------------------------------+---------------------------------------------------------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------+
@@ -81,10 +77,9 @@ This method comes into play when polycubectl is used to interact with running cu
 Example of use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+To use Polycube, you go through the REST API and to interact with it you can use ``polycubectl``, ``curl`` or even Postman.
 
-To use Polycube, you go through the rest API and to interact with it you can use polycubectl, curl or even Postman.
-
-After running polycube with the command ``sudo polycubed --loglevel=DEBUG`` we can give some commands and it is possible to see that debug log messages are displayed with the HTTP verb and the endpoint of the REST server being called (only for methods which have as input a Pistache::Rest::Request).
+After running Polycube with the command ``sudo polycubed --loglevel=DEBUG``, each command is shown with the corresponding (debug) log message, the associated HTTP verb and the endpoint of the REST server being called (only for methods which have as input a Pistache::Rest::Request).
 
 For example:
 
@@ -94,7 +89,7 @@ For example:
 
         polycubectl services show   #  GET : /polycube/v1/services/
 
-        polycubectl router r1   # Nothing is displayed
+        polycubectl router r1   # Nothing is displayed, as the message is redirected to the `router` module
 
         polycubectl topology   # GET : /polycube/v1/topology/
 
