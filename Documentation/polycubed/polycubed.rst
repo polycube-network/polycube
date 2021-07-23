@@ -116,4 +116,4 @@ The debugging of polycubed can be turned on by starting the daemon with the ``--
 Rest API
 ^^^^^^^^
 
-TODO...
+Here is the detailed documentation of the :doc:`REST API <../developers/rest-api>`. 
