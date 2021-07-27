@@ -22,7 +22,6 @@
 #include <mutex>
 #include "../Packetcapture.h"
 
-#include "FiltersJsonObject.h"
 #include "GlobalheaderJsonObject.h"
 #include "PacketJsonObject.h"
 #include "PacketcaptureJsonObject.h"
@@ -36,24 +35,16 @@ using namespace polycube::service::model;
 
 namespace PacketcaptureApiImpl {
   void create_packetcapture_by_id(const std::string &name, const PacketcaptureJsonObject &value);
-  void create_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value);
   void create_packetcapture_globalheader_by_id(const std::string &name, const GlobalheaderJsonObject &value);
   void create_packetcapture_packet_by_id(const std::string &name, const PacketJsonObject &value);
   void delete_packetcapture_by_id(const std::string &name);
-  void delete_packetcapture_filters_by_id(const std::string &name);
   void delete_packetcapture_globalheader_by_id(const std::string &name);
   void delete_packetcapture_packet_by_id(const std::string &name);
-  bool read_packetcapture_anomimize_by_id(const std::string &name);
+  bool read_packetcapture_anonimize_by_id(const std::string &name);
   PacketcaptureJsonObject read_packetcapture_by_id(const std::string &name);
   PacketcaptureCaptureEnum read_packetcapture_capture_by_id(const std::string &name);
   std::string read_packetcapture_dump_by_id(const std::string &name);
-  FiltersJsonObject read_packetcapture_filters_by_id(const std::string &name);
-  uint16_t read_packetcapture_filters_dport_by_id(const std::string &name);
-  std::string read_packetcapture_filters_dst_by_id(const std::string &name);
-  std::string read_packetcapture_filters_l4proto_by_id(const std::string &name);
-  uint32_t read_packetcapture_filters_snaplen_by_id(const std::string &name);
-  uint16_t read_packetcapture_filters_sport_by_id(const std::string &name);
-  std::string read_packetcapture_filters_src_by_id(const std::string &name);
+  std::string read_packetcapture_filter_by_id(const std::string &name);
   GlobalheaderJsonObject read_packetcapture_globalheader_by_id(const std::string &name);
   uint32_t read_packetcapture_globalheader_linktype_by_id(const std::string &name);
   uint32_t read_packetcapture_globalheader_magic_by_id(const std::string &name);
@@ -70,21 +61,15 @@ namespace PacketcaptureApiImpl {
   std::string read_packetcapture_packet_rawdata_by_id(const std::string &name);
   uint32_t read_packetcapture_packet_timestamp_microseconds_by_id(const std::string &name);
   uint32_t read_packetcapture_packet_timestamp_seconds_by_id(const std::string &name);
+  uint32_t read_packetcapture_snaplen_by_id(const std::string &name);
   void replace_packetcapture_by_id(const std::string &name, const PacketcaptureJsonObject &value);
-  void replace_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value);
   void replace_packetcapture_globalheader_by_id(const std::string &name, const GlobalheaderJsonObject &value);
   void replace_packetcapture_packet_by_id(const std::string &name, const PacketJsonObject &value);
-  void update_packetcapture_anomimize_by_id(const std::string &name, const bool &value);
+  void update_packetcapture_anonimize_by_id(const std::string &name, const bool &value);
   void update_packetcapture_by_id(const std::string &name, const PacketcaptureJsonObject &value);
   void update_packetcapture_capture_by_id(const std::string &name, const PacketcaptureCaptureEnum &value);
   void update_packetcapture_dump_by_id(const std::string &name, const std::string &value);
-  void update_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value);
-  void update_packetcapture_filters_dport_by_id(const std::string &name, const uint16_t &value);
-  void update_packetcapture_filters_dst_by_id(const std::string &name, const std::string &value);
-  void update_packetcapture_filters_l4proto_by_id(const std::string &name, const std::string &value);
-  void update_packetcapture_filters_snaplen_by_id(const std::string &name, const uint32_t &value);
-  void update_packetcapture_filters_sport_by_id(const std::string &name, const uint16_t &value);
-  void update_packetcapture_filters_src_by_id(const std::string &name, const std::string &value);
+  void update_packetcapture_filter_by_id(const std::string &name, const std::string &value);
   void update_packetcapture_globalheader_by_id(const std::string &name, const GlobalheaderJsonObject &value);
   void update_packetcapture_globalheader_linktype_by_id(const std::string &name, const uint32_t &value);
   void update_packetcapture_globalheader_magic_by_id(const std::string &name, const uint32_t &value);
@@ -101,6 +86,7 @@ namespace PacketcaptureApiImpl {
   void update_packetcapture_packet_rawdata_by_id(const std::string &name, const std::string &value);
   void update_packetcapture_packet_timestamp_microseconds_by_id(const std::string &name, const uint32_t &value);
   void update_packetcapture_packet_timestamp_seconds_by_id(const std::string &name, const uint32_t &value);
+  void update_packetcapture_snaplen_by_id(const std::string &name, const uint32_t &value);
 
   /* help related */
   std::vector<nlohmann::fifo_map<std::string, std::string>> read_packetcapture_list_by_id_get_list();

@@ -21,10 +21,10 @@
 #include "polycube/services/response.h"
 #include "polycube/services/shared_lib_elements.h"
 
+#include "ChainBatchInputJsonObject.h"
 #include "ChainJsonObject.h"
 #include "ChainAppendInputJsonObject.h"
 #include "ChainAppendOutputJsonObject.h"
-#include "ChainApplyRulesOutputJsonObject.h"
 #include "ChainDeleteInputJsonObject.h"
 #include "ChainInsertInputJsonObject.h"
 #include "ChainInsertOutputJsonObject.h"
@@ -42,7 +42,7 @@ extern "C" {
 
 Response create_firewall_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_firewall_chain_append_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response create_firewall_chain_apply_rules_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response create_firewall_chain_batch_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_firewall_chain_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_firewall_chain_delete_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response create_firewall_chain_insert_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
@@ -85,7 +85,6 @@ Response read_firewall_chain_stats_sport_by_id_handler(const char *name, const K
 Response read_firewall_chain_stats_src_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_chain_stats_tcpflags_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_conntrack_by_id_handler(const char *name, const Key *keys, size_t num_keys);
-Response read_firewall_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_session_table_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_firewall_session_table_eta_by_id_handler(const char *name, const Key *keys, size_t num_keys);
@@ -104,7 +103,6 @@ Response update_firewall_chain_list_by_id_handler(const char *name, const Key *k
 Response update_firewall_chain_rule_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_chain_rule_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_conntrack_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
-Response update_firewall_interactive_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_firewall_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 
 Response firewall_chain_list_by_id_help(const char *name, const Key *keys, size_t num_keys);

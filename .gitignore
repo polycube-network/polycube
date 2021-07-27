@@ -5,4 +5,10 @@ build/*
 swagger-codegen*
 .vscode/*
 .idea/*
+cmake-build-debug/*
 Vagrantfile
+libyang
+src/libs/prometheus-cpp/_build/
+
+cmake-build-debug/
+Debug/*

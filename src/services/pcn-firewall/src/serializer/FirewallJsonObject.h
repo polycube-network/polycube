@@ -64,7 +64,7 @@ public:
   static FirewallConntrackEnum string_to_FirewallConntrackEnum(const std::string &str);
 
   /// <summary>
-  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.
+  /// If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.
   /// </summary>
   FirewallAcceptEstablishedEnum getAcceptEstablished() const;
   void setAcceptEstablished(FirewallAcceptEstablishedEnum value);
@@ -72,14 +72,6 @@ public:
   void unsetAcceptEstablished();
   static std::string FirewallAcceptEstablishedEnum_to_string(const FirewallAcceptEstablishedEnum &value);
   static FirewallAcceptEstablishedEnum string_to_FirewallAcceptEstablishedEnum(const std::string &str);
-
-  /// <summary>
-  /// Interactive mode applies new rules immediately; if &#39;false&#39;, the command &#39;apply-rules&#39; has to be used to apply all the rules at once. Default is TRUE.
-  /// </summary>
-  bool getInteractive() const;
-  void setInteractive(bool value);
-  bool interactiveIsSet() const;
-  void unsetInteractive();
 
   /// <summary>
   ///
@@ -104,8 +96,6 @@ private:
   bool m_conntrackIsSet;
   FirewallAcceptEstablishedEnum m_acceptEstablished;
   bool m_acceptEstablishedIsSet;
-  bool m_interactive;
-  bool m_interactiveIsSet;
   std::vector<SessionTableJsonObject> m_sessionTable;
   bool m_sessionTableIsSet;
   std::vector<ChainJsonObject> m_chain;

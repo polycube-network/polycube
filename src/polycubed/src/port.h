@@ -59,6 +59,10 @@ class Port : public polycube::service::PortIface, public PeerIface {
   void set_peer_iface(PeerIface *peer) override;
   PeerIface *get_peer_iface() override;
 
+  // Sets the index of the next program on this port in the egress program of
+  // the parent cube.
+  virtual void set_parent_egress_next(uint16_t index);
+
   // TODO: rename this
   uint16_t index() const;
   const Guid &uuid() const;
@@ -99,7 +103,7 @@ class Port : public polycube::service::PortIface, public PeerIface {
 
  protected:
   void update_indexes() override;
-  void update_parent_fwd_table(uint16_t next);
+  void update_parent_fwd_table(uint16_t next, bool is_netdev);
   uint16_t get_parent_index() const;
 
   PortType type_;

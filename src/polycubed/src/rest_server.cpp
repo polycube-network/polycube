@@ -29,6 +29,9 @@
 #include "server/Server/ResponseGenerator.h"
 #include "config.h"
 #include "cubes_dump.h"
+#include "server/Resources/Endpoint/Hateoas.h"
+#include <jsoncons/json.hpp>
+#include <jsoncons_ext/jsonpath/json_query.hpp>
 
 namespace polycube {
 namespace polycubed {
@@ -39,9 +42,11 @@ std::string RestServer::blacklist_cert_path;
 const std::string RestServer::base = "/polycube/v1/";
 
 // start http server for Management APIs
-// Incapsultate a core object // TODO probably there are best ways...
+// Encapsulate a core object // TODO probably there are best ways...
 RestServer::RestServer(Pistache::Address addr, PolycubedCore &core)
     : core(core),
+      host(addr.host()),
+      port(addr.port().toString()),
       httpEndpoint_(std::make_unique<Pistache::Http::Endpoint>(addr)),
       logger(spdlog::get("polycubed")) {
   logger->info("rest server listening on '{0}:{1}'", addr.host(), addr.port());
@@ -116,15 +121,19 @@ int RestServer::client_verify_callback(int preverify_ok, void *ctx) {
   return preverify_ok;
 }
 
-void RestServer::init(size_t thr, const std::string &server_cert,
+void RestServer::init(size_t thr,
+                      size_t max_payload_size,
+                      const std::string &server_cert,
                       const std::string &server_key,
                       const std::string &root_ca_cert,
                       const std::string &whitelist_cert_path_,
                       const std::string &blacklist_cert_path_) {
   logger->debug("rest server will use {0} thread(s)", thr);
-  auto opts = Pistache::Http::Endpoint::options().threads(thr).flags(
-      Pistache::Tcp::Options::InstallSignalHandler |
-      Pistache::Tcp::Options::ReuseAddr);
+  auto opts = Pistache::Http::Endpoint::options()
+                  .threads(thr)
+                  .maxPayload(max_payload_size)
+                  .flags(Pistache::Tcp::Options::InstallSignalHandler |
+                         Pistache::Tcp::Options::ReuseAddr);
   httpEndpoint_->init(opts);
 
   if (!server_cert.empty()) {
@@ -210,10 +219,23 @@ void RestServer::load_last_topology() {
   }
 }
 
+/*
+  This method is used to set the routes, i.e. for each pair (HTTP verb, REST endpoint) the appropriate 
+  method is selected that will satisfy the request with an appropriate response
+*/
 void RestServer::setup_routes() {
   using Pistache::Rest::Routes::bind;
   router_->options(base + std::string("/"),
                    bind(&RestServer::root_handler, this));
+
+  /* binding root_handler in order to handle get at root.
+   * It's necessary to provide a way to reach the root to the client.
+   * Thanks this the client can explore the service using Hateoas.
+   *
+   *        see server/Resources/Endpoint/Hateoas.h
+   */
+  router_->get(base + std::string("/"),
+                   bind(&RestServer::get_root_handler, this));
   // servicectrls
   router_->post(base + std::string("/services"),
                 bind(&RestServer::post_servicectrl, this));
@@ -223,6 +245,7 @@ void RestServer::setup_routes() {
                bind(&RestServer::get_servicectrl, this));
   router_->del(base + std::string("/services/:name"),
                bind(&RestServer::delete_servicectrl, this));
+  Hateoas::addRoute("services", base);
 
   // cubes
   router_->get(base + std::string("/cubes"),
@@ -238,6 +261,7 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/cubes/:cubeName"),
                    bind(&RestServer::cube_help, this));
+  Hateoas::addRoute("cubes", base);
 
   // netdevs
   router_->get(base + std::string("/netdevs"),
@@ -250,10 +274,12 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/netdevs/:netdevName"),
                    bind(&RestServer::netdev_help, this));
+  Hateoas::addRoute("netdevs", base);
 
   // version
   router_->get(base + std::string("/version"),
                bind(&RestServer::get_version, this));
+  Hateoas::addRoute("version", base);
 
   // connect & disconnect
   router_->post(base + std::string("/connect"),
@@ -263,10 +289,14 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/connect"),
                    bind(&RestServer::connect_help, this));
+  Hateoas::addRoute("connect", base);
+  Hateoas::addRoute("disconnect", base);
 
   // attach & detach
   router_->post(base + std::string("/attach"), bind(&RestServer::attach, this));
   router_->post(base + std::string("/detach"), bind(&RestServer::detach, this));
+  Hateoas::addRoute("attach", base);
+  Hateoas::addRoute("detach", base);
 
   // topology
   router_->get(base + std::string("/topology"),
@@ -276,16 +306,25 @@ void RestServer::setup_routes() {
 
   router_->options(base + std::string("/topology"),
                    bind(&RestServer::topology_help, this));
+  Hateoas::addRoute("topology", base);
 
   router_->addNotFoundHandler(bind(&RestServer::redirect, this));
+
+  // add new endpoint to retrieve Prometheus-compatible metrics
+  router_->get(base + std::string("/metrics"),
+               bind(&RestServer::get_metrics, this));
 }
 
+/*
+  This method is used to display the HTTP verb and the endpoint requested by a client using 
+  Polycube in debug mode
+*/
 void RestServer::logRequest(const Pistache::Rest::Request &request) {
-// logger->debug("{0} : {1}", request.method(), request.resource());
-#ifdef LOG_DEBUG_REQUEST_
-  logger->debug(request.method() + ": " + request.resource());
-  logger->debug(request.body());
-#endif
+  logger->debug("{0} : {1}", Pistache::Http::methodString(request.method()), request.resource());
+  #ifdef LOG_DEBUG_REQUEST_
+    logger->debug(request.method() + ": " + request.resource());
+    logger->debug(request.body());
+  #endif
 }
 
 void RestServer::logJson(json j) {
@@ -295,8 +334,24 @@ void RestServer::logJson(json j) {
 #endif
 }
 
+/*
+  This method is used for the HATEOAS part
+*/
+void RestServer::get_root_handler(const Pistache::Rest::Request &request,
+                                  Pistache::Http::ResponseWriter response) {
+
+    auto js = Hateoas::HateoasSupport_root(request, host, port);
+    Rest::Server::ResponseGenerator::Generate({{kOk,
+                           ::strdup(js.dump().c_str())}}, std::move(response));
+}
+
+/*
+  This method displays polycubectl commands, available services, 
+  running cubes (with keyword, type, description)
+*/
 void RestServer::root_handler(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help == "NO_HELP") {
     Rest::Server::ResponseGenerator::Generate({{kOk, nullptr}},
@@ -321,6 +376,9 @@ void RestServer::root_handler(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method is called by root_handler method to provide help in creating the response
+*/
 void RestServer::root_help(HelpType help_type,
                            Pistache::Http::ResponseWriter response) {
   if (help_type == HelpType::NONE) {
@@ -342,6 +400,9 @@ void RestServer::root_help(HelpType help_type,
   }
 }
 
+/*
+  This method is used for autocompletion
+*/
 void RestServer::root_completion(HelpType help_type,
                                  Pistache::Http::ResponseWriter response) {
   if (help_type == HelpType::NONE) {
@@ -373,6 +434,10 @@ void RestServer::root_completion(HelpType help_type,
   }
 }
 
+/*
+  This method is used to load a new service at runtime that is provided 
+  in input (file libpcn-service_name.so) with a given name
+*/
 void RestServer::post_servicectrl(const Pistache::Rest::Request &request,
                                   Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -425,6 +490,10 @@ void RestServer::post_servicectrl(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays a list of available services with the following
+  information: description, name, pyang_repo_id, servicecontroller, swagger_codegen_repo_id, version
+*/
 void RestServer::get_servicectrls(const Pistache::Rest::Request &request,
                                   Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -437,6 +506,9 @@ void RestServer::get_servicectrls(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays the datamodel of the service indicated by the name (taken from the request)
+*/
 void RestServer::get_servicectrl(const Pistache::Rest::Request &request,
                                  Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -450,6 +522,9 @@ void RestServer::get_servicectrl(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method deletes the given service indicated by name (taken from the request)
+*/
 void RestServer::delete_servicectrl(const Pistache::Rest::Request &request,
                                     Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -467,6 +542,10 @@ void RestServer::delete_servicectrl(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays the running cubes with the following 
+  information: name, uuid, service-name, type, loglevl, shadow, span
+*/
 void RestServer::get_cubes(const Pistache::Rest::Request &request,
                            Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -479,6 +558,10 @@ void RestServer::get_cubes(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays the following information of the cube with 
+  that name: name, uuid, service-name, type, loglevl, shadow, span
+*/
 void RestServer::get_cube(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -492,6 +575,10 @@ void RestServer::get_cube(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method adds N cubes by taking the necessary information from a yaml file 
+  Example of use: polycubectl cubes add < mycubes.yaml
+*/
 void RestServer::post_cubes(const Pistache::Rest::Request &request,
                                Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -505,8 +592,13 @@ void RestServer::post_cubes(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  If there is at least one cube with that name, this method displays 
+  the name, type and if there is a description
+*/
 void RestServer::cubes_help(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json j = json::object();
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE" && help != "SHOW") {
@@ -540,8 +632,14 @@ void RestServer::cubes_help(const Pistache::Rest::Request &request,
   response.send(Pistache::Http::Code::Ok, j.dump());
 }
 
+
+/*
+  This method displays what can be done on the cube named cubeName 
+  with displaying Keyword, Type, Description
+*/
 void RestServer::cube_help(const Pistache::Rest::Request &request,
                            Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json j = json::object();
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE") {
@@ -554,6 +652,9 @@ void RestServer::cube_help(const Pistache::Rest::Request &request,
   response.send(Pistache::Http::Code::Ok, j.dump());
 }
 
+/*
+  This method displays the name and number of addresses of each network device on the machine
+*/
 void RestServer::get_netdevs(const Pistache::Rest::Request &request,
                              Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -566,6 +667,9 @@ void RestServer::get_netdevs(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays the name and address number of the network device that matches name
+*/
 void RestServer::get_netdev(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -579,8 +683,13 @@ void RestServer::get_netdev(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This methos displays the name, type (netdevs) and if there is a description of 
+  each network device on the machine
+*/
 void RestServer::netdevs_help(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json j = json::object();
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE" && help != "SHOW") {
@@ -614,8 +723,13 @@ void RestServer::netdevs_help(const Pistache::Rest::Request &request,
   response.send(Pistache::Http::Code::Ok, j.dump());
 }
 
+/*
+  This method displays what can be done on the network device named netdevName 
+  by displaying Keyword, Type, Description
+*/
 void RestServer::netdev_help(const Pistache::Rest::Request &request,
                              Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json j = json::object();
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE") {
@@ -628,13 +742,20 @@ void RestServer::netdev_help(const Pistache::Rest::Request &request,
   response.send(Pistache::Http::Code::Ok, j.dump());
 }
 
+/*
+  This method returns the version of polycubectl and polycubed
+*/
 void RestServer::get_version(const Pistache::Rest::Request &request,
                              Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json version = json::object();
   version["polycubed"]["version"] = VERSION;
   response.send(Pistache::Http::Code::Ok, version.dump());
 }
 
+/*
+  This method connects two ports of two cubes
+*/
 void RestServer::connect(const Pistache::Rest::Request &request,
                          Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -663,6 +784,9 @@ void RestServer::connect(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method disconnects two ports of two cubes
+*/
 void RestServer::disconnect(const Pistache::Rest::Request &request,
                             Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -692,8 +816,12 @@ void RestServer::disconnect(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  If present, this method should provide help regarding the connect command
+*/
 void RestServer::connect_help(const Pistache::Rest::Request &request,
                               Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE") {
     response.send(Pistache::Http::Code::Bad_Request);
@@ -707,6 +835,7 @@ void RestServer::connect_help(const Pistache::Rest::Request &request,
 
   response.send(Pistache::Http::Code::Ok, "not implemented");;
 }
+
 
 void RestServer::connect_completion(const std::string &p1,
                                     Pistache::Http::ResponseWriter response) {
@@ -722,6 +851,9 @@ void RestServer::connect_completion(const std::string &p1,
   response.send(Pistache::Http::Code::Ok, val.dump());
 }
 
+/*
+  Attach a transparent cube to the port of a standard cube (if it is possible)
+*/
 void RestServer::attach(const Pistache::Rest::Request &request,
                         Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -789,6 +921,9 @@ void RestServer::attach(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  Detach a transparent cube from the port of a standard cube (if it is possible)
+*/
 void RestServer::detach(const Pistache::Rest::Request &request,
                         Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -820,6 +955,10 @@ void RestServer::detach(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  This method displays the current type of Polycube, i.e. all cubes running with some necessary 
+  information such as: loglevel, name, service-name, shadow, span and type
+*/
 void RestServer::topology(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -832,6 +971,10 @@ void RestServer::topology(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  Displays the cubes to which the interface ifname is attached, both in ingress and egress and also 
+  the index of the interface (If ifname is not the name of an interface, display name: ifname)
+*/
 void RestServer::get_if_topology(const Pistache::Rest::Request &request,
                                 Pistache::Http::ResponseWriter response) {
   logRequest(request);
@@ -845,8 +988,12 @@ void RestServer::get_if_topology(const Pistache::Rest::Request &request,
   }
 }
 
+/*
+  If present, this method should respond with help regarding the current topology
+*/
 void RestServer::topology_help(const Pistache::Rest::Request &request,
                                Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   json j = json::object();
   auto help = request.query().get("help").getOrElse("NO_HELP");
   if (help != "NONE") {
@@ -859,8 +1006,14 @@ void RestServer::topology_help(const Pistache::Rest::Request &request,
   response.send(Pistache::Http::Code::Ok, j.dump());
 }
 
+
+/*
+  This method first of all takes care of understanding if there is a match for the requested 
+  route and if it exists, it calls the correct endpoint
+*/
 void RestServer::redirect(const Pistache::Rest::Request &request,
                           Pistache::Http::ResponseWriter response) {
+  logRequest(request);
   if (request.headers().has("Referer") ||
       request.headers().rawList().count("Referer") == 1) {
     response.send(Pistache::Http::Code::Not_Found,
@@ -889,6 +1042,197 @@ void RestServer::redirect(const Pistache::Rest::Request &request,
   response.headers().add<Pistache::Http::Header::Location>(location);
   response.send(Pistache::Http::Code::Permanent_Redirect);
 }
+
+const std::string &RestServer::getHost() {
+    return host;
+}
+
+const std::string &RestServer::getPort() {
+    return port;
+}
+
+/* 
+  This method is called when Polycube is started. 
+  It reads the yang of the various services and thanks to the added extensions, 
+  it creates the appropriate data structures which will then be filled in the get_metrics 
+  every time a request is made to the endpoint /metrics
+*/
+void RestServer::create_metrics() {
+  logger->info("loading metrics from yang files");
+  try {
+    // uri and metricHandler are not necessary, I use pistache to registry metrics
+    registry = std::make_shared<prometheus::Registry>();
+    std::vector<std::string> name_services = core.get_servicectrls_names_vector();
+
+    // loop on all services (not cubes)
+    for (size_t i = 0; i < name_services.size(); i++) {
+      
+      // for every service I get the array of InfoMetric
+      auto metrics_service = core.get_service_controller(name_services[i]).get_infoMetrics();
+      for(auto metric: metrics_service)  {
+        if (metric.typeMetric == COUNTER) {
+          map_metrics[name_services[i]].counters_map.emplace(metric.nameMetric,std::ref(prometheus::BuildCounter()
+                  .Name(metric.nameMetric)
+                  .Help(metric.helpMetric)
+                  .Register(*registry)));
+        } else if (metric.typeMetric == GAUGE) {
+          map_metrics[name_services[i]].gauges_map.emplace(metric.nameMetric, std::ref( prometheus::BuildGauge()
+                  .Name(metric.nameMetric)
+                  .Help(metric.helpMetric)
+                  .Register(*registry)));
+        }
+      }
+    }
+    // all metrics created are put into collectalbes_ thanks to registry
+    // collectables_ can collects al types of metrics (counter, gauge, histogram, summary)
+    collectables_.push_back(registry);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+  }
+}
+
+
+/*
+  In summary, every time you go to the endpoint /metrics, this function gets the json of each running
+  cube and thanks to the path-metric extension and using jsoncons(jsonpath) it recovers the value 
+  of that metric.
+  The metric can be a Gauge (value that can go up and down) or Counter (value that can only go up).
+  Furthermore, due to the fact that JSONPath does not allow in one query to apply an operator
+  (for example length) after using a filter, the case labeled for now with "FILTER" must be considered 
+  thanks to the extension type-operation.
+
+  For more information, I wrote comments inside the function.
+
+  What you get are metrics that respect the OpenMetrics format. Example:
+
+  # TYPE ddos_blacklist_src_addresses gauge
+  ddos_blacklist_src_addresses{cubeName="d1"} 4.000000
+  ddos_blacklist_src_addresses{cubeName="d2"} 2.000000
+  # HELP ddos_blacklist_dst_addresses Number of addresses in blacklist-dst
+  # TYPE ddos_blacklist_dst_addresses gauge
+  ddos_blacklist_dst_addresses{cubeName="d1"} 0.000000
+  ddos_blacklist_dst_addresses{cubeName="d2"} 2.000000
+*/
+void RestServer::get_metrics(const Pistache::Rest::Request &request,
+                             Pistache::Http::ResponseWriter response) {
+  logRequest(request);
+  try {
+
+    // vector of MetricFamily
+    auto collected_metrics = std::vector<prometheus::MetricFamily>{};
+
+    size_t t; //index inside counter_ or gauges_
+   
+      // i.first is the name of the metric
+      // TODO i.second is the struct InfoMetric: we need pathMetric and typeMetric
+      // is the value returned by the jsoncons query
+     
+     auto servicesctrls_names = core.get_servicectrls_names_vector();
+
+
+    auto running_cubes = core.get_names_cubes();
+    
+    // if a cube is in running cubes but is not in all_cubes_and_metrics it means that I need to create his metrics
+    for(auto cube: running_cubes) {
+           if(all_cubes_and_metrics[cube].empty()) {
+             auto serviceName = core.get_cube_service(cube);
+            for (auto& kv: map_metrics[serviceName].counters_map)
+                kv.second.get().Add({{"cubeName", cube}});
+            for (auto& kv: map_metrics[serviceName].gauges_map)
+                kv.second.get().Add({{"cubeName", cube}});
+           }  
+     }
+
+    // if a cube is in all_cube_and_metrics and is not in running cubes: that cube it was deleted so I need to delete all his metrics i.e.
+    // all gauges and counters with label cubeName = that cube
+     for(auto cube: all_cubes_and_metrics) {
+           std::vector<std::string>::iterator it = std::find(running_cubes.begin(), running_cubes.end(), cube.first);
+           if(it == running_cubes.end()) {
+             auto serviceName = cube.second;
+            for (auto& kv: map_metrics[serviceName].gauges_map) {
+               auto& toDelete = kv.second.get().Add({{"cubeName", cube.first}});
+               kv.second.get().Remove(& toDelete);
+             }
+            for (auto& kv: map_metrics[serviceName].counters_map) {
+               auto& toDelete = kv.second.get().Add({{"cubeName", cube.first}});
+               kv.second.get().Remove(& toDelete);
+             }
+          }
+     }
+
+    // at then end we need that all_cubes_and_metrics and running_cubes with equal values
+     all_cubes_and_metrics.clear();
+     for(auto cube: running_cubes)
+       all_cubes_and_metrics[cube] = core.get_cube_service(cube);
+  
+
+    for(auto serviceName: servicesctrls_names)  {
+        ListKeyValues keys{}; // keys used to create the entire json of a cube
+        // every service has a map with the name of the metric and the InfoMetric struct (we need the pathmetric, typemetric, type-operation and a value)
+        auto mapInfoMetricsService = core.get_service_controller(serviceName).get_mapInfoMetrics();
+          // for every service
+              for(auto cubeName: core.get_service_controller(serviceName).get_names_cubes()) {
+                      std::string cubeStr = core.get_service_controller(serviceName).get_management_interface()->get_service()->ReadValue(cubeName, keys).message;
+                      jsoncons::json cubeJson = jsoncons::json::parse(cubeStr);
+
+                      for(auto& i: mapInfoMetricsService) {
+                       /* 
+                          It is considered the case where someone defines metrics in the yang of a service 
+                          but for some reason does not define the value of the path-metric. 
+                          Just write TODO and Polycube even having the data structures for that metric, 
+                          it will not try to retrieve the value.
+                       */
+                       if(i.second.pathMetric.compare("TODO")!=0) {
+                          jsoncons::json value = jsoncons::jsonpath::json_query(cubeJson,i.second.pathMetric);
+                  
+                        if(value.empty()==false) {
+                             if(i.second.typeOperation.compare("FILTER")==0) {
+                              i.second.value = value.size();  // the value returned is a list, but the value of the metric is the length of the returned value
+                           } else {
+                            i.second.value = value[0].as_double(); // the value of the metric is the value returned 
+                          } 
+                          if(i.second.typeMetric == COUNTER) { // a counter can only go up
+                                if(i.second.value > map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}}).Value()) {
+                                   map_metrics[serviceName].counters_map.at(i.first).get().Add({{"cubeName",cubeName}})
+                                   .Increment(i.second.value - map_metrics[serviceName].counters_map.at(i.first).get()
+                                   .Add({{"cubeName",cubeName}}).Value());
+                                }
+                          } 
+                          else if(i.second.typeMetric == GAUGE) { // a gauge can go up and down
+                                map_metrics[serviceName].gauges_map.at(i.first).get().Add({{"cubeName",cubeName}}).Set(i.second.value);
+                          }
+                        }                      
+                   }
+               }
+         }
+     }
+
+    
+    // collectables_ is filled in create_metrics
+    for (auto &&wcollectable : collectables_) {
+      auto collectable = wcollectable.lock();
+      if (!collectable) {
+        continue;
+      }
+      // Returns a list of metrics and their samples.
+      // std::vector<prometheus::MetricFamily> &&metrics
+      auto &&metrics = collectable->Collect();
+      collected_metrics.insert(collected_metrics.end(),
+                               std::make_move_iterator(metrics.begin()),
+                               std::make_move_iterator(metrics.end()));
+    }
+    // auto metrics = collected_metrics;
+    auto serializer = std::unique_ptr<prometheus::Serializer>{
+        new prometheus::TextSerializer()};
+    std::string ret_metrics = serializer->Serialize(collected_metrics);
+
+    response.send(Pistache::Http::Code::Ok, ret_metrics);
+  } catch (const std::runtime_error &e) {
+    logger->error("{0}", e.what());
+    response.send(Pistache::Http::Code::Bad_Request, e.what());
+  }
+}
+
 
 }  // namespace polycubed
 }  // namespace polycube

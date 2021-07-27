@@ -30,14 +30,13 @@ namespace polycubed {
 
 TransparentCube::TransparentCube(const std::string &name,
                                  const std::string &service_name,
-                                 PatchPanel &patch_panel_ingress_,
-                                 PatchPanel &patch_panel_egress_,
-                                 LogLevel level, CubeType type,
+                                 PatchPanel &patch_panel, LogLevel level,
+                                 CubeType type,
                                  const service::attach_cb &attach)
-    : BaseCube(name, service_name, "", patch_panel_ingress_,
-               patch_panel_egress_, level, type),
+    : BaseCube(name, service_name, "", patch_panel, level, type),
       ingress_next_(0),
       egress_next_(0),
+      egress_next_is_netdev_(false),
       attach_(attach),
       parent_(nullptr) {}
 
@@ -54,18 +53,27 @@ std::string TransparentCube::get_wrapper_code() {
   return BaseCube::get_wrapper_code();
 }
 
-void TransparentCube::set_next(uint16_t next, ProgramType type) {
+void TransparentCube::set_next(uint16_t next, ProgramType type,
+                               bool is_netdev) {
   switch (type) {
   case ProgramType::INGRESS:
-    if (ingress_next_ == next)
+    if (is_netdev) {
+      throw std::runtime_error("Ingress program of transparent cube can't be "
+                               "followed by a netdev");
+    }
+
+    if (ingress_next_ == next) {
       return;
+    }
     ingress_next_ = next;
     break;
 
   case ProgramType::EGRESS:
-    if (egress_next_ == next)
+    if (egress_next_ == next && egress_next_is_netdev_ == is_netdev) {
       return;
+    }
     egress_next_ = next;
+    egress_next_is_netdev_ = is_netdev;
   }
 
   reload_all();
@@ -103,6 +111,7 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
 
   uint16_t port = 0;
   uint16_t module;
+  bool is_netdev = false;
   Port *parent_port = NULL;
   ExtIface *parent_iface = NULL;
 
@@ -119,17 +128,28 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
         port = parent_port->index();
         break;
       case service::Direction::EGRESS:
-        // packet is going, set port to next one
         if (parent_port->peer_port_) {
-          port = parent_port->peer_port_->get_port_id();
+          if (dynamic_cast<ExtIface *>(parent_port->peer_port_)) {
+            // If peer is an interface use parent port anyway, so it can be used
+            // by the possible egress program of the parent
+            port = parent_port->index();
+
+          } else {
+            // packet is going, set port to next one
+            port = parent_port->peer_port_->get_port_id();
+          }
         }
         break;
       }
   } else if (parent_iface = dynamic_cast<ExtIface *>(parent_)) {
+    if (parent_iface->get_peer_iface()) {
+      port = parent_iface->get_peer_iface()->get_port_id();
+    } else {
       port = parent_iface->get_port_id();
+    }
   } else {
-      logger->error("cube doesn't have a valid parent.");
-      return;
+    logger->error("cube doesn't have a valid parent.");
+    return;
   }
 
   // calculate module index
@@ -146,12 +166,14 @@ void TransparentCube::send_packet_out(const std::vector<uint8_t> &packet,
       module = egress_index_;  // myself in egress
     } else {
       module = egress_next_;
+      is_netdev = egress_next_is_netdev_;
     }
     break;
   }
 
-  c.send_packet_to_cube(module, port, packet, direction,
-         parent_iface && direction == service::Direction::INGRESS);
+  c.send_packet_to_cube(
+      module, is_netdev, port, packet, direction,
+      parent_iface && direction == service::Direction::INGRESS);
 }
 
 void TransparentCube::set_conf(const nlohmann::json &conf) {

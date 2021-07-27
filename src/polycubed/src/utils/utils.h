@@ -28,6 +28,7 @@ bool check_kernel_version(const std::string &version);
 std::map<std::string, std::string> strip_port_peers(json &cubes);
 std::map<std::string, json> strip_port_tcubes(json &jcube);
 std::string decode_url(const std::string &url);
+void replaceStrAll(std::string &str, const std::string &from, const std::string &to);
 
 }  // namespace utils
 }  // namespace polycubed

@@ -48,7 +48,8 @@ static __always_inline int handle_rx(struct CTXTYPE *ctx,
     return RX_DROP;
   case SLOWPATH:
     pcn_log(ctx, LOG_DEBUG, "SLOWPATH");
-    return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    return RX_DROP;
   case FORWARD:
     pcn_log(ctx, LOG_DEBUG, "FORWARD to %d", act->outport);
     return pcn_pkt_redirect(ctx, md, act->outport);

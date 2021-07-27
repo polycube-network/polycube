@@ -19,6 +19,10 @@
 // TODO: to be removed once pistache is fixed
 #define PISTACHE_USE_SSL
 
+//used in create_metrics and get_metrics
+#define COUNTER "COUNTER"
+#define GAUGE "GAUGE"
+
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 
@@ -29,6 +33,12 @@
 #include <algorithm>
 #include "polycube/services/json.hpp"
 #include "polycubed_core.h"
+#include <prometheus/counter.h>
+#include <prometheus/family.h>
+#include <prometheus/metric_family.h>
+#include <prometheus/registry.h>
+#include <prometheus/serializer.h>
+#include <prometheus/text_serializer.h>
 
 // #define LOG_DEBUG_
 
@@ -52,7 +62,9 @@ class RestServer {
 
   static const std::string base;
 
-  void init(size_t thr = 1, const std::string &server_cert = "",
+  void init(size_t thr = 1,
+            size_t max_payload_size = 64*1024,
+            const std::string &server_cert = "",
             const std::string &server_key = "",
             const std::string &root_ca_cert = "",
             const std::string &white_cert_list_path = "",
@@ -61,12 +73,21 @@ class RestServer {
   void start();
   void shutdown();
   void load_last_topology();
+  const std::string& getHost();
+  const std::string& getPort();
+
+  void create_metrics();
+  // it will return the values ​​of the metrics taken from the json of the cubes
+  void get_metrics(const Pistache::Rest::Request &request,
+                   Pistache::Http::ResponseWriter response);
 
  private:
   void setup_routes();
   // this function has to be static because has to be passed as a callback.
   static int client_verify_callback(int preverify_ok, void *ctx);
 
+  void get_root_handler(const Pistache::Rest::Request &request,
+                    Pistache::Http::ResponseWriter response);
   void root_handler(const Pistache::Rest::Request &request,
                     Pistache::Http::ResponseWriter response);
   void root_help(HelpType type, Pistache::Http::ResponseWriter response);
@@ -141,11 +162,33 @@ class RestServer {
   PolycubedCore &core;
   std::unique_ptr<Pistache::Http::Endpoint> httpEndpoint_;
   std::shared_ptr<Pistache::Rest::Router> router_;
-
+  const std::string host;
+  const std::string port;
   static std::string whitelist_cert_path;
   static std::string blacklist_cert_path;
 
   std::shared_ptr<spdlog::logger> logger;
+
+  // the struct Metric for now is composed of two vectors for each metric (Gauge
+  // and Counter), one indicates the family of the metric and one the metric
+  // itself Note: families combine values with the same name, but distinct label dimensions
+  // TODO maybe there are best ways
+  struct Metric {
+    std::map<std::string,std::reference_wrapper<prometheus::Family<prometheus::Counter>>> counters_map;
+    std::map<std::string,std::reference_wrapper<prometheus::Family<prometheus::Gauge>>> gauges_map;
+  };
+  // the map will contain the name of the service (not the cube) as a key
+  // and the metric information taken from the yang files as the value
+  std::map<std::string, Metric> map_metrics;
+  // Interface implemented by anything that can be used by Prometheus to collect
+  // metrics.
+  // A Collectable has to be registered for collection
+  std::vector<std::weak_ptr<prometheus::Collectable>> collectables_;
+  // The Registry is responsible to expose data to a class/method/function
+  //"bridge", which returns the metrics in a format Prometheus supports
+  std::shared_ptr<prometheus::Registry> registry;
+  //map: cubeName, serviceName
+  std::map<std::string,std::string> all_cubes_and_metrics;
 };
 
 }  // namespace polycubed

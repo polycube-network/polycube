@@ -1,7 +1,8 @@
 Polycube Policies
 ==============================================
 
-Polycube Policies provide a more flexible, simpler and more advanced approach to filter the traffic that a pod should allow or block.
+pcn-k8s CNI implementes both :doc:`standard kubernetes networking policy <kubernetes-network-policies>` and advanced Polycube networking policies.
+The latter provide a more flexible, simpler and more advanced approach to filter the traffic that a pod should allow or block.
 They include all the features from Kubernetes Network Policies and present some additional features, which are going to be described here.
 
 The isolation mode, a core concept in Kubernetes Network Policies, is followed by Polycube Network Policies, as well: pods allow all communication until a policy - either one - is applied to them, and at that moment they will start to allow only what's explicitly specified in the policy.

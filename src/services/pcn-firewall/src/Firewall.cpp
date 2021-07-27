@@ -109,14 +109,6 @@ void Firewall::packet_in(polycube::service::Direction direction,
   }
 }
 
-bool Firewall::getInteractive() {
-  return interactive_;
-}
-
-void Firewall::setInteractive(const bool &value) {
-  interactive_ = value;
-}
-
 FirewallAcceptEstablishedEnum Firewall::getAcceptEstablished() {
   if (this->conntrackMode == ConntrackModes::AUTOMATIC) {
     return FirewallAcceptEstablishedEnum::ON;
@@ -227,6 +219,9 @@ std::shared_ptr<SessionTable> Firewall::getSessionTable(
 }
 
 std::vector<std::shared_ptr<SessionTable>> Firewall::getSessionTableList() {
+  if(!isContrackActive()) {
+    return {};
+  }
   std::vector<std::pair<ct_k, ct_v>> connections =
       dynamic_cast<Firewall::ConntrackLabel *>(
           ingress_programs[ModulesConstants::CONNTRACKLABEL])

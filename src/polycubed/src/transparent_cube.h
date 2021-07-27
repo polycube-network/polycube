@@ -30,12 +30,14 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
  public:
   explicit TransparentCube(const std::string &name,
                            const std::string &service_name,
-                           PatchPanel &patch_panel_ingress_,
-                           PatchPanel &patch_panel_egress_, LogLevel level,
+                           PatchPanel &patch_panel, LogLevel level,
                            CubeType type, const service::attach_cb &attach);
   virtual ~TransparentCube();
 
-  void set_next(uint16_t next, ProgramType type);
+  // Sets the index of the next program or iterface to call after the program of
+  // the given direction is executed.
+  virtual void set_next(uint16_t next, ProgramType type,
+                        bool is_netdev = false);
   uint16_t get_next(ProgramType type);
   void set_parent(PeerIface *parent);
   PeerIface *get_parent();
@@ -58,6 +60,7 @@ class TransparentCube : public BaseCube, public TransparentCubeIface {
   static std::string get_wrapper_code();
   uint16_t ingress_next_;
   uint16_t egress_next_;
+  bool egress_next_is_netdev_;
 
   std::unordered_map<std::string, ParameterEventCallback> subscription_list;
   std::mutex subscription_list_mutex;

@@ -73,15 +73,22 @@ void Port::set_next_index(uint16_t index) {
     return;
   }
 
+  bool is_netdev = false;
+  if (index == 0xffff) {
+    // Peer is a netdev, get its index
+    index = peer_port_->get_port_id();
+    is_netdev = true;
+  }
+
   // it there is loaded an egrees cube, set next on it
   for (auto it = cubes_.rbegin(); it != cubes_.rend(); ++it) {
     if ((*it)->get_index(ProgramType::EGRESS)) {
-      (*it)->set_next(index, ProgramType::EGRESS);
+      (*it)->set_next(index, ProgramType::EGRESS, is_netdev);
       return;
     }
   }
 
-  update_parent_fwd_table(index);
+  update_parent_fwd_table(index, is_netdev);
 }
 
 void Port::set_peer_iface(PeerIface *peer) {
@@ -93,6 +100,11 @@ void Port::set_peer_iface(PeerIface *peer) {
 PeerIface *Port::get_peer_iface() {
   std::lock_guard<std::mutex> guard(port_mutex_);
   return peer_port_;
+}
+
+void Port::set_parent_egress_next(uint16_t index) {
+  Cube &parent = dynamic_cast<Cube &>(parent_);
+  parent.set_egress_next(get_port_id(), index);
 }
 
 const Guid &Port::uuid() const {
@@ -108,9 +120,21 @@ uint16_t Port::get_egress_index() const {
   return parent_.get_index(ProgramType::EGRESS);
 }
 
-void Port::update_parent_fwd_table(uint16_t next) {
-  uint16_t id = peer_port_ ? peer_port_->get_port_id() : 0;
-  parent_.update_forwarding_table(index(), next | id << 16);
+void Port::update_parent_fwd_table(uint16_t next, bool is_netdev) {
+  uint16_t id;
+
+  if (dynamic_cast<Port *>(peer_port_)) {
+    // If the peer is a port set the id of that port, it can be used by the next
+    // cube to know the ingress port
+    id = peer_port_->get_port_id();
+
+  } else {
+    // If the peer is a interface preserve the id of this port, it can be used
+    // by the optional egress program to know the egress port
+    id = get_port_id();
+  }
+
+  parent_.update_forwarding_table(index(), next | id << 16, is_netdev);
 }
 
 std::string Port::name() const {
@@ -213,15 +237,30 @@ void Port::send_packet_out(const std::vector<uint8_t> &packet,
 
   uint16_t port;
   uint16_t module;
+  bool is_netdev = false;
 
   if (recirculate) {
     module = get_parent_index();
     port = index();
   } else if (peer_port_) {
-    port = peer_port_->get_port_id();
     module = peer_port_->get_index();
+    if (dynamic_cast<ExtIface *>(peer_port_)) {
+      if (module == 0xffff) {
+        // No cubes to execute, redirect the packet to the netdev
+        module = peer_port_->get_port_id();
+        is_netdev = true;
+      }
+
+      // If peer is an interface use this port anyway, so it can be used by the
+      // possible egress program of the parent
+      port = get_port_id();
+
+    } else {
+      // packet is going, set port to next one
+      port = peer_port_->get_port_id();
+    }
   }
-  c.send_packet_to_cube(module, port, packet);
+  c.send_packet_to_cube(module, is_netdev, port, packet);
 }
 
 void Port::send_packet_ns(const std::vector<uint8_t> &packet) {
@@ -231,73 +270,44 @@ void Port::send_packet_ns(const std::vector<uint8_t> &packet) {
 }
 
 void Port::update_indexes() {
-  int i;
+  uint16_t next;
 
-  // TODO: could we avoid to recalculate in case there is not peer?
-
-  std::vector<uint16_t> ingress_indexes(cubes_.size());
-  std::vector<uint16_t> egress_indexes(cubes_.size());
-
-  for (i = 0; i < cubes_.size(); i++) {
-    ingress_indexes[i] = cubes_[i]->get_index(ProgramType::INGRESS);
-    egress_indexes[i] = cubes_[i]->get_index(ProgramType::EGRESS);
-  }
-
-  // ingress chain: peer -> cube[N-1] -> ... -> cube[0] -> port
-  // CASE2: cube[0] -> port
-  for (i = 0; i < cubes_.size(); i++) {
-    if (ingress_indexes[i]) {
-      cubes_[i]->set_next(get_parent_index(), ProgramType::INGRESS);
-      break;
+  // Link cubes of ingress chain
+  // port <- cubes[0] <- ... <- cubes[N-1] <- peer
+  
+  next = get_parent_index();
+  for (int i = 0; i < cubes_.size(); i++) {
+    if (cubes_[i]->get_index(ProgramType::INGRESS)) {
+      cubes_[i]->set_next(next, ProgramType::INGRESS);
+      next = cubes_[i]->get_index(ProgramType::INGRESS);
     }
   }
 
-  // cube[N-1] -> ... -> cube[0]
-  for (int j = i + 1; j < cubes_.size(); j++) {
-    if (ingress_indexes[j]) {
-      cubes_[j]->set_next(ingress_indexes[i], ProgramType::INGRESS);
-      i = j;
-    }
-  }
+  port_index_ = next;
 
-  port_index_ = calculate_index();
-
-  // CASE4: peer -> cube[N-1]
   if (peer_port_) {
-    peer_port_->set_next_index(port_index_);
+    peer_port_->set_next_index(next);
   }
 
-  // egress chain: port -> cubes[0] -> ... -> cube[N -1] -> peer
-  // CASE3: cube[N-1] -> peer
-  uint16_t egress_next = peer_port_ ? peer_port_->get_index() : 0;
-  for (i = cubes_.size() - 1; i >= 0; i--) {
-    if (egress_indexes[i]) {
-      cubes_[i]->set_next(egress_next, ProgramType::EGRESS);
-      break;
+  // Link cubes of egress chain
+  // peer <- cubes[N-1] <- ... <- cubes[0] <- port
+
+  next = peer_port_ ? peer_port_->get_index() : 0;
+  bool is_netdev = false;
+  if (next == 0xffff) {
+    // Next is a netdev, get its index
+    next = peer_port_->get_port_id();
+    is_netdev = true;
+  }
+  for (int i = cubes_.size()-1; i >= 0; i--) {
+    if (cubes_[i]->get_index(ProgramType::EGRESS)) {
+      cubes_[i]->set_next(next, ProgramType::EGRESS, is_netdev);
+      next = cubes_[i]->get_index(ProgramType::EGRESS);
+      is_netdev = false;
     }
   }
 
-  if (i < 0) {
-    update_parent_fwd_table(egress_next);
-    return;
-  }
-
-  // cube[N-2] -> Tcube[N-1] (egress)
-  // i = 0;
-  for (int j = i - 1; j >= 0; j--) {
-    if (egress_indexes[j]) {
-      cubes_[j]->set_next(egress_indexes[i], ProgramType::EGRESS);
-      i = j;
-    }
-  }
-
-  // CASE1: port -> cubes[0]
-  for (i = 0; i < cubes_.size(); i++) {
-    if (egress_indexes[i]) {
-      update_parent_fwd_table(egress_indexes[i]);
-      break;
-    }
-  }
+  update_parent_fwd_table(next, is_netdev);
 }
 
 void Port::connect(PeerIface &p1, PeerIface &p2) {

@@ -43,6 +43,11 @@ int BaseCube::get_table_fd(const std::string &table_name, int index,
   return cube_->get_table_fd(table_name, index, type);
 }
 
+const ebpf::TableDesc &BaseCube::get_table_desc(const std::string &table_name, int index,
+                               ProgramType type) {
+  return cube_->get_table_desc(table_name, index, type);
+}
+
 void BaseCube::reload(const std::string &code, int index, ProgramType type) {
   cube_->reload(code, index, type);
 }
@@ -60,6 +65,13 @@ RawTable BaseCube::get_raw_table(const std::string &table_name, int index,
                                  ProgramType type) {
   int fd = get_table_fd(table_name, index, type);
   RawTable t(&fd);
+  return std::move(t);
+}
+
+RawQueueStackTable BaseCube::get_raw_queuestack_table(const std::string &table_name, int index,
+                                 ProgramType type) {
+  int fd = get_table_fd(table_name, index, type);
+  RawQueueStackTable t(&fd);
   return std::move(t);
 }
 

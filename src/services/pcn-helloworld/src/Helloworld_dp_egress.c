@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
+// WARNING: log messages from this program are used by programs_chain tests,
+//          changing them may cause those tests to fail
+
 static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
-  pcn_log(ctx, LOG_DEBUG, "Packet ongoing on port %d", md->in_port);
+  pcn_log(ctx, LOG_DEBUG, "[EGRESS] Packet ongoing on port %d", md->in_port);
   return RX_OK;
 }

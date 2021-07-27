@@ -9,9 +9,11 @@ Introduction
 This framework provides an efficient and simple benchmarking primitive for user programs. Particularly, this can be used to profile the control plane portion of Polycube.
 Although there are several powerful tools (particularly in Linux) that target benchmarking and profiling, they are often difficult to learn for an occasional user, which may need to perform some simple and fast benchmarking.
 
-A worth-mentioning tool is  `perf <https://perf.wiki.kernel.org/index.php/Main_Page>`_. Perf is a Linux profiling tool with performance counters which helps users to understand at low-level how not only the program, but also the hardware behaves. As the wiki reports, this tool not only is quite complex to learn, but it also produces deep information that users may not use or that they have to aggregate them to achieve a readable result. Moreover, perf refers to different types of event (ex. I/O disk) users may not be interested in.
+A worth-mentioning tool is  `perf <https://perf.wiki.kernel.org/index.php/Main_Page>`_.
+Perf is a Linux profiling tool with performance counters which helps users to understand at low-level how not only the program, but also the hardware behaves. As the wiki reports, this tool not only is quite complex to learn, but it also produces deep information that users may not use or that they have to aggregate them to achieve a readable result. Moreover, perf refers to different types of event (ex. I/O disk) users may not be interested in.
 
 This library provides a simple to use method not only to run a whole program benchmark, but also to measure single code-fragments performance.
+
 
 How it works
 ************
@@ -29,10 +31,10 @@ While the usage of a check-point leads to a negligible overhead (\~60 nanosecond
 
 Each measure is characterized by:
 
-* filename: the name of the file which contains the check-point;
-* line of code: the line of code where the check-point has been inserted;
-* name (optional): the name/description of the checkpoint given by the user;
-* timestamp: the measure in *nanoseconds* taken.
+- filename: the name of the file which contains the check-point;
+- line of code: the line of code where the check-point has been inserted;
+- name (optional): the name/description of the checkpoint given by the user;
+- timestamp: the measure in *nanoseconds* taken.
 
 Accordingly, the format used to store check-points is: `<filename>,<line_of_code>,<name>,<timestamp>`.
 
@@ -60,31 +62,32 @@ In this simple program we want to measure the performance of our function to com
 
 .. code-block:: c++
  
- #define PROFILER
- #include <polycube/profiler.h>
- 
- int main(int argc, char **argv) {
-   CHECKPOINT("Beginning")                 //line 7
-   computeSquare(1);
-   CHECKPOINT("After first computation")   //line 9
-   computeSquare(2);
-   STOREPOINT("After second computation")  //line 11
-   return 0;
- }
+  #define PROFILER
+  #include <polycube/profiler.h>
+  
+  int main(int argc, char **argv) {
+    CHECKPOINT("Beginning")                 //line 7
+    computeSquare(1);
+    CHECKPOINT("After first computation")   //line 9
+    computeSquare(2);
+    STOREPOINT("After second computation")  //line 11
+    return 0;
+  }
 
-After the execution, we obtain the following `profile_20190902_181847.log` file:
+After the execution, we obtain the following ``profile_20190902_181847.log`` file:
 
-.. code-block:: txt
+.. code-block:: text
 
- main.cpp,7,Beginning,1567333232104876595
- main.cpp,9,After first computation,1567333232104876666
- main.cpp,11,After second computation,1567333232104876737
+  main.cpp,7,Beginning,1567333232104876595
+  main.cpp,9,After first computation,1567333232104876666
+  main.cpp,11,After second computation,1567333232104876737
 
-Since the stored timestamps refer to the start of the epoch, to beautify the data and print some statistics we use our script `profiler_parser.py`:
+Since the stored timestamps refer to the start of the epoch, to beautify the data and print some statistics we use our script ``profiler_parser.py``:
+
 
 .. code-block:: bash
 
- $ python profiler_parser.py profile_20190902_181847.log
+  $ python profiler_parser.py profile_20190902_181847.log
 
  ========================================================================
  ||FROM                   |TO                      |TIME(ns)           ||

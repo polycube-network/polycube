@@ -20,9 +20,9 @@ module firewall {
     type enumeration {
       enum DROP;
       enum LOG;
-      enum FORWARD;
+      enum ACCEPT;
     }
-    default DROP;
+    default ACCEPT;
   }
 
   typedef conntrackstatus {
@@ -34,6 +34,14 @@ module firewall {
     }
   }
 
+  typedef operation {
+    type enumeration {
+      enum INSERT;
+      enum APPEND;
+      enum DELETE;
+      enum UPDATE;
+    }
+  }
 
   grouping rule-fields {
     leaf src {
@@ -81,12 +89,11 @@ module firewall {
       description "Connection status (NEW, ESTABLISHED, RELATED, INVALID)";
     }
 
-
     leaf action {
       type action;
       polycube-base:init-only-config;
-      description "Action if the rule matches. Default is DROP.";
-      polycube-base:cli-example "DROP, FORWARD, LOG";
+      description "Action if the rule matches. Default is ACCEPT.";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
 
     leaf description {
@@ -110,13 +117,7 @@ module firewall {
       enum ON;
       enum OFF;
     }
-    description "If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be forwarded automatically. Default is ON.";
-  }
-
-  leaf interactive {
-    type boolean;
-    description "Interactive mode applies new rules immediately; if 'false', the command 'apply-rules' has to be used to apply all the rules at once. Default is TRUE.";
-    default true;
+    description "If Connection Tracking is enabled, all packets belonging to ESTABLISHED connections will be accepted automatically. Default is ON.";
   }
 
   list session-table {
@@ -181,8 +182,8 @@ module firewall {
 
     leaf default {
       type action;
-      description "Default action if no rule matches in the ingress chain. Default is DROP.";
-      polycube-base:cli-example "DROP, FORWARD, LOG";
+      description "Default action if no rule matches in the ingress chain. Default is ACCEPT.";
+      polycube-base:cli-example "DROP, ACCEPT, LOG";
     }
 
     list stats {
@@ -250,18 +251,23 @@ module firewall {
       }
     }
 
-    action reset-counters {
-      description "Reset the counters to 0 for the chain.";
-      output {
-        leaf result {
-          type boolean;
-          description "True if the operation is successful";
+    action batch {
+      input {
+        list rules {
+          key "id";
+          leaf id {
+            type uint32;
+          }
+          leaf operation {
+            type operation;
+          }
+          uses "firewall:rule-fields";
         }
       }
     }
 
-    action apply-rules {
-      description "Applies the rules when in batch mode (interactive==false)";
+    action reset-counters {
+      description "Reset the counters to 0 for the chain.";
       output {
         leaf result {
           type boolean;

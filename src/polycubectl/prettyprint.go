@@ -272,6 +272,10 @@ func print(indent int, path string, hideList map[string]bool,
 
 		// print arrays
 		for _, key := range children.Keys() {
+		    //Links are not printed because they are not intended for humans
+		    if key == "_links"{
+		        continue;
+		    }
 			child_, _ := children.Get(key)
 			child := child_.(*gabs2.Container)
 			if reflect.ValueOf(child.Data()).Kind() == reflect.Slice {
@@ -295,6 +299,10 @@ func print(indent int, path string, hideList map[string]bool,
 func formatValue(data interface{}) string {
 	buf := ""
 	buf = fmt.Sprintf("%v", data)
+
+    if reflect.ValueOf(data).Kind() == reflect.String {
+        return buf
+    }
 
 	_, erri := strconv.ParseInt(buf, 10, 64)
 	if erri != nil {

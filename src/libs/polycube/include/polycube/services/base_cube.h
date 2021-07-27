@@ -29,6 +29,7 @@
 #include "polycube/services/cube_iface.h"
 #include "polycube/services/table.h"
 #include "polycube/services/utils.h"
+#include "polycube/services/table_desc.h"
 
 namespace polycube {
 namespace service {
@@ -54,6 +55,9 @@ class BaseCube {
   // Accessors for tables
   RawTable get_raw_table(const std::string &table_name, int index = 0,
                          ProgramType type = ProgramType::INGRESS);
+
+  RawQueueStackTable get_raw_queuestack_table(const std::string &table_name, int index = 0,
+                                              ProgramType type = ProgramType::INGRESS);
   template <class ValueType>
   ArrayTable<ValueType> get_array_table(
       const std::string &table_name, int index = 0,
@@ -71,6 +75,14 @@ class BaseCube {
       const std::string &table_name, int index = 0,
       ProgramType type = ProgramType::INGRESS);
 
+  template <class ValueType>
+  QueueStackTable<ValueType> get_queuestack_table(
+      const std::string &table_name, int index = 0,
+      ProgramType type = ProgramType::INGRESS);
+
+  const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
+                                     ProgramType type);
+                                     
   virtual void datapath_log_msg(const LogMsg *msg);
 
   void set_log_level(LogLevel level);
@@ -131,6 +143,14 @@ PercpuHashTable<KeyType, ValueType> BaseCube::get_percpuhash_table(
   int fd = get_table_fd(table_name, index, type);
   return PercpuHashTable<KeyType, ValueType>(&fd);
 }
+
+template <class ValueType>
+QueueStackTable<ValueType> BaseCube::get_queuestack_table(
+    const std::string &table_name, int index, ProgramType type) {
+  int fd = get_table_fd(table_name, index, type);
+  return QueueStackTable<ValueType>(&fd);
+}
+
 
 }  // namespace service
 }  // namespace polycube

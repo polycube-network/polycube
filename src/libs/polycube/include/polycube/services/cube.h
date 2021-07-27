@@ -77,6 +77,7 @@ Cube<PortType>::Cube(const nlohmann::json &conf,
 
     auto &p = *ports_by_id_.at(md->port_id);
     PacketInMetadata md_;
+    md_.traffic_class = md->traffic_class;
     md_.reason = md->reason;
     md_.metadata[0] = md->metadata[0];
     md_.metadata[1] = md->metadata[1];

@@ -56,6 +56,7 @@ class CubeFactoryImpl : public CubeFactory {
   void destroy_cube(const std::string &name) override;
 
   std::vector<std::shared_ptr<BaseCubeIface>> get_cubes();
+  std::vector<std::string> get_names_cubes() const;
 
  private:
   std::shared_ptr<CubeIface> create_cube(

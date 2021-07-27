@@ -1,8 +1,6 @@
 Helloworld
 ==========
 
-This service is oriented to demonstrate to developers how to create a minimal cube, which includes both the dataplane `fast path` and the control/management `slow path`.
-
 Helloworld is a simple service that receives the traffic on a network interface and can either:
 
 - send packets to a second interface
@@ -11,15 +9,16 @@ Helloworld is a simple service that receives the traffic on a network interface 
 
 The behavior of this service can be changed by setting the ``action`` flag, which tells the data plane how the packets have to be processed.
 
+This service demonstrates how to create a minimal cube, which includes the dataplane `fast path`, the `slow path`, running in user-space, and the control/management portions (e.g., to configure the service).
+
 How to use
 ----------
 
 ::
 
     # create network namespaces with usual commands
-    #   we assume you have two interfaces (veth1 
-    #   and veth2 already working here)
-
+    #   we assume you have two interfaces (veth1 and veth2 already working here)
+    # PLEASE DO IT YOURSELF
 
     # create the instance
     polycubectl helloworld add hw0

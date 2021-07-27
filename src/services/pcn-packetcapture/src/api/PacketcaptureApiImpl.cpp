@@ -86,24 +86,6 @@ std::vector<nlohmann::fifo_map<std::string, std::string>> read_packetcapture_lis
 }
 
 /**
-* @brief   Create filters by ID
-*
-* Create operation of resource: filters*
-*
-* @param[in] name ID of name
-* @param[in] value filtersbody object
-*
-* Responses:
-*
-*/
-void
-create_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value) {
-  auto packetcapture = get_cube(name);
-
-  return packetcapture->addFilters(value);
-}
-
-/**
 * @brief   Create globalheader by ID
 *
 * Create operation of resource: globalheader*
@@ -137,23 +119,6 @@ create_packetcapture_packet_by_id(const std::string &name, const PacketJsonObjec
   auto packetcapture = get_cube(name);
 
   return packetcapture->addPacket(value);
-}
-
-/**
-* @brief   Delete filters by ID
-*
-* Delete operation of resource: filters*
-*
-* @param[in] name ID of name
-*
-* Responses:
-*
-*/
-void
-delete_packetcapture_filters_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-
-  return packetcapture->delFilters();
 }
 
 /**
@@ -191,9 +156,9 @@ delete_packetcapture_packet_by_id(const std::string &name) {
 }
 
 /**
-* @brief   Read anomimize by ID
+* @brief   Read anonimize by ID
 *
-* Read operation of resource: anomimize*
+* Read operation of resource: anonimize*
 *
 * @param[in] name ID of name
 *
@@ -201,9 +166,9 @@ delete_packetcapture_packet_by_id(const std::string &name) {
 * bool
 */
 bool
-read_packetcapture_anomimize_by_id(const std::string &name) {
+read_packetcapture_anonimize_by_id(const std::string &name) {
   auto packetcapture = get_cube(name);
-  return packetcapture->getAnomimize();
+  return packetcapture->getAnonimize();
 
 }
 
@@ -258,44 +223,9 @@ read_packetcapture_dump_by_id(const std::string &name) {
 }
 
 /**
-* @brief   Read filters by ID
+* @brief   Read filter by ID
 *
-* Read operation of resource: filters*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* FiltersJsonObject
-*/
-FiltersJsonObject
-read_packetcapture_filters_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  return packetcapture->getFilters()->toJsonObject();
-
-}
-
-/**
-* @brief   Read dport by ID
-*
-* Read operation of resource: dport*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* uint16_t
-*/
-uint16_t
-read_packetcapture_filters_dport_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getDport();
-
-}
-
-/**
-* @brief   Read dst by ID
-*
-* Read operation of resource: dst*
+* Read operation of resource: filter*
 *
 * @param[in] name ID of name
 *
@@ -303,82 +233,9 @@ read_packetcapture_filters_dport_by_id(const std::string &name) {
 * std::string
 */
 std::string
-read_packetcapture_filters_dst_by_id(const std::string &name) {
+read_packetcapture_filter_by_id(const std::string &name) {
   auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getDst();
-
-}
-
-/**
-* @brief   Read l4proto by ID
-*
-* Read operation of resource: l4proto*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-read_packetcapture_filters_l4proto_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getL4proto();
-
-}
-
-/**
-* @brief   Read snaplen by ID
-*
-* Read operation of resource: snaplen*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* uint32_t
-*/
-uint32_t
-read_packetcapture_filters_snaplen_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getSnaplen();
-
-}
-
-/**
-* @brief   Read sport by ID
-*
-* Read operation of resource: sport*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* uint16_t
-*/
-uint16_t
-read_packetcapture_filters_sport_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getSport();
-
-}
-
-/**
-* @brief   Read src by ID
-*
-* Read operation of resource: src*
-*
-* @param[in] name ID of name
-*
-* Responses:
-* std::string
-*/
-std::string
-read_packetcapture_filters_src_by_id(const std::string &name) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-  return filters->getSrc();
+  return packetcapture->getFilter();
 
 }
 
@@ -650,21 +507,20 @@ read_packetcapture_packet_timestamp_seconds_by_id(const std::string &name) {
 }
 
 /**
-* @brief   Replace filters by ID
+* @brief   Read snaplen by ID
 *
-* Replace operation of resource: filters*
+* Read operation of resource: snaplen*
 *
 * @param[in] name ID of name
-* @param[in] value filtersbody object
 *
 * Responses:
-*
+* uint32_t
 */
-void
-replace_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value) {
+uint32_t
+read_packetcapture_snaplen_by_id(const std::string &name) {
   auto packetcapture = get_cube(name);
+  return packetcapture->getSnaplen();
 
-  return packetcapture->replaceFilters(value);
 }
 
 /**
@@ -704,21 +560,21 @@ replace_packetcapture_packet_by_id(const std::string &name, const PacketJsonObje
 }
 
 /**
-* @brief   Update anomimize by ID
+* @brief   Update anonimize by ID
 *
-* Update operation of resource: anomimize*
+* Update operation of resource: anonimize*
 *
 * @param[in] name ID of name
-* @param[in] value anomimizebody object
+* @param[in] value anonimizebody object
 *
 * Responses:
 *
 */
 void
-update_packetcapture_anomimize_by_id(const std::string &name, const bool &value) {
+update_packetcapture_anonimize_by_id(const std::string &name, const bool &value) {
   auto packetcapture = get_cube(name);
 
-  return packetcapture->setAnomimize(value);
+  return packetcapture->setAnonimize(value);
 }
 
 /**
@@ -776,136 +632,21 @@ update_packetcapture_dump_by_id(const std::string &name, const std::string &valu
 }
 
 /**
-* @brief   Update filters by ID
+* @brief   Update filter by ID
 *
-* Update operation of resource: filters*
+* Update operation of resource: filter*
 *
 * @param[in] name ID of name
-* @param[in] value filtersbody object
+* @param[in] value filtering string (e.g., 'host 1.2.3.4 and src port 80')
 *
 * Responses:
 *
 */
 void
-update_packetcapture_filters_by_id(const std::string &name, const FiltersJsonObject &value) {
+update_packetcapture_filter_by_id(const std::string &name, const std::string &value) {
   auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
 
-  return filters->update(value);
-}
-
-/**
-* @brief   Update dport by ID
-*
-* Update operation of resource: dport*
-*
-* @param[in] name ID of name
-* @param[in] value Destination port filter
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_dport_by_id(const std::string &name, const uint16_t &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setDport(value);
-}
-
-/**
-* @brief   Update dst by ID
-*
-* Update operation of resource: dst*
-*
-* @param[in] name ID of name
-* @param[in] value IP destination filter
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_dst_by_id(const std::string &name, const std::string &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setDst(value);
-}
-
-/**
-* @brief   Update l4proto by ID
-*
-* Update operation of resource: l4proto*
-*
-* @param[in] name ID of name
-* @param[in] value Level 4 protocol filter
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_l4proto_by_id(const std::string &name, const std::string &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setL4proto(value);
-}
-
-/**
-* @brief   Update snaplen by ID
-*
-* Update operation of resource: snaplen*
-*
-* @param[in] name ID of name
-* @param[in] value Snapshot length
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_snaplen_by_id(const std::string &name, const uint32_t &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setSnaplen(value);
-}
-
-/**
-* @brief   Update sport by ID
-*
-* Update operation of resource: sport*
-*
-* @param[in] name ID of name
-* @param[in] value Source port filter
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_sport_by_id(const std::string &name, const uint16_t &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setSport(value);
-}
-
-/**
-* @brief   Update src by ID
-*
-* Update operation of resource: src*
-*
-* @param[in] name ID of name
-* @param[in] value IP source filter
-*
-* Responses:
-*
-*/
-void
-update_packetcapture_filters_src_by_id(const std::string &name, const std::string &value) {
-  auto packetcapture = get_cube(name);
-  auto filters = packetcapture->getFilters();
-
-  return filters->setSrc(value);
+  return packetcapture->setFilter(value);
 }
 
 /**
@@ -1081,7 +822,7 @@ update_packetcapture_list_by_id(const std::vector<PacketcaptureJsonObject> &valu
 * Update operation of resource: networkmode*
 *
 * @param[in] name ID of name
-* @param[in] value operative mode
+* @param[in] value Operating mode
 *
 * Responses:
 *
@@ -1205,6 +946,24 @@ update_packetcapture_packet_timestamp_seconds_by_id(const std::string &name, con
   auto packet = packetcapture->getPacket();
 
   return packet->setTimestampSeconds(value);
+}
+
+/**
+* @brief   Update snaplen by ID
+*
+* Update operation of resource: snaplen*
+*
+* @param[in] name ID of name
+* @param[in] value Snapshot length
+*
+* Responses:
+*
+*/
+void
+update_packetcapture_snaplen_by_id(const std::string &name, const uint32_t &value) {
+  auto packetcapture = get_cube(name);
+
+  return packetcapture->setSnaplen(value);
 }
 
 

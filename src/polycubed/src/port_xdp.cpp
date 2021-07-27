@@ -49,5 +49,16 @@ unsigned int PortXDP::get_peer_ifindex() const {
   return Netlink::getInstance().get_iface_index(peer_);
 }
 
+void PortXDP::set_parent_egress_next(uint16_t index) {
+  if (index == 0xffff) {
+    // Next is a netdev: the TC version of the program needs to pass the packet
+    // while the XDP one needs to redirect it
+    CubeXDP &parent = dynamic_cast<CubeXDP &>(parent_);
+    parent.set_egress_next_netdev(get_port_id(), peer_port_->get_port_id());
+  } else {
+    Port::set_parent_egress_next(index);
+  };
+}
+
 }  // namespace polycube
 }  // namespace polycubed

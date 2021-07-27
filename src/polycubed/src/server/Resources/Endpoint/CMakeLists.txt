@@ -8,4 +8,5 @@ set(endpoint_sources
         ${CMAKE_CURRENT_LIST_DIR}/CaseResource.cpp
         ${CMAKE_CURRENT_LIST_DIR}/Service.cpp
         ${CMAKE_CURRENT_LIST_DIR}/PathParamField.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/Hateoas.cpp
         PARENT_SCOPE)

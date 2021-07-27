@@ -142,6 +142,14 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
   };
 
   if (!parent_.get_shadow()) {
+    // Align parameters of the port with the ones of the interface if connected
+    if (conf.macIsSet()) {
+      set_peer_parameter("MAC", conf.getMac());
+    }
+    if (conf.ipIsSet()) {
+      set_peer_parameter("IP", conf.getIp());
+    }
+
     /* Register the new port to IP and MAC notifications arriving from ExtIface
      * do not use define because strings are easier to manipulate
      * for future extensions */
@@ -203,6 +211,7 @@ void Ports::doSetIp(const std::string &new_ip) {
     r_port value = router_port.get(index);
     value.ip = ip_string_to_nbo_uint(ip_address);
     value.netmask = ip_string_to_nbo_uint(netmask);
+    router_port.set(index, value);
   } catch (...) {
     logger()->error("Port {0} not found in the data path", this->name());
   }
@@ -228,6 +237,10 @@ std::shared_ptr<PortsSecondaryip> Ports::getSecondaryip(const std::string &ip) {
     if (p.getIp() == ip)
       return std::make_shared<PortsSecondaryip>(p);
   }
+  // It can happen in 3 cases: the port has no IP, 
+  // the port has secondaryip but not the one sought, the port has 0 secondaryip
+  throw std::runtime_error(
+        "Address does not exist or it is not a secondary address or the port has no ip address");
 }
 
 std::vector<std::shared_ptr<PortsSecondaryip>> Ports::getSecondaryipList() {
@@ -246,16 +259,20 @@ void Ports::addSecondaryip(const std::string &ip, const PortsSecondaryipJsonObje
   /*
   * First create the port in the control plane
   */
-  logger()->info(
-      "Adding secondary address [port: {0} - ip: {1}]", getName(), ip);
+ if (!this->getIp().empty()) {
+    logger()->info(
+        "Adding secondary address [port: {0} - ip: {1}]", getName(), ip);
 
-  auto ret = secondary_ips_.emplace(PortsSecondaryip(*this, conf));
+    auto ret = secondary_ips_.emplace(PortsSecondaryip(*this, conf));
 
-  /*
-  * Then update the port in the data path (this also adds the proper routes in
-  * the routing table)
-  */
-  updatePortInDataPath();
+    /*
+    * Then update the port in the data path (this also adds the proper routes in
+    * the routing table)
+    */
+    updatePortInDataPath();
+  } else
+    throw std::runtime_error(
+        "You can not add a secondary ip address to a port with no ip address");
 }
 
 // Basic default implementation, place your extension here (if needed)

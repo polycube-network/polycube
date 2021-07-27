@@ -119,8 +119,8 @@ static inline int send_packet_for_router_to_slowpath(struct CTXTYPE *ctx,
   mdata[0] = ip->saddr;
   mdata[1] = ip->daddr;
   mdata[2] = ip->protocol;
-  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_PKT_FOR_ROUTER,
-                                          mdata);
+  pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_PKT_FOR_ROUTER, mdata);
+  return RX_DROP;
 }
 static inline int send_icmp_ttl_time_exceeded(struct CTXTYPE *ctx,
                                               struct pkt_metadata *md,
@@ -131,8 +131,8 @@ static inline int send_icmp_ttl_time_exceeded(struct CTXTYPE *ctx,
   // using the principal ip as sender address
   mdata[0] = ip_port;
   // Send packet to slowpath
-  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_TTL_EXCEEDED,
-                                          mdata);
+  pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_TTL_EXCEEDED, mdata);
+  return RX_DROP;
 }
 static inline int arp_lookup_miss(struct CTXTYPE *ctx, struct pkt_metadata *md,
                                   __be32 dst_ip, u16 out_port, __be32 ip_port) {
@@ -143,8 +143,8 @@ static inline int arp_lookup_miss(struct CTXTYPE *ctx, struct pkt_metadata *md,
   mdata[0] = dst_ip;
   mdata[1] = out_port;
   mdata[2] = ip_port;
-  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_LOOKUP_MISS,
-                                          mdata);
+  pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_LOOKUP_MISS, mdata);
+  return RX_DROP;
 }
 static inline __u16 checksum(unsigned short *buf, int bufsz) {
   unsigned long sum = 0;
@@ -259,7 +259,8 @@ static inline int notify_arp_reply_to_slowpath(struct CTXTYPE *ctx,
   // notify the slowpath. New arp reply received.
   u32 mdata[3];
   mdata[0] = ip_;
-  return pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_REPLY, mdata);
+  pcn_pkt_controller_with_metadata(ctx, md, SLOWPATH_ARP_REPLY, mdata);
+  return RX_DROP;
 }
 static inline int is_ether_mcast(__be64 mac_address) {
   return (mac_address & (__be64)MAC_MULTICAST_MASK);
@@ -274,7 +275,8 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   pcn_log(ctx, LOG_TRACE, "in_port: %d, proto: 0x%x, mac_src: %M mac_dst: %M",
           md->in_port, bpf_htons(eth->proto), eth->src, eth->dst);
 
-  struct r_port *in_port = router_port.lookup(&md->in_port);
+  u16 in_port_index = md->in_port;
+  struct r_port *in_port = router_port.lookup(&in_port_index);
   if (!in_port) {
     pcn_log(ctx, LOG_ERR, "received packet from non valid port: %d",
             md->in_port);

@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// WARNING: log messages from this program are used by programs_chain tests,
+//          changing them may cause those tests to fail
+
 #include <bcc/helpers.h>
 
 enum {
@@ -41,16 +44,17 @@ static int handle_rx(struct CTXTYPE *ctx, struct pkt_metadata *md) {
   // what action should be performed in the packet?
   switch (*action) {
   case DROP:
-    pcn_log(ctx, LOG_DEBUG, "Ingress: dropping packet");
+    pcn_log(ctx, LOG_DEBUG, "[INGRESS] dropping packet");
     return RX_DROP;
   case PASS:
-    pcn_log(ctx, LOG_DEBUG, "Ingress: passing packet");
+    pcn_log(ctx, LOG_DEBUG, "[INGRESS] passing packet");
     return RX_OK;
   case SLOWPATH:
-    pcn_log(ctx, LOG_DEBUG, "Ingress: sending packet to slow path");
-    return pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    pcn_log(ctx, LOG_DEBUG, "[INGRESS] sending packet to slow path");
+    pcn_pkt_controller(ctx, md, SLOWPATH_REASON);
+    return RX_DROP;
   default:
-    pcn_log(ctx, LOG_ERR, "Ingress: bad action %d", *action);
+    pcn_log(ctx, LOG_ERR, "[INGRESS] bad action %d", *action);
     return RX_DROP;
   }
 

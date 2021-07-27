@@ -274,6 +274,7 @@ int main(int argc, char *argv[]) {
 
   // setup rest server
   int thr = 4;
+  size_t max_payload_size = 1024*1024; // 1MB
   Address addr(config.getServerIP(), Pistache::Port(config.getServerPort()));
 
   // logger->info("Cores = {0}", hardware_concurrency());
@@ -281,7 +282,7 @@ int main(int argc, char *argv[]) {
 
   // start rest server
   restserver = new RestServer(addr, *core);
-  restserver->init(thr, config.getCertPath(), config.getKeyPath(),
+  restserver->init(thr, max_payload_size, config.getCertPath(), config.getKeyPath(),
                    config.getCACertPath(), config.getCertWhitelistPath(),
                    config.getCertBlacklistPath());
   core->set_rest_server(restserver);
@@ -305,6 +306,9 @@ int main(int argc, char *argv[]) {
     // start to saving topology only after it has been loaded
     cubesdump->Enable();
   }
+  
+  // create metrics from data read in yang files
+  restserver->create_metrics();
 
   // pause the execution of current thread until ctrl+c
   pause();

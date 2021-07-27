@@ -19,6 +19,7 @@
 #include "datapath_log.h"
 #include "exceptions.h"
 #include "patchpanel.h"
+#include "utils/utils.h"
 
 #include <iostream>
 
@@ -29,8 +30,8 @@ CubeXDP::CubeXDP(const std::string &name, const std::string &service_name,
                  const std::vector<std::string> &ingress_code,
                  const std::vector<std::string> &egress_code, LogLevel level,
                  CubeType type, bool shadow, bool span)
-    : Cube(name, service_name, PatchPanel::get_xdp_instance(),
-           PatchPanel::get_tc_instance(), level, type, shadow, span),
+    : Cube(name, service_name, PatchPanel::get_xdp_instance(), level, type,
+           shadow, span),
       attach_flags_(0) {
   switch (type) {
   // FIXME: replace by definitions in if_link.h when update to new kernel.
@@ -41,6 +42,16 @@ CubeXDP::CubeXDP(const std::string &name, const std::string &service_name,
     attach_flags_ |= 1U << 2;
     break;
   }
+
+  egress_programs_table_tc_ = std::move(egress_programs_table_);
+  auto table = master_program_->get_prog_table("egress_programs_xdp");
+  egress_programs_table_ =
+      std::unique_ptr<ebpf::BPFProgTable>(new ebpf::BPFProgTable(table));
+
+  auto egress_next_xdp =
+      master_program_->get_array_table<uint32_t>("egress_next_xdp");
+  egress_next_xdp_ = std::unique_ptr<ebpf::BPFArrayTable<uint32_t>>(
+      new ebpf::BPFArrayTable<uint32_t>(egress_next_xdp));
 
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
@@ -56,61 +67,217 @@ int CubeXDP::get_attach_flags() const {
   return attach_flags_;
 }
 
+void CubeXDP::reload(const std::string &code, int index, ProgramType type) {
+  std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+
+  switch (type) {
+    case ProgramType::INGRESS:
+      return do_reload(code, index, type, ingress_programs_, ingress_code_,
+                       ingress_programs_table_, ingress_index_);
+      break;
+
+    case ProgramType::EGRESS:
+      // Reload the XDP program
+      do_reload(code, index, type, egress_programs_, egress_code_,
+                egress_programs_table_, egress_index_);
+
+      // Also reload the TC program
+      {
+        std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+        std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
+            new ebpf::BPF(0, nullptr, false, name_, false,
+                          egress_programs_.at(index).get()));
+
+        bcc_guard.unlock();
+        compileTC(*new_bpf_program, code);
+        int fd = CubeTC::do_load(*new_bpf_program);
+
+        egress_programs_table_tc_->update_value(index, fd);
+
+        if (index == 0) {
+          PatchPanel::get_tc_instance().update(egress_index_, fd);
+        }
+
+        CubeTC::do_unload(*egress_programs_tc_.at(index));
+        bcc_guard.lock();
+        egress_programs_tc_[index] = std::move(new_bpf_program);
+      }
+
+      break;
+
+    default:
+      throw std::runtime_error("Bad program type");
+  }
+}
+
+void CubeXDP::reload_all() {
+  std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+  for (int i = 0; i < ingress_programs_.size(); i++) {
+    if (ingress_programs_[i]) {
+      do_reload(ingress_code_[i], i, ProgramType::INGRESS, ingress_programs_,
+                ingress_code_, ingress_programs_table_, ingress_index_);
+    }
+  }
+
+  for (int i = 0; i < egress_programs_.size(); i++) {
+    if (egress_programs_[i]) {
+      // Reload the XDP program
+      do_reload(egress_code_[i], i, ProgramType::EGRESS, egress_programs_,
+                egress_code_, egress_programs_table_, egress_index_);
+
+      // Also reload the TC program
+      {
+        std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+        std::unique_ptr<ebpf::BPF> new_bpf_program = std::unique_ptr<ebpf::BPF>(
+            new ebpf::BPF(0, nullptr, false, name_, false,
+                          egress_programs_tc_.at(i).get()));
+
+        bcc_guard.unlock();
+        compileTC(*new_bpf_program, egress_code_[i]);
+        int fd = CubeTC::do_load(*new_bpf_program);
+
+        egress_programs_table_tc_->update_value(i, fd);
+
+        if (i == 0) {
+          PatchPanel::get_tc_instance().update(egress_index_, fd);
+        }
+
+        CubeTC::do_unload(*egress_programs_tc_.at(i));
+        bcc_guard.lock();
+        egress_programs_tc_[i] = std::move(new_bpf_program);
+      }
+    }
+  }
+}
+
+int CubeXDP::add_program(const std::string &code, int index, ProgramType type) {
+  std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+
+  switch (type) {
+    case ProgramType::INGRESS:
+      return do_add_program(code, index, type, ingress_programs_, ingress_code_,
+                            ingress_programs_table_, &ingress_index_);
+
+    case ProgramType::EGRESS:
+      // Add XDP program
+      index = do_add_program(code, index, type,  egress_programs_, egress_code_,
+                             egress_programs_table_, &egress_index_);
+
+      // Also add TC program
+      {
+        std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+        // load and add this program to the list
+        egress_programs_tc_[index] =
+            std::unique_ptr<ebpf::BPF>(new ebpf::BPF(0, nullptr, false, name_));
+
+        bcc_guard.unlock();
+        compileTC(*egress_programs_tc_.at(index), code);
+        int fd = CubeTC::do_load(*egress_programs_tc_.at(index));
+        bcc_guard.lock();
+
+        egress_programs_table_tc_->update_value(index, fd);
+        if (index == 0) {
+            PatchPanel::get_tc_instance().add(fd, egress_index_);
+        }
+      }
+
+      return index;
+
+    default:
+      throw std::runtime_error("Bad program type");
+  }
+}
+
+void CubeXDP::del_program(int index, ProgramType type) {
+  std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+
+  switch (type) {
+    case ProgramType::INGRESS:
+      do_del_program(index, type, ingress_programs_, ingress_code_,
+                     ingress_programs_table_);
+      break;
+
+    case ProgramType::EGRESS:
+      // Delete XDP program
+      do_del_program(index, type, egress_programs_, egress_code_,
+                     egress_programs_table_);
+
+      // Also delete TC program
+      {
+        egress_programs_table_tc_->remove_value(index);
+        CubeTC::do_unload(*egress_programs_tc_.at(index));
+        std::unique_lock<std::mutex> bcc_guard(bcc_mutex);
+        egress_programs_tc_.at(index).reset();
+        bcc_guard.unlock();
+      }
+
+      break;
+
+    default:
+      throw std::runtime_error("Bad program type");
+  }
+}
+
+void CubeXDP::set_egress_next(int port, uint16_t index) {
+  Cube::set_egress_next(port, index);
+  egress_next_xdp_->update_value(port, index);
+}
+
+void CubeXDP::set_egress_next_netdev(int port, uint16_t index) {
+  Cube::set_egress_next(port, 0xffff);
+  uint32_t val = 1 << 16 | index;
+  egress_next_xdp_->update_value(port, val);
+}
+
 std::string CubeXDP::get_wrapper_code() {
   return Cube::get_wrapper_code() + CUBEXDP_COMMON_WRAPPER + CUBEXDP_WRAPPER +
          CUBEXDP_HELPERS;
 }
 
+std::string CubeXDP::get_redirect_code() {
+  std::stringstream ss;
+
+  for(auto const& [index, val] : forward_chain_) {
+    ss << "case " << index << ":\n";
+
+    if (val.second) {
+      // It is a net interface
+      ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
+    } else {
+      ss << "md->in_port = " << (val.first >> 16) << ";\n";
+      ss << "xdp_nodes.call(pkt, " << (val.first & 0xffff) << ");\n";
+    }
+
+    ss << "break;\n";
+  }
+
+  return ss.str();
+}
+
 void CubeXDP::compile(ebpf::BPF &bpf, const std::string &code, int index,
                       ProgramType type) {
-  switch (type) {
-  case ProgramType::INGRESS:
-    compileIngress(bpf, code);
-    break;
-  case ProgramType::EGRESS:
-    compileEgress(bpf, code);
-    break;
-  default:
-    throw std::runtime_error("Bad program type");
-  }
-}
+  std::string wrapper_code = get_wrapper_code();
 
-int CubeXDP::load(ebpf::BPF &bpf, ProgramType type) {
-  switch (type) {
-  case ProgramType::INGRESS:
-    return do_load(bpf);
-  case ProgramType::EGRESS:
-    return CubeTC::do_load(bpf);
-  default:
-    throw std::runtime_error("Bad program type");
+  if (type == ProgramType::INGRESS) {
+    utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", get_redirect_code());
   }
-}
-
-void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
-  switch (type) {
-  case ProgramType::INGRESS:
-    return do_unload(bpf);
-  case ProgramType::EGRESS:
-    return CubeTC::do_unload(bpf);
-  default:
-    throw std::runtime_error("Bad program type");
-  }
-}
-
-void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
-  std::string all_code(get_wrapper_code() +
+  
+  // compile ebpf program
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
-  std::vector<std::string> cflags_(cflags);
-  cflags_.push_back(std::string("-DMOD_NAME=") + std::string(name_));
-  cflags_.push_back("-DCUBE_ID=" + std::to_string(get_id()));
-  cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
-  cflags_.push_back(std::string("-DRETURNCODE=") + std::string("XDP_DROP"));
-  cflags_.push_back(std::string("-DPOLYCUBE_XDP=1"));
-  cflags_.push_back(std::string("-DCTXTYPE=") + std::string("xdp_md"));
+  std::vector<std::string> cflags(cflags_);
+  cflags.push_back(std::string("-DMOD_NAME=") + std::string(name_));
+  cflags.push_back("-DCUBE_ID=" + std::to_string(get_id()));
+  cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
+  cflags.push_back(std::string("-DRETURNCODE=") + std::string("XDP_DROP"));
+  cflags.push_back(std::string("-DPOLYCUBE_XDP=1"));
+  cflags.push_back(std::string("-DCTXTYPE=") + std::string("xdp_md"));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
+                   std::to_string(static_cast<int>(type))));
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
-  auto init_res = bpf.init(all_code, cflags_);
+  auto init_res = bpf.init(all_code, cflags);
 
   if (init_res.code() != 0) {
     logger->error("failed to init XDP program: {0}", init_res.msg());
@@ -119,18 +286,31 @@ void CubeXDP::compileIngress(ebpf::BPF &bpf, const std::string &code) {
   logger->debug("XDP program compileed");
 }
 
-void CubeXDP::compileEgress(ebpf::BPF &bpf, const std::string &code) {
+int CubeXDP::load(ebpf::BPF &bpf, ProgramType type) {
+  return do_load(bpf);
+}
+
+void CubeXDP::unload(ebpf::BPF &bpf, ProgramType type) {
+  return do_unload(bpf);
+}
+
+void CubeXDP::compileTC(ebpf::BPF &bpf, const std::string &code) {
+  std::string wrapper_code = CubeTC::get_wrapper_code();
+  utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", "");
+
   // compile ebpf program
-  std::string all_code(CubeTC::get_wrapper_code() +
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
-  std::vector<std::string> cflags_(cflags);
-  cflags_.push_back("-DCUBE_ID=" + std::to_string(get_id()));
-  cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
-  cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  std::vector<std::string> cflags(cflags_);
+  cflags.push_back("-DCUBE_ID=" + std::to_string(get_id()));
+  cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
+  cflags.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" + 
+                   std::to_string(static_cast<int>(ProgramType::EGRESS))));
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
-  auto init_res = bpf.init(all_code, cflags_);
+  auto init_res = bpf.init(all_code, cflags);
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -164,17 +344,16 @@ const std::string CubeXDP::CUBEXDP_COMMON_WRAPPER = R"(
 BPF_TABLE("extern", u32, struct pkt_metadata, port_md, 1);
 BPF_TABLE("extern", int, int, xdp_nodes, _POLYCUBE_MAX_NODES);
 
-static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md, u16 reason) {
-  u32 inport_key = 0;
-  md->reason = reason;
-
-  port_md.update(&inport_key, md);
-
-  xdp_nodes.call(pkt, CONTROLLER_MODULE_INDEX);
-  //pcn_log(ctx, LOG_ERROR, md->module_index, 0, "to controller miss");
-  return XDP_DROP;
-}
+struct controller_table_t {
+  int key;
+  u32 leaf;
+  /* map.perf_submit(ctx, data, data_size) */
+  int (*perf_submit) (void *, void *, u32);
+  int (*perf_submit_skb) (void *, u32, void *, u32);
+  u32 data[0];
+};
+__attribute__((section("maps/extern")))
+struct controller_table_t controller_xdp;
 
 static __always_inline
 int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *md,
@@ -185,46 +364,99 @@ int pcn_pkt_controller_with_metadata(struct CTXTYPE *pkt, struct pkt_metadata *m
 
   return pcn_pkt_controller(pkt, md, reason);
 }
+
+static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index) {
+  u32 inport_key = 0;
+
+  // Save the metadata for the next program in case they were changed by the
+  // current one
+  port_md.update(&inport_key, md);;
+
+  call_ingress_program(skb, index);
+}
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index) {
+  u32 inport_key = 0;
+
+  // Save the metadata for the next program in case they were changed by the
+  // current one
+  port_md.update(&inport_key, md);;
+
+  call_egress_program(skb, index);
+}
 )";
 
 const std::string CubeXDP::CUBEXDP_WRAPPER = R"(
 int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
-  u32 inport_key = 0;
-  struct pkt_metadata *int_md;
-  struct pkt_metadata md = {};
+  int zero = 0;
 
-  int_md = port_md.lookup(&inport_key);
-  if (int_md) {
-    md.cube_id = CUBE_ID;
-    md.in_port = int_md->in_port;
-    md.packet_len = int_md->packet_len;
-
-    int rc = handle_rx(ctx, &md);
-
-    switch (rc) {
-    case RX_DROP:
-      return XDP_DROP;
-    case RX_OK:
-      return XDP_PASS;
-    default:
-      return rc;
-    }
+  struct pkt_metadata *md = port_md.lookup(&zero);
+  if (!md) {
+    return XDP_ABORTED;
   }
 
-  return XDP_DROP;
-}
+  int rc = handle_rx(ctx, md);
 
-static __always_inline
-int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
-  u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
-    u32 inport_key = 0;
-    md->in_port = (*next) >> 16;  // update port_id for next module.
-    port_md.update(&inport_key, md);
-    xdp_nodes.call(pkt, *next & 0xffff);
+  switch (rc) {
+    case RX_DROP:
+      return XDP_DROP;
+
+    case RX_OK: {
+#if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
+      int port = md->in_port;
+      u32 *next = egress_next_xdp.lookup(&port);
+      if (!next) {
+        return XDP_ABORTED;
+      }
+      
+      if (*next == 0) {
+        return XDP_ABORTED;
+
+      } else if (*next >> 16 == 1) {
+        // Next is a netdev
+        return bpf_redirect(*next & 0xffff, 0);
+      
+      } else {
+        // Next is a program
+        xdp_nodes.call(ctx, *next & 0xffff);
+      }
+
+#else  // INGRESS
+      return XDP_PASS;
+#endif
+    }
+
+    default:
+      // Called in case pcn_pkt_redirect() returned XDP_REDIRECT
+      return rc;
   }
 
   return XDP_ABORTED;
+}
+
+#if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
+static __always_inline
+int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
+  switch (out_port) {
+    _REDIRECT_CODE;
+  }
+
+  return XDP_ABORTED;
+}
+#endif
+
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *pkt, struct pkt_metadata *md,
+                       u16 reason) {
+  md->cube_id = CUBE_ID;
+  md->packet_len = pkt->data_end - pkt->data;
+  md->reason = reason;
+
+  return controller_xdp.perf_submit_skb(pkt, md->packet_len, md, sizeof(*md));
 }
 )";
 

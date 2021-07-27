@@ -21,6 +21,7 @@
 #include "polycube/services/port_iface.h"
 #include "polycube/services/table.h"
 #include "polycube/services/types.h"
+#include "polycube/services/table_desc.h"
 
 #include <map>
 #include <string>
@@ -63,7 +64,9 @@ class BaseCubeIface {
   virtual uint16_t get_index(ProgramType type) const = 0;
   virtual int get_table_fd(const std::string &table_name, int index,
                            ProgramType type) = 0;
-
+  virtual const ebpf::TableDesc &get_table_desc(const std::string &table_name, int index,
+                                     ProgramType type) = 0;
+                                     
   virtual void set_log_level(LogLevel level) = 0;
   virtual LogLevel get_log_level() const = 0;
 
@@ -81,7 +84,8 @@ class CubeIface : virtual public BaseCubeIface {
   virtual void remove_port(const std::string &name) = 0;
   virtual std::shared_ptr<PortIface> get_port(const std::string &name) = 0;
 
-  virtual void update_forwarding_table(int index, int value) = 0;
+  virtual void update_forwarding_table(uint16_t port, uint32_t next,
+                                       bool is_netdev) = 0;
 
   virtual void set_conf(const nlohmann::json &conf) = 0;
   virtual nlohmann::json to_json() const = 0;
@@ -95,7 +99,7 @@ class CubeIface : virtual public BaseCubeIface {
 
 class TransparentCubeIface : virtual public BaseCubeIface {
  public:
-  virtual void set_next(uint16_t next, ProgramType type) = 0;
+  virtual void set_next(uint16_t next, ProgramType type, bool is_netdev) = 0;
   virtual void set_parameter(const std::string &parameter,
                              const std::string &value) = 0;
   virtual void send_packet_out(const std::vector<uint8_t> &packet, Direction direction,

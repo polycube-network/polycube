@@ -2,6 +2,15 @@
 
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+batch='{"rules":['
+
+function fwsetup {
+  polycubectl firewall add fw
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -17,56 +26,60 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=DEBUG
-polycubectl attach fw veth1
+fwsetup
 
-polycubectl firewall fw set interactive=false
+set +x
+batch='{"rules":['
 
 #INGRESS CHAIN
 #dumb rules
 for i in `seq 0 61`;
 do
-polycubectl firewall fw chain INGRESS rule add $i src=10.1.$((i%2)).$((i%255))/31 dst=10.1.$((i%2)).$((i%255)) l4proto=TCP sport=$i dport=$i tcpflags='SYN' action=DROP
+  batch=${batch}"{'operation': 'append', 'src': '10.1.$((i%2)).$((i%255))/31', 'dst': '10.1.$((i%2)).$((i%255))', 'l4proto': 'TCP', 'sport': $i, 'dport': $i, 'tcpflags': 'SYN', 'action': 'DROP'},"
 done
 
 #matched rules
 #SYN
-polycubectl firewall fw chain INGRESS rule add 62 action=FORWARD src=10.0.0.1 dst=10.0.0.2 l4proto=TCP dport=60123 tcpflags='SYN, !ACK, !RST, !FIN'
+batch=${batch}"{'operation': 'insert', 'id': 62, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'TCP', 'dport': 60123, 'tcpflags': 'SYN, !ACK, !RST, !FIN','action': 'ACCEPT'},"
 #ACK
-polycubectl firewall fw chain INGRESS rule  add 63 action=FORWARD src=10.0.0.1 dst=10.0.0.2 l4proto=TCP dport=60123 tcpflags='!SYN, ACK, !RST, !FIN'
+batch=${batch}"{'operation': 'insert', 'id': 63, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'TCP', 'dport': 60123, 'tcpflags': '!SYN, ACK, !RST, !FIN','action': 'ACCEPT'},"
 #FIN or FIN, ACK
-polycubectl firewall fw chain INGRESS rule  add 64 action=FORWARD src=10.0.0.1 dst=10.0.0.2 l4proto=TCP dport=60123 tcpflags='!SYN, !RST, FIN'
+batch=${batch}"{'operation': 'insert', 'id': 64, 'src': '10.0.0.1', 'dst': '10.0.0.2', 'l4proto': 'TCP', 'dport': 60123, 'tcpflags': '!SYN, !RST, FIN','action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 65 128`;
 do
-polycubectl firewall fw chain INGRESS rule add $i src=11.1.0.$((i%255)) dst=11.1.0.$((i%255)) l4proto=TCP sport=$i dport=$i action=DROP
+  batch=${batch}"{'operation': 'append', 'src': '11.1.0.$((i%255))', 'dst': '11.1.0.$((i%255))', 'l4proto': 'TCP', 'sport': $i, 'dport': $i, 'action': 'DROP'},"
 done
 
-polycubectl firewall fw chain INGRESS apply-rules
-
+batch=${batch}"]}"
+set -x
+polycubectl firewall fw chain INGRESS batch rules=<<<$batch
+set +x
+batch='{"rules":['
 #EGRESS CHAIN
 #dumb rules
 for i in `seq 0 62`;
 do
-polycubectl firewall fw chain EGRESS rule add $i src=10.1.$((i%2)).$((i%255))/32 dst=10.1.$((i%2)).$((i%255)) l4proto=TCP sport=$i dport=$i tcpflags='!SYN' action=DROP
+  batch=${batch}"{'operation': 'append', 'src': '10.1.$((i%2)).$((i%255))/32', 'dst': '10.1.$((i%2)).$((i%255))', 'l4proto': 'TCP', 'sport': $i, 'dport': $i, 'tcpflags': '!SYN', 'action': 'DROP'},"
 done
 
 #matched rules
 #SYN, Ack
-polycubectl firewall fw chain EGRESS rule add 63 action=FORWARD l4proto=TCP src=10.0.0.2 dst=10.0.0.1 sport=60123 tcpflags='SYN, ACK, !RST'
+batch=${batch}"{'operation': 'insert', 'id': 63, 'src': '10.0.0.2', 'dst': '10.0.0.1', 'l4proto': 'TCP', 'sport': 60123, 'tcpflags': 'SYN, ACK, !RST', 'action': 'ACCEPT'},"
 #ACK
-polycubectl firewall fw chain EGRESS rule add 64 action=FORWARD l4proto=TCP src=10.0.0.2 dst=10.0.0.1 sport=60123 tcpflags='ACK, !SYN'
+batch=${batch}"{'operation': 'insert', 'id': 64, 'src': '10.0.0.2', 'dst': '10.0.0.1', 'l4proto': 'TCP', 'sport': 60123, 'tcpflags': 'ACK, !SYN', 'action': 'ACCEPT'},"
 #FIN Or Fin, Ack
-polycubectl firewall fw chain EGRESS rule add 65 action=FORWARD l4proto=TCP src=10.0.0.2 dst=10.0.0.1 sport=60123 tcpflags='FIN, !SYN'
+batch=${batch}"{'operation': 'insert', 'id': 65, 'src': '10.0.0.2', 'dst': '10.0.0.1', 'l4proto': 'TCP', 'sport': 60123, 'tcpflags': 'FIN, !SYN', 'action': 'ACCEPT'},"
 
 #dumb rules
 for i in `seq 66 129`;
 do
-polycubectl firewall fw chain EGRESS rule add $i src=11.1.0.$((i%255)) dst=11.1.0.$((i%255))/16 l4proto=TCP sport=$i dport=$i tcpflags='!ACK' action=DROP
+  batch=${batch}"{'operation': 'append', 'src': '11.1.0.$((i%255))', 'dst': '11.1.0.$((i%255))/16', 'l4proto': 'TCP', 'sport': $i, 'dport': $i, 'tcpflags': '!ACK', 'action': 'DROP'},"
 done
 
-polycubectl firewall fw chain EGRESS apply-rules
+batch=${batch}"]}"
+polycubectl firewall fw chain EGRESS batch rules=<<<$batch
 
 #listen and connect
 set +x

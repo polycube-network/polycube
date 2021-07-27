@@ -19,6 +19,7 @@
 #include "datapath_log.h"
 #include "exceptions.h"
 #include "patchpanel.h"
+#include "utils/utils.h"
 
 #include <iostream>
 
@@ -27,9 +28,10 @@ namespace polycubed {
 
 CubeTC::CubeTC(const std::string &name, const std::string &service_name,
                const std::vector<std::string> &ingress_code,
-               const std::vector<std::string> &egress_code, LogLevel level, bool shadow, bool span)
-    : Cube(name, service_name, PatchPanel::get_tc_instance(),
-           PatchPanel::get_tc_instance(), level, CubeType::TC, shadow, span) {
+               const std::vector<std::string> &egress_code, LogLevel level,
+               bool shadow, bool span)
+    : Cube(name, service_name, PatchPanel::get_tc_instance(), level,
+           CubeType::TC, shadow, span) {
   // it has to be done here becuase it needs the load, compile methods
   // to be ready
   Cube::init(ingress_code, egress_code);
@@ -55,24 +57,49 @@ std::string CubeTC::get_wrapper_code() {
          CUBETC_HELPERS;
 }
 
+std::string CubeTC::get_redirect_code() {
+  std::stringstream ss;
+
+  for(auto const& [index, val] : forward_chain_) {
+    ss << "case " << index << ":\n";
+    ss << "skb->cb[0] = " << val.first << ";\n";
+
+    if (val.second) {
+      // It is a net interface
+      ss << "return bpf_redirect(" << (val.first & 0xffff) << ", 0);\n";
+    } else {
+      ss << "nodes.call(skb, " << (val.first & 0xffff) << ");\n";
+    }
+
+    ss << "break;\n";
+  }
+
+  return ss.str();
+}
+
 void CubeTC::do_compile(int id, ProgramType type, LogLevel level_,
                         ebpf::BPF &bpf, const std::string &code, int index, bool shadow, bool span) {
+  std::string wrapper_code = get_wrapper_code();
+  utils::replaceStrAll(wrapper_code, "_REDIRECT_CODE", get_redirect_code());
+
   // compile ebpf program
-  std::string all_code(get_wrapper_code() +
+  std::string all_code(wrapper_code +
                        DatapathLog::get_instance().parse_log(code));
 
-  std::vector<std::string> cflags_(Cube::cflags);
-  cflags_.push_back("-DCUBE_ID=" + std::to_string(id));
-  cflags_.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
-  cflags_.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  std::vector<std::string> cflags(cflags_);
+  cflags.push_back("-DCUBE_ID=" + std::to_string(id));
+  cflags.push_back("-DLOG_LEVEL=LOG_" + logLevelString(level_));
+  cflags.push_back(std::string("-DCTXTYPE=") + std::string("__sk_buff"));
+  cflags.push_back(std::string("-DPOLYCUBE_PROGRAM_TYPE=" +
+                   std::to_string(static_cast<int>(type))));
   if (shadow) {
-    cflags_.push_back("-DSHADOW");
+    cflags.push_back("-DSHADOW");
     if (span)
-      cflags_.push_back("-DSPAN");
+      cflags.push_back("-DSPAN");
   }
 
   std::lock_guard<std::mutex> guard(bcc_mutex);
-  auto init_res = bpf.init(all_code, cflags_);
+  auto init_res = bpf.init(all_code, cflags);
 
   if (init_res.code() != 0) {
     // logger->error("failed to init bpf program: {0}", init_res.msg());
@@ -195,13 +222,16 @@ BPF_TABLE("extern", int, int, nodes, _POLYCUBE_MAX_NODES);
 BPF_PERF_OUTPUT(span_slowpath);
 #endif
 
-static __always_inline
-int to_controller(struct CTXTYPE *skb, u16 reason) {
-  skb->cb[1] = reason;
-  nodes.call(skb, CONTROLLER_MODULE_INDEX);
-  //bpf_trace_printk("to controller miss\n");
-  return TC_ACT_OK;
-}
+struct controller_table_t {
+  int key;
+  u32 leaf;
+  /* map.perf_submit(ctx, data, data_size) */
+  int (*perf_submit) (void *, void *, u32);
+  int (*perf_submit_skb) (void *, u32, void *, u32);
+  u32 data[0];
+};
+__attribute__((section("maps/extern")))
+struct controller_table_t controller_tc;
 
 #if defined(SHADOW) && defined(SPAN)
 static __always_inline
@@ -217,33 +247,34 @@ int pcn_pkt_drop(struct CTXTYPE *skb, struct pkt_metadata *md) {
 }
 
 static __always_inline
-int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
-                       u16 reason) {
-  md->reason = reason;
-  return RX_CONTROLLER;
-}
-
-static __always_inline
-int pcn_pkt_controller_with_metadata_stack(struct CTXTYPE *skb,
-                                           struct pkt_metadata *md,
-                                           u16 reason,
-                                           u32 metadata[3]) {
-  skb->cb[0] |= 0x8000;
-  skb->cb[2] = metadata[0];
-  skb->cb[3] = metadata[1];
-  skb->cb[4] = metadata[2];
-  return pcn_pkt_controller(skb, md, reason);
-}
-
-static __always_inline
 int pcn_pkt_controller_with_metadata(struct CTXTYPE *skb,
                                      struct pkt_metadata *md,
                                      u16 reason,
                                      u32 metadata[3]) {
-  skb->cb[2] = metadata[0];
-  skb->cb[3] = metadata[1];
-  skb->cb[4] = metadata[2];
+  md->md[0] = metadata[0];
+  md->md[1] = metadata[1];
+  md->md[2] = metadata[2];
   return pcn_pkt_controller(skb, md, reason);
+}
+
+static __always_inline
+void call_ingress_program_with_metadata(struct CTXTYPE *skb,
+                                        struct pkt_metadata *md, int index) {
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md->traffic_class;
+
+  call_ingress_program(skb, index);
+}
+
+static __always_inline
+void call_egress_program_with_metadata(struct CTXTYPE *skb,
+                                       struct pkt_metadata *md, int index) {
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md->traffic_class;
+
+  call_egress_program(skb, index);
 }
 )";
 
@@ -298,13 +329,10 @@ int pcn_vlan_push_tag(struct CTXTYPE *ctx, u16 eth_proto, u32 vlan_id) {
 const std::string CubeTC::CUBETC_WRAPPER = R"(
 static __always_inline
 int forward(struct CTXTYPE *skb, u32 out_port) {
-  u32 *next = forward_chain_.lookup(&out_port);
-  if (next) {
-    skb->cb[0] = *next;
-    //bpf_trace_printk("fwd: port: %d, next: 0x%x\n", out_port, *next);
-    nodes.call(skb, *next & 0xffff);
+  switch (out_port) {
+    _REDIRECT_CODE;
   }
-  //bpf_trace_printk("fwd:%d=0\n", out_port);
+
   return TC_ACT_SHOT;
 }
 
@@ -327,6 +355,7 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
   md.in_port = x >> 16;
   md.cube_id = CUBE_ID;
   md.packet_len = skb->len;
+  md.traffic_class = skb->mark;
   skb->cb[0] = md.in_port << 16 | CUBE_ID;
 
   // Check if the cube is shadow and the in_port has odd index
@@ -343,20 +372,44 @@ int handle_rx_wrapper(struct CTXTYPE *skb) {
 
   int rc = handle_rx(skb, &md);
 
+  // Save the traffic class for the next program in case it was changed
+  // by the current one
+  skb->mark = md.traffic_class;
+
   switch (rc) {
     case RX_REDIRECT:
       // FIXME: reason is right, we are reusing the field
       return forward(skb, md.reason);
     case RX_DROP:
       return TC_ACT_SHOT;
-    case RX_CONTROLLER:
-      return to_controller(skb, md.reason);
-    case RX_OK:
+    case RX_OK: {
+#if POLYCUBE_PROGRAM_TYPE == 1  // EGRESS
+      // If there is another egress program call it, otherwise let the packet
+      // pass
+
+      int port = md.in_port;
+      u16 *next = egress_next.lookup(&port);
+      if (!next) {
+        return TC_ACT_SHOT;
+      }
+
+      if (*next == 0) {
+        return TC_ACT_SHOT;
+      } else if (*next == 0xffff) {
+        return TC_ACT_OK;
+      } else {
+        nodes.call(skb, *next);
+      }
+
+#else  // INGRESS
       return TC_ACT_OK;
+#endif
+    }
   }
   return TC_ACT_SHOT;
 }
 
+#if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *skb,
                      struct pkt_metadata *md, u32 port) {
@@ -368,6 +421,7 @@ int pcn_pkt_redirect(struct CTXTYPE *skb,
 #endif
   return RX_REDIRECT;
 }
+#endif
 
 static __always_inline
 int pcn_pkt_redirect_ns(struct CTXTYPE *skb,
@@ -380,6 +434,24 @@ int pcn_pkt_redirect_ns(struct CTXTYPE *skb,
   return RX_REDIRECT;
 #endif
   return TC_ACT_SHOT;
+}
+
+static __always_inline
+int pcn_pkt_controller(struct CTXTYPE *skb, struct pkt_metadata *md,
+                       u16 reason) {
+  // If the packet is tagged add the tagged in the packet itself, otherwise it
+  // will be lost
+  if (skb->vlan_present) {
+    volatile __u32 vlan_tci = skb->vlan_tci;
+    volatile __u32 vlan_proto = skb->vlan_proto;
+    bpf_skb_vlan_push(skb, vlan_proto, vlan_tci);
+  }
+
+  md->cube_id = CUBE_ID;
+  md->packet_len = skb->len;
+  md->reason = reason;
+
+  return controller_tc.perf_submit_skb(skb, skb->len, md, sizeof(*md));
 }
 )";
 

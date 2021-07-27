@@ -192,6 +192,14 @@ std::vector<std::shared_ptr<BaseCubeIface>> CubeFactoryImpl::get_cubes() {
 
   return r;
 }
+//return all names of running cubes of a certain service
+std::vector<std::string> CubeFactoryImpl::get_names_cubes() const {
+   std::vector<std::string> ret;
+   for(auto i: cubes_) {
+     ret.push_back(i.first);
+   }
+   return ret;
+}
 
 }  // namespace polycubed
 }  // namespace polycube

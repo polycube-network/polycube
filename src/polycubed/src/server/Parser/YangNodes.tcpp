@@ -64,7 +64,7 @@ std::string Yang::FetchExtensionByIndex(lys_ext_instance **extensions,
 
 void Yang::ParseModule(
     const lys_module *module, std::queue<std::string> parsed_names,
-    const std::shared_ptr<Resources::Endpoint::Service> &cube) {
+    const std::shared_ptr<Resources::Endpoint::Service> &cube, ServiceMetadata *md) {
   auto typedefs = module->tpdf;
   for (auto i = 0; i < module->tpdf_size; ++i) {
     const auto &current_typedef = typedefs[i];
@@ -76,7 +76,7 @@ void Yang::ParseModule(
   while (data) {
     ParseNode(data, parsed_names,
               std::static_pointer_cast<Resources::Body::ParentResource>(cube),
-              true);
+              true, md);
     data = data->next;
   }
 }
@@ -84,47 +84,47 @@ void Yang::ParseModule(
 void Yang::ParseNode(
     const lys_node *data, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    bool generate_endpoint) const {
+    bool generate_endpoint, ServiceMetadata *md) const {
   switch (data->nodetype) {
   case LYS_UNKNOWN:
     break;
   case LYS_CONTAINER:
     ParseContainer(reinterpret_cast<const lys_node_container *>(data),
-                   std::move(parsed_names), parent, generate_endpoint);
+                   std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_CHOICE:
     ParseChoice(reinterpret_cast<const lys_node_choice *>(data),
-                std::move(parsed_names), parent, generate_endpoint);
+                std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_LEAF:
     ParseLeaf(reinterpret_cast<const lys_node_leaf *>(data),
-              std::move(parsed_names), parent, generate_endpoint);
+              std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_LEAFLIST:
     ParseLeafList(reinterpret_cast<const lys_node_leaflist *>(data),
-                  std::move(parsed_names), parent, generate_endpoint);
+                  std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_LIST:
     ParseList(reinterpret_cast<const lys_node_list *>(data),
-              std::move(parsed_names), parent, generate_endpoint);
+              std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_ANYXML:
     ParseAny(reinterpret_cast<const lys_node_anydata *>(data),
-             std::move(parsed_names), parent, generate_endpoint);
+             std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_CASE:
     ParseCase(reinterpret_cast<const lys_node_case *>(data),
-              std::move(parsed_names), parent, generate_endpoint);
+              std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_NOTIF:
     throw std::invalid_argument("notification not supported");
   case LYS_RPC:
     ParseRpcAction(reinterpret_cast<const lys_node_rpc_action *>(data),
-                   std::move(parsed_names), parent);
+                   std::move(parsed_names), parent, md);
     break;
   case LYS_INPUT:
     ParseInput(reinterpret_cast<const lys_node_inout *>(data),
-               std::move(parsed_names), parent);
+               std::move(parsed_names), parent, md);
     break;
   case LYS_OUTPUT:
     break;
@@ -132,17 +132,17 @@ void Yang::ParseNode(
     break;
   case LYS_USES:
     ParseUses(reinterpret_cast<const lys_node_uses *>(data),
-              std::move(parsed_names), parent, generate_endpoint);
+              std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_AUGMENT:
     break;
   case LYS_ACTION:
     ParseRpcAction(reinterpret_cast<const lys_node_rpc_action *>(data),
-                   std::move(parsed_names), parent);
+                   std::move(parsed_names), parent, md);
     break;
   case LYS_ANYDATA:
     ParseAny(reinterpret_cast<const lys_node_anydata *>(data),
-             std::move(parsed_names), parent, generate_endpoint);
+             std::move(parsed_names), parent, generate_endpoint, md);
     break;
   case LYS_EXT:
     break;
@@ -152,7 +152,7 @@ void Yang::ParseNode(
 void Yang::ParseContainer(
     const lys_node_container *data, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    bool generate_endpoint) const {
+    bool generate_endpoint, ServiceMetadata *md) const {
   std::shared_ptr<Resources::Body::ParentResource> resource;
   parsed_names.emplace(data->name);
   std::string description =
@@ -187,7 +187,7 @@ void Yang::ParseContainer(
   }
   auto child = data->child;
   while (child != nullptr) {
-    ParseNode(child, parsed_names, resource, generate_endpoint);
+    ParseNode(child, parsed_names, resource, generate_endpoint, md);
     child = child->next;
   }
   parent->AddChild(std::move(resource));
@@ -196,10 +196,10 @@ void Yang::ParseContainer(
 void Yang::ParseUses(
     const lys_node_uses *group, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   auto child = group->child;
   while (child) {
-    ParseNode(child, parsed_names, parent, generate_endpoint);
+    ParseNode(child, parsed_names, parent, generate_endpoint, md);
     child = child->next;
   }
 }
@@ -207,11 +207,30 @@ void Yang::ParseUses(
 void Yang::ParseList(
     const lys_node_list *list, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   std::vector<Resources::Body::ListKey> keys{};
   // maps the original key name with the one fixed (in case of duplicate
   // names in the YANG tree
   auto key_name_fixed = std::unordered_map<std::string, std::string>();
+  /*
+  Check that in the element of the yang that is being parsed (in this case a list), 
+  there are the extensions used to define the metrics. 
+  If name_metric is empty then it means that they are not present and I skip the if directly.
+  */
+  const auto &name_metric = FetchExtensionByIndex(
+      list->ext,
+      GetExtensionIndex(list->ext, list->ext_size, "name-metric", 11));
+ if(!name_metric.empty()) {
+     const auto &type_metric = FetchExtensionByIndex(list->ext,
+             GetExtensionIndex(list->ext, list->ext_size, "type-metric", 11));
+     const auto &path_metric = FetchExtensionByIndex( list->ext,
+             GetExtensionIndex(list->ext, list->ext_size, "path-metric", 11));
+     const auto &help_metric = FetchExtensionByIndex( list->ext,
+             GetExtensionIndex(list->ext, list->ext_size, "help-metric", 11));
+    const auto &type_operation = FetchExtensionByIndex( list->ext,
+             GetExtensionIndex(list->ext, list->ext_size, "type-operation", 11));
+     md->Metrics.push_back({name_metric,type_metric,path_metric,help_metric,type_operation});
+ }
   std::string rest_endpoint;
   std::string rest_endpoint_multiple;
   parsed_names.emplace(list->name);
@@ -282,9 +301,9 @@ void Yang::ParseList(
   child = list->child;
   while (child != nullptr) {
     if (key_name_fixed.count(child->name) == 0) {
-      ParseNode(child, parsed_names, resource, generate_endpoint);
+      ParseNode(child, parsed_names, resource, generate_endpoint, md);
     } else {
-      ParseNode(child, parsed_names, resource, false);
+      ParseNode(child, parsed_names, resource, false, md);
       // TODO: we can pass this in the ParseNode parameter list, but that'd
       // require to change the signature of all functions, let's skip for now
       resource->Child(child->name)->SetIsKey(true);
@@ -297,10 +316,29 @@ void Yang::ParseList(
 void Yang::ParseLeaf(
     const lys_node_leaf *leaf, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   const auto &cli_example = FetchExtensionByIndex(
       leaf->ext,
       GetExtensionIndex(leaf->ext, leaf->ext_size, "cli-example", 11));
+  const auto &name_metric = FetchExtensionByIndex(
+      leaf->ext,
+      GetExtensionIndex(leaf->ext, leaf->ext_size, "name-metric", 11));
+  if(!name_metric.empty()) {
+      const auto &type_metric = FetchExtensionByIndex(
+              leaf->ext,
+              GetExtensionIndex(leaf->ext, leaf->ext_size, "type-metric", 11));
+      const auto &path_metric = FetchExtensionByIndex(
+              leaf->ext,
+              GetExtensionIndex(leaf->ext, leaf->ext_size, "path-metric", 11));
+      const auto &help_metric = FetchExtensionByIndex(
+              leaf->ext,
+              GetExtensionIndex(leaf->ext, leaf->ext_size, "help-metric", 11));
+      const auto &type_operation = FetchExtensionByIndex(
+              leaf->ext,
+              GetExtensionIndex(leaf->ext, leaf->ext_size, "type-operation", 11));
+
+      md->Metrics.push_back({name_metric,type_metric,path_metric,help_metric,type_operation});
+  }
   bool configuration = ((leaf->flags & LYS_CONFIG_MASK) ^ 2) != 0;
   bool init_only_config = (configuration)
                               ? GetExtensionIndex(leaf->ext, leaf->ext_size,
@@ -363,7 +401,7 @@ void Yang::ParseLeaf(
 void Yang::ParseLeafList(
     const lys_node_leaflist *leaflist, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   const auto &cli_example = FetchExtensionByIndex(
       leaflist->ext,
       GetExtensionIndex(leaflist->ext, leaflist->ext_size, "cli-example", 11));
@@ -419,7 +457,7 @@ void Yang::ParseLeafList(
 void Yang::ParseChoice(
     const lys_node_choice *choice, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   // TODO not clear how to manage parsed_names here
   bool mandatory = (choice->flags & LYS_MAND_MASK) != 0;
   std::unique_ptr<const std::string> default_case = nullptr;
@@ -444,7 +482,7 @@ void Yang::ParseChoice(
   }
   auto child = choice->child;
   while (child != nullptr) {
-    ParseNode(child, parsed_names, resource, generate_endpoint);
+    ParseNode(child, parsed_names, resource, generate_endpoint, md);
     child = child->next;
   }
   parent->AddChild(std::move(resource));
@@ -453,7 +491,7 @@ void Yang::ParseChoice(
 void Yang::ParseCase(
     const lys_node_case *case_node, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    const bool generate_endpoint) const {
+    const bool generate_endpoint, ServiceMetadata *md) const {
   const auto &cli_example = FetchExtensionByIndex(
       case_node->ext, GetExtensionIndex(case_node->ext, case_node->ext_size,
                                         "cli-example", 11));
@@ -470,7 +508,7 @@ void Yang::ParseCase(
   }
   auto child = case_node->child;
   while (child != nullptr) {
-    ParseNode(child, parsed_names, resource, generate_endpoint);
+    ParseNode(child, parsed_names, resource, generate_endpoint, md);
     child = child->next;
   }
   parent->AddChild(std::move(resource));
@@ -478,11 +516,11 @@ void Yang::ParseCase(
 
 void Yang::ParseInput(
     const lys_node_inout *data, std::queue<std::string> parsed_names,
-    const std::shared_ptr<Resources::Body::ParentResource> &parent) const {
+    const std::shared_ptr<Resources::Body::ParentResource> &parent, ServiceMetadata *md) const {
   parsed_names.emplace(data->name);
   auto child = data->child;
   while (child != nullptr) {
-    ParseNode(child, parsed_names, parent, false);
+    ParseNode(child, parsed_names, parent, false, md);
     child = child->next;
    }
 }
@@ -490,7 +528,7 @@ void Yang::ParseInput(
 void Yang::ParseAny(
     const lys_node_anydata *data, std::queue<std::string> parsed_names,
     const std::shared_ptr<Resources::Body::ParentResource> &parent,
-    bool generate_endpoint) const {
+    bool generate_endpoint, ServiceMetadata *md) const {
   const auto &cli_example = FetchExtensionByIndex(
       data->ext,
       GetExtensionIndex(data->ext, data->ext_size, "cli-example", 11));
@@ -535,7 +573,7 @@ void Yang::ParseAny(
 
 void Yang::ParseRpcAction(
     const lys_node_rpc_action *data, std::queue<std::string> parsed_names,
-    const std::shared_ptr<Resources::Body::ParentResource> &parent) const {
+    const std::shared_ptr<Resources::Body::ParentResource> &parent, ServiceMetadata *md) const {
   parsed_names.emplace(data->name);
   const auto &cli_example = FetchExtensionByIndex(
       data->ext,
@@ -553,7 +591,7 @@ void Yang::ParseRpcAction(
                             false, false, false, true);
   auto child = data->child;
   while (child != nullptr) {
-    ParseNode(child, parsed_names, action, false);
+    ParseNode(child, parsed_names, action, false, md);
     child = child->next;
   }
   parent->AddChild(std::move(action));
@@ -608,9 +646,9 @@ const std::shared_ptr<Resources::Endpoint::Service> Yang::Parse(
                             GetExtensionIndex(module_->ext, module_->ext_size,
                                               "service-version", 15)));
   for (auto i = 0; i < module_->imp_size; ++i) {
-    ParseModule(module_->imp[i].module, parsed_names, cube);
+    ParseModule(module_->imp[i].module, parsed_names, cube, md);
   }
-  ParseModule(module_, parsed_names, cube);
+  ParseModule(module_, parsed_names, cube, md);
   typedef_validators_->clear();
   return std::move(cube);
 }

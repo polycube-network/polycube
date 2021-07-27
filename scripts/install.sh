@@ -65,6 +65,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 source scripts/pre-requirements.sh
 
+echo "Install Prometheus-cpp"
+cd $DIR/../src/libs/prometheus-cpp
+set +e
+if [ -d _build ]; then
+    $SUDO rm -rf _build
+fi
+mkdir _build
+cd _build
+cmake .. -DBUILD_SHARED_LIBS=ON
+make -j $(getconf _NPROCESSORS_ONLN)
+$SUDO make install
+
+
 echo "Install polycube"
 cd $DIR/..
 if [ "$INSTALL_CLEAN_POLYCUBE" == true ] ; then
@@ -78,10 +91,13 @@ if [ "$MODE" == "update" ] ; then
   # from the current branch (default: master)
   git pull
   git submodule update --init --recursive
+
+  # Print the last commit in the current branch, just to make sure
+  # we're compiling exactly what we expect
+  git log -1
 fi
 
 mkdir -p build && cd build
-git log -1
 
 # depending on the mode different services are enabled
 if [ "$MODE" == "pcn-iptables" ]; then

@@ -141,6 +141,7 @@ std::shared_ptr<Rule> Nat::getRule() {
 }
 
 void Nat::addRule(const RuleJsonObject &value) {
+  logger()->info("Adding rule");
   rule_ = std::make_shared<Rule>(*this, value);
 }
 
@@ -150,7 +151,11 @@ void Nat::replaceRule(const RuleJsonObject &conf) {
 }
 
 void Nat::delRule() {
-  rule_ = nullptr;
+  rule_ = nullptr; //In this way we can call the destroyers of the rules Snat, Dnat, Port-Forwarding
+  // We need an "empty" rule_ like the one created at initialization in the constructor. 
+  // Otherwise there is an error in the display of the nat after the deletion. As in issue #352
+  RuleJsonObject empty_rule;
+  rule_ = std::make_shared<Rule>(*this, empty_rule); 
 }
 
 std::shared_ptr<NattingTable> Nat::getNattingTable(

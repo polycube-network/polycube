@@ -1,9 +1,12 @@
-.. _polycubectl:
-
-polycubectl: The Command Line Interface for Polycube
+polycubectl: the command-line interface for Polycube
 ====================================================
 
 ``polycubectl`` is the Command Line Interface (CLI) for Polycube.
+
+``polycubectl`` is a generic CLI, that enables the user to interact with ``Cubes`` (``bridge``, ``router``, ...) and with some framework primitives to ``connect``, ``show`` and build complex ``topologies``.
+
+``polycubectl`` does not need to be modified when a new cube is developed ad added to Polycube. Its service-agnostic nature, thanks to the use of YANG data models, enables the CLI to be service-independent.
+
 
 Install
 -------
@@ -14,11 +17,10 @@ Refer to :doc:`quickstart <../quickstart>` or general :doc:`install <../installa
 How to use
 ----------
 
-**NOTE**: ``polycubed`` must be running, in order to use ``polycubectl``.
+**NOTE**: ``polycubed`` must be running in order to use ``polycubectl``.
 You can start the daemon typing ``sudo polycubed`` in another terminal.
 Refer to :doc:`Quick Start <../quickstart>`.
 
-``polycubectl`` is a generic CLI, that enables the user to interact with ``Cubes`` (``bridge``, ``router``, ...) and with some framework primitives to ``connect``, ``show`` and build complex ``topologies``.
 
 ::
 
@@ -39,6 +41,7 @@ Refer to :doc:`Quick Start <../quickstart>`.
         pbforwarder       service   Policy-Based Forwarder Service
         bridge            service   Bridge Service
         nat               service   NAT Service
+        packetcapture     service   Packetcapture Service
 
         connect           command   Connect ports
         disconnect        command   Disconnect ports
@@ -51,8 +54,7 @@ Refer to :doc:`Quick Start <../quickstart>`.
         topology          command   Show topology of service instances
         netdevs           command   Show net devices available
 
-``polycubectl`` is service agnostic, hence the syntax is service dependent.
-However we can generalize the syntax as:
+The general syntax for ``polycubectl`` is the following:
 
 ::
 
@@ -171,10 +173,12 @@ Examples:
     # hide uuids and mac ports
     polycubectl router r0 show -hide=ports.uuid,ports.mac
 
+
 Tutorials
 ^^^^^^^^^
 
 More complete examples are available in :doc:`tutorials <../tutorials/index>`.
+
 
 .. _polycubectl-configuration:
 

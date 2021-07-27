@@ -116,15 +116,6 @@ class Firewall : public FirewallBase {
   FirewallConntrackEnum getConntrack() override;
   void setConntrack(const FirewallConntrackEnum &value) override;
 
-
-  /// <summary>
-  /// Interactive mode applies new rules immediately; if &#39;false&#39;, the
-  /// command &#39;apply-rules&#39; has to be used to apply all the rules at
-  /// once. Default is TRUE.
-  /// </summary>
-  bool getInteractive() override;
-  void setInteractive(const bool &value) override;
-
   static const int maxRules = 8192;
 
  private:
@@ -329,8 +320,7 @@ class Firewall : public FirewallBase {
    *==========================*/
 
  public:
-  bool interactive_ = true;
-  uint8_t conntrackMode = ConntrackModes::MANUAL;
+  uint8_t conntrackMode = ConntrackModes::AUTOMATIC;
 
  private:
   // Keeps the mapping between an index and the eBPF program, represented as a

@@ -572,7 +572,8 @@ ARP:;
         // send to the slowpath, it'll send to copies of this
         // - the original one
         // - one for the virtual IPs
-        return pcn_pkt_controller(ctx, md, 0);
+        pcn_pkt_controller(ctx, md, 0);
+        return RX_DROP;
       }
     }
     return pcn_pkt_redirect(ctx, md, BACKEND_PORT);

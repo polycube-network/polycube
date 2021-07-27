@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../serializer/ChainBatchInputJsonObject.h"
 #include "../serializer/ChainJsonObject.h"
 #include "../serializer/ChainAppendOutputJsonObject.h"
 #include "../serializer/ChainAppendInputJsonObject.h"
@@ -23,7 +24,6 @@
 #include "../serializer/ChainInsertInputJsonObject.h"
 #include "../serializer/ChainDeleteInputJsonObject.h"
 #include "../serializer/ChainResetCountersOutputJsonObject.h"
-#include "../serializer/ChainApplyRulesOutputJsonObject.h"
 
 #include "../ChainRule.h"
 #include "../ChainStats.h"
@@ -78,8 +78,8 @@ class ChainBase {
   virtual ChainAppendOutputJsonObject append(ChainAppendInputJsonObject input) = 0;
   virtual ChainInsertOutputJsonObject insert(ChainInsertInputJsonObject input) = 0;
   virtual void deletes(ChainDeleteInputJsonObject input) = 0;
+  virtual void batch(ChainBatchInputJsonObject input) = 0;
   virtual ChainResetCountersOutputJsonObject resetCounters() = 0;
-  virtual ChainApplyRulesOutputJsonObject applyRules() = 0;
 
   std::shared_ptr<spdlog::logger> logger();
  protected:

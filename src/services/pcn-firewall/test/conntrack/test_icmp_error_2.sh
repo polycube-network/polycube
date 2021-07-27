@@ -1,5 +1,12 @@
 source "${BASH_SOURCE%/*}/../helpers.bash"
 
+function fwsetup {
+  polycubectl firewall add fw
+  polycubectl attach fw veth1
+  polycubectl firewall fw chain INGRESS set default=DROP
+  polycubectl firewall fw chain EGRESS set default=DROP
+}
+
 function fwcleanup {
   set +e
   polycubectl firewall del fw
@@ -12,20 +19,16 @@ set -x
 
 create_veth 2
 
-polycubectl firewall add fw loglevel=DEBUG
-polycubectl attach fw veth1
-polycubectl firewall fw set interactive=false
+fwsetup
 
 # Allowing connections to be started only from NS2 to NS1
-polycubectl firewall fw chain INGRESS append l4proto=UDP action=FORWARD
-polycubectl firewall fw chain INGRESS append l4proto=ICMP conntrack=RELATED action=FORWARD
+polycubectl firewall fw chain INGRESS append l4proto=UDP action=ACCEPT
+polycubectl firewall fw chain INGRESS append l4proto=ICMP conntrack=RELATED action=ACCEPT
 polycubectl firewall fw chain INGRESS append l4proto=ICMP action=DROP
-polycubectl firewall fw chain INGRESS apply-rules
 
-polycubectl firewall fw chain EGRESS append l4proto=UDP action=FORWARD
-polycubectl firewall fw chain EGRESS append l4proto=ICMP conntrack=RELATED action=FORWARD
+polycubectl firewall fw chain EGRESS append l4proto=UDP action=ACCEPT
+polycubectl firewall fw chain EGRESS append l4proto=ICMP conntrack=RELATED action=ACCEPT
 polycubectl firewall fw chain EGRESS append l4proto=ICMP action=DROP
-polycubectl firewall fw chain EGRESS apply-rules
 
 set +x
 echo "ICMP Error Conntrack Test [Transaction mode]"
