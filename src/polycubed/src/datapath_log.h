@@ -51,7 +51,6 @@ class DatapathLog {
                                     const std::string &search,
                                     const std::string &replace);
   static std::string dp_callback(const std::smatch &m);
-  static std::string dp_callback_pkt(const std::smatch &m);
 
   // replaces all the log calls to the code that does it
   std::string parse_log(const std::string &code);

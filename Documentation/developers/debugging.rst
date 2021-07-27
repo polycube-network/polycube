@@ -90,16 +90,6 @@ Usage example:
   pcn_log(ctx, LOG_DEBUG, "Receiving packet from port %d", md->in_port);
 
 
-The ``pcn_pkt_log(ctx, level)`` primitive sends a packet to the control plane where it is printed in a tcpdump-like format.
-``ctx`` and ``level`` are the same as in ``pcn_log``.
-This feature is only designed for developers, so final version of services should not include this.
-
-Usage example:
-
-::
-
-  pcn_pkt_log(ctx, LOG_DEBUG);
-
 
 .. _logging-control-plane:
 

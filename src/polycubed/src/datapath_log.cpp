@@ -221,8 +221,6 @@ static std::regex regN(R"***(pcn_log\s*\(([\s\S]+?)\)\s*;)***");
 static std::regex regNewLine(R"***(/(\r\n)+|\r+|\n+|\t+/i)***");
 static std::regex regAddSpaces(R"***( +)***");
 
-static std::regex regNPkt(R"***(pcn_pkt_log\s*\(([\s\S]+?)\)\s*;)***");
-
 std::string DatapathLog::dp_callback(const std::smatch &m) {
   std::string match = std::regex_replace(m.str(1), regNewLine, "");
   match = std::regex_replace(match, regAddSpaces, " ");
@@ -231,21 +229,11 @@ std::string DatapathLog::dp_callback(const std::smatch &m) {
   return new_string;
 }
 
-std::string DatapathLog::dp_callback_pkt(const std::smatch &m) {
-  std::string match = std::regex_replace(m.str(1), regNewLine, "");
-  match = std::regex_replace(match, regAddSpaces, " ");
-  std::string new_string = std::string(REPLACE_BASE_PKT);
-  new_string = DatapathLog::replace_string(new_string, "$1", match);
-  return new_string;
-}
-
 std::string DatapathLog::parse_log(const std::string &code) {
   // remove all comments from the code before going on
   auto code1 = std::regex_replace(code, regComments, "$1");
   auto code2 = std::regex_replace_cb(code1, regN, DatapathLog::dp_callback);
-  auto code3 =
-      std::regex_replace_cb(code2, regNPkt, DatapathLog::dp_callback_pkt);
-  return BASE_CODE + code3;
+  return BASE_CODE + code2;
 }
 
 }  // namespace polycubed
