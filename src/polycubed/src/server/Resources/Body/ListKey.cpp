@@ -20,6 +20,7 @@
 #include <typeindex>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 namespace polycube::polycubed::Rest::Resources::Body {
 ListKey::ListKey(
