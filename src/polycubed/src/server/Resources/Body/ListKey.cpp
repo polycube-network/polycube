@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Polycube Authors
+ * Copyright 2018-2021 The Polycube Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "ListKey.h"
 
 #include <memory>
@@ -20,7 +21,7 @@
 #include <typeindex>
 #include <utility>
 #include <vector>
-#include <stdexcept>        // g++-10 requires to explicitly include stdexcept when using exceptions
+#include <stdexcept>        // g++ v10 requires to explicitly include stdexcept when using exceptions
 
 namespace polycube::polycubed::Rest::Resources::Body {
 ListKey::ListKey(
