@@ -20,7 +20,7 @@
 #include <typeindex>
 #include <utility>
 #include <vector>
-#include <stdexcept>
+#include <stdexcept>        // g++-10 requires to explicitly include stdexcept when using exceptions
 
 namespace polycube::polycubed::Rest::Resources::Body {
 ListKey::ListKey(
