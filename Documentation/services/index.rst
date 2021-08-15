@@ -7,6 +7,7 @@ This folder contains the list of services (a.k.a. *cubes*) currently available i
     :maxdepth: 2
 
     pcn-helloworld/helloworld
+    pcn-transparenthelloworld/transparenthelloworld
     pcn-simplebridge/simplebridge
     pcn-bridge/bridge
     pcn-simpleforwarder/simpleforwarder

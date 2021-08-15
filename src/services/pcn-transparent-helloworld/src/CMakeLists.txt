@@ -30,7 +30,7 @@ load_file_as_variable(pcn-transparenthelloworld
 
 # load datamodel in a variable
 load_file_as_variable(pcn-transparenthelloworld
-    ../datamodel/transparent-helloworld.yang transparenthelloworld_datamodel)
+    ../datamodel/transparenthelloworld.yang transparenthelloworld_datamodel)
 
 # Specify shared library install directory
 
