@@ -32,6 +32,7 @@ import (
 var (
 	ElementsType        string
 	ElementsDescription string
+	ElementsExample		string
 	IsRootHelp          = false
 	Output              = [][]string{}
 )
@@ -88,6 +89,7 @@ func getElementsTypeDescription(jsonParsed *gabs2.Container) {
 				if child.S("type").String() == "\"key\"" {
 					ElementsType = ElementsType + "<" + key + "> "
 					ElementsDescription = ElementsDescription + removeQuotes(child.S("description").String()) + " "
+					ElementsExample = ElementsExample + removeQuotes(child.S("example").String()) + " "
 				}
 			}
 		}
@@ -98,8 +100,21 @@ func printRootHelp() {
 	Buffer += fmt.Sprintf("For help on keywords use '?'\n")
 }
 
-func printHeader() {
-	Output = append(Output, []string{"Keyword", "Type", "Description"})
+func printHeader(cliArgs *cliargs.CLIArgs) {
+	/*
+	In this way we can distinguish the two cases.
+	In the if there are another two cases:
+		1. An ad hoc Example is displayed
+		2. This is a generic help for everything and adding Example also carries the risk of having 
+		an overflow warning regarding the bytes loaded in Output
+	In the else, an example taken from yang is displayed for each line (if any)
+	*/
+	if (cliArgs.Command == cliargs.AddCommand || cliArgs.Command == cliargs.DelCommand) ||
+		(len(cliArgs.PathArgs) == 0 && cliArgs.Command == "") {
+		Output = append(Output, []string{"Keyword", "Type", "Description"})
+	} else {
+		Output = append(Output, []string{"Keyword", "Type", "Description", "Example"})
+	}
 }
 
 func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
@@ -127,7 +142,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 	if cliArgs.Command == cliargs.AddCommand {
 		children, _ := jsonParsed.S("params").ChildrenMap()
 		if len(children.Keys()) > 0 {
-			printHeader()
+			printHeader(cliArgs)
 			countLines++
 		}
 		for _, key := range children.Keys() {
@@ -135,7 +150,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			child := child_.(*gabs2.Container)
 			Output = append(Output, []string{"<" + key + ">",
 				typeStr(child),
-				removeQuotes(child.S("description").String())})
+				removeQuotes(child.S("description").String()),
+				removeQuotes(child.S("example").String())}) 
 			example += removeQuotes(child.S("example").String()) + " "
 		}
 
@@ -152,7 +168,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			child := child_.(*gabs2.Container)
 			Output = append(Output, []string{key + "=value",
 				typeStr(child),
-				removeQuotes(child.S("description").String())})
+				removeQuotes(child.S("description").String()),
+				removeQuotes(child.S("example").String())}) 
 			param_example := removeQuotes(child.S("example").String())
 			if param_example != "" {
 				example += key + "=" + param_example + " "
@@ -172,7 +189,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 				}
 			}
 			if count > 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 				for _, key := range children.Keys() {
 					child_, _ := children.Get(key)
@@ -180,7 +197,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 					if child.S("type").String() != "\"key\"" {
 						Output = append(Output, []string{key,
 							typeStr(child),
-							removeQuotes(child.S("description").String())})
+							removeQuotes(child.S("description").String()),
+							removeQuotes(child.S("example").String())})
 					}
 				}
 			}
@@ -189,7 +207,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 		elements, _ := jsonParsed.S("elements").Children()
 		if len(elements) > 0 {
 			if countLines == 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 			}
 
@@ -217,7 +235,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			if children != nil {
 				if len(children.Keys()) > 0 {
 					if countLines == 0 {
-						printHeader()
+						printHeader(cliArgs)
 					}
 					countLines++
 				}
@@ -227,7 +245,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 					if child.S("type").String() == "\"key\"" {
 						Output = append(Output, []string{"<" + key + ">",
 							typeStr(child),
-							removeQuotes(child.S("description").String())})
+							removeQuotes(child.S("description").String()),
+							removeQuotes(child.S("example").String())})
 						//example += removeQuotes(child.S("example").String()) + " "
 					}
 				}
@@ -238,7 +257,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 	if cliArgs.Command == cliargs.SetCommand {
 		children, _ := jsonParsed.S("params").ChildrenMap()
 		if len(children.Keys()) > 0 {
-			printHeader()
+			printHeader(cliArgs)
 			countLines++
 		}
 		for _, key := range children.Keys() {
@@ -246,7 +265,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			child := child_.(*gabs2.Container)
 			Output = append(Output, []string{key + "=value",
 				typeStr(child),
-				removeQuotes(child.S("description").String())})
+				removeQuotes(child.S("description").String()),
+				removeQuotes(child.S("example").String())})
 		}
 	}
 
@@ -254,7 +274,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 		elements, _ := jsonParsed.S("elements").Children()
 		if len(elements) > 0 {
 			if countLines == 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 			}
 
@@ -279,7 +299,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 		} else {
 			children, _ := jsonParsed.S("params").ChildrenMap()
 			if len(children.Keys()) > 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 			}
 			for _, key := range children.Keys() {
@@ -287,7 +307,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 				child := child_.(*gabs2.Container)
 				Output = append(Output, []string{"<" + key + ">",
 					typeStr(child),
-					removeQuotes(child.S("description").String())})
+					removeQuotes(child.S("description").String()),
+					removeQuotes(child.S("example").String())})
 				example += removeQuotes(child.S("example").String()) + " "
 			}
 		}
@@ -296,7 +317,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 	if cliArgs.Command == "" {
 		commands, _ := jsonParsed.S("commands").Children()
 		if len(commands) > 0 {
-			printHeader()
+			printHeader(cliArgs)
 			countLines++
 		}
 		for _, child := range commands {
@@ -323,7 +344,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			}
 			if count > 0 {
 				if countLines == 0 {
-					printHeader()
+					printHeader(cliArgs)
 					countLines++
 				}
 				for _, key := range children.Keys() {
@@ -332,7 +353,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 					if child.S("type").String() != "\"key\"" {
 						Output = append(Output, []string{key + valuePost,
 							typeStr(child),
-							removeQuotes(child.S("description").String())})
+							removeQuotes(child.S("description").String()),
+							removeQuotes(child.S("example").String())})
 					}
 				}
 			}
@@ -341,7 +363,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 		elements, _ := jsonParsed.S("elements").Children()
 		if len(elements) > 0 {
 			if countLines == 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 			}
 			getElementsTypeDescription(jsonParsed)
@@ -361,7 +383,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 			if err == nil {
 				if len(children.Keys()) > 0 {
 					if countLines == 0 {
-						printHeader()
+						printHeader(cliArgs)
 					}
 					countLines++
 				}
@@ -371,7 +393,8 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 					if child.S("type").String() == "\"key\"" {
 						Output = append(Output, []string{"<" + key + ">",
 							typeStr(child),
-							removeQuotes(child.S("description").String())})
+							removeQuotes(child.S("description").String()),
+							removeQuotes(child.S("example").String())})
 					}
 				}
 			}
@@ -380,7 +403,7 @@ func printHelp(cliArgs *cliargs.CLIArgs, jsonParsed *gabs2.Container) {
 		actions, _ := jsonParsed.S("actions").Children()
 		if len(actions) > 0 {
 			if countLines == 0 {
-				printHeader()
+				printHeader(cliArgs)
 				countLines++
 			}
 			for _, child := range actions {
