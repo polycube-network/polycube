@@ -20,7 +20,7 @@ type K8switch struct {
 	// Type of the Cube (TYPE_TC, TYPE_XDP_SKB, TYPE_XDP_DRV)
 	Type_ string `json:"type,omitempty"`
 
-	// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+	// Logging level of a cube, from none (OFF) to the most verbose (TRACE)
 	Loglevel string `json:"loglevel,omitempty"`
 
 	// Entry of the ports table

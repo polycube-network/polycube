@@ -5975,7 +5975,7 @@ FirewallApiService Update loglevel by ID
 Update operation of resource: loglevel
  * @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param name ID of name
- * @param loglevel Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+ * @param loglevel Logging level of a cube, from none (OFF) to the most verbose (TRACE)
 
 
 */

@@ -1471,7 +1471,7 @@ func (a *K8sfilterApiService) UpdateK8sfilterListByID(k8sfilter []K8sfilter) ( *
  Update operation of resource: loglevel
 
  @param name ID of name
- @param loglevel Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+ @param loglevel Logging level of a cube, from none (OFF) to the most verbose (TRACE)
  @return */
 func (a *K8sfilterApiService) UpdateK8sfilterLoglevelByID(name string, loglevel string) ( *http.Response, error) {
 	var (

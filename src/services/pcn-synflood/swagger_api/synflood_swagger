@@ -485,7 +485,7 @@
                         "name": "name"
                     },
                     {
-                        "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                        "description": "Logging level of a cube, from none (OFF) to the most verbose (TRACE)",
                         "required": true,
                         "name": "loglevel",
                         "x-is-enum": "true",
@@ -502,7 +502,7 @@
                                 "OFF"
                             ],
                             "type": "string",
-                            "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                            "description": "Logging level of a cube, from none (OFF) to the most verbose (TRACE)",
                             "example": "INFO"
                         }
                     }
@@ -537,7 +537,7 @@
                                 "OFF"
                             ],
                             "type": "string",
-                            "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                            "description": "Logging level of a cube, from none (OFF) to the most verbose (TRACE)",
                             "example": "INFO"
                         }
                     },
@@ -911,7 +911,7 @@
                     "x-is-base-datamodel": true
                 },
                 "loglevel": {
-                    "description": "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)",
+                    "description": "Logging level of a cube, from none (OFF) to the most verbose (TRACE)",
                     "default": "INFO",
                     "enum": [
                         "TRACE",

@@ -17,7 +17,7 @@ type Firewall struct {
 	// Type of the Cube (TC, XDP_SKB, XDP_DRV)
 	Type_ string `json:"type,omitempty"`
 	ServiceName string `json:"service-name,omitempty"`
-	// Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+	// Logging level of a cube, from none (OFF) to the most verbose (TRACE)
 	Loglevel string `json:"loglevel,omitempty"`
 	// Enables the Connection Tracking module. Mandatory if connection tracking rules are needed. Default is ON.
 	Conntrack string `json:"conntrack,omitempty"`
