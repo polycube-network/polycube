@@ -24,6 +24,7 @@ module transparenthelloworld {
     }
     default PASS;
     description "Action performed on ingress packets";
+    polycube-base:cli-example "DROP/PASS/SLOWPATH (default: PASS)";
   }
 
   leaf egress-action {
@@ -34,5 +35,6 @@ module transparenthelloworld {
     }
     default PASS;
     description "Action performed on egress packets";
+    polycube-base:cli-example "DROP/PASS/SLOWPATH (default: PASS)";
   }
 }

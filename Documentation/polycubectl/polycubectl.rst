@@ -139,7 +139,7 @@ Help
         <name>              string   Name of the router service
 
         Other parameters:
-        loglevel=value      string   Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+        loglevel=value      string   Logging level of a cube, from none (OFF) to the most verbose (TRACE)
 
         Example:
         polycubectl router add router1 loglevel=INFO

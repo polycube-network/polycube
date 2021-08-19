@@ -114,7 +114,7 @@ module polycube-base {
         enum OFF;
       }
       default INFO;
-      description "Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)";
+      description "Logging level of a cube, from none (OFF) to the most verbose (TRACE)";
       polycube-base:cli-example "INFO";
     }
   }

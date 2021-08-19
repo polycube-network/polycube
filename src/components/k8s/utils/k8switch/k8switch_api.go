@@ -3948,7 +3948,7 @@ func (a *K8switchApiService) UpdateK8switchListByID(k8switch []K8switch) ( *http
  Update operation of resource: loglevel
 
  @param name ID of name
- @param loglevel Defines the logging level of a service instance, from none (OFF) to the most verbose (TRACE)
+ @param loglevel Logging level of a cube, from none (OFF) to the most verbose (TRACE)
  @return */
 func (a *K8switchApiService) UpdateK8switchLoglevelByID(name string, loglevel string) ( *http.Response, error) {
 	var (
