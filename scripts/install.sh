@@ -23,6 +23,13 @@ function success_message {
   set +x
   echo
   echo 'Installation completed successfully'
+  echo
+  echo 'You can now start the polycube daemon:'
+  echo '  manually:     sudo polycubed &'
+  echo '  with systemd: sudo systemctl start polycubed'
+  echo 'and then interact with it using the Polycube command line:'
+  echo '  polycubectl -h'
+  echo
   exit 0
 }
 trap error_message ERR
