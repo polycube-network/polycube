@@ -224,6 +224,8 @@ These primitives allow to associate transparent cubes to standard cube's ports o
   polycubectl attach firewall0 veth1
 
 
+.. _span-mode:
+
 Span Mode
 ---------
 
@@ -238,3 +240,24 @@ However, the span mode consumes many resources when it is active, so it is disab
 
 N.B. Span mode duplicates traffic so that it is shown by the namespace, the cube continues to handle traffic.
 For this reason, for example, if we have a shadow router with active span mode we should not have Ip forwarding active on Linux, otherwise the router service forwards packets and copies them to the namespace, the namespace forwards again packets and there will be duplications.
+
+
+
+Hook point
+----------
+
+
+A service can be attached to either the ``TC``, ``XDP_SKB`` and ``XDP_DRV`` eBPF hooks. The ``XDP_DRV`` can be used only if it is supported by your NIC driver.
+
+To create a service cube and select the desired hook point, just use this command:
+
+::
+
+  polycubectl <service name> add <cube name>  type=<hook point>
+
+
+For example if we want to create an instance of the router service and attach it to the XDP_SKB hook point:
+
+::
+
+  polycubectl router add r1  type=XDP_SKB
