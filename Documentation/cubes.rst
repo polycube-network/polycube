@@ -243,21 +243,24 @@ For this reason, for example, if we have a shadow router with active span mode w
 
 
 
-Hook point
-----------
+Hook points
+-----------
 
-
-A service can be attached to either the ``TC``, ``XDP_SKB`` and ``XDP_DRV`` eBPF hooks. The ``XDP_DRV`` can be used only if it is supported by your NIC driver.
+Differently from traditional eBPF programs, a Polycube service is created in a way that works when attached to either ``TC``, ``XDP_SKB`` or ``XDP_DRV`` eBPF hooks.
+Hence, you can attach aPolycube service to either the ``TC``, ``XDP_SKB`` and ``XDP_DRV`` eBPF hooks, based on your preference, at run-time.
+The ``XDP_DRV``, which can guarantee the best performance, can be used only if it is supported by your NIC driver.
 
 To create a service cube and select the desired hook point, just use this command:
 
 ::
 
-  polycubectl <service name> add <cube name>  type=<hook point>
+  polycubectl <service name> add <cube name> type=<hook point>
 
 
-For example if we want to create an instance of the router service and attach it to the XDP_SKB hook point:
+For example if you want to create an instance of the router service and attach it to the XDP_SKB hook point:
 
 ::
 
-  polycubectl router add r1  type=XDP_SKB
+  polycubectl router add r1 type=XDP_SKB
+
+By default, a service is attached to ``TC``.
