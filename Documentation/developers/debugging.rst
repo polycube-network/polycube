@@ -193,14 +193,18 @@ If you use CLion, you can debug Polycube with the following steps:
 3. At this point there are two equivalent ways to debug Polycube with CLion:
 
    a. Use the CLion debugger: at the top right select Debug 'polycube';
-   b. (or) Run Polycube in a terminal like that ``sudo polycubed --loglevel = DEBUG`` in order to enable the Polycube Debug logs and then from CLion, go to Run->Attach to Process.. and search for "polycubed"
+   b. (or) Run Polycube in a terminal with enabled debug logs (e.g., ``sudo polycubed --loglevel = DEBUG``); then, from CLion, go to Run->Attach to Process.. and search for "polycubed"
 
-4. At this point, from another terminal, just use ``polycubectl`` to interact with Polycube
+4. At this point, from another terminal, just use ``polycubectl`` to interact with Polycube.
 
 
 
-Debugging using tcpdump/Wireshark
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Debugging network traffic using tcpdump/Wireshark
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Debugging (i.e., sniffing) network traffic frlowing *between* two Polycube services (e.g., on the link that connects a Polycube router to a Polycube bridge) can be achieved with the :ref:`span mode <span-mode>`.
+Please refer to that section for more details and for some working examples.
+
 
 Let's see how to capture packets using the concepts of shadow port and :ref:`span mode <span-mode>` to see what happens. 
 The topology used is a simpler version of the shadow type test3 of the router service, in order to understand well the various components, how to use tcpdump/Wireshark and understand what happens.
