@@ -265,5 +265,3 @@ Note that the span mode consumes many resources when it is active, so it is disa
 **Note**. Span mode duplicates traffic in the dedicated namespace, but the cube continues to handle traffic as usual.
 This could create some problems when the Linux kernel is involved in the processing.
 For example, if we have a shadow router with active span mode we should avoid to activate the IP forwarding on Linux, otherwise the router service forwards packets and copies them to the namespace, the namespace forwards again packets and there will be a lot of duplicated traffic.
-
-
