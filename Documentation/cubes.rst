@@ -224,25 +224,6 @@ These primitives allow to associate transparent cubes to standard cube's ports o
   polycubectl attach firewall0 veth1
 
 
-.. _span-mode:
-
-Span Mode
----------
-
-The shadow cubes have a mode called **span**.
-
-The span mode when activated shows all the traffic seen by the service also to the namespace.
- - To activate the span mode the command used is "``polycubectl <cubename> set span=true``".
-
-Span mode is very useful for debugging; On a shadow cube in span mode programs such as Wireshark or Tcpdump can sniff the traffic.
-
-However, the span mode consumes many resources when it is active, so it is disabled by default and it is recommended to use it only when necessary.
-
-N.B. Span mode duplicates traffic so that it is shown by the namespace, the cube continues to handle traffic.
-For this reason, for example, if we have a shadow router with active span mode we should not have Ip forwarding active on Linux, otherwise the router service forwards packets and copies them to the namespace, the namespace forwards again packets and there will be duplications.
-
-
-
 Hook points
 -----------
 
@@ -264,3 +245,25 @@ For example if you want to create an instance of the router service and attach i
   polycubectl router add r1 type=XDP_SKB
 
 By default, a service is attached to ``TC``.
+
+
+.. _span-mode:
+
+Traffic debugging with Span Mode
+--------------------------------
+While the traffic flowing on a network device (e.g., veth0) can be captured and analyzed with tools such as Wireshark or tcpdump, the traffic flowing through an eBPF chain (e.g, a Polycube router connected to a Polycube bridge) is not visible outside eBPF, hence it cannot be captured by a sniffing program.
+
+To overcome this problem, shadow cubes have a mode called **span** that allow to duplicate (hence, capture and analyze) all the service traffic to a virtual network device; for who comes from 'traditional' hardware networking, this is the term that is often used when you want to duplicate the traffic from a first port of a network device to a second port of the same network device, e.g., to analyze the incoming data.
+
+Span mode is very useful for debugging; a traditional sniffing program such as Wireshark or Tcpdump can sniff all the traffic flowing through a shadow cube, selecting each port.
+When this feature is enabled, a cube duplicates all its traffic to a dedicated namespace, in which different (virtual) network interfaces are created that duplicate exatly the traffic of their associated network port.
+
+To activate the span mode, use the following command: ``polycubectl <cubename> set span=true``.
+
+Note that the span mode consumes many resources when it is active, so it is disabled by default; we recommend to use it only when needed.
+
+**Note**. Span mode duplicates traffic in the dedicated namespace, but the cube continues to handle traffic as usual.
+This could create some problems when the Linux kernel is involved in the processing.
+For example, if we have a shadow router with active span mode we should avoid to activate the IP forwarding on Linux, otherwise the router service forwards packets and copies them to the namespace, the namespace forwards again packets and there will be a lot of duplicated traffic.
+
+
