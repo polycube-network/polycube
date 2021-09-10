@@ -1,3 +1,5 @@
 Sphinx>=1.8.1
 sphinx-rtd-theme==0.4.2
 sphinxcontrib-spelling>4.0.0
+docutils==0.16 # https://stackoverflow.com/questions/67542699/readthedocs-sphinx-not-rendering-bullet-list-from-rst-file
+

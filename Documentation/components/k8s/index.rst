@@ -5,7 +5,7 @@ pcn-k8s: a network provider for kubernetes
     :maxdepth: 3
     :caption: Contents:
 
-    pcn-kubernetes
-    kubernetes-network-policies
-    polycube-network-policies
-    developers
+    pcn-kubernetes.md
+    kubernetes-network-policies.md
+    polycube-network-policies.md
+    developers.md

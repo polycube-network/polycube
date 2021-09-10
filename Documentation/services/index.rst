@@ -4,22 +4,22 @@ Polycube services
 This folder contains the list of services (a.k.a. *cubes*) currently available in `polycube`.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
-    pcn-helloworld/helloworld
-    pcn-simplebridge/simplebridge
-    pcn-bridge/bridge
-    pcn-simpleforwarder/simpleforwarder
-    pcn-pbforwarder/pbforwarder
-    pcn-firewall/firewall
-    pcn-ddosmitigator/ddosmitigator
-    pcn-synflood/synflood
-    pcn-router/router
-    pcn-nat/nat
-    pcn-loadbalancer-dsr/loadbalancer-dsr
-    pcn-loadbalancer-rp/loadbalancer-rp
-    pcn-packetcapture/packetcapture
-    pcn-dynmon/dynmon
-    pcn-iptables/iptables
-    pcn-k8sfilter/k8sfilter
-    pcn-k8switch/k8switch
+    pcn-helloworld/helloworld.md
+    pcn-simplebridge/index
+    pcn-bridge/index
+    pcn-simpleforwarder/simpleforwarder.md
+    pcn-pbforwarder/pbforwarder.md
+    pcn-firewall/firewall.md
+    pcn-ddosmitigator/ddosmitigator.md
+    pcn-synflood/synflood.md
+    pcn-router/router.md
+    pcn-nat/nat.md
+    pcn-loadbalancer-dsr/loadbalancer-dsr.md
+    pcn-loadbalancer-rp/loadbalancer-rp.md
+    pcn-packetcapture/packetcapture.md
+    pcn-dynmon/dynmon.md
+    pcn-iptables/iptables.md
+    pcn-k8sfilter/k8sfilter.md
+    pcn-k8switch/k8switch.md
