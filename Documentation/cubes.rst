@@ -227,9 +227,8 @@ These primitives allow to associate transparent cubes to standard cube's ports o
 Hook points
 -----------
 
-Differently from traditional eBPF programs, a Polycube service is created in a way that works when attached to either ``TC``, ``XDP_SKB`` or ``XDP_DRV`` eBPF hooks.
-Hence, you can attach aPolycube service to either the ``TC``, ``XDP_SKB`` and ``XDP_DRV`` eBPF hooks, based on your preference, at run-time.
-The ``XDP_DRV``, which can guarantee the best performance, can be used only if it is supported by your NIC driver.
+A Polycube service can be instantiated in a way that works when attached to either ``TC``, ``XDP_SKB`` or ``XDP_DRV`` eBPF hooks.
+The ``XDP_DRV``, which can guarantees the best performance, can be used only if it is supported by your NIC driver.
 
 To create a service cube and select the desired hook point, just use this command:
 
@@ -238,13 +237,13 @@ To create a service cube and select the desired hook point, just use this comman
   polycubectl <service name> add <cube name> type=<hook point>
 
 
-For example if you want to create an instance of the router service and attach it to the XDP_SKB hook point:
+For example if you want to create an instance of the router service working with the XDP_SKB hook point:
 
 ::
 
   polycubectl router add r1 type=XDP_SKB
 
-By default, a service is attached to ``TC``.
+By default, a service is instantiated in ``TC`` mode.
 
 
 .. _span-mode:
@@ -253,10 +252,9 @@ Traffic debugging with Span Mode
 --------------------------------
 While the traffic flowing on a network device (e.g., veth0) can be captured and analyzed with tools such as Wireshark or tcpdump, the traffic flowing through an eBPF chain (e.g, a Polycube router connected to a Polycube bridge) is not visible outside eBPF, hence it cannot be captured by a sniffing program.
 
-To overcome this problem, shadow cubes have a mode called **span** that allow to duplicate (hence, capture and analyze) all the service traffic to a virtual network device; for who comes from 'traditional' hardware networking, this is the term that is often used when you want to duplicate the traffic from a first port of a network device to a second port of the same network device, e.g., to analyze the incoming data.
-
+To overcome this problem, shadow cubes have a mode called **span** that allows to duplicate (hence, capture and analyze) all the traffic flowing through the ports of the cube to the corresponding virtual ethernet devices of the linked namespace.
+For those who come from 'traditional' hardware networking, _span_ is the term used when you want to duplicate the traffic from a first port of a network device to a second port of the same network device, e.g., to analyze the incoming data.
 Span mode is very useful for debugging; a traditional sniffing program such as Wireshark or Tcpdump can sniff all the traffic flowing through a shadow cube, selecting each port.
-When this feature is enabled, a cube duplicates all its traffic to a dedicated namespace, in which different (virtual) network interfaces are created that duplicate exatly the traffic of their associated network port.
 
 To activate the span mode, use the following command: ``polycubectl <cubename> set span=true``.
 

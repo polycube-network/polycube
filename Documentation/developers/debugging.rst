@@ -202,7 +202,7 @@ If you use CLion, you can debug Polycube with the following steps:
 Debugging network traffic using tcpdump/Wireshark
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Debugging (i.e., sniffing) network traffic frlowing *between* two Polycube services (e.g., on the link that connects a Polycube router to a Polycube bridge) can be achieved with the :ref:`span mode <span-mode>`.
+Debugging (i.e., sniffing) network traffic flowing *between* two Polycube services (e.g., on the link that connects a Polycube router to a Polycube bridge) can be achieved with the :ref:`span mode <span-mode>`.
 
 
 // TODO 
