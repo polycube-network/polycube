@@ -42,7 +42,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.extlinks',
     'sphinxcontrib.spelling',
+    'myst_parser',
 ]
+# not sure if we need to put sphinx_rtd_theme in extensions to solve this 
+# https://stackoverflow.com/questions/67542699/readthedocs-sphinx-not-rendering-bullet-list-from-rst-file
+# 
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,7 +55,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix =  ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -70,6 +74,13 @@ exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
+
+
+# https://github.com/executablebooks/MyST-Parser/blob/master/CHANGELOG.md#0129---2020-09-08
+# In this way we can refer to a section of another file by using the classic way and the
+# .md is converted in .html in the final url. Like that:
+# [click here](./filename.md#sub-section)
+myst_heading_anchors = 2
 
 
 # -- Options for HTML output -------------------------------------------------
