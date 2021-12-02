@@ -731,7 +731,10 @@ replace_lbrp_service_backend_by_id(const std::string &name, const std::string &v
 */
 void
 replace_lbrp_service_backend_list_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::vector<ServiceBackendJsonObject> &value) {
-  throw std::runtime_error("Method not supported");
+  auto lbrp = get_cube(name);
+  auto service = lbrp->getService(vip, vport, proto);
+
+  service->replaceBackendList(value);
 }
 
 /**

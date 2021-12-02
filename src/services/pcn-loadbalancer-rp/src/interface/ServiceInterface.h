@@ -61,6 +61,7 @@ public:
   virtual void addBackend(const std::string &ip, const ServiceBackendJsonObject &conf) = 0;
   virtual void addBackendList(const std::vector<ServiceBackendJsonObject> &conf) = 0;
   virtual void replaceBackend(const std::string &ip, const ServiceBackendJsonObject &conf) = 0;
+  virtual void replaceBackendList(const std::vector<ServiceBackendJsonObject> &conf) = 0;
   virtual void delBackend(const std::string &ip) = 0;
   virtual void delBackendList() = 0;
 };

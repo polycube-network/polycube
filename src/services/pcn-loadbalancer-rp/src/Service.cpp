@@ -503,6 +503,11 @@ void Service::replaceBackend(const std::string &ip,
   addBackend(ip_, conf);
 }
 
+void Service::replaceBackendList(const std::vector<ServiceBackendJsonObject> &conf) {
+    delBackendList();
+    addBackendList(conf);
+}
+
 void Service::delBackend(const std::string &ip) {
   logger()->trace(
       "[ServiceBackend] Received request to remove backend for service {0}, "

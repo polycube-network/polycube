@@ -82,6 +82,8 @@ class Service : public ServiceInterface {
       const std::vector<ServiceBackendJsonObject> &conf) override;
   void replaceBackend(const std::string &ip,
                       const ServiceBackendJsonObject &conf) override;
+  void replaceBackendList(
+          const std::vector<ServiceBackendJsonObject> &conf) override;
   void delBackend(const std::string &ip) override;
   void delBackendList() override;
 
