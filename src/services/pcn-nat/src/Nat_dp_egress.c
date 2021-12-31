@@ -17,16 +17,22 @@ struct sm_v {
 BPF_F_TABLE("lpm_trie", struct sm_k, struct sm_v, sm_rules, 1024,
             BPF_F_NO_PREALLOC);
 // Port numbers
-BPF_TABLE("array", u32, u16, first_free_port, 1);
+struct free_port_entry {
+  u16 first_free_port;
+  struct bpf_spin_lock lock;
+};
+BPF_TABLE("array", u32, struct free_port_entry, first_free_port, 1);
 static inline __be16 get_free_port() {
   u32 i = 0;
-  u16 *new_port_p = first_free_port.lookup(&i);
-  if (!new_port_p)
+  u16 port = 0;
+  struct free_port_entry *entry = first_free_port.lookup(&i);
+  if (!entry)
     return 0;
-  rcu_read_lock();
-  if (*new_port_p < 1024 || *new_port_p == 65535)
-    *new_port_p = 1024;
-  *new_port_p = *new_port_p + 1;
-  rcu_read_unlock();
-  return bpf_htons(*new_port_p);
+  bpf_spin_lock(&entry->lock);
+  if (entry->first_free_port < 1024 || entry->first_free_port == 65535)
+    entry->first_free_port = 1024;
+  port = entry->first_free_port;
+  entry->first_free_port++;
+  bpf_spin_unlock(&entry->lock);
+  return bpf_htons(port);
 }
