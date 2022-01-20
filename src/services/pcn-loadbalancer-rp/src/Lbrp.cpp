@@ -389,7 +389,7 @@ void Lbrp::delService(const std::string &vip, const uint16_t &vport,
 
   auto service = getService(vip, vport, proto);
 
-  service->removeServiceFromKernelMap();
+  service->delBackendList();
   service_map_.erase(key);
 }
 
