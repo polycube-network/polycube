@@ -536,7 +536,7 @@ void Service::delBackend(const std::string &ip) {
 }
 
 void Service::delBackendList() {
-  if (service_backends_.size() != 0) {
+  if (!service_backends_.empty()) {
     service_backends_.clear();
     backend_matrix_.clear();
     removeServiceFromKernelMap();
