@@ -30,7 +30,7 @@
 #define CHECK_MAC_DST
 #define ROUTING_TABLE_DIM 256
 #define ROUTER_PORT_N 32
-#define ARP_TABLE_DIM 32
+#define ARP_TABLE_DIM 1024
 #define MAX_SECONDARY_ADDRESSES 5 // also defined in Ports.h
 #define TYPE_NOLOCALINTERFACE 0  // used to compare the 'type' field in the rt_v
 #define TYPE_LOCALINTERFACE 1
