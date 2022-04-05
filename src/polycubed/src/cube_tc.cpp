@@ -57,10 +57,17 @@ std::string CubeTC::get_wrapper_code() {
          CUBETC_HELPERS;
 }
 
+// Generate optimized (inlined switch-case) code for the redirection on the
+// first _MAX_OPTIMIZED_PORTS ports
 std::string CubeTC::get_redirect_code() {
   std::stringstream ss;
+  int i = 0;
 
   for(auto const& [index, val] : forward_chain_) {
+    if (i >= _MAX_OPTIMIZED_PORTS) {
+      break;
+    }
+
     ss << "case " << index << ":\n";
     ss << "skb->cb[0] = " << val.first << ";\n";
 
@@ -72,6 +79,8 @@ std::string CubeTC::get_redirect_code() {
     }
 
     ss << "break;\n";
+
+    i++;
   }
 
   return ss.str();
@@ -329,8 +338,22 @@ int pcn_vlan_push_tag(struct CTXTYPE *ctx, u16 eth_proto, u32 vlan_id) {
 const std::string CubeTC::CUBETC_WRAPPER = R"(
 static __always_inline
 int forward(struct CTXTYPE *skb, u32 out_port) {
+  // Check if the peer is in the optimized path
   switch (out_port) {
     _REDIRECT_CODE;
+  }
+
+  // Fall back to table lookup
+  struct _POLYCUBE_peer_info *peer_info = _POLYCUBE_peers.lookup(&out_port);
+  if (!peer_info) {
+    return TC_ACT_SHOT;
+  }
+
+  skb->cb[0] = peer_info->info;
+  if (peer_info->is_netdev) {
+    return bpf_redirect(peer_info->info & 0xffff, 0);
+  } else {
+    nodes.call(skb, peer_info->info & 0xffff);
   }
 
   return TC_ACT_SHOT;

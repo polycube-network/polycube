@@ -274,15 +274,40 @@ std::map<std::string, std::shared_ptr<PortIface>> &Cube::get_ports() {
   return ports_by_name_;
 }
 
+struct peer_info {
+  uint32_t info;  // For a peer netdev:
+                  //   high u16 -> id of current port (used in egress progs)
+                  //   low u16 -> ifindex of the netdevice
+                  // For a peer cube:
+                  //   high u16 -> id of the receiving port
+                  //   low u16 -> index of entry program in the patch panel
+  int is_netdev;  // Whether the peer is a net device or another cube (i.e.
+                  // program)
+};
+
 void Cube::update_forwarding_table(uint16_t port, uint32_t next,
                                    bool is_netdev) {
   std::lock_guard<std::mutex> cube_guard(cube_mutex_);
+  auto peers =
+      master_program_->get_hash_table<int, struct peer_info>("_POLYCUBE_peers");
+
+  // Updates on unoptimized peers will take effect after the update on the peers
+  // map, while on optimized peers will be effective only after code reload
   if (next != 0) {
     forward_chain_[port] = std::make_pair(next, is_netdev);
+    struct peer_info info = {
+      .info = next,
+      .is_netdev = is_netdev
+    };
+    peers.update_value(port, info);
+
   } else {
     forward_chain_.erase(port);
+    peers.remove_value(port);
   }
+
   cube_mutex_.unlock();
+
   reload_all();
 }
 
@@ -324,6 +349,20 @@ BPF_TABLE_SHARED("array", int, u16, egress_next, _POLYCUBE_MAX_PORTS);
 // Same as above for XDP programs. Higher 16 bits of the value tells if the next
 // entity is a program (0) or a netdev (1). Lower 16 bits contain its index.
 BPF_TABLE_SHARED("array", int, u32, egress_next_xdp, _POLYCUBE_MAX_PORTS);
+
+// Stores (port_id, peer_info) mappings
+struct _POLYCUBE_peer_info {
+  u32 info;       // For a peer netdev:
+                  //   high u16 -> id of current port (used in egress progs)
+                  //   low u16 -> ifindex of the netdevice
+                  // For a peer cube:
+                  //   high u16 -> id of the receiving port
+                  //   low u16 -> index of entry program in the patch panel
+  int is_netdev;  // Whether the peer is a net device or another cube (i.e.
+                  // program)
+};
+BPF_TABLE_SHARED("hash", int, struct _POLYCUBE_peer_info, _POLYCUBE_peers,
+                 _POLYCUBE_MAX_PORTS);
 )";
 
 const std::string Cube::CUBE_WRAPPER = R"(
@@ -331,6 +370,13 @@ const std::string Cube::CUBE_WRAPPER = R"(
 BPF_TABLE("extern", int, u16, egress_next, _POLYCUBE_MAX_PORTS);
 BPF_TABLE("extern", int, u32, egress_next_xdp, _POLYCUBE_MAX_PORTS);
 #endif
+
+struct _POLYCUBE_peer_info {
+  u32 info;
+  int is_netdev;
+};
+BPF_TABLE("extern", int, struct _POLYCUBE_peer_info, _POLYCUBE_peers,
+          _POLYCUBE_MAX_PORTS);
 )";
 
 }  // namespace polycubed
