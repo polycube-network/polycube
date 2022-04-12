@@ -4,14 +4,13 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.20.15
-	github.com/containernetworking/cni v0.7.1
+	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.8.1
 	github.com/coreos/etcd v3.3.13+incompatible
 	github.com/coreos/go-iptables v0.4.1 // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.0.0 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
-	github.com/google/uuid v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
