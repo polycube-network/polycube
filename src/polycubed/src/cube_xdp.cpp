@@ -234,10 +234,17 @@ std::string CubeXDP::get_wrapper_code() {
          CUBEXDP_HELPERS;
 }
 
+// Generate optimized (inlined switch-case) code for the redirection on the
+// first _MAX_OPTIMIZED_PORTS ports
 std::string CubeXDP::get_redirect_code() {
   std::stringstream ss;
+  int i = 0;
 
   for(auto const& [index, val] : forward_chain_) {
+    if (i >= _MAX_OPTIMIZED_PORTS) {
+      break;
+    }
+
     ss << "case " << index << ":\n";
 
     if (val.second) {
@@ -249,6 +256,8 @@ std::string CubeXDP::get_redirect_code() {
     }
 
     ss << "break;\n";
+
+    i++;
   }
 
   return ss.str();
@@ -441,8 +450,22 @@ int handle_rx_xdp_wrapper(struct CTXTYPE *ctx) {
 #if POLYCUBE_PROGRAM_TYPE == 0  // Only INGRESS programs can redirect
 static __always_inline
 int pcn_pkt_redirect(struct CTXTYPE *pkt, struct pkt_metadata *md, u32 out_port) {
+  // Check if the peer is in the optimized path
   switch (out_port) {
     _REDIRECT_CODE;
+  }
+
+  // Fall back to table lookup
+  struct _POLYCUBE_peer_info *peer_info = _POLYCUBE_peers.lookup(&out_port);
+  if (!peer_info) {
+    return XDP_ABORTED;
+  }
+
+  if (peer_info->is_netdev) {
+    return bpf_redirect(peer_info->info & 0xffff, 0);
+  } else {
+    md->in_port = peer_info->info >> 16;
+    xdp_nodes.call(pkt, peer_info->info & 0xffff);
   }
 
   return XDP_ABORTED;

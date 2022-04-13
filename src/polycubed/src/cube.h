@@ -78,6 +78,11 @@ class Cube : public BaseCube, public CubeIface {
 
   const std::string get_veth_name_from_index(const int ifindex);
  protected:
+  // Maximum number of ports for which optimized (inlined) redirection code is
+  // generated. Exceeding this number causes the switch-case to be rejected by
+  // the verifier
+  static const int _MAX_OPTIMIZED_PORTS = 17;
+
   static std::string get_wrapper_code();
   uint16_t allocate_port_id();
   void release_port_id(uint16_t id);
