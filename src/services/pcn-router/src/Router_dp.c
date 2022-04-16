@@ -28,7 +28,7 @@
 #include <uapi/linux/udp.h>
 
 #define CHECK_MAC_DST
-#define ROUTING_TABLE_DIM 256
+#define ROUTING_TABLE_DIM 100000
 #define ROUTER_PORT_N 32
 #define ARP_TABLE_DIM 32
 #define MAX_SECONDARY_ADDRESSES 5 // also defined in Ports.h
