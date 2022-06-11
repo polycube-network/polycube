@@ -1,0 +1,123 @@
+module k8slbrp {
+  yang-version 1.1;
+  namespace "http://polycube.network/k8slbrp";
+  prefix "k8slbrp";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
+
+  import ietf-inet-types { prefix "inet"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube K8s Load Balancer (Reverse Proxy)";
+
+  polycube-base:service-description "K8s LoadBalancer Reverse-Proxy Service";
+  polycube-base:service-version "2.0.0";
+  polycube-base:service-name "k8slbrp";
+  polycube-base:service-min-kernel-version "4.14.0";
+
+  uses "polycube-standard-base:standard-base-yang-module" {
+    augment ports {
+      leaf type {
+        type enumeration {
+          enum FRONTEND { description "Port connected to the clients"; }
+          enum BACKEND { description "Port connected to the backend servers"; }
+        }
+        mandatory true;
+        description "Type of the LB port (e.g. FRONTEND or BACKEND)";
+      }
+      leaf ip {
+        type inet:ipv4-address;
+        description "IP address of the client interface (only for FRONTEND port)";
+        polycube-base:cli-example "10.10.1.1";
+      }
+    }
+  }
+
+  leaf port_mode {
+    type enumeration {
+      enum SINGLE;
+      enum MULTI;
+    }
+    default MULTI;
+    description "K8s lbrp mode of operation. 'MULTI' allows to manage multiple FRONTEND port. 'SINGLE' is optimized for working with a single FRONTEND port";
+  }
+
+  container src-ip-rewrite {
+    description "If configured, when a client request arrives to the LB, the source IP address is replaced with another IP address from the 'new' range";
+
+    leaf ip-range {
+        type inet:ipv4-prefix;
+        description "Range of IP addresses of the clients that must be replaced";
+        polycube-base:cli-example "10.2.0.0/24";
+    }
+
+    leaf new_ip_range {
+        type inet:ipv4-prefix;
+        description "Range of IP addresses of the that must be used to replace client addresses";
+        polycube-base:cli-example "10.3.0.0/24";
+    }
+  }
+
+  list service {
+    key "vip vport proto";
+    description "Services (i.e., virtual ip:protocol:port) exported to the client";
+    leaf name {
+      type string;
+      description "Service name related to the backend server of the pool is connected to";
+      polycube-base:cli-example "Service-nigx";
+    }
+
+    leaf vip {
+      type inet:ipv4-address;
+      description "Virtual IP (vip) of the service where clients connect to";
+      polycube-base:cli-example "130.192.100.12";
+    }
+
+    leaf vport {
+      type inet:port-number;
+      description "Port of the virtual server where clients connect to (this value is ignored in case of ICMP)";
+      polycube-base:cli-example "80";
+    }
+
+    leaf proto {
+      type enumeration {
+          enum ICMP;
+          enum TCP;
+          enum UDP;
+          enum ALL;
+      }
+      mandatory true;
+      description "Upper-layer protocol associated with a loadbalancing service instance. 'ALL' creates an entry for all the supported protocols";
+    }
+
+    list backend {
+      key "ip";
+      description "Pool of backend servers that actually serve requests";
+      leaf name {
+        type string;
+        description "name";
+        polycube-base:cli-example "backend1";
+      }
+
+      leaf ip {
+        type inet:ipv4-address;
+        description "IP address of the backend server of the pool";
+        polycube-base:cli-example "10.244.1.23";
+      }
+
+      leaf port {
+        type inet:port-number;
+        description "Port where the server listen to (this value is ignored in case of ICMP)";
+        mandatory true;
+        polycube-base:cli-example "80";
+      }
+
+      leaf weight {
+        type uint16;
+        description "Weight of the backend in the pool";
+        polycube-base:cli-example "1";
+      }
+    }
+  }
+}
