@@ -17,7 +17,7 @@ Furthermore, you need also to mount a volume to share the input yang model and t
 
 ```
   export POLYCUBE_BASEMODELS=<path to base models usually /usr/local/include/polycube/datamodel-common/>
-  docker pull polycubenets/polycube-codegen
+  docker pull polycubenetwork/polycube-codegen 
    docker run -it --user `id -u` \
     -v $POLYCUBE_BASEMODELS:/polycube-base-datamodels \
     -v <input folder in host>:/input \
@@ -31,7 +31,7 @@ For instance, the following command is used to generate the stub for the ``pcn-i
 
 ```
   export POLYCUBE_BASEMODELS="/usr/local/include/polycube/datamodel-common/"
-  docker pull polycubenets/polycube-codegen
+  docker pull polycubenetwork/polycube-codegen 
   docker run -it --user `id -u` \
     -v $POLYCUBE_BASEMODELS:/polycube-base-datamodels \
     -v $HOME/datamodels/input:/input \
