@@ -28,7 +28,7 @@ enum {
 
 SrcIpRewrite::SrcIpRewrite(Lbrp &parent, const SrcIpRewriteJsonObject &conf)
     : parent_(parent) {
-  logger()->info("[Constructor]Creating SrcIpRewrite instance");
+  logger()->info("[Constructor] Creating SrcIpRewrite instance");
 
   if (conf.newIpRangeIsSet()) {
     setNewIpRange(conf.getNewIpRange());
@@ -48,12 +48,12 @@ void SrcIpRewrite::update(const SrcIpRewriteJsonObject &conf) {
   setIpRange(conf.getIpRange());
   setNewIpRange(conf.getNewIpRange());
 
-  std::string old_ip_net = ip_range.substr(0, ip_range.find("/"));
+  std::string old_ip_net = ip_range.substr(0, ip_range.find('/'));
   std::string old_mask_len =
-      ip_range.substr(ip_range.find("/") + 1, std::string::npos);
-  std::string new_ip_net = new_ip_range.substr(0, new_ip_range.find("/"));
+      ip_range.substr(ip_range.find('/') + 1, std::string::npos);
+  std::string new_ip_net = new_ip_range.substr(0, new_ip_range.find('/'));
   std::string new_mask_len =
-      new_ip_range.substr(new_ip_range.find("/") + 1, std::string::npos);
+      new_ip_range.substr(new_ip_range.find('/') + 1, std::string::npos);
 
   // TODO: change datamodel to fix it
   if (old_mask_len != new_mask_len) {

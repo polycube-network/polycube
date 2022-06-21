@@ -55,7 +55,9 @@ Response delete_lbrp_service_list_by_id_handler(const char *name, const Key *key
 Response delete_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_port_mode_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys);
+Response read_lbrp_ports_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys);
 Response read_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys);
@@ -79,7 +81,9 @@ Response replace_lbrp_service_list_by_id_handler(const char *name, const Key *ke
 Response replace_lbrp_src_ip_rewrite_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_port_mode_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_ports_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
+Response update_lbrp_ports_ip_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_ports_list_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_ports_type_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);
 Response update_lbrp_service_backend_by_id_handler(const char *name, const Key *keys, size_t num_keys, const char *value);

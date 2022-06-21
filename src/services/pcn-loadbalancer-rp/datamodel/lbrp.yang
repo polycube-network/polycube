@@ -26,11 +26,25 @@ module lbrp {
         mandatory true;
         description "Type of the LB port (e.g. FRONTEND or BACKEND)";
       }
+      leaf ip {
+        type inet:ipv4-address;
+        description "IP address of the client interface (only for FRONTEND port)";
+        polycube-base:cli-example "10.10.1.1";
+      }
     }
   }
 
+  leaf port_mode {
+    type enumeration {
+      enum SINGLE;
+      enum MULTI;
+    }
+    default SINGLE;
+    description "LB mode of operation. 'SINGLE' is optimized for working with a single FRONTEND port. 'MULTI' allows to manage multiple FRONTEND port";
+  }
+
   container src-ip-rewrite {
-    description "If configured, when a client request arrives to the LB, the source IP addrress is replaced with another IP address from the 'new' range";
+    description "If configured, when a client request arrives to the LB, the source IP address is replaced with another IP address from the 'new' range";
 
     leaf ip-range {
         type inet:ipv4-prefix;
@@ -51,7 +65,7 @@ module lbrp {
     leaf name {
       type string;
       description "Service name related to the backend server of the pool is connected to";
-      polycube-base:cli-example "Service-nigx";
+      polycube-base:cli-example "Service-nginx";
     }
 
     leaf vip {

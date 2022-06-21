@@ -25,12 +25,14 @@ namespace model {
 PortsJsonObject::PortsJsonObject() {
   m_nameIsSet = false;
   m_typeIsSet = false;
+  m_ipIsSet = false;
 }
 
 PortsJsonObject::PortsJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_nameIsSet = false;
   m_typeIsSet = false;
+  m_ipIsSet = false;
 
 
   if (val.count("name")) {
@@ -39,6 +41,10 @@ PortsJsonObject::PortsJsonObject(const nlohmann::json &val) :
 
   if (val.count("type")) {
     setType(string_to_PortsTypeEnum(val.at("type").get<std::string>()));
+  }
+
+  if (val.count("ip")) {
+    setIp(val.at("ip").get<std::string>());
   }
 }
 
@@ -54,6 +60,10 @@ nlohmann::json PortsJsonObject::toJson() const {
 
   if (m_typeIsSet) {
     val["type"] = PortsTypeEnum_to_string(m_type);
+  }
+
+  if (m_ipIsSet) {
+    val["ip"] = m_ip;
   }
 
   return val;
@@ -106,6 +116,22 @@ PortsTypeEnum PortsJsonObject::string_to_PortsTypeEnum(const std::string &str){
   if (JsonObjectBase::iequals("backend", str))
     return PortsTypeEnum::BACKEND;
   throw std::runtime_error("Ports type is invalid");
+}
+std::string PortsJsonObject::getIp() const {
+  return m_ip;
+}
+
+void PortsJsonObject::setIp(std::string value) {
+  m_ip = value;
+  m_ipIsSet = true;
+}
+
+bool PortsJsonObject::ipIsSet() const {
+  return m_ipIsSet;
+}
+
+void PortsJsonObject::unsetIp() {
+  m_ipIsSet = false;
 }
 
 }

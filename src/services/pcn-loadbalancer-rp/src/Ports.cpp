@@ -25,7 +25,11 @@ Ports::Ports(polycube::service::Cube<Ports> &parent,
     : Port(port), parent_(static_cast<Lbrp &>(parent)) {
   logger()->info("Creating Ports instance");
 
-  port_type_ = conf.getType();
+  auto type = conf.getType();
+  auto ipIsSet = conf.ipIsSet();
+
+  port_type_ = type;
+  if (ipIsSet) ip_ = conf.getIp();
 }
 
 Ports::~Ports() {}
@@ -46,6 +50,7 @@ PortsJsonObject Ports::toJsonObject() {
   conf.setBase(Port::to_json());
 
   conf.setType(getType());
+  conf.setIp(getIp());
 
   return conf;
 }
@@ -58,6 +63,14 @@ PortsTypeEnum Ports::getType() {
 void Ports::setType(const PortsTypeEnum &value) {
   // This method set the type value.
   throw std::runtime_error("Error: Port type cannot be changed at runtime.");
+}
+
+std::string Ports::getIp() {
+  return ip_;
+}
+
+void Ports::setIp(const std::string &value) {
+  ip_ = value;
 }
 
 std::shared_ptr<spdlog::logger> Ports::logger() {

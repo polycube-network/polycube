@@ -28,9 +28,13 @@
 #include "Service.h"
 #include "SrcIpRewrite.h"
 #include "hash_tuple.h"
+#include <set>
+#include <mutex>
 
 using namespace io::swagger::server::model;
 using polycube::service::CubeType;
+
+enum class SlowPathReason { ARP_REPLY = 0, FLOODING = 1 };
 
 class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   friend class Ports;
@@ -38,8 +42,12 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   friend class SrcIpRewrite;
 
  public:
+  static std::string buildLbrpCode(std::string const& lbrp_code, LbrpPortModeEnum port_mode);
   Lbrp(const std::string name, const LbrpJsonObject &conf);
   virtual ~Lbrp();
+
+  void flood_packet(Ports &port, polycube::service::PacketInMetadata &md,
+                    const std::vector<uint8_t> &packet);
   void packet_in(Ports &port, polycube::service::PacketInMetadata &md,
                  const std::vector<uint8_t> &packet) override;
 
@@ -65,7 +73,8 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   void delServiceList() override;
 
   /// <summary>
-  ///
+  /// If configured, when a client request arrives to the LB, the source IP
+  /// address is replaced with another IP address from the 'new' range
   /// </summary>
   std::shared_ptr<SrcIpRewrite> getSrcIpRewrite() override;
   void addSrcIpRewrite(const SrcIpRewriteJsonObject &value) override;
@@ -77,6 +86,10 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   /// </summary>
   std::shared_ptr<Ports> getPorts(const std::string &name) override;
   std::vector<std::shared_ptr<Ports>> getPortsList() override;
+  void addPortsInSinglePortMode(const std::string &name,
+                                const PortsJsonObject &conf);
+  void addPortsInMultiPortMode(const std::string &name,
+                               const PortsJsonObject &conf);
   void addPorts(const std::string &name, const PortsJsonObject &conf) override;
   void addPortsList(const std::vector<PortsJsonObject> &conf) override;
   void replacePorts(const std::string &name,
@@ -84,11 +97,24 @@ class Lbrp : public polycube::service::Cube<Ports>, public LbrpInterface {
   void delPorts(const std::string &name) override;
   void delPortsList() override;
 
+  /// <summary>
+  /// LB mode of operation.
+  /// 'SINGLE' is optimized for working with a single FRONTEND port.
+  /// 'MULTI' allows to manage multiple FRONTEND port.
+  /// </summary>
+  LbrpPortModeEnum getPortMode() override;
+  void setPortMode(const LbrpPortModeEnum &value) override;
+
   void reloadCodeWithNewPorts();
-  std::shared_ptr<Ports> getFrontendPort();
+  void reloadCodeWithNewBackendPort(uint16_t backend_port_index);
+  std::vector<std::shared_ptr<Ports>> getFrontendPorts();
   std::shared_ptr<Ports> getBackendPort();
 
  private:
+  static const std::string EBPF_IP_TO_FRONTEND_PORT_MAP;
+  std::set<std::string> frontend_ip_set_;
   std::unordered_map<Service::ServiceKey, Service> service_map_;
   std::shared_ptr<SrcIpRewrite> src_ip_rewrite_;
+  LbrpPortModeEnum port_mode_;
+  std::string lbrp_code_;
 };

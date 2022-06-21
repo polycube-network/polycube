@@ -525,13 +525,12 @@ void Service::delBackend(const std::string &ip) {
   service_backends_.erase(ip);
   removeBackendFromServiceMatrix(ip);
 
-  if (service_backends_.size() != 0)
-    updateConsistentHashMap();
-
-  if (service_backends_.size() == 0) {
+  if (service_backends_.empty()) {
     // If there are no backends let's remove all entries from the eBPF map
     backend_matrix_.clear();
     removeServiceFromKernelMap();
+  } else {
+    updateConsistentHashMap();
   }
 }
 

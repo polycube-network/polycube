@@ -45,7 +45,13 @@ class Ports : public polycube::service::Port, public PortsInterface {
   PortsTypeEnum getType() override;
   void setType(const PortsTypeEnum &value) override;
 
+  /// <summary>
+  /// IP address of the client interface (only for FRONTEND port)
+  /// </summary>
+  std::string getIp() override;
+  void setIp(const std::string &value) override;
  private:
   Lbrp &parent_;
   PortsTypeEnum port_type_;
+  std::string ip_;
 };
