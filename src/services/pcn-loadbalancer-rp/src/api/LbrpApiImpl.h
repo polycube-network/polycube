@@ -59,7 +59,9 @@ namespace LbrpApiImpl {
   void delete_lbrp_src_ip_rewrite_by_id(const std::string &name);
   LbrpJsonObject read_lbrp_by_id(const std::string &name);
   std::vector<LbrpJsonObject> read_lbrp_list_by_id();
+  LbrpPortModeEnum read_lbrp_port_mode_by_id(const std::string &name);
   PortsJsonObject read_lbrp_ports_by_id(const std::string &name, const std::string &portsName);
+  std::string read_lbrp_ports_ip_by_id(const std::string &name, const std::string &portsName);
   std::vector<PortsJsonObject> read_lbrp_ports_list_by_id(const std::string &name);
   PortsTypeEnum read_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName);
   ServiceBackendJsonObject read_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip);
@@ -83,7 +85,9 @@ namespace LbrpApiImpl {
   void replace_lbrp_src_ip_rewrite_by_id(const std::string &name, const SrcIpRewriteJsonObject &value);
   void update_lbrp_by_id(const std::string &name, const LbrpJsonObject &value);
   void update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value);
+  void update_lbrp_port_mode_by_id(const std::string &name, const LbrpPortModeEnum &value);
   void update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, const PortsJsonObject &value);
+  void update_lbrp_ports_ip_by_id(const std::string &name, const std::string &portsName, const std::string &value);
   void update_lbrp_ports_list_by_id(const std::string &name, const std::vector<PortsJsonObject> &value);
   void update_lbrp_ports_type_by_id(const std::string &name, const std::string &portsName, const PortsTypeEnum &value);
   void update_lbrp_service_backend_by_id(const std::string &name, const std::string &vip, const uint16_t &vport, const ServiceProtoEnum &proto, const std::string &ip, const ServiceBackendJsonObject &value);

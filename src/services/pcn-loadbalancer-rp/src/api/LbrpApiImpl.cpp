@@ -372,6 +372,23 @@ read_lbrp_by_id(const std::string &name) {
 }
 
 /**
+* @brief   Read port_mode by ID
+*
+* Read operation of resource: port_mode*
+*
+* @param[in] name ID of name
+*
+* Responses:
+* LbrpPortModeEnum
+*/
+LbrpPortModeEnum
+read_lbrp_port_mode_by_id(const std::string &name) {
+  auto lbrp = get_cube(name);
+  return lbrp->getPortMode();
+
+}
+
+/**
 * @brief   Read ports by ID
 *
 * Read operation of resource: ports*
@@ -386,6 +403,25 @@ PortsJsonObject
 read_lbrp_ports_by_id(const std::string &name, const std::string &portsName) {
   auto lbrp = get_cube(name);
   return lbrp->getPorts(portsName)->toJsonObject();
+
+}
+
+/**
+* @brief   Read ip by ID
+*
+* Read operation of resource: ip*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+*
+* Responses:
+* std::string
+*/
+std::string
+read_lbrp_ports_ip_by_id(const std::string &name, const std::string &portsName) {
+  auto lbrp = get_cube(name);
+  auto ports = lbrp->getPorts(portsName);
+  return ports->getIp();
 
 }
 
@@ -826,6 +862,24 @@ update_lbrp_list_by_id(const std::vector<LbrpJsonObject> &value) {
 }
 
 /**
+* @brief   Update port_mode by ID
+*
+* Update operation of resource: port_mode*
+*
+* @param[in] name ID of name
+* @param[in] value lbrp mode of operation. 'MULTI' allows to manage multiple FRONTEND port. 'SINGLE' is optimized for working with a single FRONTEND port
+*
+* Responses:
+*
+*/
+void
+update_lbrp_port_mode_by_id(const std::string &name, const LbrpPortModeEnum &value) {
+  auto lbrp = get_cube(name);
+
+  return lbrp->setPortMode(value);
+}
+
+/**
 * @brief   Update ports by ID
 *
 * Update operation of resource: ports*
@@ -843,6 +897,26 @@ update_lbrp_ports_by_id(const std::string &name, const std::string &portsName, c
   auto ports = lbrp->getPorts(portsName);
 
   ports->update(value);
+}
+
+/**
+* @brief   Update ip by ID
+*
+* Update operation of resource: ip*
+*
+* @param[in] name ID of name
+* @param[in] portsName ID of ports_name
+* @param[in] value IP address of the client interface (only for FRONTEND port)
+*
+* Responses:
+*
+*/
+void
+update_lbrp_ports_ip_by_id(const std::string &name, const std::string &portsName, const std::string &value) {
+  auto lbrp = get_cube(name);
+  auto ports = lbrp->getPorts(portsName);
+
+  return ports->setIp(value);
 }
 
 /**

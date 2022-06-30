@@ -60,11 +60,20 @@ public:
   static std::string PortsTypeEnum_to_string(const PortsTypeEnum &value);
   static PortsTypeEnum string_to_PortsTypeEnum(const std::string &str);
 
+  /// <summary>
+  /// IP address of the client interface (only for FRONTEND port)
+  /// </summary>
+  std::string getIp() const;
+  void setIp(std::string value);
+  bool ipIsSet() const;
+  void unsetIp();
 private:
   std::string m_name;
   bool m_nameIsSet;
   PortsTypeEnum m_type;
   bool m_typeIsSet;
+  std::string m_ip;
+  bool m_ipIsSet;
 };
 
 }

@@ -1,0 +1,173 @@
+module k8sdispatcher {
+  yang-version 1.1;
+  namespace "http://polycube.network/k8sdispatcher";
+  prefix "k8sdispatcher";
+
+  import polycube-base { prefix "polycube-base"; }
+  import polycube-standard-base { prefix "polycube-standard-base"; }
+
+  import ietf-inet-types { prefix "inet"; }
+
+  organization "Polycube open source project";
+  description "YANG data model for the Polycube K8s Dispatcher";
+
+  polycube-base:service-description "K8s Dispatcher Service";
+  polycube-base:service-version "2.0.0";
+  polycube-base:service-name "k8sdispatcher";
+  polycube-base:service-min-kernel-version "4.14.0";
+
+  typedef l4-proto {
+    type enumeration {
+      enum "TCP" {
+        value 6;
+        description "The TCP protocol type";
+      }
+      enum "UDP" {
+        value 17;
+        description "The UDP protocol type";
+      }
+      enum "ICMP" {
+        value 1;
+        description "The ICMP protocol type";
+      }
+    }
+    description "L4 protocol";
+  }
+
+  uses "polycube-standard-base:standard-base-yang-module" {
+    augment ports {
+      leaf type {
+        type enumeration {
+          enum BACKEND { description "Port connected to the internal CNI topology"; }
+          enum FRONTEND { description "Port connected to the node NIC"; }
+        }
+        description "Type of the K8s Dispatcher cube port (e.g. BACKEND or FRONTEND)";
+        mandatory true;
+        polycube-base:init-only-config;
+      }
+      leaf ip {
+        type inet:ipv4-address;
+        description "IP address of the node interface (only for FRONTEND port)";
+        polycube-base:cli-example "10.10.1.1";
+        polycube-base:init-only-config;
+      }
+    }
+  }
+
+    leaf internal-src-ip {
+      type inet:ipv4-address;
+      description "Internal source IP address used for natting incoming packets directed to Kubernetes Services with a CLUSTER external traffic policy";
+      mandatory true;
+      polycube-base:cli-example "10.10.1.1";
+      polycube-base:init-only-config;
+    }
+
+    leaf nodeport-range {
+      type string;
+      description "Port range used for NodePort Services";
+      default "30000-32767";
+      polycube-base:cli-example "30000-32767";
+    }
+
+    list session-rule {
+      key "direction src-ip dst-ip src-port dst-port proto";
+      description "Session entry related to a specific traffic direction";
+      config false;
+
+      leaf direction {
+        type enumeration {
+          enum INGRESS {
+            description "Direction of traffic going from the internal topology to the external world";
+          }
+          enum EGRESS {
+            description "Direction of traffic going from the external world to the internal CNI topology";
+          }
+        }
+        description "Session entry direction (e.g. INGRESS or EGRESS)";
+      }
+      leaf src-ip {
+        type inet:ipv4-address;
+        description "Session entry source IP address";
+      }
+      leaf dst-ip {
+        type inet:ipv4-address;
+        description "Session entry destination IP address";
+      }
+      leaf src-port {
+        type inet:port-number;
+        description "Session entry source L4 port number";
+      }
+      leaf dst-port {
+        type inet:port-number;
+        description "Session entry destination L4 port number";
+      }
+      leaf proto {
+        type l4-proto;
+        description "Session entry L4 protocol";
+        polycube-base:cli-example "TCP, UDP, ICMP";
+      }
+
+      leaf new-ip {
+        type inet:ipv4-address;
+        description "Translated IP address";
+        config false;
+      }
+      leaf new-port {
+        type inet:port-number;
+        description "Translated L4 port number";
+        config false;
+      }
+      leaf operation {
+        type enumeration {
+          enum XLATE_SRC { description "The source IP and port are replaced"; }
+          enum XLATE_DST { description "The destination IP and port are replaced"; }
+        }
+        description "Operation applied on the original packet";
+        config false;
+      }
+      leaf originating-rule {
+        type enumeration {
+          enum POD_TO_EXT {
+            description "Traffic related to communication between a Pod and the external world";
+          }
+          enum NODEPORT_CLUSTER {
+            description "Traffic related to communication involving a NodePort Service with having a CLUSTER external traffic policy";
+          }
+        }
+        description "Rule originating the session entry";
+        config false;
+      }
+    }
+
+    list nodeport-rule {
+      key "nodeport-port proto";
+      description "NodePort rule associated with a Kubernetes NodePort Service";
+
+      leaf nodeport-port {
+        type inet:port-number;
+        description "NodePort rule nodeport port number";
+        polycube-base:cli-example "30500";
+      }
+      leaf proto {
+        type l4-proto;
+        description "NodePort rule L4 protocol";
+        polycube-base:cli-example "TCP, UDP, ICMP";
+      }
+
+      leaf external-traffic-policy {
+        type enumeration {
+          enum LOCAL { description "Incoming traffic is allowed to be served only by local backends"; }
+          enum CLUSTER { description "Incoming traffic is allowed to be served by any backend of the cluster"; }
+        }
+        default CLUSTER;
+        description "The external traffic policy of the Kubernetes NodePort Service";
+      }
+      leaf rule-name {
+        type string;
+        description "An optional name for the NodePort rule";
+        polycube-base:cli-example "my-nodeport-rule";
+        polycube-base:init-only-config;
+      }
+    }
+}
+

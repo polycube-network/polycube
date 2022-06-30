@@ -46,7 +46,16 @@ public:
   virtual void delPortsList() = 0;
 
   /// <summary>
-  ///
+  /// LB mode of operation.
+  /// 'SINGLE' is optimized for working with a single FRONTEND port.
+  /// 'MULTI' allows to manage multiple FRONTEND port.
+  /// </summary>
+  virtual LbrpPortModeEnum getPortMode() = 0;
+  virtual void setPortMode(const LbrpPortModeEnum &value) = 0;
+
+  /// <summary>
+  /// If configured, when a client request arrives to the LB, the source IP
+  /// address is replaced with another IP address from the 'new' range
   /// </summary>
   virtual std::shared_ptr<SrcIpRewrite> getSrcIpRewrite() = 0;
   virtual void addSrcIpRewrite(const SrcIpRewriteJsonObject &value) = 0;

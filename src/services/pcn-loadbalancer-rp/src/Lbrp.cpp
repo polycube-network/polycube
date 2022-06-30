@@ -23,18 +23,26 @@
 #include <tins/tins.h>
 
 using namespace Tins;
+using namespace polycube::service;
+
+const std::string Lbrp::EBPF_IP_TO_FRONTEND_PORT_MAP = "ip_to_frontend_port";
 
 Lbrp::Lbrp(const std::string name, const LbrpJsonObject &conf)
-    : Cube(conf.getBase(), {lbrp_code}, {}) {
+    : Cube(conf.getBase(), {Lbrp::buildLbrpCode(lbrp_code, conf.getPortMode())},
+           {}), lbrp_code_{Lbrp::buildLbrpCode(lbrp_code, conf.getPortMode())},
+      port_mode_{conf.getPortMode()} {
   logger()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [Lbrp] [%n] [%l] %v");
-  logger()->info("Creating Lbrp instance");
+  logger()->info("Creating Lbrp instance in {0} port mode",
+                 LbrpJsonObject::LbrpPortModeEnum_to_string(port_mode_));
 
   addServiceList(conf.getService());
   addSrcIpRewrite(conf.getSrcIpRewrite());
   addPortsList(conf.getPorts());
 }
 
-Lbrp::~Lbrp() {}
+Lbrp::~Lbrp() {
+  logger()->info("Destroying Lbrp instance");
+}
 
 void Lbrp::update(const LbrpJsonObject &conf) {
   // This method updates all the object/parameter in Lbrp object specified in
@@ -83,68 +91,114 @@ LbrpJsonObject Lbrp::toJsonObject() {
   return conf;
 }
 
+std::string Lbrp::buildLbrpCode(std::string const &lbrp_code,
+                                LbrpPortModeEnum port_mode) {
+  if (port_mode == LbrpPortModeEnum::SINGLE) {
+    return "#define SINGLE_PORT_MODE 1\n" + lbrp_code;
+  }
+  return "#define SINGLE_PORT_MODE 0\n" + lbrp_code;
+}
+
+void Lbrp::flood_packet(Ports &port, PacketInMetadata &md,
+                           const std::vector<uint8_t> &packet) {
+  EthernetII p(&packet[0], packet.size());
+
+  for (auto &it: get_ports()) {
+    if (it->name() == port.name()) {
+      continue;
+    }
+    it->send_packet_out(p);
+    logger()->trace("Sent pkt to port {0} as result of flooding", it->name());
+  }
+}
+
 void Lbrp::packet_in(Ports &port, polycube::service::PacketInMetadata &md,
-                     const std::vector<uint8_t> &packet) {
-  EthernetII eth(&packet[0], packet.size());
+                        const std::vector<uint8_t> &packet) {
+  try {
+    switch (static_cast<SlowPathReason>(md.reason)) {
+      case SlowPathReason::ARP_REPLY: {
+        logger()->debug("Received pkt in slowpath - reason: ARP_REPLY");
+        EthernetII eth(&packet[0], packet.size());
 
-  auto b_port = getBackendPort();
-  if (!b_port)
-    return;
+        auto b_port = getBackendPort();
+        if (!b_port)
+          return;
 
-  // send the original packet
-  logger()->debug("Sending original ARP reply to backend port: {}",
-                  b_port->name());
-  b_port->send_packet_out(eth);
+        // send the original packet
+        logger()->debug("Sending original ARP reply to backend port: {}",
+                        b_port->name());
+        b_port->send_packet_out(eth);
 
-  // send a second packet for the virtual src IPs
-  ARP &arp = eth.rfind_pdu<ARP>();
+        // send a second packet for the virtual src IPs
+        ARP &arp = eth.rfind_pdu<ARP>();
 
-  uint32_t ip = uint32_t(arp.sender_ip_addr());
-  ip &= htonl(src_ip_rewrite_->mask);
-  ip |= htonl(src_ip_rewrite_->net);
+        uint32_t ip = uint32_t(arp.sender_ip_addr());
+        ip &= htonl(src_ip_rewrite_->mask);
+        ip |= htonl(src_ip_rewrite_->net);
 
-  IPv4Address addr(ip);
-  arp.sender_ip_addr(addr);
+        IPv4Address addr(ip);
+        arp.sender_ip_addr(addr);
 
-  logger()->debug("Sending modified ARP reply to backend port: {}",
-                  b_port->name());
-  b_port->send_packet_out(eth);
+        logger()->debug("Sending modified ARP reply to backend port: {}",
+                        b_port->name());
+        b_port->send_packet_out(eth);
+        break;
+      }
+      case SlowPathReason::FLOODING: {
+        logger()->debug("Received pkt in slowpath - reason: FLOODING");
+        flood_packet(port, md, packet);
+        break;
+      }
+      default: {
+        logger()->error("Not valid reason {0} received", md.reason);
+      }
+    }
+  } catch (const std::exception &e) {
+    logger()->error("Exception during slowpath packet processing: '{0}'",
+                    e.what());
+  }
 }
 
 void Lbrp::reloadCodeWithNewPorts() {
   uint16_t frontend_port = 0;
   uint16_t backend_port = 1;
 
-  for (auto &it : get_ports()) {
-    switch (it->getType()) {
-    case PortsTypeEnum::FRONTEND:
+  for (auto &it: get_ports()) {
+    if (it->getType() == PortsTypeEnum::FRONTEND) {
       frontend_port = it->index();
-      break;
-    case PortsTypeEnum::BACKEND:
-      backend_port = it->index();
-      break;
-    }
+    } else backend_port = it->index();
   }
 
-  logger()->debug("Reloading code with frontend port: {0} and backend port {1}",
+  logger()->debug("Reloading code with FRONTEND port {0} and BACKEND port {1}",
                   frontend_port, backend_port);
   std::string frontend_port_str("#define FRONTEND_PORT " +
                                 std::to_string(frontend_port));
   std::string backend_port_str("#define BACKEND_PORT " +
                                std::to_string(backend_port));
 
-  reload(frontend_port_str + "\n" + backend_port_str + "\n" + lbrp_code);
+  reload(frontend_port_str + "\n" + backend_port_str + "\n" + lbrp_code_);
 
   logger()->trace("New lbrp code loaded");
 }
 
-std::shared_ptr<Ports> Lbrp::getFrontendPort() {
-  for (auto &it : get_ports()) {
+void Lbrp::reloadCodeWithNewBackendPort(uint16_t backend_port_index) {
+  logger()->debug("Reloading code with BACKEND port {0}", backend_port_index);
+  std::string backend_port_str("#define BACKEND_PORT " +
+                               std::to_string(backend_port_index));
+
+  reload(backend_port_str + "\n" + lbrp_code_);
+
+  logger()->trace("New lbrp code loaded");
+}
+
+std::vector<std::shared_ptr<Ports>> Lbrp::getFrontendPorts() {
+  std::vector<std::shared_ptr<Ports>> frontend_ports;
+  for (auto &it: get_ports()) {
     if (it->getType() == PortsTypeEnum::FRONTEND) {
-      return it;
+      frontend_ports.push_back(it);
     }
   }
-  return nullptr;
+  return frontend_ports;
 }
 
 std::shared_ptr<Ports> Lbrp::getBackendPort() {
@@ -164,41 +218,89 @@ std::vector<std::shared_ptr<Ports>> Lbrp::getPortsList() {
   return get_ports();
 }
 
-void Lbrp::addPorts(const std::string &name, const PortsJsonObject &conf) {
+void Lbrp::addPortsInSinglePortMode(const std::string &name,
+                                    const PortsJsonObject &conf) {
+  PortsTypeEnum type = conf.getType();
+  auto ip_is_set = conf.ipIsSet();
   if (get_ports().size() == 2) {
-    logger()->warn("Reached maximum number of ports");
     throw std::runtime_error("Reached maximum number of ports");
   }
 
-  try {
-    switch (conf.getType()) {
-    case PortsTypeEnum::FRONTEND:
-      if (getFrontendPort() != nullptr) {
-        logger()->warn("There is already a FRONTEND port");
-        throw std::runtime_error("There is already a FRONTEND port");
-      }
-      break;
-    case PortsTypeEnum::BACKEND:
-      if (getBackendPort() != nullptr) {
-        logger()->warn("There is already a BACKEND port");
-        throw std::runtime_error("There is already a BACKEND port");
-      }
-      break;
+  if (type == PortsTypeEnum::FRONTEND) {
+    if (getFrontendPorts().size() == 1) {
+      throw std::runtime_error("There is already a FRONTEND port. Only a "
+                               "FRONTEND port is allowed in SINGLE port mode");
     }
-  } catch (std::runtime_error &e) {
-    logger()->warn("Error when adding the port {0}", name);
-    logger()->warn("Error message: {0}", e.what());
+    if (ip_is_set) {
+      throw std::runtime_error("The ip address in not allow in SINGLE port "
+                               "mode for a FRONTEND port");
+    }
+  } else {
+    if (getBackendPort() != nullptr) throw std::runtime_error("There is "
+                               "already a BACKEND port");
+    if (ip_is_set) throw std::runtime_error("The ip address in not allowed "
+                               "in BACKEND port");
+  }
+  add_port<PortsJsonObject>(name, conf);
+  if (get_ports().size() == 2) reloadCodeWithNewPorts();
+}
+
+void Lbrp::addPortsInMultiPortMode(const std::string &name,
+                                   const PortsJsonObject &conf) {
+  PortsTypeEnum type = conf.getType();
+  auto ip_is_set = conf.ipIsSet();
+
+  if (type == PortsTypeEnum::FRONTEND) {
+    if (!ip_is_set) {
+      throw std::runtime_error("The IP address is mandatory in MULTI port "
+                               "mode for a FRONTEND port");
+    }
+    auto ip = conf.getIp();
+    auto found = frontend_ip_set_.find(ip) != frontend_ip_set_.end();
+    if (found) {
+      throw std::runtime_error("A FRONTEND port with the provided IP "
+                               "address (" + ip + ") already exist");
+    }
+    if (!frontend_ip_set_.insert(ip).second) {
+      throw std::runtime_error("Failed to set the IP address for the new "
+                               "FRONTEND port");
+    }
+    try {
+      auto created_port = add_port<PortsJsonObject>(name, conf);
+      auto ip_to_frontend_port_table = get_hash_table<uint32_t, uint16_t>(
+          EBPF_IP_TO_FRONTEND_PORT_MAP);
+      ip_to_frontend_port_table.set(
+          utils::ip_string_to_nbo_uint(created_port->getIp()),
+          created_port->index()
+      );
+    } catch (std::exception &ex) {
+      frontend_ip_set_.erase(ip);
+      throw;
+    }
+  } else {
+    if (getBackendPort() != nullptr) {
+      throw std::runtime_error("There is already a BACKEND port");
+    }
+    if (ip_is_set) {
+      throw std::runtime_error("The ip address in not allowed in BACKEND port");
+    }
+    auto created_port = add_port<PortsJsonObject>(name, conf);
+    reloadCodeWithNewBackendPort(created_port->index());
+  }
+}
+
+void Lbrp::addPorts(const std::string &name, const PortsJsonObject &conf) {
+  try {
+    if (port_mode_ == LbrpPortModeEnum::SINGLE) {
+      addPortsInSinglePortMode(name, conf);
+    }
+    else addPortsInMultiPortMode(name, conf);
+  } catch (std::runtime_error &ex) {
+    logger()->warn("Failed to add port {0}: {1}", name, ex.what());
     throw;
   }
 
-  add_port<PortsJsonObject>(name, conf);
-
-  if (get_ports().size() == 2) {
-    logger()->info("Reloading code because of the new port");
-    reloadCodeWithNewPorts();
-  }
-
-  logger()->info("New port created with name {0}", name);
+  logger()->info("Created new Port with name {0}", name);
 }
 
 void Lbrp::addPortsList(const std::vector<PortsJsonObject> &conf) {
@@ -215,7 +317,27 @@ void Lbrp::replacePorts(const std::string &name, const PortsJsonObject &conf) {
 }
 
 void Lbrp::delPorts(const std::string &name) {
-  remove_port(name);
+  try {
+    auto port = get_port(name);
+    if (this->port_mode_ == LbrpPortModeEnum::MULTI &&
+        port->getType() == PortsTypeEnum::FRONTEND) {
+      auto ip = port->getIp();
+
+      auto ip_to_frontend_port_table = get_hash_table<uint32_t, uint16_t>(
+          EBPF_IP_TO_FRONTEND_PORT_MAP);
+      ip_to_frontend_port_table.remove(utils::ip_string_to_nbo_uint(ip));
+
+      if (this->frontend_ip_set_.erase(ip) == 0) {
+        throw std::runtime_error(
+            "Failed to delete the port IP address for the new FRONTEND port");
+      }
+    }
+    remove_port(name);
+  } catch (std::exception &ex) {
+    logger()->error("Failed to delete port {0}: {1}", name, ex.what());
+    throw;
+  }
+  logger()->info("Deleted Lbrp port");
 }
 
 void Lbrp::delPortsList() {
@@ -223,6 +345,15 @@ void Lbrp::delPortsList() {
   for (auto it : ports) {
     delPorts(it->name());
   }
+}
+
+LbrpPortModeEnum Lbrp::getPortMode() {
+  return port_mode_;
+}
+
+void Lbrp::setPortMode(const LbrpPortModeEnum &value) {
+  logger()->warn("Port mode cannot be changed at runtime");
+  throw std::runtime_error("Port mode cannot be changed at runtime");
 }
 
 std::shared_ptr<SrcIpRewrite> Lbrp::getSrcIpRewrite() {

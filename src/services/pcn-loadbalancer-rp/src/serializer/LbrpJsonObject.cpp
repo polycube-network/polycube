@@ -25,6 +25,8 @@ namespace model {
 LbrpJsonObject::LbrpJsonObject() {
   m_nameIsSet = false;
   m_portsIsSet = false;
+  m_portMode = LbrpPortModeEnum::SINGLE;
+  m_portModeIsSet = true;
   m_srcIpRewriteIsSet = false;
   m_serviceIsSet = false;
 }
@@ -33,6 +35,7 @@ LbrpJsonObject::LbrpJsonObject(const nlohmann::json &val) :
   JsonObjectBase(val) {
   m_nameIsSet = false;
   m_portsIsSet = false;
+  m_portModeIsSet = false;
   m_srcIpRewriteIsSet = false;
   m_serviceIsSet = false;
 
@@ -48,6 +51,10 @@ LbrpJsonObject::LbrpJsonObject(const nlohmann::json &val) :
     }
 
     m_portsIsSet = true;
+  }
+
+  if (val.count("port_mode")) {
+    setPortMode(string_to_LbrpPortModeEnum(val.at("port_mode").get<std::string>()));
   }
 
   if (val.count("src-ip-rewrite")) {
@@ -86,6 +93,10 @@ nlohmann::json LbrpJsonObject::toJson() const {
     if (jsonArray.size() > 0) {
       val["ports"] = jsonArray;
     }
+  }
+
+  if (m_portModeIsSet) {
+    val["port_mode"] = LbrpPortModeEnum_to_string(m_portMode);
   }
 
   if (m_srcIpRewriteIsSet) {
@@ -139,6 +150,42 @@ void LbrpJsonObject::unsetPorts() {
   m_portsIsSet = false;
 }
 
+
+LbrpPortModeEnum LbrpJsonObject::getPortMode() const {
+  return m_portMode;
+}
+
+void LbrpJsonObject::setPortMode(LbrpPortModeEnum value) {
+  m_portMode = value;
+  m_portModeIsSet = true;
+}
+
+bool LbrpJsonObject::portModeIsSet() const {
+  return m_portModeIsSet;
+}
+
+void LbrpJsonObject::unsetPortMode() {
+  m_portModeIsSet = false;
+}
+
+std::string LbrpJsonObject::LbrpPortModeEnum_to_string(const LbrpPortModeEnum &value){
+  switch(value) {
+  case LbrpPortModeEnum::SINGLE:
+    return std::string("single");
+  case LbrpPortModeEnum::MULTI:
+    return std::string("multi");
+  default:
+    throw std::runtime_error("Bad Lbrp portMode");
+  }
+}
+
+LbrpPortModeEnum LbrpJsonObject::string_to_LbrpPortModeEnum(const std::string &str){
+  if (JsonObjectBase::iequals("single", str))
+    return LbrpPortModeEnum::SINGLE;
+  if (JsonObjectBase::iequals("multi", str))
+    return LbrpPortModeEnum::MULTI;
+  throw std::runtime_error("Lbrp portMode is invalid");
+}
 SrcIpRewriteJsonObject LbrpJsonObject::getSrcIpRewrite() const {
   return m_srcIpRewrite;
 }

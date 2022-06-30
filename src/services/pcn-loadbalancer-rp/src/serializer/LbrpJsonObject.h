@@ -34,6 +34,9 @@ namespace swagger {
 namespace server {
 namespace model {
 
+enum class LbrpPortModeEnum {
+  SINGLE, MULTI
+};
 
 /// <summary>
 ///
@@ -62,7 +65,20 @@ public:
   void unsetPorts();
 
   /// <summary>
-  ///
+  /// LB mode of operation.
+  /// 'SINGLE' is optimized for working with a single FRONTEND port.
+  /// 'MULTI' allows to manage multiple FRONTEND port.
+  /// </summary>
+  LbrpPortModeEnum getPortMode() const;
+  void setPortMode(LbrpPortModeEnum value);
+  bool portModeIsSet() const;
+  void unsetPortMode();
+  static std::string LbrpPortModeEnum_to_string(const LbrpPortModeEnum &value);
+  static LbrpPortModeEnum string_to_LbrpPortModeEnum(const std::string &str);
+
+  /// <summary>
+  /// If configured, when a client request arrives to the LB, the source IP
+  /// address is replaced with another IP address from the 'new' range
   /// </summary>
   SrcIpRewriteJsonObject getSrcIpRewrite() const;
   void setSrcIpRewrite(SrcIpRewriteJsonObject value);
@@ -82,6 +98,8 @@ private:
   bool m_nameIsSet;
   std::vector<PortsJsonObject> m_ports;
   bool m_portsIsSet;
+  LbrpPortModeEnum m_portMode;
+  bool m_portModeIsSet;
   SrcIpRewriteJsonObject m_srcIpRewrite;
   bool m_srcIpRewriteIsSet;
   std::vector<ServiceJsonObject> m_service;

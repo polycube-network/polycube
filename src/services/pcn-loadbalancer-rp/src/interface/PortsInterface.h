@@ -36,5 +36,11 @@ public:
   /// </summary>
   virtual PortsTypeEnum getType() = 0;
   virtual void setType(const PortsTypeEnum &value) = 0;
+
+  /// <summary>
+  /// IP address of the client interface (only for FRONTEND port)
+  /// </summary>
+  virtual std::string getIp() = 0;
+  virtual void setIp(const std::string &value) = 0;
 };
 
