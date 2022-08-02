@@ -30,8 +30,8 @@ To set up the two bridges, please refer to this :doc:`description <../../service
 Now that the basic topology is ready, create the two ``dynmon`` instances:
 
 ```
-polycubectl dynmon add monitorA
-polycubectl dynmon add monitorB
+polycubectl dynmon add monitor1
+polycubectl dynmon add monitor2
 ```
 
 ### Step2: Attach cubes
