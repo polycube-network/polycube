@@ -15,7 +15,7 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/ryanuber/columnize v2.1.2+incompatible
-	golang.org/x/sys v0.0.0-20210317091845-390168757d9c // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
